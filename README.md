@@ -8,7 +8,7 @@ The machine-readable contract for **[Live Tennis API](https://livetennisapi.com)
 tennis scores, players, rankings, match-winner market prices and model win-probability
 over REST and WebSocket.
 
-[**Documentation**](https://docs.livetennisapi.com) · [**Website**](https://livetennisapi.com) · [**Get a key**](https://livetennisapi.com/#pricing)
+[**Documentation**](https://livetennisapi.github.io/openapi/) · [**Website**](https://livetennisapi.com) · [**Get a key**](https://livetennisapi.com/#pricing)
 
 </div>
 
@@ -19,7 +19,7 @@ over REST and WebSocket.
 | File | Purpose |
 |---|---|
 | [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 12 endpoints, 11 schemas |
-| [`docs/`](docs/) | Rendered reference, published to <https://docs.livetennisapi.com> |
+| [`docs/`](docs/) | Rendered reference, published to <https://livetennisapi.github.io/openapi/> |
 
 The spec is the **source of truth** for our official SDKs. If the spec and an SDK disagree,
 the spec is right and the SDK has a bug.
