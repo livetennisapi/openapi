@@ -1,0 +1,23 @@
+# Redocly is used instead of Spectral because this is an OpenAPI 3.1 document.
+# Spectral's oas ruleset crashes on 3.1 nullable type-arrays combined with enum
+# (`type: [integer, "null"], enum: [1, 2, null]`), which this spec uses widely.
+extends:
+  - recommended
+
+rules:
+  # Tags add no value on a 12-endpoint single-surface API.
+  tags-alphabetical: off
+  # Summaries carry the tier annotation; a separate description would duplicate it.
+  operation-description: off
+  # /health is an unauthenticated liveness probe: it returns 200 whenever the
+  # process is serving and has no failure response to document. Every other
+  # operation's 4xx coverage is enforced by the contract test in CI, which
+  # asserts a documented 401 on all authenticated operations.
+  operation-4xx-response: off
+  # Enforced: these are what the SDKs and the docs site depend on.
+  operation-operationId: error
+  operation-operationId-unique: error
+  info-license: error
+  info-contact: error
+  no-server-trailing-slash: error
+  security-defined: error

@@ -1,0 +1,91 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  redocly:
+    name: Redocly lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Redocly rather than Spectral: this is an OpenAPI 3.1 document and
+      # Spectral's oas ruleset crashes on 3.1 nullable type-arrays combined
+      # with enum, which this spec uses throughout.
+      - name: Lint the specification
+        run: npx --yes @redocly/cli@latest lint openapi.yaml --format=stylish
+
+  contract:
+    name: Parses + structural invariants
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install pyyaml
+
+      - name: Assert the spec holds its contract
+        run: |
+          python - <<'PY'
+          import sys, yaml
+
+          spec = yaml.safe_load(open('openapi.yaml'))
+          fail = []
+
+          if spec.get('openapi', '').split('.')[0] != '3':
+              fail.append(f"expected OpenAPI 3.x, got {spec.get('openapi')!r}")
+
+          servers = [s['url'] for s in spec.get('servers', [])]
+          if servers != ['https://api.livetennisapi.com/api/public/v1']:
+              fail.append(f'unexpected servers: {servers}')
+
+          seen_ids = {}
+          for path, ops in spec['paths'].items():
+              for method, op in ops.items():
+                  label = f'{method.upper()} {path}'
+
+                  # Every authenticated operation must document 401. /health is
+                  # the deliberate exception: no auth, so no 401 to document.
+                  if path != '/health' and '401' not in op.get('responses', {}):
+                      fail.append(f'{label} does not document 401')
+
+                  # operationId is load-bearing: generated clients name their
+                  # methods from it, so a rename is a breaking change.
+                  oid = op.get('operationId')
+                  if not oid:
+                      fail.append(f'{label} has no operationId')
+                  elif oid in seen_ids:
+                      fail.append(f'operationId {oid!r} duplicated: {seen_ids[oid]} and {label}')
+                  else:
+                      seen_ids[oid] = label
+
+          # Auth schemes the SDKs rely on must not disappear.
+          schemes = set(spec.get('components', {}).get('securitySchemes', {}))
+          for required in ('bearerAuth', 'apiKeyHeader'):
+              if required not in schemes:
+                  fail.append(f'missing security scheme {required!r}')
+
+          if fail:
+              print('SPEC CONTRACT VIOLATIONS:')
+              for f in fail:
+                  print(f'  - {f}')
+              sys.exit(1)
+
+          print(f"OK — {len(spec['paths'])} paths, "
+                f"{len(seen_ids)} operations, "
+                f"{len(spec.get('components', {}).get('schemas', {}))} schemas")
+          PY

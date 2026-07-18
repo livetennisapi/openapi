@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Live Tennis API — API Reference</title>
+  <meta name="description" content="API reference for Live Tennis API: real-time tennis scores, players, rankings, match-winner market prices and model win-probability for ATP, WTA, Challenger and ITF over REST and WebSocket.">
+
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" href="logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-256.png">
+  <link rel="canonical" href="https://docs.livetennisapi.com/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Live Tennis API">
+  <meta property="og:title" content="Live Tennis API — API Reference">
+  <meta property="og:description" content="Real-time tennis scores, players, rankings, match-winner market prices and model win-probability over REST and WebSocket.">
+  <meta property="og:url" content="https://docs.livetennisapi.com/">
+  <meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Live Tennis API — API Reference">
+  <meta name="twitter:description" content="Real-time tennis scores, players, rankings, market prices and model win-probability over REST and WebSocket.">
+  <meta name="twitter:image" content="https://docs.livetennisapi.com/banner.jpg">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "TechArticle",
+    "name": "Live Tennis API — API Reference",
+    "headline": "Live Tennis API — API Reference",
+    "description": "API reference for Live Tennis API: real-time tennis scores, players, rankings, match-winner market prices and model win-probability over REST and WebSocket.",
+    "url": "https://docs.livetennisapi.com/",
+    "inLanguage": "en",
+    "isPartOf": { "@type": "WebSite", "name": "Live Tennis API", "url": "https://livetennisapi.com" },
+    "publisher": {
+      "@type": "Organization",
+      "name": "Live Tennis API",
+      "url": "https://livetennisapi.com",
+      "logo": "https://docs.livetennisapi.com/icon-256.png"
+    }
+  }
+  </script>
+
+  <style>
+    html, body { margin: 0; padding: 0; background: #080b11; }
+    /* Pre-hydration splash so the page never flashes white on a slow load. */
+    #boot {
+      position: fixed; inset: 0; display: grid; place-items: center;
+      background: #080b11; color: #93a1b3; z-index: 1;
+      font: 500 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    #boot .dot {
+      width: 10px; height: 10px; border-radius: 50%; background: #3ee07a;
+      margin: 0 auto 12px; animation: p 1.1s ease-in-out infinite;
+    }
+    @keyframes p { 0%,100% { opacity: .25; transform: scale(.85); } 50% { opacity: 1; transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) { #boot .dot { animation: none; opacity: .8; } }
+  </style>
+</head>
+<body>
+  <div id="boot"><div><div class="dot"></div>Loading API reference…</div></div>
+
+  <script
+    id="api-reference"
+    data-url="openapi.yaml"
+    data-configuration='{"theme":"purple","darkMode":true,"hideDownloadButton":false,"searchHotKey":"k","metaData":{"title":"Live Tennis API — API Reference"}}'>
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  <script>
+    // Remove the splash once Scalar has painted, and fall back to a plain link
+    // if the CDN is blocked so the page is never a dead end.
+    (function () {
+      var boot = document.getElementById('boot');
+      var done = false;
+      function clear() { if (!done && boot) { done = true; boot.remove(); } }
+      var obs = new MutationObserver(function () {
+        if (document.querySelector('.scalar-app, [class*="scalar"]')) { clear(); obs.disconnect(); }
+      });
+      obs.observe(document.body, { childList: true, subtree: true });
+      setTimeout(function () {
+        if (done) return;
+        obs.disconnect();
+        if (boot) {
+          boot.innerHTML =
+            '<div style="text-align:center;max-width:40ch">' +
+            '<p style="color:#e6edf3">The interactive reference could not load.</p>' +
+            '<p><a style="color:#3ee07a" href="openapi.yaml">Download the OpenAPI spec</a> ' +
+            'or read the <a style="color:#3ee07a" href="https://github.com/livetennisapi/openapi">repository</a>.</p>' +
+            '</div>';
+        }
+      }, 8000);
+    })();
+  </script>
+</body>
+</html>

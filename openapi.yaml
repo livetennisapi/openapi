@@ -1,0 +1,481 @@
+openapi: 3.1.0
+info:
+  title: Live Tennis API
+  version: "1.0"
+  contact:
+    name: Live Tennis API
+    url: https://livetennisapi.com
+  license:
+    name: MIT
+    url: https://github.com/livetennisapi/openapi/blob/main/LICENSE
+  termsOfService: https://livetennisapi.com/terms
+  description: |
+    Real-time tennis scores, player data, match-winner market prices, and
+    model-driven match analysis. Read-only.
+
+    Access is tiered (BASIC / PRO / ULTRA): match events and market prices
+    need PRO; model analysis, live model fields (`win_probability_p1`,
+    `danger`) and the WebSocket feed need ULTRA. A call above your tier
+    returns `403 {"error":"upgrade_required"}`.
+
+    All timestamps are UTC ISO 8601 with a `Z` suffix. List endpoints return
+    `{data, meta}`; single resources return the object directly. Ignore
+    unknown fields — additive changes land within v1.
+
+    A native WebSocket live feed (ULTRA) exists at `/ws` under the same base
+    URL — see the API documentation for the frame protocol (subscribe with
+    `{"action":"subscribe","topics":["live-scores"]}`; server pushes
+    `score` frames + `ping` heartbeats).
+servers:
+  - url: https://api.livetennisapi.com/api/public/v1
+security:
+  - bearerAuth: []
+  - apiKeyHeader: []
+paths:
+  /health:
+    get:
+      summary: Liveness probe (no auth)
+      operationId: healthCheck
+      security: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, const: ok }
+                  version: { type: string, const: v1 }
+  /matches:
+    get:
+      summary: List matches by lifecycle status (BASIC)
+      operationId: listMatches
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [live, upcoming, completed], default: live }
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Matches with latest score
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Match" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /matches/{matchId}:
+    get:
+      summary: Full match detail (BASIC; +market PRO, +analysis ULTRA)
+      operationId: getMatch
+      parameters: [ { $ref: "#/components/parameters/matchId" } ]
+      responses:
+        "200":
+          description: Match with score; `market` embed at PRO+, `analysis` embed at ULTRA
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MatchDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /matches/{matchId}/score:
+    get:
+      summary: Current score only — lowest-latency REST read (BASIC)
+      operationId: getMatchScore
+      parameters: [ { $ref: "#/components/parameters/matchId" } ]
+      responses:
+        "200":
+          description: Current score (ULTRA adds win_probability_p1 + danger)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Score" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /matches/{matchId}/events:
+    get:
+      summary: Match events, newest first (PRO)
+      operationId: listMatchEvents
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Events
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Event" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /matches/{matchId}/analysis:
+    get:
+      summary: Model analysis for a match (ULTRA)
+      operationId: getMatchAnalysis
+      parameters: [ { $ref: "#/components/parameters/matchId" } ]
+      responses:
+        "200":
+          description: Thesis + profile (either may be null)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Analysis" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /players:
+    get:
+      summary: Search players by name (BASIC)
+      operationId: searchPlayers
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Players (ranked first; no stats object on the list)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Player" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /players/{playerId}:
+    get:
+      summary: One player's bio + ranking + cached stats (BASIC)
+      operationId: getPlayer
+      parameters:
+        - name: playerId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Player with `stats` ({ratings, season})
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Player" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /markets:
+    get:
+      summary: Match-winner market(s) for a match (PRO)
+      operationId: listMarkets
+      parameters:
+        - name: match_id
+          in: query
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Markets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Market" }
+                  meta:
+                    type: object
+                    properties:
+                      match_id: { type: integer }
+                      count: { type: integer }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /markets/{matchId}/prices:
+    get:
+      summary: Market + recent price ticks per side, newest first (PRO)
+      operationId: getMarketPrices
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Market with `prices`
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Market" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/matches:
+    get:
+      summary: Completed matches, newest first, with derived winner (BASIC)
+      operationId: listCompletedMatches
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Completed matches (`winner` = 1|2|null, from final sets)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Match" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /fixtures:
+    get:
+      summary: Upcoming scheduled fixtures, earliest first (BASIC)
+      operationId: listFixtures
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Name-only fixtures (players not yet resolved to ids)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Fixture" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: "Direct API key: Authorization: Bearer <key>"
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+  parameters:
+    matchId:
+      name: matchId
+      in: path
+      required: true
+      schema: { type: integer }
+    limit:
+      name: limit
+      in: query
+      schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+    offset:
+      name: offset
+      in: query
+      schema: { type: integer, default: 0, minimum: 0 }
+  responses:
+    BadRequest:
+      description: Bad query parameter
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Missing, unknown, or disabled credentials
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    UpgradeRequired:
+      description: Your tier doesn't unlock this endpoint
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: No such resource, or no data yet
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    RateLimited:
+      description: Rate limit exceeded (Retry-After header present)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+    ListMeta:
+      type: object
+      properties:
+        limit: { type: integer }
+        offset: { type: integer }
+        count: { type: integer }
+    Score:
+      type: object
+      description: ULTRA adds win_probability_p1 + danger.
+      properties:
+        sets:
+          type: array
+          items: { type: integer }
+        games:
+          type: array
+          description: "[games_p1, games_p2]; each a per-set list"
+          items:
+            type: array
+            items: { type: integer }
+        points:
+          type: array
+          items: { type: string }
+        server: { type: [integer, "null"], enum: [1, 2, null] }
+        is_tiebreak: { type: boolean }
+        win_probability_p1: { type: [number, "null"] }
+        danger: { type: [number, "null"] }
+        timestamp: { type: [string, "null"], format: date-time }
+    Player:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        tour: { type: [string, "null"] }
+        country: { type: [string, "null"] }
+        ranking: { type: [integer, "null"] }
+        ranking_points: { type: [integer, "null"] }
+        ranking_movement: { type: [string, "null"], enum: [up, down, same, null] }
+        hand: { type: [string, "null"], enum: [R, L, null] }
+        backhand: { type: [integer, "null"], enum: [1, 2, null] }
+        birthday: { type: [string, "null"], format: date }
+        is_doubles_team: { type: boolean }
+        stats:
+          type: object
+          description: Single-player endpoint only
+          properties:
+            ratings: { type: [object, "null"] }
+            season: { type: [array, "null"] }
+    Match:
+      type: object
+      properties:
+        id: { type: integer }
+        tournament: { type: string }
+        surface: { type: [string, "null"], enum: [hard, clay, grass, null] }
+        indoor: { type: boolean }
+        format: { type: [string, "null"], enum: [BO3, BO5, null] }
+        round: { type: [string, "null"] }
+        status: { type: string, enum: [upcoming, live, completed, cancelled] }
+        event_status: { type: [string, "null"] }
+        is_doubles: { type: boolean }
+        scheduled_time: { type: [string, "null"], format: date-time }
+        players:
+          type: object
+          properties:
+            p1: { $ref: "#/components/schemas/Player" }
+            p2: { $ref: "#/components/schemas/Player" }
+        score:
+          oneOf:
+            - { $ref: "#/components/schemas/Score" }
+            - { type: "null" }
+        winner:
+          type: [integer, "null"]
+          description: Completed matches only — derived from final sets
+    MatchDetail:
+      allOf:
+        - { $ref: "#/components/schemas/Match" }
+        - type: object
+          properties:
+            analysis:
+              $ref: "#/components/schemas/Analysis"
+              description: ULTRA only (absent below)
+            market:
+              oneOf:
+                - { $ref: "#/components/schemas/Market" }
+                - { type: "null" }
+              description: PRO+ only (absent below)
+    Analysis:
+      type: object
+      properties:
+        thesis:
+          type: [object, "null"]
+          properties:
+            pick_side: { type: integer, enum: [1, 2] }
+            confidence: { type: [number, "null"] }
+            win_probability_pick: { type: [number, "null"] }
+            state: { type: [string, "null"], enum: [valid, confirmed, weakened, broken, null] }
+            reasoning: { type: [string, "null"] }
+            notes:
+              type: object
+              properties:
+                matchup: { type: [string, "null"] }
+                environment: { type: [string, "null"] }
+                fatigue: { type: [string, "null"] }
+            scenario_playbook: { type: [array, "null"] }
+            created_at: { type: [string, "null"], format: date-time }
+        profile:
+          type: [object, "null"]
+          properties:
+            win_probability_p1: { type: [number, "null"] }
+            expected_closeness: { type: [number, "null"] }
+            volatility_rating: { type: [string, "null"], enum: [low, med, high, null] }
+            key_factors: { type: [array, "null"], items: { type: string } }
+            created_at: { type: [string, "null"], format: date-time }
+    Market:
+      type: object
+      properties:
+        id: { type: integer }
+        question: { type: [string, "null"] }
+        status: { type: [string, "null"], enum: [active, resolved, closed, null] }
+        volume: { type: [number, "null"] }
+        liquidity: { type: [number, "null"] }
+        end_date: { type: [string, "null"], format: date-time }
+        prices:
+          type: array
+          description: Prices endpoint / match detail only; newest first
+          items: { $ref: "#/components/schemas/Price" }
+    Price:
+      type: object
+      properties:
+        side:
+          type: [integer, "null"]
+          description: 1 = p1's outcome, 2 = p2's
+        bid: { type: [number, "null"] }
+        ask: { type: [number, "null"] }
+        mid: { type: [number, "null"] }
+        spread: { type: [number, "null"] }
+        timestamp: { type: [string, "null"], format: date-time }
+    Event:
+      type: object
+      properties:
+        type: { type: string, enum: [break, set_won, game_won, momentum_run] }
+        player: { type: [integer, "null"], enum: [1, 2, null] }
+        timestamp: { type: [string, "null"], format: date-time }
+    Fixture:
+      type: object
+      properties:
+        id: { type: integer }
+        event_date: { type: [string, "null"], format: date }
+        tour: { type: [string, "null"] }
+        tournament: { type: [string, "null"] }
+        round: { type: [string, "null"] }
+        surface: { type: [string, "null"] }
+        player1_name: { type: [string, "null"] }
+        player2_name: { type: [string, "null"] }
+        status: { type: [string, "null"] }
