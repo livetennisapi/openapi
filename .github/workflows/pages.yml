@@ -55,7 +55,7 @@ jobs:
           print(f'OK - {len(text):,} chars of crawlable text, all key terms present')
           PY
 
-      - uses: actions/configure-pages@v5
+      - uses: actions/configure-pages@v6
 
       - uses: actions/upload-pages-artifact@v3
         with:
