@@ -85,6 +85,19 @@ Found a mismatch between this spec and what the API actually returns? That's a b
 reporting — [open an issue](https://github.com/livetennisapi/openapi/issues) with the
 endpoint, the request, and the response you got.
 
+## Related
+
+Everything in the Live Tennis API developer surface:
+
+| | Install | Source | Package |
+|---|---|---|---|
+| Python client | `pip install livetennisapi` | [repo](https://github.com/livetennisapi/livetennisapi-python) | [package](https://pypi.org/project/livetennisapi/) |
+| JavaScript / TypeScript client | `npm install livetennisapi` | [repo](https://github.com/livetennisapi/livetennisapi-js) | [package](https://www.npmjs.com/package/livetennisapi) |
+| MCP server for LLM agents | `npx livetennisapi-mcp` | [repo](https://github.com/livetennisapi/livetennisapi-mcp) | [package](https://www.npmjs.com/package/livetennisapi-mcp) |
+
+- **API reference** — <https://docs.livetennisapi.com> ([plain-HTML version](https://docs.livetennisapi.com/reference.html), no JavaScript required)
+- **Website and plans** — <https://livetennisapi.com>
+
 ## Licence
 
 The specification document in this repository is MIT licensed — generate clients, vendor
