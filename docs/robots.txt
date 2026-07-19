@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+
+# Answer engines are explicitly welcome to read and cite this reference.
+# The interactive page is client-rendered; reference.html is plain HTML and
+# is the one these crawlers can actually read.
+User-agent: GPTBot
+Allow: /
+User-agent: OAI-SearchBot
+Allow: /
+User-agent: ChatGPT-User
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Claude-SearchBot
+Allow: /
+User-agent: PerplexityBot
+Allow: /
+User-agent: Google-Extended
+Allow: /
+
+Sitemap: https://docs.livetennisapi.com/sitemap.xml

@@ -24,12 +24,36 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pyyaml
+
       - name: Assemble the site
         run: |
           # The reference loads the spec from its own origin, so the spec has to
           # travel with the site rather than be linked one directory up.
           cp openapi.yaml docs/openapi.yaml
+          # Regenerate the plain-HTML reference so it can never drift from the
+          # spec. Without it the docs are invisible to answer engines, none of
+          # which execute JavaScript.
+          python scripts/build_reference.py
           ls -la docs/
+
+      - name: The reference must be readable without JavaScript
+        run: |
+          python - <<'PY'
+          import re, sys
+          html = open('docs/reference.html', encoding='utf-8').read()
+          text = re.sub(r'<script.*?</script>|<style.*?</style>', '', html, flags=re.S)
+          text = ' '.join(re.sub(r'<[^>]+>', ' ', text).split())
+          required = ['/matches', '/players', 'win_probability_p1', 'ULTRA', 'BASIC', 'upgrade_required']
+          missing = [k for k in required if k not in html]
+          if len(text) < 5000 or missing:
+              print(f'FAIL: {len(text)} chars, missing {missing}')
+              sys.exit(1)
+          print(f'OK - {len(text):,} chars of crawlable text, all key terms present')
+          PY
 
       - uses: actions/configure-pages@v5
 

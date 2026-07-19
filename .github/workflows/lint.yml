@@ -38,6 +38,10 @@ jobs:
 
       - run: pip install pyyaml
 
+      - name: Generated docs are current
+        # Guards against editing the spec without regenerating reference.html.
+        run: python scripts/build_reference.py --check
+
       - name: Assert the spec holds its contract
         run: |
           python - <<'PY'

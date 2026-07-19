@@ -1,0 +1,47 @@
+# Live Tennis API — API Reference
+
+> Complete endpoint reference for the Live Tennis API. Real-time tennis scores,
+> players, rankings, match-winner market prices and model win-probability for ATP,
+> WTA, Challenger and ITF, over REST and WebSocket.
+
+Base URL: https://api.livetennisapi.com/api/public/v1
+Full text reference: https://docs.livetennisapi.com/reference.html
+OpenAPI spec: https://docs.livetennisapi.com/openapi.yaml
+Website: https://livetennisapi.com
+
+## Authentication
+Send the API key as `Authorization: Bearer <key>` or `X-API-Key: <key>`.
+The /health endpoint requires no key.
+
+## Plans
+- BASIC ($9.99/mo) — matches, scores, players, fixtures, history. 60 req/min.
+- PRO ($29.99/mo) — adds match events and market prices. 300 req/min.
+- ULTRA ($99.99/mo) — adds model analysis, win probability and WebSocket. 600 req/min.
+
+Calling above your plan returns 403 {"error":"upgrade_required"}.
+
+## Endpoints
+- GET /health — Liveness probe (no auth)
+- GET /matches — List matches by lifecycle status (BASIC)
+- GET /matches/{matchId} — Full match detail (BASIC; +market PRO, +analysis ULTRA)
+- GET /matches/{matchId}/score — Current score only — lowest-latency REST read (BASIC)
+- GET /matches/{matchId}/events — Match events, newest first (PRO)
+- GET /matches/{matchId}/analysis — Model analysis for a match (ULTRA)
+- GET /players — Search players by name (BASIC)
+- GET /players/{playerId} — One player's bio + ranking + cached stats (BASIC)
+- GET /markets — Match-winner market(s) for a match (PRO)
+- GET /markets/{matchId}/prices — Market + recent price ticks per side, newest first (PRO)
+- GET /history/matches — Completed matches, newest first, with derived winner (BASIC)
+- GET /fixtures — Upcoming scheduled fixtures, earliest first (BASIC)
+
+## Official client libraries
+- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python
+- JavaScript/TypeScript: `npm install livetennisapi` — https://github.com/livetennisapi/livetennisapi-js
+- MCP server for LLM agents: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp
+
+## Notes
+- Timestamps are UTC ISO 8601 with a Z suffix.
+- List endpoints return {data, meta}; single resources return the object directly.
+- limit defaults to 50, maximum 200; paginate with offset.
+- Additive changes ship within v1: clients must ignore unknown fields.
+- Score `games` is player-major: [[6,3,2],[4,6,1]] reads 6-4, 3-6, 2-1.
