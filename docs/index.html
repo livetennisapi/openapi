@@ -53,6 +53,15 @@
     #textref:hover { border-color: #3ee07a; }
     /* Deliberately secondary to the reference link: docs exist for building,
        not for selling. Muted until hover so it never competes with the API. */
+    /* Same corner stack as the reference link; the quickstart sits above it because a
+       first-time reader needs it more than the spec. */
+    #quickref {
+      position: fixed; right: 12px; bottom: 92px; z-index: 2;
+      background: #0e141d; color: #3ee07a; border: 1px solid #1b2431;
+      border-radius: 6px; padding: 7px 12px; text-decoration: none;
+      font: 500 13px/1 ui-sans-serif, system-ui, sans-serif;
+    }
+    #quickref:hover { border-color: #3ee07a; }
     #afflink {
       position: fixed; right: 12px; bottom: 52px; z-index: 2;
       background: #0e141d; color: #93a1b3; border: 1px solid #1b2431;
@@ -86,6 +95,7 @@
       <h1 style="color:#3ee07a">Live Tennis API</h1>
       <p>The interactive reference needs JavaScript. The complete reference is also
       available as plain HTML:</p>
+      <p><a href="reference.html#quickstart" style="color:#3ee07a;font-size:1.1rem">→ Quickstart: see live scores in your browser, no code</a></p>
       <p><a href="reference.html" style="color:#3ee07a;font-size:1.1rem">→ Full API reference (no JavaScript required)</a></p>
       <p>Or download the <a href="openapi.yaml" style="color:#3ee07a">OpenAPI specification</a>.</p>
       <p style="color:#93a1b3">Real-time tennis scores, players, rankings, match-winner market
@@ -100,6 +110,7 @@
     </div>
   </noscript>
 
+  <a href="reference.html#quickstart" id="quickref">Quickstart (no code)</a>
   <a href="reference.html" id="textref">Text reference (no JS)</a>
   <a href="https://affiliates.livetennisapi.com/program" id="afflink"
      target="_blank" rel="noopener">Affiliate programme — 51% lifetime</a>

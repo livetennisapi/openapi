@@ -333,14 +333,37 @@ answer engines and any HTTP client.</p>
 
 <p>{description}</p>
 
+<h2 id="quickstart">Quickstart — no code required</h2>
+<p>Paste this into a browser, with your key on the end. That's the whole setup:
+no install, no headers, works on a phone.</p>
+<pre><code>{E(base)}/matches?status=live&amp;token=YOUR_KEY</code></pre>
+<p>You'll get every live match. Here is one, and how to read it:</p>
+<pre><code>"players": {{ "p1": {{ "name": "Chase Ferguson" }},
+              "p2": {{ "name": "Scott Jones"    }} }}
+"sets":    [1, 0]           p1 leads one set to nil
+"games":   [[6, 3], [4, 4]] first list is p1, second is p2
+                            → 6-4 first set, 3-4 in the second
+"points":  ["0", "0"]       the game in progress
+"server":  1                p1 is serving (2 = p2)</code></pre>
+<p><strong>Every score array is player-major:</strong> the first list belongs to player 1,
+the second to player 2. Once that clicks, the rest of the API reads the same way.</p>
+<p>Two more you can click, swapping <code>21131</code> for any <code>id</code> from the list above:</p>
+<pre><code>{E(base)}/matches/21131?token=YOUR_KEY
+{E(base)}/matches/21131/score?token=YOUR_KEY</code></pre>
+
 <h2>Base URL</h2>
 <pre><code>{E(base)}</code></pre>
 
 <h2>Authentication</h2>
-<p>Send your API key as a bearer token or in the <code>X-API-Key</code> header — either works.
+<p>Three ways to present your key — all equivalent. Use the header in code; use
+<code>?token=</code> when you just want to click a link or test from a browser or phone.
 The <code>/health</code> endpoint needs no key.</p>
 <pre><code>Authorization: Bearer twjp_...
-X-API-Key: twjp_...</code></pre>
+X-API-Key: twjp_...
+?token=twjp_...            in the URL — browser-friendly</code></pre>
+<p class="meta">A key in a URL can end up in browser history, server logs and referrer
+headers, so prefer a header for anything automated or shared. For trying the API out,
+clicking a link is the fastest route and that trade-off is fine.</p>
 
 <h2>Plans</h2>
 <table><thead><tr><th>Plan</th><th>Unlocks</th><th>Rate limit</th><th>Price</th></tr></thead><tbody>
@@ -416,8 +439,17 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"OpenAPI spec: {DOCS_URL}/openapi.yaml",
         f"Website: {SITE}",
         "",
+        "## Quickstart (no code required)",
+        f"Open this in a browser — no install, no headers: {base}/matches?status=live&token=YOUR_KEY",
+        "Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.",
+        '  "sets": [1,0] = p1 leads one set to nil.',
+        '  "games": [[6,3],[4,4]] = 6-4 in the first set, 3-4 in the second.',
+        '  "points": ["0","0"] = the game in progress. "server": 1 = player 1 serving.',
+        "",
         "## Authentication",
-        "Send the API key as `Authorization: Bearer <key>` or `X-API-Key: <key>`.",
+        "Send the API key as `Authorization: Bearer <key>`, `X-API-Key: <key>`, or `?token=<key>`",
+        "in the query string. The query form is browser-friendly (clickable links, phones); prefer",
+        "a header for anything automated, since URLs leak into logs, history and referrers.",
         "The /health endpoint requires no key.",
         "",
         "## Plans",
