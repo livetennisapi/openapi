@@ -9,8 +9,17 @@ Full text reference: https://docs.livetennisapi.com/reference.html
 OpenAPI spec: https://docs.livetennisapi.com/openapi.yaml
 Website: https://livetennisapi.com
 
+## Quickstart (no code required)
+Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
+Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.
+  "sets": [1,0] = p1 leads one set to nil.
+  "games": [[6,3],[4,4]] = 6-4 in the first set, 3-4 in the second.
+  "points": ["0","0"] = the game in progress. "server": 1 = player 1 serving.
+
 ## Authentication
-Send the API key as `Authorization: Bearer <key>` or `X-API-Key: <key>`.
+Send the API key as `Authorization: Bearer <key>`, `X-API-Key: <key>`, or `?token=<key>`
+in the query string. The query form is browser-friendly (clickable links, phones); prefer
+a header for anything automated, since URLs leak into logs, history and referrers.
 The /health endpoint requires no key.
 
 ## Plans
