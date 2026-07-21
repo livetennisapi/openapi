@@ -31,17 +31,17 @@ Calling above your plan returns 403 {"error":"upgrade_required"}.
 
 ## Endpoints
 - GET /health — Liveness probe (no auth)
-- GET /matches — List matches by lifecycle status (BASIC)
-- GET /matches/{matchId} — Full match detail (BASIC; +market PRO, +analysis ULTRA)
-- GET /matches/{matchId}/score — Current score only — lowest-latency REST read (BASIC)
+- GET /matches — List matches by lifecycle status (FREE)
+- GET /matches/{matchId} — Full match detail (FREE; +market PRO, +analysis ULTRA)
+- GET /matches/{matchId}/score — Current score only — lowest-latency REST read (FREE)
 - GET /matches/{matchId}/events — Match events, newest first (PRO)
 - GET /matches/{matchId}/analysis — Model analysis for a match (ULTRA)
-- GET /players — Search players by name (BASIC)
-- GET /players/{playerId} — One player's bio + ranking + cached stats (BASIC)
+- GET /players — Search players by name (FREE)
+- GET /players/{playerId} — One player's bio + ranking + cached stats (FREE)
 - GET /markets — Match-winner market(s) for a match (PRO)
 - GET /markets/{matchId}/prices — Market + recent price ticks per side, newest first (PRO)
 - GET /history/matches — Completed matches, newest first, with derived winner (BASIC)
-- GET /fixtures — Upcoming scheduled fixtures, earliest first (BASIC)
+- GET /fixtures — Upcoming scheduled fixtures, earliest first (FREE)
 
 ## Official client libraries
 - Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python
