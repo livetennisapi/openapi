@@ -39,6 +39,11 @@ Calling above your plan returns 403 {"error":"upgrade_required"}.
 - JavaScript/TypeScript: `npm install livetennisapi` — https://github.com/livetennisapi/livetennisapi-js
 - MCP server for LLM agents: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp
 
+## Affiliate programme
+- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime
+  of every subscription referred, 10% discount for the referred customer, 30-day attribution.
+- Free to join, open to developers, creators and tennis writers: https://affiliates.livetennisapi.com/signup
+
 ## Notes
 - Timestamps are UTC ISO 8601 with a Z suffix.
 - List endpoints return {data, meta}; single resources return the object directly.
