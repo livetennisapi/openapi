@@ -391,6 +391,9 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
 <a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.
 Questions or a spec mismatch? <a href="https://github.com/livetennisapi/openapi/issues">Open an issue</a>.</p>
+<p class="meta">Writing about tennis, or building a tool on this API? The
+<a href="https://affiliates.livetennisapi.com/program">affiliate programme</a> pays 51%
+recurring for the lifetime of every subscription referred, 10% off for them, free to join.</p>
 
 </div>
 </body>
@@ -435,6 +438,12 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python",
         "- JavaScript/TypeScript: `npm install livetennisapi` — https://github.com/livetennisapi/livetennisapi-js",
         "- MCP server for LLM agents: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp",
+        "",
+        "## Affiliate programme",
+        "- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime",
+        "  of every subscription referred, 10% discount for the referred customer, 30-day attribution.",
+        "- Free to join, open to developers, creators and tennis writers:"
+        " https://affiliates.livetennisapi.com/signup",
         "",
         "## Notes",
         "- Timestamps are UTC ISO 8601 with a Z suffix.",
