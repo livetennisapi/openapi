@@ -51,6 +51,15 @@
       font: 500 13px/1 ui-sans-serif, system-ui, sans-serif;
     }
     #textref:hover { border-color: #3ee07a; }
+    /* Deliberately secondary to the reference link: docs exist for building,
+       not for selling. Muted until hover so it never competes with the API. */
+    #afflink {
+      position: fixed; right: 12px; bottom: 52px; z-index: 2;
+      background: #0e141d; color: #93a1b3; border: 1px solid #1b2431;
+      border-radius: 6px; padding: 7px 12px; text-decoration: none;
+      font: 500 13px/1 ui-sans-serif, system-ui, sans-serif;
+    }
+    #afflink:hover { border-color: #3ee07a; color: #3ee07a; }
     /* Pre-hydration splash so the page never flashes white on a slow load. */
     #boot {
       position: fixed; inset: 0; display: grid; place-items: center;
@@ -84,10 +93,16 @@
       Official clients: <code>pip install livetennisapi</code>,
       <code>npm install livetennisapi</code>, <code>npx livetennisapi-mcp</code>.
       More at <a href="https://livetennisapi.com" style="color:#3ee07a">livetennisapi.com</a>.</p>
+      <p style="color:#93a1b3">Building something on this API, or writing for a tennis
+      audience? Our <a href="https://affiliates.livetennisapi.com/program" style="color:#3ee07a">affiliate
+      programme</a> pays 51% recurring for the lifetime of every subscription you refer,
+      with 10% off for them.</p>
     </div>
   </noscript>
 
   <a href="reference.html" id="textref">Text reference (no JS)</a>
+  <a href="https://affiliates.livetennisapi.com/program" id="afflink"
+     target="_blank" rel="noopener">Affiliate programme — 51% lifetime</a>
 
   <script
     id="api-reference"
