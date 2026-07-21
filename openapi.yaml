@@ -13,10 +13,13 @@ info:
     Real-time tennis scores, player data, match-winner market prices, and
     model-driven match analysis. Read-only.
 
-    Access is tiered (BASIC / PRO / ULTRA): match events and market prices
-    need PRO; model analysis, live model fields (`win_probability_p1`,
-    `danger`) and the WebSocket feed need ULTRA. A call above your tier
-    returns `403 {"error":"upgrade_required"}`.
+    Access is tiered (FREE / BASIC / PRO / ULTRA). FREE is self-serve with no
+    card (https://livetennisapi.com/subscribe/free, 1000 requests/day) and
+    covers live and upcoming matches, scores, players and fixtures; historical
+    results need BASIC; match events and market prices need PRO; model
+    analysis, live model fields (`win_probability_p1`, `danger`) and the
+    WebSocket feed need ULTRA. A call above your tier returns
+    `403 {"error":"upgrade_required"}`.
 
     All timestamps are UTC ISO 8601 with a `Z` suffix. List endpoints return
     `{data, meta}`; single resources return the object directly. Ignore
@@ -49,7 +52,7 @@ paths:
                   version: { type: string, const: v1 }
   /matches:
     get:
-      summary: List matches by lifecycle status (BASIC)
+      summary: List matches by lifecycle status (FREE)
       operationId: listMatches
       parameters:
         - name: status
@@ -75,7 +78,7 @@ paths:
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}:
     get:
-      summary: Full match detail (BASIC; +market PRO, +analysis ULTRA)
+      summary: Full match detail (FREE; +market PRO, +analysis ULTRA)
       operationId: getMatch
       parameters: [ { $ref: "#/components/parameters/matchId" } ]
       responses:
@@ -90,7 +93,7 @@ paths:
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/score:
     get:
-      summary: Current score only — lowest-latency REST read (BASIC)
+      summary: Current score only — lowest-latency REST read (FREE)
       operationId: getMatchScore
       parameters: [ { $ref: "#/components/parameters/matchId" } ]
       responses:
@@ -142,7 +145,7 @@ paths:
         "429": { $ref: "#/components/responses/RateLimited" }
   /players:
     get:
-      summary: Search players by name (BASIC)
+      summary: Search players by name (FREE)
       operationId: searchPlayers
       parameters:
         - name: search
@@ -166,7 +169,7 @@ paths:
         "429": { $ref: "#/components/responses/RateLimited" }
   /players/{playerId}:
     get:
-      summary: One player's bio + ranking + cached stats (BASIC)
+      summary: One player's bio + ranking + cached stats (FREE)
       operationId: getPlayer
       parameters:
         - name: playerId
@@ -251,7 +254,7 @@ paths:
         "429": { $ref: "#/components/responses/RateLimited" }
   /fixtures:
     get:
-      summary: Upcoming scheduled fixtures, earliest first (BASIC)
+      summary: Upcoming scheduled fixtures, earliest first (FREE)
       operationId: listFixtures
       parameters:
         - $ref: "#/components/parameters/limit"
