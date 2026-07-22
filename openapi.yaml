@@ -58,6 +58,7 @@ paths:
         - name: status
           in: query
           schema: { type: string, enum: [live, upcoming, completed], default: live }
+        - $ref: "#/components/parameters/tour"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -257,6 +258,7 @@ paths:
       summary: Upcoming scheduled fixtures, earliest first (FREE)
       operationId: listFixtures
       parameters:
+        - $ref: "#/components/parameters/tour"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -297,6 +299,19 @@ components:
       name: offset
       in: query
       schema: { type: integer, default: 0, minimum: 0 }
+    tour:
+      name: tour
+      in: query
+      description: >-
+        Restrict results to one tour. Each value covers its singles and doubles
+        draws, so `atp` includes ATP doubles and `juniors` covers the boys' and
+        girls' Grand Slam draws. Omit for all tours. An unrecognised value is a
+        400 rather than a silent pass-through, so a caller never receives a tour
+        it did not ask for. Applied before pagination, so `meta.count` reflects
+        the filtered set.
+      schema:
+        type: string
+        enum: [atp, wta, challenger, itf, juniors]
   responses:
     BadRequest:
       description: Bad query parameter
