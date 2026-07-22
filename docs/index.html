@@ -41,53 +41,244 @@
   }
   </script>
 
-  <style>
-    html, body { margin: 0; padding: 0; background: #0e0e0e; }
-    /* THE CORNER STACK. Three fixed links, shared rule rather than three near-copies.
-       On mobile they used to be three stacked pills at bottom 12/52/92px, each ~150px
-       wide in a 390px viewport — permanently covering ~130px of body prose at every
-       scroll position, with one of the obscured links being the affiliate recruiter.
-       Below 720px they become a single centred row that sits BELOW the content instead
-       of on top of it. Heights raised from 29px to the 44px touch floor. */
-    #textref, #quickref, #afflink {
-      position: fixed; right: 12px; z-index: 2;
-      display: inline-flex; align-items: center; min-height: 44px;
-      background: #141414; color: #00ff41; border: 1px solid #2a2a2a;
-      border-radius: 6px; padding: 0 14px; text-decoration: none;
-      font: 500 13px/1 ui-sans-serif, system-ui, sans-serif;
-    }
-    #textref { bottom: 12px; }
-    #afflink { bottom: 64px; color: #84967e; }
-    #quickref { bottom: 116px; }
-    #textref:hover, #quickref:hover { border-color: #00ff41; }
-    #afflink:hover { border-color: #00ff41; color: #00ff41; }
+  <!-- Self-hosted webfonts. Nothing here is fetched from a third party, so the
+       page has no font dependency it cannot verify. -->
+  <link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/space-grotesk-latin-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="fonts.css">
 
-    @media (max-width: 720px) {
-      /* Static, in flow, side by side — nothing overlaps the documentation. */
-      #textref, #quickref, #afflink {
-        position: static; right: auto; bottom: auto;
-        margin: 6px 4px 0; min-height: 44px;
-      }
-      .docs-corner {
-        display: flex; flex-wrap: wrap; justify-content: center;
-        padding: 12px 8px 20px; background: #0e0e0e;
-        border-top: 1px solid #2a2a2a;
-      }
+  <style>
+    /* ---------------------------------------------------------------- tokens
+       The product's design tokens (app/services/design_tokens.py). Every colour
+       and radius below resolves to one of these; no page-local palette. */
+    :root {
+      --bg: #0e0e0e;
+      --panel: #141414;
+      --struct: #2a2a2a;
+      --text: #e4e2e1;
+      --muted: #84967e;
+      --ours: #00ff41;
+      --r: 6px;              /* control radius; structural elements are square */
+      --docsbar: 52px;       /* height of the site nav bar, reserved below */
+      color-scheme: dark;
     }
-    @media (min-width: 721px) { .docs-corner { display: contents; } }
+
+    html, body { margin: 0; padding: 0; background: var(--bg); }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+
+    /* ------------------------------------------------------- the site nav bar
+       WHAT THIS REPLACES. These three links used to be fixed pills in the
+       bottom-right corner. Measured at 1440x900, they sat on top of four live
+       Scalar controls — at scrollY=1600 `elementFromPoint` returned #quickref,
+       #afflink or #textref over the copy button, "Test Request", "Send Request"
+       and "Show Schema". Below 720px a comment claimed they dropped BELOW the
+       content; they actually rendered as a 137px band at the top of the very
+       first viewport (16% of it).
+
+       So: they are a real nav bar now, at the top, at every width, and it sits
+       IN NORMAL FLOW rather than floating.
+
+       In flow, specifically, and not `position: fixed`. A fixed bar was tried
+       first and simply moved the problem: Scalar's own chrome is sticky and
+       fixed too, so at z-index 60 the bar covered the mobile "Open Menu"
+       hamburger, the API client's "Close Client" button and the sticky "cURL /
+       Copy" controls — nine overlaps at 1440x900, eight at 390x844. Occupying
+       real space is the only version where nothing can overlap anything,
+       because there is no stacking contest to win. The bar scrolls away with
+       the page, exactly like a site header. */
+    .docs-corner {
+      position: relative; z-index: 2;   /* above the boot splash only */
+      display: flex; align-items: center; gap: 8px;
+      height: var(--docsbar); padding: 0 12px;
+      background: var(--bg); border-bottom: 1px solid var(--struct);
+      overflow-x: auto; overflow-y: hidden;   /* never widens the page */
+      scrollbar-width: none;
+    }
+    .docs-corner::-webkit-scrollbar { display: none; }
+
+    #textref, #quickref, #afflink {
+      flex: 0 0 auto;
+      display: inline-flex; align-items: center; min-height: 44px;
+      background: var(--panel); color: var(--ours); border: 1px solid var(--struct);
+      border-radius: var(--r); padding: 0 14px; text-decoration: none;
+      font: 500 13px/1 'Inter', ui-sans-serif, system-ui, sans-serif;
+      white-space: nowrap;
+    }
+    #afflink { color: var(--muted); }
+    #textref:hover, #quickref:hover { border-color: var(--ours); }
+    #afflink:hover { border-color: var(--ours); color: var(--ours); }
+    #textref:focus-visible, #quickref:focus-visible, #afflink:focus-visible {
+      outline: 2px solid var(--ours); outline-offset: 2px;
+    }
+    /* Shorter labels where the bar is narrow, so all three fit without scrolling. */
+    .lbl-short { display: none; }
+    @media (max-width: 720px) {
+      .lbl-full { display: none; }
+      .lbl-short { display: inline; }
+      #textref, #quickref, #afflink { padding: 0 11px; }
+    }
 
     /* Pre-hydration splash so the page never flashes white on a slow load. */
     #boot {
-      position: fixed; inset: 0; display: grid; place-items: center;
-      background: #0e0e0e; color: #84967e; z-index: 1;
-      font: 500 14px/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+      position: fixed; inset: var(--docsbar) 0 0 0; display: grid; place-items: center;
+      background: var(--bg); color: var(--muted); z-index: 1;
+      font: 500 14px/1.5 'Inter', ui-sans-serif, system-ui, sans-serif;
+      text-align: center;
     }
     #boot .dot {
-      width: 10px; height: 10px; border-radius: 50%; background: #00ff41;
+      width: 10px; height: 10px; border-radius: 50%; background: var(--ours);
       margin: 0 auto 12px; animation: p 1.1s ease-in-out infinite;
     }
     @keyframes p { 0%,100% { opacity: .25; transform: scale(.85); } 50% { opacity: 1; transform: scale(1); } }
     @media (prefers-reduced-motion: reduce) { #boot .dot { animation: none; opacity: .8; } }
+
+    /* Fallback surfaces: the noscript block and the CDN-failure message. These
+       are exactly what a visitor sees when something is broken, so they use the
+       same tokens as everything else rather than a stale palette of their own. */
+    .fallback { max-width: 820px; margin: 0 auto; padding: 48px 20px;
+                color: var(--text); font: 16px/1.6 'Inter', ui-sans-serif, system-ui, sans-serif; }
+    .fallback h1 { color: var(--ours); font-family: 'Space Grotesk', 'Inter', sans-serif; }
+    .fallback a, .boot-fail a { color: var(--ours); }
+    .fallback .lead { font-size: 1.1rem; }
+    .fallback .dim, .boot-fail .dim { color: var(--muted); }
+    .boot-fail { max-width: 44ch; color: var(--text); }
+    .boot-fail .lead { font-size: 1.05rem; }
+    .boot-fail .small { font-size: .9rem; }
+
+    /* ------------------------------------------------- Scalar theme overrides
+       Scalar ships with `theme: "purple"`, which is not this product's brand and
+       failed contrast in two places measured on its own surfaces: the `curl`
+       keyword at 3.09:1 and the GET badge / JSON strings at 3.68:1, both under
+       the 4.5:1 floor for text below 18px.
+
+       So the vendor theme is switched OFF (`theme: "none"`) and rebuilt on the
+       design tokens here.
+
+       SPECIFICITY, THE LOAD-BEARING DETAIL: Scalar puts `.dark-mode` on <body>
+       and defines its variables there. A plain `:root` block (0,0,1) LOSES to
+       `.dark-mode` (0,1,0) and silently does nothing. `body.dark-mode` (0,1,1)
+       wins, which is why the selector list below is written the way it is. */
+    :root,
+    body.dark-mode {
+      /* surfaces */
+      --scalar-background-1: var(--bg);
+      --scalar-background-2: var(--panel);
+      --scalar-background-3: var(--struct);
+      --scalar-background-accent: var(--panel);
+      --scalar-background-alert: var(--panel);
+      --scalar-background-danger: var(--panel);
+      --scalar-header-background-1: var(--bg);
+      --scalar-sidebar-background-1: var(--bg);
+      --scalar-sidebar-search-background: var(--panel);
+
+      /* structure — hairlines, square corners */
+      --scalar-border-color: var(--struct);
+      --scalar-border-width: 1px;
+      --scalar-sidebar-border-color: var(--struct);
+      --scalar-sidebar-search-border-color: var(--struct);
+
+      /* text. --scalar-color-3 is deliberately the same as -2: the recede tier
+         (#5a6675) is 3.30:1 on the page background, and Scalar uses colour-3 for
+         small labels where the floor is 4.5:1. Collapsing a tier beats shipping
+         unreadable text. */
+      --scalar-color-1: var(--text);
+      --scalar-color-2: var(--muted);
+      --scalar-color-3: var(--muted);
+      --scalar-color-accent: var(--ours);
+      --scalar-color-disabled: var(--muted);
+      --scalar-sidebar-color-1: var(--text);
+      --scalar-sidebar-color-2: var(--muted);
+      --scalar-sidebar-color-active: var(--ours);
+      --scalar-sidebar-item-hover-color: var(--text);
+      --scalar-sidebar-item-hover-background: var(--panel);
+      --scalar-sidebar-item-active-background: var(--panel);
+      --scalar-sidebar-search-color: var(--muted);
+
+      /* links */
+      --scalar-link-color: var(--ours);
+      --scalar-link-color-hover: var(--ours);
+      --scalar-text-decoration: none;
+      --scalar-text-decoration-hover: underline;
+
+      /* semantic + syntax highlighting. Every one of these is >= 4.5:1 on all
+         three surfaces above (measured, see the commit message). The two that
+         were failing keep their hue and only gain lightness:
+           purple  #7a59b1 -> #b191f9   3.09:1 -> 7.27:1 on --panel
+           blue    #2b7abf -> #6bc1fe   3.68:1 -> 9.37:1 on --panel */
+      --scalar-color-green: var(--ours);
+      --scalar-color-blue: #6bc1fe;
+      --scalar-color-purple: #b191f9;
+      --scalar-color-orange: #ffb000;
+      --scalar-color-yellow: #ffb000;
+      --scalar-color-red: #ff8589;
+      --scalar-color-alert: #ffb000;
+      --scalar-color-danger: #ff8589;
+
+      /* buttons */
+      --scalar-button-1: var(--ours);
+      --scalar-button-1-color: var(--bg);
+      --scalar-button-1-hover: var(--ours);
+
+      /* radii: 0 structural, 6px control */
+      --scalar-radius: 6px;
+      --scalar-radius-md: 6px;
+      --scalar-radius-lg: 0;
+      --scalar-radius-xl: 0;
+      --scalar-radius-2xl: 0;
+      --scalar-radius-3xl: 0;
+      --scalar-radius-max: 0;
+
+      /* type */
+      --scalar-font: 'Inter', ui-sans-serif, system-ui, sans-serif;
+      --scalar-font-code: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+
+      /* the system is flat: no shadows, no glows, no backdrop tricks */
+      --scalar-shadow-1: none;
+      --scalar-shadow-2: none;
+      --scalar-lifted-brightness: 1;
+      --scalar-backdrop-brightness: 1;
+
+      /* chrome */
+      --scalar-scrollbar-color: var(--struct);
+      --scalar-scrollbar-color-active: var(--muted);
+      --scalar-tooltip-background: var(--panel);
+      --scalar-tooltip-color: var(--text);
+    }
+
+    /* Headings take the display face, as everywhere else in the product. */
+    .scalar-app h1, .scalar-app h2, .scalar-app h3 {
+      font-family: 'Space Grotesk', 'Inter', ui-sans-serif, sans-serif;
+    }
+
+    /* Touch targets to the 44px floor, everywhere CSS can reach.
+       Scalar renders its sidebar navigation at 32px and 48px; its icon buttons
+       (the mobile "Open Menu" hamburger, "Show Password") at 32px and 24px; and
+       its tab / disclosure / popover chrome at 32-33px. All of those are under
+       the floor on every device, and all of them are plain boxes that grow
+       safely. */
+    aside a, aside button { min-height: 44px; }
+    .scalar-app .download-button { min-height: 44px; }
+    .scalar-app .scalar-icon-button { min-width: 44px; min-height: 44px; }
+    .scalar-app [id^="headlessui-tabs-tab"],
+    .scalar-app [id^="headlessui-disclosure-button"],
+    .scalar-app [id^="headlessui-popover-button"] { min-height: 44px; }
+    .scalar-app .show-api-client-button { min-height: 44px; }
+    .scalar-app .section-header-wrapper a { min-height: 44px; }
+    /* The credential field. Its wrapper carries Tailwind `max-h-8`, which caps
+       the row at 32px, so raising the input alone does nothing — the cap has to
+       go up with it. This is the Bearer token input; of everything on the page
+       it is the one control that should not be fiddly to hit. */
+    .scalar-app input { min-height: 44px; }
+    .scalar-app .max-h-8:has(input) { max-height: 44px; min-height: 44px; }
+
+    /* Remove the vendor's own attribution badge. Scalar is MIT, so this is
+       permitted; the licence text inside the bundle is untouched.
+
+       THE TRAP: `a[href*="scalar.com"]` also matches the two legitimate
+       "Open API Client" links and Scalar's Terms / Privacy links, and would
+       delete working features. The badge is the one that carries
+       `.no-underline`, so the selector is anchored on that. */
+    .scalar-app a.no-underline[href*="scalar.com"] { display: none !important; }
   </style>
 </head>
 <body>
@@ -98,42 +289,61 @@
        only), so without this the entire API reference is invisible to answer engines.
        reference.html carries the same content as plain server-rendered HTML. -->
   <noscript>
-    <div style="max-width:820px;margin:0 auto;padding:48px 20px;color:#e6edf3;font:16px/1.6 ui-sans-serif,system-ui,sans-serif">
-      <h1 style="color:#00ff41">Live Tennis API</h1>
+    <div class="fallback">
+      <h1>Live Tennis API</h1>
       <p>The interactive reference needs JavaScript. The complete reference is also
       available as plain HTML:</p>
-      <p><a href="reference.html#quickstart" style="color:#00ff41;font-size:1.1rem">→ Quickstart: see live scores in your browser, no code</a></p>
-      <p><a href="reference.html" style="color:#00ff41;font-size:1.1rem">→ Full API reference (no JavaScript required)</a></p>
-      <p>Or download the <a href="openapi.yaml" style="color:#00ff41">OpenAPI specification</a>.</p>
-      <p style="color:#84967e">Real-time tennis scores, players, rankings, match-winner market
+      <p><a class="lead" href="reference.html#quickstart">→ Quickstart: see live scores in your browser, no code</a></p>
+      <p><a class="lead" href="reference.html">→ Full API reference (no JavaScript required)</a></p>
+      <p>Or download the <a href="openapi.yaml">OpenAPI specification</a>.</p>
+      <p class="dim">Real-time tennis scores, players, rankings, match-winner market
       prices and model win-probability for ATP, WTA, Challenger and ITF, over REST and WebSocket.
       Official clients: <code>pip install livetennisapi</code>,
       <code>npm install livetennisapi</code>, <code>npx livetennisapi-mcp</code>.
-      More at <a href="https://livetennisapi.com" style="color:#00ff41">livetennisapi.com</a>.</p>
-      <p style="color:#84967e">Building something on this API, or writing for a tennis
-      audience? Our <a href="https://affiliates.livetennisapi.com/program" style="color:#00ff41">affiliate
+      More at <a href="https://livetennisapi.com">livetennisapi.com</a>.</p>
+      <p class="dim">Building something on this API, or writing for a tennis
+      audience? Our <a href="https://affiliates.livetennisapi.com/program">affiliate
       programme</a> pays 51% recurring for the lifetime of every subscription you refer,
       with 10% off for them.</p>
     </div>
   </noscript>
 
-<div class="docs-corner">
-  <a href="reference.html#quickstart" id="quickref">Quickstart (no code)</a>
-  <a href="reference.html" id="textref">Text reference (no JS)</a>
+<nav class="docs-corner" aria-label="Documentation">
+  <a href="reference.html#quickstart" id="quickref"><span class="lbl-full">Quickstart (no code)</span><span class="lbl-short">Quickstart</span></a>
+  <a href="reference.html" id="textref"><span class="lbl-full">Text reference (no JS)</span><span class="lbl-short">Text reference</span></a>
   <a href="https://affiliates.livetennisapi.com/program" id="afflink"
-     target="_blank" rel="noopener">Affiliate programme — 51% lifetime</a>
-</div>
+     target="_blank" rel="noopener"><span class="lbl-full">Affiliate programme — 51% lifetime</span><span class="lbl-short">Affiliates — 51%</span></a>
+</nav>
 
   <script
     id="api-reference"
     data-url="openapi.yaml"
-    data-configuration='{"theme":"purple","darkMode":true,"hideDownloadButton":false,"searchHotKey":"k","metaData":{"title":"Live Tennis API — API Reference"}}'>
+    data-configuration='{"theme":"none","darkMode":true,"forceDarkModeState":"dark","hideDarkModeToggle":true,"withDefaultFonts":false,"hideDownloadButton":false,"searchHotKey":"k","metaData":{"title":"Live Tennis API — API Reference"}}'>
   </script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
+  <!-- PINNED AND HASHED, deliberately.
+       This is 3.6 MB of third-party JavaScript executing on a page with a Bearer
+       token input. It used to load from the unversioned
+       `cdn.jsdelivr.net/npm/@scalar/api-reference`, which resolves to whatever
+       the maintainers published most recently — a silent, unreviewed code change
+       on a credential-handling page.
+
+       The URL below is the exact npm artifact for 1.63.0; its bytes were verified
+       against the registry tarball before the hash was taken, and the integrity
+       attribute pins them. Note it points at `dist/browser/standalone.js` rather
+       than the bare package path: the bare path serves a file jsDelivr minifies
+       on the fly, whose own header warns "Do NOT use SRI with dynamically
+       generated files" because it changes whenever their Terser does.
+
+       Upgrading = change the version, re-download that exact URL, and recompute:
+         openssl dgst -sha384 -binary <file> | openssl base64 -A -->
+  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.63.0/dist/browser/standalone.js"
+          integrity="sha384-PlviHlK3uCjxgh67enSuQJvyxdVZbaKHnN/6op5juN6/V2IPKFGbZ91TH/FZtSkU"
+          crossorigin="anonymous"></script>
   <script>
     // Remove the splash once Scalar has painted, and fall back to a plain link
-    // if the CDN is blocked so the page is never a dead end.
+    // if the CDN is blocked (or the integrity check rejects the file) so the
+    // page is never a dead end.
     (function () {
       var boot = document.getElementById('boot');
       var done = false;
@@ -147,11 +357,11 @@
         obs.disconnect();
         if (boot) {
           boot.innerHTML =
-            '<div style="text-align:center;max-width:44ch">' +
-            '<p style="color:#e6edf3">The interactive reference could not load.</p>' +
-            '<p><a style="color:#00ff41;font-size:1.05rem" href="reference.html">Read the full text reference</a></p>' +
-            '<p style="color:#84967e;font-size:.9rem">Or download the ' +
-            '<a style="color:#00ff41" href="openapi.yaml">OpenAPI spec</a>.</p>' +
+            '<div class="boot-fail">' +
+            '<p>The interactive reference could not load.</p>' +
+            '<p><a class="lead" href="reference.html">Read the full text reference</a></p>' +
+            '<p class="dim small">Or download the ' +
+            '<a href="openapi.yaml">OpenAPI spec</a>.</p>' +
             '</div>';
         }
       }, 8000);
