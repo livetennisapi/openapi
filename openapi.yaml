@@ -384,6 +384,20 @@ components:
         backhand: { type: [integer, "null"], enum: [1, 2, null] }
         birthday: { type: [string, "null"], format: date }
         is_doubles_team: { type: boolean }
+        data_completeness:
+          type: object
+          description: >-
+            How much biographical detail is known for this player, so a consumer
+            can distinguish "not in the feed" from "not yet fetched" without
+            probing. Present on every player in a match payload. Lower tours
+            carry far less of it than main tour.
+          properties:
+            known: { type: integer, description: Fields populated, of `of`. }
+            of: { type: integer, description: Fields considered. }
+            missing:
+              type: array
+              description: Names of the unpopulated fields, e.g. ["backhand", "hand"].
+              items: { type: string }
         stats:
           type: object
           description: Single-player endpoint only
