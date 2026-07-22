@@ -375,7 +375,15 @@ components:
       properties:
         id: { type: integer }
         name: { type: string }
-        tour: { type: [string, "null"] }
+        tour:
+          type: [string, "null"]
+          description: >-
+            The record's OWN tour, which is NOT the `tour` filter vocabulary.
+            It is granular (`juniors_boys`, `juniors_girls`, `challenger_men`)
+            where the filter is grouped (`juniors`, `challenger`), and a doubles
+            team reports it UPPERCASE (`ATP`) where an individual reports
+            lowercase (`atp`). Treat it as an opaque string; do not parse it into
+            the filter enum.
         country: { type: [string, "null"] }
         ranking: { type: [integer, "null"] }
         ranking_points: { type: [integer, "null"] }
@@ -392,12 +400,25 @@ components:
             probing. Present on every player in a match payload. Lower tours
             carry far less of it than main tour.
           properties:
-            known: { type: integer, description: Fields populated, of `of`. }
-            of: { type: integer, description: Fields considered. }
+            known:
+              type: [integer, "null"]
+              description: >-
+                Fields populated, of `of`. NULL on a doubles team, where
+                per-player biography does not apply — distinct from `0`, which
+                means the fields apply and none are known. Do not decode this
+                into a non-nullable integer.
+            of:
+              type: [integer, "null"]
+              description: Fields considered. NULL on a doubles team, as for `known`.
             missing:
               type: array
               description: Names of the unpopulated fields, e.g. ["backhand", "hand"].
               items: { type: string }
+            note:
+              type: string
+              description: >-
+                Present only when the object is not applicable, explaining why
+                (e.g. a doubles team).
         stats:
           type: object
           description: Single-player endpoint only
@@ -504,7 +525,15 @@ components:
       properties:
         id: { type: integer }
         event_date: { type: [string, "null"], format: date }
-        tour: { type: [string, "null"] }
+        tour:
+          type: [string, "null"]
+          description: >-
+            The record's OWN tour, which is NOT the `tour` filter vocabulary.
+            It is granular (`juniors_boys`, `juniors_girls`, `challenger_men`)
+            where the filter is grouped (`juniors`, `challenger`), and a doubles
+            team reports it UPPERCASE (`ATP`) where an individual reports
+            lowercase (`atp`). Treat it as an opaque string; do not parse it into
+            the filter enum.
         tournament: { type: [string, "null"] }
         round: { type: [string, "null"] }
         surface: { type: [string, "null"] }
