@@ -620,10 +620,16 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 
 <h2 id="websocket">WebSocket feed (ULTRA)</h2>
 <p>A native WebSocket live feed is available at <code>{E(base)}/ws</code>. Subscribe with
-<code>{{"action":"subscribe","topics":["live-scores"]}}</code> or
-<code>{{"action":"subscribe","topics":["match:&lt;id&gt;"]}}</code>. The server acknowledges with a
+<code>{{"topics":["live-scores"]}}</code> or
+<code>{{"topics":["match:&lt;id&gt;"]}}</code>. The server acknowledges with a
 <code>subscribed</code> frame, then pushes <code>score</code> frames on every change plus a
 <code>ping</code> heartbeat roughly every 15 seconds.</p>
+<p>Opt into extra signals by adding a <code>signals</code> array to the subscribe frame —
+<code>{{"topics":["live-scores"],"signals":["break_point"]}}</code> — to also receive a
+<code>break_point</code> frame the instant a break point arises and a
+<code>break_point_result</code> frame when it resolves. Their shapes are the
+<code>BreakPoint</code> and <code>BreakPointResult</code> schemas below. Without
+<code>signals</code> the feed pushes <code>score</code> frames only, exactly as before.</p>
 
 <h2 id="schemas">Schemas</h2>
 {schema_html}

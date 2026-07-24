@@ -8,6 +8,13 @@ removing a field or changing its type would require `v2`.
 ## [Unreleased]
 
 ### Added
+- **WebSocket break-point signals.** The `/ws` subscribe frame now documents an
+  optional `signals` array; naming `break_point` opts the connection into two new
+  frames — `break_point` (schema `BreakPoint`) the instant a break point arises
+  and `break_point_result` (schema `BreakPointResult`) when it resolves. Both are
+  ULTRA-only and purely additive: an existing subscriber that sends no `signals`
+  sees exactly the frames it saw before. Documented in `info.description`, the
+  two new component schemas, and the rendered reference.
 - **FREE tier.** Self-serve with no card at <https://livetennisapi.com/subscribe/free>
   (30 req/min, 1,000 req/day). Covers live and upcoming matches, scores, players and
   fixtures — the six endpoints now tagged `(FREE)` in their summary. Purely additive:

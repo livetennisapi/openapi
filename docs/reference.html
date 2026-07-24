@@ -197,9 +197,12 @@ WebSocket feed need ULTRA. A call above your tier returns
 <code>403 {&quot;error&quot;:&quot;upgrade_required&quot;}</code>.</p><p>All timestamps are UTC ISO 8601 with a <code>Z</code> suffix. List endpoints return
 <code>{data, meta}</code>; single resources return the object directly. Ignore
 unknown fields — additive changes land within v1.</p><p>A native WebSocket live feed (ULTRA) exists at <code>/ws</code> under the same base
-URL — see the API documentation for the frame protocol (subscribe with
-<code>{&quot;action&quot;:&quot;subscribe&quot;,&quot;topics&quot;:[&quot;live-scores&quot;]}</code>; server pushes
-<code>score</code> frames + <code>ping</code> heartbeats).
+URL. Subscribe with <code>{&quot;topics&quot;:[&quot;live-scores&quot;]}</code> (or <code>&quot;match:&lt;id&gt;&quot;</code>); the
+server acks with a <code>subscribed</code> frame, then pushes <code>score</code> frames on every
+change plus a <code>ping</code> heartbeat roughly every 15s. Opt into extra signals
+with <code>{&quot;topics&quot;:[&quot;live-scores&quot;],&quot;signals&quot;:[&quot;break_point&quot;]}</code> to also receive
+<code>break_point</code> and <code>break_point_result</code> frames (schemas <code>BreakPoint</code> /
+<code>BreakPointResult</code>). Without <code>signals</code>, score frames only.
 </p>
 
 <h2 id="quickstart">Quickstart — no code required</h2>
@@ -323,7 +326,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <p class="meta">Plan required: <strong>—</strong> &middot; operationId: <code>getMatchScore</code></p>
 <h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/score parameters"><table><caption class="vh">GET /matches/{matchId}/score — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr></tbody></table></div>
 <h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/score responses"><table><caption class="vh">GET /matches/{matchId}/score — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Current score (ULTRA adds win_probability_p1 + danger)</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present)</td></tr></tbody></table></div>
-<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/score response fields"><table><caption class="vh">GET /matches/{matchId}/score — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>sets</code></td><td>array of integer</td><td></td></tr><tr><td><code>games</code></td><td>array of array of integer</td><td>[games_p1, games_p2]; each a per-set list</td></tr><tr><td><code>points</code></td><td>array of string</td><td></td></tr><tr><td><code>server</code></td><td>integer or null (1, 2, null)</td><td></td></tr><tr><td><code>is_tiebreak</code></td><td>boolean</td><td></td></tr><tr><td><code>win_probability_p1</code></td><td>number or null</td><td></td></tr><tr><td><code>danger</code></td><td>number or null</td><td></td></tr><tr><td><code>timestamp</code></td><td>string or null</td><td></td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/score response fields"><table><caption class="vh">GET /matches/{matchId}/score — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>sets</code></td><td>array of integer</td><td></td></tr><tr><td><code>games</code></td><td>array of array of integer</td><td>[games_p1, games_p2]; each a per-set list</td></tr><tr><td><code>points</code></td><td>array of string or null</td><td>In-game points as tennis strings (&quot;0&quot;, &quot;15&quot;, &quot;40&quot;, &quot;AD&quot;). Entries can be NULL — observed live on completed matches, which also carry empty games arrays. Do not decode into non-nullable strings.</td></tr><tr><td><code>server</code></td><td>integer or null (1, 2, null)</td><td></td></tr><tr><td><code>is_tiebreak</code></td><td>boolean</td><td></td></tr><tr><td><code>win_probability_p1</code></td><td>number or null</td><td></td></tr><tr><td><code>danger</code></td><td>number or null</td><td></td></tr><tr><td><code>timestamp</code></td><td>string or null</td><td></td></tr></tbody></table></div>
 <h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/matches/18953/score \
   -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
 </section>
@@ -363,7 +366,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <p class="meta">Plan required: <strong>—</strong> &middot; operationId: <code>getPlayer</code></p>
 <h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId} parameters"><table><caption class="vh">GET /players/{playerId} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>playerId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr></tbody></table></div>
 <h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId} responses"><table><caption class="vh">GET /players/{playerId} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Player with <code>stats</code> ({ratings, season})</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present)</td></tr></tbody></table></div>
-<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId} response fields"><table><caption class="vh">GET /players/{playerId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>integer</td><td></td></tr><tr><td><code>name</code></td><td>string</td><td></td></tr><tr><td><code>tour</code></td><td>string or null</td><td></td></tr><tr><td><code>country</code></td><td>string or null</td><td></td></tr><tr><td><code>ranking</code></td><td>integer or null</td><td></td></tr><tr><td><code>ranking_points</code></td><td>integer or null</td><td></td></tr><tr><td><code>ranking_movement</code></td><td>string or null (up, down, same, null)</td><td></td></tr><tr><td><code>hand</code></td><td>string or null (R, L, null)</td><td></td></tr><tr><td><code>backhand</code></td><td>integer or null (1, 2, null)</td><td></td></tr><tr><td><code>birthday</code></td><td>string or null</td><td></td></tr><tr><td><code>is_doubles_team</code></td><td>boolean</td><td></td></tr><tr><td><code>stats</code></td><td>object</td><td>Single-player endpoint only</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId} response fields"><table><caption class="vh">GET /players/{playerId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>integer</td><td></td></tr><tr><td><code>name</code></td><td>string</td><td></td></tr><tr><td><code>tour</code></td><td>string or null</td><td>The record&#x27;s OWN tour, which is NOT the <code>tour</code> filter vocabulary. It is granular (<code>juniors_boys</code>, <code>juniors_girls</code>, <code>challenger_men</code>) where the filter is grouped (<code>juniors</code>, <code>challenger</code>), and a doubles team reports it UPPERCASE (<code>ATP</code>) where an individual reports lowercase (<code>atp</code>). Treat it as an opaque string; do not parse it into the filter enum.</td></tr><tr><td><code>country</code></td><td>string or null</td><td></td></tr><tr><td><code>ranking</code></td><td>integer or null</td><td></td></tr><tr><td><code>ranking_points</code></td><td>integer or null</td><td></td></tr><tr><td><code>ranking_movement</code></td><td>string or null (up, down, same, null)</td><td></td></tr><tr><td><code>hand</code></td><td>string or null (R, L, null)</td><td></td></tr><tr><td><code>backhand</code></td><td>integer or null (1, 2, null)</td><td></td></tr><tr><td><code>birthday</code></td><td>string or null</td><td></td></tr><tr><td><code>is_doubles_team</code></td><td>boolean</td><td></td></tr><tr><td><code>data_completeness</code></td><td>object</td><td>How much biographical detail is known for this player, so a consumer can distinguish &quot;not in the feed&quot; from &quot;not yet fetched&quot; without probing. Present on every player in a match payload. Lower tours carry far less of it than main tour.</td></tr><tr><td><code>stats</code></td><td>object</td><td>Single-player endpoint only</td></tr></tbody></table></div>
 <h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/players/1104 \
   -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
 </section>
@@ -410,10 +413,16 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 
 <h2 id="websocket">WebSocket feed (ULTRA)</h2>
 <p>A native WebSocket live feed is available at <code>https://api.livetennisapi.com/api/public/v1/ws</code>. Subscribe with
-<code>{"action":"subscribe","topics":["live-scores"]}</code> or
-<code>{"action":"subscribe","topics":["match:&lt;id&gt;"]}</code>. The server acknowledges with a
+<code>{"topics":["live-scores"]}</code> or
+<code>{"topics":["match:&lt;id&gt;"]}</code>. The server acknowledges with a
 <code>subscribed</code> frame, then pushes <code>score</code> frames on every change plus a
 <code>ping</code> heartbeat roughly every 15 seconds.</p>
+<p>Opt into extra signals by adding a <code>signals</code> array to the subscribe frame —
+<code>{"topics":["live-scores"],"signals":["break_point"]}</code> — to also receive a
+<code>break_point</code> frame the instant a break point arises and a
+<code>break_point_result</code> frame when it resolves. Their shapes are the
+<code>BreakPoint</code> and <code>BreakPointResult</code> schemas below. Without
+<code>signals</code> the feed pushes <code>score</code> frames only, exactly as before.</p>
 
 <h2 id="schemas">Schemas</h2>
 <section id="schema-error">
@@ -434,7 +443,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <div class="scrollx" tabindex="0" role="region" aria-label="Score fields"><table><caption class="vh">Score schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
 <tbody><tr><td><code>sets</code></td><td>array of integer</td><td></td></tr>
 <tr><td><code>games</code></td><td>array of array of integer</td><td>[games_p1, games_p2]; each a per-set list</td></tr>
-<tr><td><code>points</code></td><td>array of string</td><td></td></tr>
+<tr><td><code>points</code></td><td>array of string or null</td><td>In-game points as tennis strings (&quot;0&quot;, &quot;15&quot;, &quot;40&quot;, &quot;AD&quot;). Entries can be NULL — observed live on completed matches, which also carry empty games arrays. Do not decode into non-nullable strings.</td></tr>
 <tr><td><code>server</code></td><td>integer or null (1, 2, null)</td><td></td></tr>
 <tr><td><code>is_tiebreak</code></td><td>boolean</td><td></td></tr>
 <tr><td><code>win_probability_p1</code></td><td>number or null</td><td></td></tr>
@@ -446,7 +455,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <div class="scrollx" tabindex="0" role="region" aria-label="Player fields"><table><caption class="vh">Player schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
 <tbody><tr><td><code>id</code></td><td>integer</td><td></td></tr>
 <tr><td><code>name</code></td><td>string</td><td></td></tr>
-<tr><td><code>tour</code></td><td>string or null</td><td></td></tr>
+<tr><td><code>tour</code></td><td>string or null</td><td>The record&#x27;s OWN tour, which is NOT the <code>tour</code> filter vocabulary. It is granular (<code>juniors_boys</code>, <code>juniors_girls</code>, <code>challenger_men</code>) where the filter is grouped (<code>juniors</code>, <code>challenger</code>), and a doubles team reports it UPPERCASE (<code>ATP</code>) where an individual reports lowercase (<code>atp</code>). Treat it as an opaque string; do not parse it into the filter enum.</td></tr>
 <tr><td><code>country</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>ranking</code></td><td>integer or null</td><td></td></tr>
 <tr><td><code>ranking_points</code></td><td>integer or null</td><td></td></tr>
@@ -455,6 +464,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <tr><td><code>backhand</code></td><td>integer or null (1, 2, null)</td><td></td></tr>
 <tr><td><code>birthday</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>is_doubles_team</code></td><td>boolean</td><td></td></tr>
+<tr><td><code>data_completeness</code></td><td>object</td><td>How much biographical detail is known for this player, so a consumer can distinguish &quot;not in the feed&quot; from &quot;not yet fetched&quot; without probing. Present on every player in a match payload. Lower tours carry far less of it than main tour.</td></tr>
 <tr><td><code>stats</code></td><td>object</td><td>Single-player endpoint only</td></tr></tbody></table></div>
 </section>
 <section id="schema-match">
@@ -532,13 +542,41 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <div class="scrollx" tabindex="0" role="region" aria-label="Fixture fields"><table><caption class="vh">Fixture schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
 <tbody><tr><td><code>id</code></td><td>integer</td><td></td></tr>
 <tr><td><code>event_date</code></td><td>string or null</td><td></td></tr>
-<tr><td><code>tour</code></td><td>string or null</td><td></td></tr>
+<tr><td><code>tour</code></td><td>string or null</td><td>The record&#x27;s OWN tour, which is NOT the <code>tour</code> filter vocabulary. It is granular (<code>juniors_boys</code>, <code>juniors_girls</code>, <code>challenger_men</code>) where the filter is grouped (<code>juniors</code>, <code>challenger</code>), and a doubles team reports it UPPERCASE (<code>ATP</code>) where an individual reports lowercase (<code>atp</code>). Treat it as an opaque string; do not parse it into the filter enum.</td></tr>
 <tr><td><code>tournament</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>round</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>surface</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>player1_name</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>player2_name</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>status</code></td><td>string or null</td><td></td></tr></tbody></table></div>
+</section>
+<section id="schema-breakpoint">
+<h3>BreakPoint</h3>
+<p>WebSocket <code>break_point</code> frame (ULTRA). Pushed the instant a break point arises, but only when the subscription named <code>break_point</code> in its <code>signals</code>. Fields sit inline (no nested score object); <code>prob_swing</code> mirrors the REST score&#x27;s <code>danger</code>. <code>server</code> is the player serving, <code>returner</code> the one holding the break point(s).</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="BreakPoint fields"><table><caption class="vh">BreakPoint schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>type</code></td><td>string</td><td></td></tr>
+<tr><td><code>match_id</code></td><td>integer</td><td></td></tr>
+<tr><td><code>server</code></td><td>integer or null (1, 2, null)</td><td></td></tr>
+<tr><td><code>returner</code></td><td>integer or null (1, 2, null)</td><td></td></tr>
+<tr><td><code>break_points</code></td><td>integer or null</td><td>How many break points are live at once (1-3).</td></tr>
+<tr><td><code>set</code></td><td>integer or null</td><td></td></tr>
+<tr><td><code>game</code></td><td>integer or null</td><td></td></tr>
+<tr><td><code>point</code></td><td>string or null</td><td></td></tr>
+<tr><td><code>win_probability_p1</code></td><td>number or null</td><td></td></tr>
+<tr><td><code>prob_swing</code></td><td>number or null</td><td></td></tr>
+<tr><td><code>server_side_favoured</code></td><td>boolean or null</td><td></td></tr>
+<tr><td><code>ts</code></td><td>string or null</td><td></td></tr></tbody></table></div>
+</section>
+<section id="schema-breakpointresult">
+<h3>BreakPointResult</h3>
+<p>WebSocket <code>break_point_result</code> frame (ULTRA): a break point just resolved. <code>outcome</code> is <code>held</code> (server saved it) or <code>broken</code> (returner converted); <code>win_probability_p1_after</code> is p1&#x27;s win probability once the game closed.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="BreakPointResult fields"><table><caption class="vh">BreakPointResult schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>type</code></td><td>string</td><td></td></tr>
+<tr><td><code>match_id</code></td><td>integer</td><td></td></tr>
+<tr><td><code>server</code></td><td>integer or null (1, 2, null)</td><td></td></tr>
+<tr><td><code>outcome</code></td><td>string (held, broken)</td><td></td></tr>
+<tr><td><code>win_probability_p1_after</code></td><td>number or null</td><td></td></tr>
+<tr><td><code>ts</code></td><td>string or null</td><td></td></tr></tbody></table></div>
 </section>
 
 </main>
