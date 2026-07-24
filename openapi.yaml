@@ -364,7 +364,11 @@ components:
             items: { type: integer }
         points:
           type: array
-          items: { type: string }
+          description: >-
+            In-game points as tennis strings ("0", "15", "40", "AD"). Entries
+            can be NULL — observed live on completed matches, which also carry
+            empty games arrays. Do not decode into non-nullable strings.
+          items: { type: [string, "null"] }
         server: { type: [integer, "null"], enum: [1, 2, null] }
         is_tiebreak: { type: boolean }
         win_probability_p1: { type: [number, "null"] }
