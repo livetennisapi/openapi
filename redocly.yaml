@@ -14,6 +14,11 @@ rules:
   # operation's 4xx coverage is enforced by the contract test in CI, which
   # asserts a documented 401 on all authenticated operations.
   operation-4xx-response: off
+  # The WebSocket frame schemas (BreakPoint, BreakPointResult) are documented
+  # here for machine-readability and rendered into the reference, but OpenAPI
+  # has no path to model a WebSocket message, so nothing $refs them. That is
+  # deliberate, not dead weight.
+  no-unused-components: off
   # Enforced: these are what the SDKs and the docs site depend on.
   operation-operationId: error
   operation-operationId-unique: error

@@ -26,9 +26,12 @@ info:
     unknown fields — additive changes land within v1.
 
     A native WebSocket live feed (ULTRA) exists at `/ws` under the same base
-    URL — see the API documentation for the frame protocol (subscribe with
-    `{"action":"subscribe","topics":["live-scores"]}`; server pushes
-    `score` frames + `ping` heartbeats).
+    URL. Subscribe with `{"topics":["live-scores"]}` (or `"match:<id>"`); the
+    server acks with a `subscribed` frame, then pushes `score` frames on every
+    change plus a `ping` heartbeat roughly every 15s. Opt into extra signals
+    with `{"topics":["live-scores"],"signals":["break_point"]}` to also receive
+    `break_point` and `break_point_result` frames (schemas `BreakPoint` /
+    `BreakPointResult`). Without `signals`, score frames only.
 servers:
   - url: https://api.livetennisapi.com/api/public/v1
 security:
@@ -544,3 +547,40 @@ components:
         player1_name: { type: [string, "null"] }
         player2_name: { type: [string, "null"] }
         status: { type: [string, "null"] }
+    BreakPoint:
+      type: object
+      description: >-
+        WebSocket `break_point` frame (ULTRA). Pushed the instant a break point
+        arises, but only when the subscription named `break_point` in its
+        `signals`. Fields sit inline (no nested score object); `prob_swing`
+        mirrors the REST score's `danger`. `server` is the player serving,
+        `returner` the one holding the break point(s).
+      properties:
+        type: { type: string, const: break_point }
+        match_id: { type: integer }
+        server: { type: [integer, "null"], enum: [1, 2, null] }
+        returner: { type: [integer, "null"], enum: [1, 2, null] }
+        break_points:
+          type: [integer, "null"]
+          description: How many break points are live at once (1-3).
+        set: { type: [integer, "null"] }
+        game: { type: [integer, "null"] }
+        point: { type: [string, "null"] }
+        win_probability_p1: { type: [number, "null"] }
+        prob_swing: { type: [number, "null"] }
+        server_side_favoured: { type: [boolean, "null"] }
+        ts: { type: [string, "null"], format: date-time }
+    BreakPointResult:
+      type: object
+      description: >-
+        WebSocket `break_point_result` frame (ULTRA): a break point just
+        resolved. `outcome` is `held` (server saved it) or `broken` (returner
+        converted); `win_probability_p1_after` is p1's win probability once the
+        game closed.
+      properties:
+        type: { type: string, const: break_point_result }
+        match_id: { type: integer }
+        server: { type: [integer, "null"], enum: [1, 2, null] }
+        outcome: { type: string, enum: [held, broken] }
+        win_probability_p1_after: { type: [number, "null"] }
+        ts: { type: [string, "null"], format: date-time }
