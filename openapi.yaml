@@ -11,15 +11,43 @@ info:
   termsOfService: https://livetennisapi.com/terms
   description: |
     Real-time tennis scores, player data, match-winner market prices, and
-    model-driven match analysis. Read-only.
+    model-driven match analysis. Read-only. Coverage is every tour equally:
+    ATP, WTA, Challenger, ITF and the junior Grand Slam draws.
 
-    Access is tiered (FREE / BASIC / PRO / ULTRA). FREE is self-serve with no
-    card (https://livetennisapi.com/subscribe/free, 1000 requests/day) and
-    covers live and upcoming matches, scores, players and fixtures; historical
-    results need BASIC; match events and market prices need PRO; model
-    analysis, live model fields (`win_probability_p1`, `danger`) and the
-    WebSocket feed need ULTRA. A call above your tier returns
-    `403 {"error":"upgrade_required"}`.
+    Access is tiered (FREE / BASIC / PRO / ULTRA). Each tier includes
+    everything in the tiers below it; the concrete deltas are:
+
+    `FREE` — self-serve, no card (https://livetennisapi.com/subscribe/free).
+    Live and upcoming matches, current scores, players, fixtures, and your own
+    usage stats. 30 requests/minute, 1,000/day. No historical results, no
+    market prices, no model fields, no WebSocket.
+
+    `BASIC` — adds historical data: the completed-match listing
+    (`/history/matches`, and `status=completed` on `/matches`) and the
+    per-match point-by-point tape with the per-point model win-probability
+    (`/history/matches/{matchId}`). 60 requests/minute, 10,000/day.
+
+    `PRO` — adds match events (`/matches/{matchId}/events`), market prices
+    (`/markets`, `/markets/{matchId}/prices`) and the pre-built monthly bulk
+    history packages (`/history/packages`). 300 requests/minute, 100,000/day.
+
+    `ULTRA` — adds model analysis (`/matches/{matchId}/analysis`), the live
+    model fields (`win_probability_p1`, `danger`) on every score object, the
+    WebSocket push feed at `/ws`, and outbound webhooks (direct keys).
+    600 requests/minute, 500,000/day.
+
+    A call above your tier returns `403 {"error":"upgrade_required"}` — never
+    a silent empty result.
+
+    The `/history/*` endpoints are also sold standalone as the **Historical
+    Data API** (no live-API subscription required): **Starter** — single-match
+    point-by-point tape reads via the API (tape plus the model win-probability
+    per point), all tours (ATP/WTA/Challenger/ITF), one match per request, no
+    bulk downloads; **Pro** — everything in Starter plus bulk monthly package
+    downloads and higher rate limits; **Business** — everything in Pro plus
+    year-scale archive exports, top rate limits and priority support. One-off
+    1-month and 1-year access passes are available without a subscription.
+    Plans and prices: https://livetennisapi.com/historical-tennis-data-api
 
     All timestamps are UTC ISO 8601 with a `Z` suffix. List endpoints return
     `{data, meta}`; single resources return the object directly. Ignore
@@ -56,10 +84,18 @@ paths:
   /matches:
     get:
       summary: List matches by lifecycle status (FREE)
+      description: >-
+        `status=live` and `status=upcoming` are the FREE current-state picture.
+        `status=completed` pages historical results and is part of the paid
+        History product — it requires BASIC (the same rule as
+        `/history/matches`) and returns `403 upgrade_required` on a FREE key.
       operationId: listMatches
       parameters:
         - name: status
           in: query
+          description: >-
+            `live` (default) and `upcoming` are FREE; `completed` requires
+            BASIC — paging completed results is the history surface.
           schema: { type: string, enum: [live, upcoming, completed], default: live }
         - $ref: "#/components/parameters/tour"
         - $ref: "#/components/parameters/limit"
@@ -238,10 +274,16 @@ paths:
   /history/matches:
     get:
       summary: Completed matches, newest first, with derived winner (BASIC)
+      description: >-
+        Requires BASIC on the live API, or any Historical Data API plan
+        (Starter and up — see https://livetennisapi.com/historical-tennis-data-api).
+        All tours. Filter to a date range with `from`/`to`.
       operationId: listCompletedMatches
       parameters:
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/playedFrom"
+        - $ref: "#/components/parameters/playedTo"
       responses:
         "200":
           description: Completed matches (`winner` = 1|2|null, from final sets)
@@ -254,7 +296,96 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/Match" }
                   meta: { $ref: "#/components/schemas/ListMeta" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/matches/{matchId}:
+    get:
+      summary: Full point-by-point tape for one match, with per-point model win-probability (BASIC)
+      description: >-
+        The complete chronological tape of a completed match — every recorded
+        score row including the model fields `win_probability_p1` and `danger`
+        at that point — plus match metadata and the model profiles produced
+        during the match. The model fields here are part of the paid History
+        product by design, distinct from the ULTRA-gated LIVE model fields.
+        One match per request. Requires BASIC on the live API, or the
+        Historical Data API Starter plan and up.
+      operationId: getMatchTape
+      parameters: [ { $ref: "#/components/parameters/matchId" } ]
+      responses:
+        "200":
+          description: The full tape (`match` + `tape` + `profiles` + `meta`)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HistoryTape" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/packages:
+    get:
+      summary: List the pre-built monthly bulk history packages (PRO)
+      description: >-
+        Bulk downloads are a heavier product than single-match tape reads.
+        Requires PRO on the live API, or the Historical Data API Pro plan and
+        up, or a one-off package access pass. A key that can read the tape but
+        is not package-entitled receives `403 upgrade_required`.
+      operationId: listHistoryPackages
+      responses:
+        "200":
+          description: Ready packages, newest month first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/HistoryPackage" }
+                  meta:
+                    type: object
+                    properties:
+                      count: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/packages/{period}:
+    get:
+      summary: One monthly package — manifest, or the bulk file itself (PRO)
+      description: >-
+        Without `format` returns the package manifest (file set, counts,
+        sha256). With `format=jsonl` or `format=csv` streams that file as an
+        attachment. Same entitlement as `/history/packages`. 404 when the
+        month has not been built yet — list available months first.
+      operationId: getHistoryPackage
+      parameters:
+        - name: period
+          in: path
+          required: true
+          description: Calendar month, `YYYY-MM`.
+          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+        - name: format
+          in: query
+          required: false
+          description: Omit for the JSON manifest; set to download the file.
+          schema: { type: string, enum: [jsonl, csv] }
+      responses:
+        "200":
+          description: >-
+            The manifest (no `format`), or the bulk file as an attachment
+            (`format=jsonl` streams NDJSON, `format=csv` streams CSV).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HistoryPackage" }
+            application/x-ndjson:
+              schema: { type: string, format: binary }
+            text/csv:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /fixtures:
     get:
@@ -302,6 +433,23 @@ components:
       name: offset
       in: query
       schema: { type: integer, default: 0, minimum: 0 }
+    playedFrom:
+      name: from
+      in: query
+      required: false
+      description: >-
+        Earliest play date, `YYYY-MM-DD` or an ISO-8601 UTC datetime. A bare
+        date covers that whole day. An unparseable value is a 400, never a
+        silently unfiltered 200.
+      schema: { type: string }
+    playedTo:
+      name: to
+      in: query
+      required: false
+      description: >-
+        Latest play date, same formats as `from` (a bare date includes
+        everything played that day). `from` after `to` is a 400.
+      schema: { type: string }
     tour:
       name: tour
       in: query
@@ -547,6 +695,70 @@ components:
         player1_name: { type: [string, "null"] }
         player2_name: { type: [string, "null"] }
         status: { type: [string, "null"] }
+    ModelProfile:
+      type: object
+      description: >-
+        One model win-probability profile. On the history tape these are the
+        profiles produced during the match, oldest first.
+      properties:
+        win_probability_p1: { type: [number, "null"] }
+        expected_closeness: { type: [number, "null"] }
+        volatility_rating: { type: [string, "null"], enum: [low, med, high, null] }
+        key_factors: { type: [array, "null"], items: { type: string } }
+        created_at: { type: [string, "null"], format: date-time }
+    HistoryTape:
+      type: object
+      description: >-
+        The full per-match history tape (BASIC, or Historical Data API
+        Starter+). `tape` rows are Score objects and INCLUDE the model fields
+        `win_probability_p1` and `danger` per point — on this product they are
+        part of the tape itself, not an ULTRA upsell.
+      properties:
+        match:
+          $ref: "#/components/schemas/Match"
+          description: Match metadata with the final score embedded.
+        tape:
+          type: array
+          description: Chronological score rows, one per recorded point state.
+          items: { $ref: "#/components/schemas/Score" }
+        profiles:
+          type: array
+          description: Model profiles produced during the match, oldest first.
+          items: { $ref: "#/components/schemas/ModelProfile" }
+        meta:
+          type: object
+          properties:
+            match_id: { type: integer }
+            rows: { type: integer }
+            from_archive:
+              type: boolean
+              description: >-
+                True when the tape was served from the immutable archive
+                rather than the live-score table. Content is identical.
+            generated_at: { type: string, format: date-time }
+    HistoryPackage:
+      type: object
+      description: >-
+        Manifest of one pre-built monthly bulk package (PRO, Historical Data
+        API Pro+, or a one-off package pass).
+      properties:
+        period:
+          type: string
+          description: Calendar month, `YYYY-MM`.
+        status: { type: string, enum: [ready] }
+        match_count: { type: integer }
+        row_count: { type: integer }
+        files:
+          type: array
+          description: One entry per downloadable format.
+          items:
+            type: object
+            properties:
+              format: { type: string, enum: [jsonl, csv] }
+              filename: { type: string }
+              bytes: { type: integer }
+              sha256: { type: string }
+        built_at: { type: [string, "null"], format: date-time }
     BreakPoint:
       type: object
       description: >-
