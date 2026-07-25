@@ -42,4 +42,14 @@ removing a field or changing its type would require `v2`.
 - Rendered reference published to <https://docs.livetennisapi.com>.
 
 ### Changed
+- **Rendered reference: correct plan labels + plans/FAQ pages.** The tier
+  parser labelled `GET /matches/{matchId}` as ULTRA (highest-tier-wins scan
+  over "(FREE; +market PRO, +analysis ULTRA)") and did not recognise FREE at
+  all, so every FREE endpoint showed "Plan required: —". It now takes the
+  first tier named. The Plans section gained the FREE row, per-tier daily
+  caps, the standalone Historical Data API plans (Starter / Pro / Business /
+  one-off passes), the Break-point Alerts plans (Free vs Pro), and a FAQ
+  ("How much data can I access on each plan?", "How far back does history
+  go?", "What's in the point-by-point tape?"). Operation descriptions are now
+  rendered, and `llms.txt` mirrors all of it.
 - `info.title` is now `Live Tennis API`, matching the product name.

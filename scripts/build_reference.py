@@ -103,11 +103,17 @@ def resolve(node: Any, spec: dict[str, Any], _seen: frozenset[str] = frozenset()
 
 
 def tier_of(summary: str) -> str:
-    """Read the plan out of the operation summary, e.g. '… (PRO)' -> 'PRO'."""
-    for tier in ("ULTRA", "PRO", "BASIC"):
-        if tier in (summary or ""):
-            return tier
-    return "—"
+    """Read the plan out of the operation summary, e.g. '… (PRO)' -> 'PRO'.
+
+    The FIRST tier named is the plan that unlocks the endpoint; later mentions
+    are embed upsells ("(FREE; +market PRO, +analysis ULTRA)"). The old
+    highest-tier-wins scan labelled that summary ULTRA — telling a FREE user
+    the match-detail endpoint was locked four tiers up — and did not know FREE
+    existed at all, so every FREE endpoint rendered "Plan required: —".
+    """
+    hits = [(summary.find(t), t) for t in ("FREE", "BASIC", "PRO", "ULTRA")
+            if summary and t in summary]
+    return min(hits)[1] if hits else "—"
 
 
 def type_of(schema: dict[str, Any]) -> str:
@@ -245,6 +251,13 @@ def render_operation(path: str, method: str, op: dict[str, Any], spec: dict[str,
         + (f' &middot; operationId: <code>{E(op_id)}</code>' if op_id else "")
         + "</p>",
     ]
+
+    # The description is where an operation says WHICH plan unlocks what
+    # (e.g. the History endpoints' live-API tier vs Historical Data API plan
+    # mapping). Dropping it silently un-documented the tier deltas.
+    description = op.get("description", "")
+    if description:
+        parts.append(f"<p>{md_inline(description)}</p>")
 
     params = [resolve(p, spec) for p in op.get("parameters", [])]
     if params:
@@ -532,6 +545,7 @@ answer engines and any HTTP client.</p>
 <li><a href="#conventions">Conventions</a></li>
 <li><a href="#endpoints">Endpoints</a> — all {len(toc)}, with parameters and responses</li>
 <li><a href="#websocket">WebSocket feed (ULTRA)</a></li>
+<li><a href="#faq">FAQ — plans and data depth</a></li>
 <li><a href="#schemas">Schemas</a></li>
 </ul>
 </nav>
@@ -579,16 +593,41 @@ headers, so prefer a header for anything automated or shared. For trying the API
 clicking a link is the fastest route and that trade-off is fine.</p>
 
 <h2 id="plans">Plans</h2>
+<p>Every plan includes everything in the plans below it. The table shows the
+<strong>delta</strong> — exactly what each upgrade adds, and the request budget you get.</p>
 <div class="scrollx" tabindex="0" role="region" aria-label="Plans and pricing">
-<table><caption class="vh">Plans — what each tier unlocks, its rate limit and price</caption>
-<thead><tr><th scope="col">Plan</th><th scope="col">Unlocks</th><th scope="col">Rate limit</th><th scope="col">Price</th></tr></thead><tbody>
-<tr><th scope="row">BASIC</th><td>Matches, scores, players, fixtures, history</td><td>60/min &middot; 10,000/day</td><td>$9.99/mo</td></tr>
-<tr><th scope="row">PRO</th><td>Adds match events and market prices</td><td>300/min &middot; 100,000/day</td><td>$29.99/mo</td></tr>
-<tr><th scope="row">ULTRA</th><td>Adds model analysis, <code>win_probability_p1</code>, <code>danger</code>, and the WebSocket feed</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
+<table><caption class="vh">Plans — what each tier adds over the one below, its rate limit and price</caption>
+<thead><tr><th scope="col">Plan</th><th scope="col">Adds</th><th scope="col">Rate limit</th><th scope="col">Price</th></tr></thead><tbody>
+<tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 1,000/day</td><td>$0 — no card</td></tr>
+<tr><th scope="row">BASIC</th><td>Historical data: the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match point-by-point tape with the model win-probability at every point (<code>/history/matches/{{matchId}}</code>).</td><td>60/min &middot; 10,000/day</td><td>$9.99/mo</td></tr>
+<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), and the pre-built monthly bulk history packages (<code>/history/packages</code>, JSONL/CSV).</td><td>300/min &middot; 100,000/day</td><td>$29.99/mo</td></tr>
+<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
 </tbody></table></div>
 <p class="scrollnote">The table above scrolls sideways.</p>
 <p>Calling an endpoint above your plan returns <code>403 {{"error":"upgrade_required"}}</code> —
 never a silent empty result. <a href="{SITE}/#pricing">See pricing</a>.</p>
+
+<h3 id="history-plans">Historical Data API — standalone plans</h3>
+<p>The <code>/history</code> endpoints are also sold on their own, without a live-API
+subscription:</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="Historical Data API plans">
+<table><caption class="vh">Historical Data API plans — what each adds</caption>
+<thead><tr><th scope="col">Plan</th><th scope="col">Adds</th></tr></thead><tbody>
+<tr><th scope="row">Starter</th><td>Single-match point-by-point tape reads via the API — the tape plus the model win-probability per point — for all tours (ATP, WTA, Challenger, ITF), one match per request. No bulk downloads.</td></tr>
+<tr><th scope="row">Pro</th><td>Everything in Starter, plus bulk monthly package downloads and higher rate limits.</td></tr>
+<tr><th scope="row">Business</th><td>Everything in Pro, plus year-scale archive exports, top rate limits and priority support.</td></tr>
+<tr><th scope="row">One-off passes</th><td>1-month and 1-year access passes, no subscription.</td></tr>
+</tbody></table></div>
+<p class="scrollnote">The table above scrolls sideways.</p>
+<p>Plans and prices: <a href="{SITE}/historical-tennis-data-api">{SITE}/historical-tennis-data-api</a>.</p>
+
+<h3 id="alerts-plans">Break-point Alerts — hosted alerts, no code</h3>
+<p>A hosted companion product that pushes break-point alerts to your channels
+(the same signal the ULTRA WebSocket <code>break_point</code> frame carries, without
+running a client). <strong>Free</strong>: high-swing break points only (probability swing
+&ge; 0.15), one delivery channel. <strong>Pro ($9.99/mo)</strong>: every break point — no
+swing floor — to unlimited channels: Telegram, Discord, email, SMS, WhatsApp.
+Details: <a href="{SITE}">livetennisapi.com</a>.</p>
 
 <h2 id="clients">Official client libraries</h2>
 <div class="scrollx" tabindex="0" role="region" aria-label="Official client libraries">
@@ -630,6 +669,37 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <code>break_point_result</code> frame when it resolves. Their shapes are the
 <code>BreakPoint</code> and <code>BreakPointResult</code> schemas below. Without
 <code>signals</code> the feed pushes <code>score</code> frames only, exactly as before.</p>
+
+<h2 id="faq">FAQ — plans and data depth</h2>
+
+<h3 id="faq-how-much">How much data can I access on each plan?</h3>
+<p><strong>FREE</strong> sees the current state of the game only — live and upcoming matches,
+scores, players and fixtures — at 1,000 requests/day. <strong>BASIC</strong> adds every
+completed match and its full point-by-point tape (with the model
+win-probability at every point), one match per request, at 10,000/day.
+<strong>PRO</strong> adds whole months of history in a single bulk file (JSONL or CSV),
+plus match events and market prices, at 100,000/day. <strong>ULTRA</strong> adds model
+analysis, the live model fields and the WebSocket push feed, at 500,000/day.
+Coverage is identical on every plan: all tours, ATP through ITF — the plans
+differ in which data products and volumes they unlock, never in which
+tournaments you see.</p>
+
+<h3 id="faq-how-far-back">How far back does history go?</h3>
+<p><code>/history/matches</code> pages every completed match on record, all tours, newest
+first — filter a window with <code>from</code>/<code>to</code>. Bulk packages are built per calendar
+month; <code>GET /history/packages</code> lists exactly which months are available right
+now, with match and row counts per month, and is always the authoritative
+answer. Year-scale archive exports are part of the Historical Data API
+Business plan.</p>
+
+<h3 id="faq-whats-in-tape">What's in the point-by-point tape?</h3>
+<p>One row per recorded point state, chronological: <code>sets</code>, per-set <code>games</code>,
+in-game <code>points</code>, the <code>server</code>, the tiebreak flag, and the model's
+<code>win_probability_p1</code> and <code>danger</code> at that exact point, each row timestamped.
+<code>GET /history/matches/{{matchId}}</code> returns it per match (shape
+<code>HistoryTape</code>: match metadata + tape + the model profiles produced during the
+match); the monthly bulk packages ship the same per-point rows for every
+completed match of the month.</p>
 
 <h2 id="schemas">Schemas</h2>
 {schema_html}
@@ -684,11 +754,35 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "The /health endpoint requires no key.",
         "",
         "## Plans",
-        "- BASIC ($9.99/mo) — matches, scores, players, fixtures, history. 60 req/min.",
-        "- PRO ($29.99/mo) — adds match events and market prices. 300 req/min.",
-        "- ULTRA ($99.99/mo) — adds model analysis, win probability and WebSocket. 600 req/min.",
+        "Every plan includes the plans below it. The concrete deltas:",
+        "- FREE ($0, no card) — live & upcoming matches, current scores, players, fixtures,",
+        "  usage stats. 30 req/min, 1,000 req/day. No history, no market prices, no model",
+        "  fields, no WebSocket.",
+        "- BASIC ($9.99/mo) — adds history: the completed-match listing and the per-match",
+        "  point-by-point tape with the model win-probability at every point.",
+        "  60 req/min, 10,000 req/day.",
+        "- PRO ($29.99/mo) — adds match events, market prices, and monthly bulk history",
+        "  packages (JSONL/CSV). 300 req/min, 100,000 req/day.",
+        "- ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,",
+        "  the WebSocket push feed and webhooks. 600 req/min, 500,000 req/day.",
         "",
-        "Calling above your plan returns 403 {\"error\":\"upgrade_required\"}.",
+        "Coverage is identical on every plan (all tours, ATP through ITF); plans differ in",
+        "which data products and volumes they unlock. Calling above your plan returns",
+        "403 {\"error\":\"upgrade_required\"}.",
+        "",
+        "## Historical Data API (standalone plans for the /history endpoints)",
+        "- Starter — single-match point-by-point tape reads (tape + model win-probability",
+        "  per point), all tours, one match per request. No bulk downloads.",
+        "- Pro — everything in Starter + bulk monthly package downloads + higher rate limits.",
+        "- Business — everything in Pro + year-scale archive exports + top rate limits +",
+        "  priority support.",
+        "- One-off passes — 1-month and 1-year access, no subscription.",
+        f"Prices: {SITE}/historical-tennis-data-api",
+        "",
+        "## Break-point Alerts (hosted alerts, no code)",
+        "- Free — high-swing break points only (probability swing >= 0.15), one delivery channel.",
+        "- Pro ($9.99/mo) — every break point (no swing floor), unlimited channels:",
+        "  Telegram, Discord, email, SMS, WhatsApp.",
         "",
         "## Endpoints",
     ]
@@ -696,6 +790,19 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         for method, op in methods.items():
             lines.append(f"- {method.upper()} {path} — {op.get('summary','')}")
     lines += [
+        "",
+        "## FAQ",
+        "How much data can I access on each plan? FREE = the current state only, 1,000",
+        "req/day. BASIC = + every completed match and its full point-by-point tape, one",
+        "match per request, 10,000/day. PRO = + whole months of history in one bulk file,",
+        "plus events and market prices, 100,000/day. ULTRA = + model analysis and live",
+        "push, 500,000/day.",
+        "How far back does history go? /history/matches pages every completed match on",
+        "record (filter with from/to); GET /history/packages lists exactly which monthly",
+        "bulk packages exist and is always the authoritative answer.",
+        "What's in the point-by-point tape? One timestamped row per recorded point state:",
+        "sets, per-set games, in-game points, server, tiebreak flag, and the model's",
+        "win_probability_p1 + danger at that point.",
         "",
         "## Official client libraries",
         "- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python",
