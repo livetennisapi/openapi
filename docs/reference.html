@@ -179,7 +179,7 @@ answer engines and any HTTP client.</p>
 <li><a href="#plans">Plans</a></li>
 <li><a href="#clients">Official client libraries</a></li>
 <li><a href="#conventions">Conventions</a></li>
-<li><a href="#endpoints">Endpoints</a> — all 12, with parameters and responses</li>
+<li><a href="#endpoints">Endpoints</a> — all 15, with parameters and responses</li>
 <li><a href="#websocket">WebSocket feed (ULTRA)</a></li>
 <li><a href="#schemas">Schemas</a></li>
 </ul>
@@ -188,13 +188,29 @@ answer engines and any HTTP client.</p>
 <main id="main">
 
 <p>Real-time tennis scores, player data, match-winner market prices, and
-model-driven match analysis. Read-only.</p><p>Access is tiered (FREE / BASIC / PRO / ULTRA). FREE is self-serve with no
-card (<a href="https://livetennisapi.com/subscribe/free">https://livetennisapi.com/subscribe/free</a>, 1000 requests/day) and
-covers live and upcoming matches, scores, players and fixtures; historical
-results need BASIC; match events and market prices need PRO; model
-analysis, live model fields (<code>win_probability_p1</code>, <code>danger</code>) and the
-WebSocket feed need ULTRA. A call above your tier returns
-<code>403 {&quot;error&quot;:&quot;upgrade_required&quot;}</code>.</p><p>All timestamps are UTC ISO 8601 with a <code>Z</code> suffix. List endpoints return
+model-driven match analysis. Read-only. Coverage is every tour equally:
+ATP, WTA, Challenger, ITF and the junior Grand Slam draws.</p><p>Access is tiered (FREE / BASIC / PRO / ULTRA). Each tier includes
+everything in the tiers below it; the concrete deltas are:</p><p><code>FREE</code> — self-serve, no card (<a href="https://livetennisapi.com/subscribe/free">https://livetennisapi.com/subscribe/free</a>).
+Live and upcoming matches, current scores, players, fixtures, and your own
+usage stats. 30 requests/minute, 1,000/day. No historical results, no
+market prices, no model fields, no WebSocket.</p><p><code>BASIC</code> — adds historical data: the completed-match listing
+(<code>/history/matches</code>, and <code>status=completed</code> on <code>/matches</code>) and the
+per-match point-by-point tape with the per-point model win-probability
+(<code>/history/matches/{matchId}</code>). 60 requests/minute, 10,000/day.</p><p><code>PRO</code> — adds match events (<code>/matches/{matchId}/events</code>), market prices
+(<code>/markets</code>, <code>/markets/{matchId}/prices</code>) and the pre-built monthly bulk
+history packages (<code>/history/packages</code>). 300 requests/minute, 100,000/day.</p><p><code>ULTRA</code> — adds model analysis (<code>/matches/{matchId}/analysis</code>), the live
+model fields (<code>win_probability_p1</code>, <code>danger</code>) on every score object, the
+WebSocket push feed at <code>/ws</code>, and outbound webhooks (direct keys).
+600 requests/minute, 500,000/day.</p><p>A call above your tier returns <code>403 {&quot;error&quot;:&quot;upgrade_required&quot;}</code> — never
+a silent empty result.</p><p>The <code>/history/*</code> endpoints are also sold standalone as the **Historical
+Data API** (no live-API subscription required): **Starter** — single-match
+point-by-point tape reads via the API (tape plus the model win-probability
+per point), all tours (ATP/WTA/Challenger/ITF), one match per request, no
+bulk downloads; **Pro** — everything in Starter plus bulk monthly package
+downloads and higher rate limits; **Business** — everything in Pro plus
+year-scale archive exports, top rate limits and priority support. One-off
+1-month and 1-year access passes are available without a subscription.
+Plans and prices: <a href="https://livetennisapi.com/historical-tennis-data-api">https://livetennisapi.com/historical-tennis-data-api</a></p><p>All timestamps are UTC ISO 8601 with a <code>Z</code> suffix. List endpoints return
 <code>{data, meta}</code>; single resources return the object directly. Ignore
 unknown fields — additive changes land within v1.</p><p>A native WebSocket live feed (ULTRA) exists at <code>/ws</code> under the same base
 URL. Subscribe with <code>{&quot;topics&quot;:[&quot;live-scores&quot;]}</code> (or <code>&quot;match:&lt;id&gt;&quot;</code>); the
@@ -289,6 +305,9 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <li><a href="#listMarkets"><code>GET /markets</code> — Match-winner market(s) for a match (PRO)</a></li>
 <li><a href="#getMarketPrices"><code>GET /markets/{matchId}/prices</code> — Market + recent price ticks per side, newest first (PRO)</a></li>
 <li><a href="#listCompletedMatches"><code>GET /history/matches</code> — Completed matches, newest first, with derived winner (BASIC)</a></li>
+<li><a href="#getMatchTape"><code>GET /history/matches/{matchId}</code> — Full point-by-point tape for one match, with per-point model win-probability (BASIC)</a></li>
+<li><a href="#listHistoryPackages"><code>GET /history/packages</code> — List the pre-built monthly bulk history packages (PRO)</a></li>
+<li><a href="#getHistoryPackage"><code>GET /history/packages/{period}</code> — One monthly package — manifest, or the bulk file itself (PRO)</a></li>
 <li><a href="#listFixtures"><code>GET /fixtures</code> — Upcoming scheduled fixtures, earliest first (FREE)</a></li>
 </ul>
 
@@ -304,7 +323,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <h3><span class="method">GET</span> <code>/matches</code></h3>
 <p class="summary">List matches by lifecycle status (FREE)</p>
 <p class="meta">Plan required: <strong>—</strong> &middot; operationId: <code>listMatches</code></p>
-<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches parameters"><table><caption class="vh">GET /matches — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>status</code></td><td>query</td><td>string (live, upcoming, completed)</td><td>no</td><td> Default <code>live</code>.</td></tr><tr><td><code>tour</code></td><td>query</td><td>string (atp, wta, challenger, itf, juniors)</td><td>no</td><td>Restrict results to one tour. Each value covers its singles and doubles draws, so <code>atp</code> includes ATP doubles and <code>juniors</code> covers the boys&#x27; and girls&#x27; Grand Slam draws. Omit for all tours. An unrecognised value is a 400 rather than a silent pass-through, so a caller never receives a tour it did not ask for. Applied before pagination, so <code>meta.count</code> reflects the filtered set.</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches parameters"><table><caption class="vh">GET /matches — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>status</code></td><td>query</td><td>string (live, upcoming, completed)</td><td>no</td><td><code>live</code> (default) and <code>upcoming</code> are FREE; <code>completed</code> requires BASIC — paging completed results is the history surface. Default <code>live</code>.</td></tr><tr><td><code>tour</code></td><td>query</td><td>string (atp, wta, challenger, itf, juniors)</td><td>no</td><td>Restrict results to one tour. Each value covers its singles and doubles draws, so <code>atp</code> includes ATP doubles and <code>juniors</code> covers the boys&#x27; and girls&#x27; Grand Slam draws. Omit for all tours. An unrecognised value is a 400 rather than a silent pass-through, so a caller never receives a tour it did not ask for. Applied before pagination, so <code>meta.count</code> reflects the filtered set.</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
 <h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches responses"><table><caption class="vh">GET /matches — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Matches with latest score</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present)</td></tr></tbody></table></div>
 <h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches response fields"><table><caption class="vh">GET /matches — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
 <h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/matches \
@@ -394,10 +413,39 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <h3><span class="method">GET</span> <code>/history/matches</code></h3>
 <p class="summary">Completed matches, newest first, with derived winner (BASIC)</p>
 <p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>listCompletedMatches</code></p>
-<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches parameters"><table><caption class="vh">GET /history/matches — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
-<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches responses"><table><caption class="vh">GET /history/matches — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Completed matches (<code>winner</code> = 1|2|null, from final sets)</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present)</td></tr></tbody></table></div>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches parameters"><table><caption class="vh">GET /history/matches — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr><tr><td><code>from</code></td><td>query</td><td>string</td><td>no</td><td>Earliest play date, <code>YYYY-MM-DD</code> or an ISO-8601 UTC datetime. A bare date covers that whole day. An unparseable value is a 400, never a silently unfiltered 200.</td></tr><tr><td><code>to</code></td><td>query</td><td>string</td><td>no</td><td>Latest play date, same formats as <code>from</code> (a bare date includes everything played that day). <code>from</code> after <code>to</code> is a 400.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches responses"><table><caption class="vh">GET /history/matches — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Completed matches (<code>winner</code> = 1|2|null, from final sets)</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present)</td></tr></tbody></table></div>
 <h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches response fields"><table><caption class="vh">GET /history/matches — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
 <h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/matches \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+<section class="op" id="getMatchTape">
+<h3><span class="method">GET</span> <code>/history/matches/{matchId}</code></h3>
+<p class="summary">Full point-by-point tape for one match, with per-point model win-probability (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>getMatchTape</code></p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId} parameters"><table><caption class="vh">GET /history/matches/{matchId} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId} responses"><table><caption class="vh">GET /history/matches/{matchId} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The full tape (<code>match</code> + <code>tape</code> + <code>profiles</code> + <code>meta</code>)</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present)</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId} response fields"><table><caption class="vh">GET /history/matches/{matchId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>match</code></td><td>object</td><td>Match metadata with the final score embedded.</td></tr><tr><td><code>tape</code></td><td>array of object</td><td>Chronological score rows, one per recorded point state.</td></tr><tr><td><code>profiles</code></td><td>array of object</td><td>Model profiles produced during the match, oldest first.</td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/matches/18953 \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+<section class="op" id="listHistoryPackages">
+<h3><span class="method">GET</span> <code>/history/packages</code></h3>
+<p class="summary">List the pre-built monthly bulk history packages (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>listHistoryPackages</code></p>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages responses"><table><caption class="vh">GET /history/packages — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Ready packages, newest month first</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present)</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages response fields"><table><caption class="vh">GET /history/packages — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/packages \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+<section class="op" id="getHistoryPackage">
+<h3><span class="method">GET</span> <code>/history/packages/{period}</code></h3>
+<p class="summary">One monthly package — manifest, or the bulk file itself (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>getHistoryPackage</code></p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages/{period} parameters"><table><caption class="vh">GET /history/packages/{period} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>period</code></td><td>path</td><td>string</td><td>yes</td><td>Calendar month, <code>YYYY-MM</code>.</td></tr><tr><td><code>format</code></td><td>query</td><td>string (jsonl, csv)</td><td>no</td><td>Omit for the JSON manifest; set to download the file.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages/{period} responses"><table><caption class="vh">GET /history/packages/{period} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The manifest (no <code>format</code>), or the bulk file as an attachment (<code>format=jsonl</code> streams NDJSON, <code>format=csv</code> streams CSV).</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present)</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages/{period} response fields"><table><caption class="vh">GET /history/packages/{period} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>period</code></td><td>string</td><td>Calendar month, <code>YYYY-MM</code>.</td></tr><tr><td><code>status</code></td><td>string (ready)</td><td></td></tr><tr><td><code>match_count</code></td><td>integer</td><td></td></tr><tr><td><code>row_count</code></td><td>integer</td><td></td></tr><tr><td><code>files</code></td><td>array of object</td><td>One entry per downloadable format.</td></tr><tr><td><code>built_at</code></td><td>string or null</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/packages/{period} \
   -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
 </section>
 <section class="op" id="listFixtures">
@@ -549,6 +597,36 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <tr><td><code>player1_name</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>player2_name</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>status</code></td><td>string or null</td><td></td></tr></tbody></table></div>
+</section>
+<section id="schema-modelprofile">
+<h3>ModelProfile</h3>
+<p>One model win-probability profile. On the history tape these are the profiles produced during the match, oldest first.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="ModelProfile fields"><table><caption class="vh">ModelProfile schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>win_probability_p1</code></td><td>number or null</td><td></td></tr>
+<tr><td><code>expected_closeness</code></td><td>number or null</td><td></td></tr>
+<tr><td><code>volatility_rating</code></td><td>string or null (low, med, high, null)</td><td></td></tr>
+<tr><td><code>key_factors</code></td><td>array or null</td><td></td></tr>
+<tr><td><code>created_at</code></td><td>string or null</td><td></td></tr></tbody></table></div>
+</section>
+<section id="schema-historytape">
+<h3>HistoryTape</h3>
+<p>The full per-match history tape (BASIC, or Historical Data API Starter+). <code>tape</code> rows are Score objects and INCLUDE the model fields <code>win_probability_p1</code> and <code>danger</code> per point — on this product they are part of the tape itself, not an ULTRA upsell.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="HistoryTape fields"><table><caption class="vh">HistoryTape schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>match</code></td><td>object</td><td>Match metadata with the final score embedded.</td></tr>
+<tr><td><code>tape</code></td><td>array of object</td><td>Chronological score rows, one per recorded point state.</td></tr>
+<tr><td><code>profiles</code></td><td>array of object</td><td>Model profiles produced during the match, oldest first.</td></tr>
+<tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+</section>
+<section id="schema-historypackage">
+<h3>HistoryPackage</h3>
+<p>Manifest of one pre-built monthly bulk package (PRO, Historical Data API Pro+, or a one-off package pass).</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="HistoryPackage fields"><table><caption class="vh">HistoryPackage schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>period</code></td><td>string</td><td>Calendar month, <code>YYYY-MM</code>.</td></tr>
+<tr><td><code>status</code></td><td>string (ready)</td><td></td></tr>
+<tr><td><code>match_count</code></td><td>integer</td><td></td></tr>
+<tr><td><code>row_count</code></td><td>integer</td><td></td></tr>
+<tr><td><code>files</code></td><td>array of object</td><td>One entry per downloadable format.</td></tr>
+<tr><td><code>built_at</code></td><td>string or null</td><td></td></tr></tbody></table></div>
 </section>
 <section id="schema-breakpoint">
 <h3>BreakPoint</h3>

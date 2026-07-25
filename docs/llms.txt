@@ -41,6 +41,9 @@ Calling above your plan returns 403 {"error":"upgrade_required"}.
 - GET /markets — Match-winner market(s) for a match (PRO)
 - GET /markets/{matchId}/prices — Market + recent price ticks per side, newest first (PRO)
 - GET /history/matches — Completed matches, newest first, with derived winner (BASIC)
+- GET /history/matches/{matchId} — Full point-by-point tape for one match, with per-point model win-probability (BASIC)
+- GET /history/packages — List the pre-built monthly bulk history packages (PRO)
+- GET /history/packages/{period} — One monthly package — manifest, or the bulk file itself (PRO)
 - GET /fixtures — Upcoming scheduled fixtures, earliest first (FREE)
 
 ## Official client libraries
