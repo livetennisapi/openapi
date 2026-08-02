@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.0"
+  version: "1.1.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -28,16 +28,24 @@ info:
     (`/history/matches/{matchId}`). 60 requests/minute, 10,000/day.
 
     `PRO` — adds match events (`/matches/{matchId}/events`), market prices
-    (`/markets`, `/markets/{matchId}/prices`) and the pre-built monthly bulk
-    history packages (`/history/packages`). 300 requests/minute, 100,000/day.
+    (`/markets`, `/markets/{matchId}/prices`, `/matches/{matchId}/prices`) and
+    the pre-built monthly bulk history packages (`/history/packages`).
+    300 requests/minute, 100,000/day.
 
     `ULTRA` — adds model analysis (`/matches/{matchId}/analysis`), the live
-    model fields (`win_probability_p1`, `danger`) on every score object, the
-    WebSocket push feed at `/ws`, and outbound webhooks (direct keys).
-    600 requests/minute, 500,000/day.
+    model fields (`win_probability_p1`, `danger`) on every score object,
+    in-play match statistics (`/matches/{matchId}/statistics`), as-of ranking
+    records (`/rankings`), the WebSocket push feed at `/ws`, and outbound
+    webhooks (direct keys). 600 requests/minute, 500,000/day.
 
     A call above your tier returns `403 {"error":"upgrade_required"}` — never
     a silent empty result.
+
+    CORS is enabled across the REST surface: every response carries
+    `Access-Control-Allow-Origin: *` (GET/OPTIONS, no credentials mode — there
+    is no cookie or session, and a wildcard origin is incompatible with
+    credentials by design). Putting a FREE key in browser code is acceptable —
+    it is capped and revocable; a paid key belongs server-side only.
 
     The `/history/*` endpoints are also sold standalone as the **Historical
     Data API** (no live-API subscription required): **Starter** — single-match
@@ -54,12 +62,14 @@ info:
     unknown fields — additive changes land within v1.
 
     A native WebSocket live feed (ULTRA) exists at `/ws` under the same base
-    URL. Subscribe with `{"topics":["live-scores"]}` (or `"match:<id>"`); the
-    server acks with a `subscribed` frame, then pushes `score` frames on every
-    change plus a `ping` heartbeat roughly every 15s. Opt into extra signals
-    with `{"topics":["live-scores"],"signals":["break_point"]}` to also receive
-    `break_point` and `break_point_result` frames (schemas `BreakPoint` /
-    `BreakPointResult`). Without `signals`, score frames only.
+    URL. Subscribe with one JSON frame whose keys are `action`, `topics` and
+    (optionally) `signals`: `{"action":"subscribe","topics":["live-scores"]}`
+    — `topics` may also name `"match:<id>"`. The server acks with a
+    `subscribed` frame, then pushes `score` frames on every change plus a
+    `ping` heartbeat roughly every 15s. Opt into extra signals with
+    `{"action":"subscribe","topics":["live-scores"],"signals":["break_point"]}`
+    to also receive `break_point` and `break_point_result` frames (schemas
+    `BreakPoint` / `BreakPointResult`). Without `signals`, score frames only.
 servers:
   - url: https://api.livetennisapi.com/api/public/v1
 security:
@@ -134,6 +144,16 @@ paths:
   /matches/{matchId}/score:
     get:
       summary: Current score only — lowest-latency REST read (FREE)
+      description: >-
+        This is a POINT-IN-TIME SNAPSHOT: the single current state, overwritten
+        on every point. It carries no history and no accumulated statistics.
+        For the SEQUENCE of states — who served each game, hold/break, every
+        score state in forward order — use
+        `/history/matches/{matchId}?sequence=clean`, which works on a LIVE
+        match, not only a completed one. For in-play statistics use
+        `/matches/{matchId}/statistics` (ULTRA); they are deliberately not on
+        this object, because they can be further behind the match than the
+        score and must carry their own `as_of`.
       operationId: getMatchScore
       parameters: [ { $ref: "#/components/parameters/matchId" } ]
       responses:
@@ -179,6 +199,67 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Analysis" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /matches/{matchId}/statistics:
+    get:
+      summary: In-play statistics — aces, double faults, serve split, hold/break %, break points, service & return points (ULTRA)
+      description: >-
+        In-play statistics for one match, in TWO families that are deliberately
+        not merged.
+
+
+        DERIVED (the top level of `players.pN`) are rebuilt from the
+        point-by-point record: service and return games played and won, hold
+        and break percentage, break points faced, saved and converted, service
+        and return points.
+
+
+        MEASURED (`players.pN.measured`) are counted upstream, so they include
+        what no point record can yield — ACES AND DOUBLE FAULTS, the first- and
+        second-serve split, winners and unforced errors. Both families name
+        some of the same quantities, computed two entirely different ways; that
+        is a cross-check, not a duplication to collapse.
+
+
+        Measured coverage is not uniform and every measured field is optional —
+        an absent field is OMITTED, never zero-filled, so read the keys you are
+        given. Aces and double faults are present across every tour. The serve
+        split and break points saved are present on the main tours and absent
+        on ITF singles. Winners and unforced errors appear on a minority of
+        main-tour matches.
+
+
+        `freshness.derived` and `freshness.measured` each carry their own
+        `coverage` (`live` | `stale` | `none` | `diverged`), `as_of`,
+        `age_seconds` and `describes` — the match state the numbers describe.
+        On `diverged` the measured VALUES are withheld and
+        `freshness.measured_divergence` says why; the top-level `coverage` only
+        summarises the response. `none` on both returns 200 with null players,
+        not 404 — the match exists and holding nothing for it is the honest
+        answer.
+
+
+        THE TWO AGES USE DIFFERENT CLOCKS AND MUST NOT BE COMPARED. The derived
+        age is measured against the newest SCORE row, because between points
+        there is no new score either and wall-clock age would report staleness
+        that does not exist. The measured age is wall clock, because those are
+        fetched on a fixed cadence.
+
+
+        Tiebreak games are excluded from the DERIVED family and counted
+        separately; the live record collapses a whole tiebreak onto one entry,
+        so most of its points are lost.
+      operationId: getMatchStatistics
+      parameters: [ { $ref: "#/components/parameters/matchId" } ]
+      responses:
+        "200":
+          description: Statistics with their own coverage and as_of
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MatchStatistics" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -271,22 +352,24 @@ paths:
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/RateLimited" }
-  /history/matches:
+  /matches/{matchId}/prices:
     get:
-      summary: Completed matches, newest first, with derived winner (BASIC)
+      summary: Bare price ticks of the mapped match-winner market, newest first (PRO)
       description: >-
-        Requires BASIC on the live API, or any Historical Data API plan
-        (Starter and up — see https://livetennisapi.com/historical-tennis-data-api).
-        All tours. Filter to a date range with `from`/`to`.
-      operationId: listCompletedMatches
+        Recent ticks only (no market wrapper). `limit` caps at 500; `minutes`
+        bounds the lookback window. 404 when the match has no mapped market.
+      operationId: listMatchPrices
       parameters:
-        - $ref: "#/components/parameters/limit"
-        - $ref: "#/components/parameters/offset"
-        - $ref: "#/components/parameters/playedFrom"
-        - $ref: "#/components/parameters/playedTo"
+        - $ref: "#/components/parameters/matchId"
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 500, default: 100 }
+        - name: minutes
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 1440 }
       responses:
         "200":
-          description: Completed matches (`winner` = 1|2|null, from final sets)
+          description: Price ticks
           content:
             application/json:
               schema:
@@ -294,7 +377,62 @@ paths:
                 properties:
                   data:
                     type: array
-                    items: { $ref: "#/components/schemas/Match" }
+                    items: { $ref: "#/components/schemas/Price" }
+                  meta:
+                    type: object
+                    properties:
+                      match_id: { type: integer }
+                      count: { type: integer }
+                      has_more:
+                        type: boolean
+                        description: >-
+                          The window was clipped at limit — older ticks exist.
+                          There is no offset here; raise limit or narrow
+                          minutes.
+                      limit: { type: integer }
+                      minutes: { type: [integer, "null"] }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/matches:
+    get:
+      summary: Completed matches, newest first, with derived winner and tape coverage (BASIC)
+      description: >-
+        Requires BASIC on the live API, or any Historical Data API plan
+        (Starter and up — see https://livetennisapi.com/historical-tennis-data-api).
+        All tours. Filter to a date range with `from`/`to`. Each item carries a
+        `tape` object saying what point-by-point data we hold for that match,
+        so a whole page can be qualified in one call instead of one request per
+        match. NOTE `?coverage=` is applied AFTER the page is cut, so a
+        filtered page is routinely shorter than `limit` (and may be empty)
+        while later pages still hold matching matches — a short filtered page
+        is not an end-of-data signal.
+      operationId: listCompletedMatches
+      parameters:
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+        - $ref: "#/components/parameters/playedFrom"
+        - $ref: "#/components/parameters/playedTo"
+        - name: coverage
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/Coverage" }
+          description: >-
+            Keep only matches whose tape has this coverage. An unknown value is
+            a 400 `bad_coverage` listing the accepted values in `allowed`.
+      responses:
+        "200":
+          description: Completed matches (`winner` = 1|2|null, from final sets), each with its tape coverage
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/HistoryMatch" }
                   meta: { $ref: "#/components/schemas/ListMeta" }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -302,23 +440,51 @@ paths:
         "429": { $ref: "#/components/responses/RateLimited" }
   /history/matches/{matchId}:
     get:
-      summary: Full point-by-point tape for one match, with per-point model win-probability (BASIC)
+      summary: Per-match tape — point-by-point score + per-point model probabilities (BASIC)
       description: >-
-        The complete chronological tape of a completed match — every recorded
-        score row including the model fields `win_probability_p1` and `danger`
-        at that point — plus match metadata and the model profiles produced
-        during the match. The model fields here are part of the paid History
-        product by design, distinct from the ULTRA-gated LIVE model fields.
-        One match per request. Requires BASIC on the live API, or the
-        Historical Data API Starter plan and up.
+        The tape is the point-by-point score sequence we hold for this match —
+        every recorded score row including the model fields
+        `win_probability_p1` and `danger` at that point — plus match metadata
+        and the model profiles produced during the match. The model fields here
+        are part of the paid History product by design, distinct from the
+        ULTRA-gated LIVE model fields. One match per request. Requires BASIC on
+        the live API, or the Historical Data API Starter plan and up.
+
+
+        The tape is NOT guaranteed to cover the whole match — check
+        `meta.coverage` and `meta.point_source` before backtesting. Rows
+        expanded after the fact from a finished-match point-by-point record
+        carry a null `timestamp` and null model fields; nothing is ever
+        synthesised.
+
+
+        WORKS ON A LIVE MATCH, not only a completed one. The tape is assembled
+        from whatever has been committed so far, so it is how you read the
+        point-by-point history of a match in progress — including games played
+        before you started watching, where we were already watching them. The
+        LIST endpoint is completed-only; get live ids from
+        `/matches?status=live`. `/matches/{matchId}/score` is one state; this
+        is the sequence of states.
       operationId: getMatchTape
-      parameters: [ { $ref: "#/components/parameters/matchId" } ]
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+        - name: sequence
+          in: query
+          required: false
+          schema: { type: string, enum: [raw, clean], default: raw }
+          description: >-
+            `raw` (default) is every row we committed — deliberately
+            non-monotonic, since independent sources race and a higher-trust
+            one may correct a lower-trust one backwards. `clean` returns one
+            row per distinct score state, keeping the last assertion of each.
+            An unknown value is a 400 `bad_sequence`.
       responses:
         "200":
-          description: The full tape (`match` + `tape` + `profiles` + `meta`)
+          description: The full tape (`match` + `tape` + `profiles` + coverage `meta`)
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HistoryTape" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -332,9 +498,25 @@ paths:
         up, or a one-off package access pass. A key that can read the tape but
         is not package-entitled receives `403 upgrade_required`.
       operationId: listHistoryPackages
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string, enum: [tape, rankings], default: tape }
+          description: >-
+            Package family. `tape` (default) = point-by-point match tapes;
+            `rankings` = as-of ranking records (ULTRA). The default means a
+            tape-only client never sees a new kind of row appear.
+        - name: year
+          in: query
+          required: false
+          schema: { type: string, pattern: '^\d{4}$' }
+          description: >-
+            Year archive listing — every published month of the year (History
+            Business, a 1-year package, or ULTRA).
       responses:
         "200":
-          description: Ready packages, newest month first
+          description: Ready packages, newest period first
           content:
             application/json:
               schema:
@@ -347,6 +529,10 @@ paths:
                     type: object
                     properties:
                       count: { type: integer }
+                      year:
+                        type: string
+                        description: Echoed only when `?year=` was supplied.
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "429": { $ref: "#/components/responses/RateLimited" }
@@ -365,6 +551,11 @@ paths:
           required: true
           description: Calendar month, `YYYY-MM`.
           schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string, enum: [tape, rankings], default: tape }
+          description: Package family; `rankings` requires ULTRA.
         - name: format
           in: query
           required: false
@@ -408,6 +599,175 @@ paths:
                     items: { $ref: "#/components/schemas/Fixture" }
                   meta: { $ref: "#/components/schemas/ListMeta" }
         "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /usage:
+    get:
+      summary: Your own usage vs quota (FREE — any tier)
+      description: >-
+        Durable daily usage for the calling key: tier, limits, today's calls
+        (current to the second) and a 30-day history. The per-minute window is
+        on the X-RateLimit-* headers of every response, not here. Calls to this
+        endpoint are quota-exempt — checking your usage never consumes it.
+      operationId: getUsage
+      responses:
+        "200":
+          description: Usage summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Usage" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /rankings:
+    get:
+      summary: Ranking records as they stood on a date (ULTRA)
+      description: >-
+        Returns, per ranking system, the newest record effective ON OR BEFORE
+        `as_of` — never one dated after it. Every other ranking field in this
+        API is the player's CURRENT value joined at read time, so replaying an
+        old match elsewhere shows today's ranks; this endpoint is the
+        point-in-time answer. Systems are never collapsed into a single "rank":
+        ATP/WTA and the ITF circuits carry rank+points, UTR carries a rating
+        with null rank and points because it has neither.
+        `meta.coverage.oldest_available` gives the earliest date each system
+        can answer for — ITF and UTR history begins 2026-07-29 and cannot be
+        reconstructed earlier.
+      operationId: listRankings
+      parameters:
+        - name: player
+          in: query
+          required: true
+          schema: { type: array, items: { type: integer }, maxItems: 50 }
+          explode: true
+          description: Player id. Repeatable, max 50 per request.
+        - name: as_of
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: YYYY-MM-DD. Omit for the latest known record.
+        - name: system
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr]
+          explode: true
+          description: Restrict to one or more systems. Omit for all.
+        - { $ref: "#/components/parameters/limit" }
+        - { $ref: "#/components/parameters/offset" }
+      responses:
+        "200":
+          description: Ranking records in force at `as_of`
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/RankingRecord" }
+                  meta: { $ref: "#/components/schemas/RankingListMeta" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /webhooks:
+    post:
+      summary: Register an outbound webhook (ULTRA, direct keys only)
+      description: >-
+        We POST the same frames the WebSocket sends to your HTTPS endpoint on
+        every live score commit. Up to 3 webhooks per key (`409 webhook_limit`
+        past that). The response is the ONLY time the signing secret is shown —
+        store it.
+
+
+        Each delivery carries `X-LTAPI-Signature` (`sha256=<hex>` — HMAC-SHA256
+        of the RAW request body with your webhook secret; verify with a
+        constant-time compare), `X-LTAPI-Timestamp` (Unix seconds at send time
+        — reject stale replays at your edge) and `X-LTAPI-Event` (the frame
+        type: `score`, `break_point` or `break_point_result`).
+
+
+        Delivery is best-effort, at-most-once, no replay: one attempt per frame
+        with a ~3s timeout and redirects disabled. Every `score` frame is the
+        complete current score, so a missed delivery self-corrects on the next
+        commit. After 25 consecutive failures the webhook is disabled
+        automatically (`enabled:false`, `last_error` set — visible in
+        `GET /webhooks`); delete and re-register to resume.
+      operationId: createWebhook
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url:
+                  type: string
+                  description: HTTPS only, publicly routable
+                events:
+                  type: array
+                  items: { type: string, enum: [score, break_point] }
+                  default: [score]
+      responses:
+        "201":
+          description: Created — includes `secret` (shown exactly once)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Webhook" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "409":
+          description: Webhook limit reached (3 per key) — delete an existing webhook first
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+    get:
+      summary: List your webhooks (ULTRA, direct keys only; never includes the secret)
+      operationId: listWebhooks
+      responses:
+        "200":
+          description: Your webhooks
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Webhook" }
+                  meta:
+                    type: object
+                    properties:
+                      count: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /webhooks/{webhookId}:
+    delete:
+      summary: Remove one of your webhooks (ULTRA, direct keys only)
+      operationId: deleteWebhook
+      parameters:
+        - name: webhookId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/RateLimited" }
 components:
   securitySchemes:
@@ -493,13 +853,37 @@ components:
     Error:
       type: object
       properties:
-        error: { type: string }
+        error:
+          type: string
+          description: >-
+            Stable machine-readable code, e.g. bad_date, bad_coverage,
+            bad_sequence, bad_period, bad_year, bad_format, not_found,
+            upgrade_required, rate_limited.
+        detail:
+          type: string
+          description: Human-readable explanation, when one adds anything.
+        allowed:
+          type: array
+          items: { type: string }
+          description: >-
+            On a rejected enumerated parameter, the values that would have been
+            accepted (e.g. the coverage vocabulary for bad_coverage).
     ListMeta:
       type: object
       properties:
         limit: { type: integer }
         offset: { type: integer }
         count: { type: integer }
+        total:
+          type: [integer, "null"]
+          description: >-
+            Size of the whole filtered set. Null when it cannot be counted
+            cheaply.
+        has_more:
+          type: boolean
+          description: >-
+            More results exist beyond this page. Read this rather than
+            comparing count to limit.
     Score:
       type: object
       description: ULTRA adds win_probability_p1 + danger.
@@ -643,6 +1027,55 @@ components:
             win_probability_p1: { type: [number, "null"] }
             expected_closeness: { type: [number, "null"] }
             volatility_rating: { type: [string, "null"], enum: [low, med, high, null] }
+            stage:
+              type: [string, "null"]
+              enum: [pregame, live, null]
+              description: >-
+                Did this forecast already see the match? null = UNKNOWN, never
+                pregame.
+            model_version:
+              type: [string, "null"]
+              description: >-
+                The prompt-scaffold version this forecast was produced under,
+                so a forecast can be evaluated against the framing that
+                produced it and a scaffold change reads as a regime break
+                rather than unexplained drift. Null on profiles written before
+                the stamp existed.
+            input_state:
+              type: [object, "null"]
+              description: >-
+                For an in-play forecast (stage=live), the score it was actually
+                looking at, so it can be evaluated against the position rather
+                than only excluded. Null on a pregame profile (it saw no score)
+                and null wherever the state could not be established. NOT
+                reconstructed from the score at created_at — that timestamp is
+                written after the model finishes, so it lands later than what
+                the model saw.
+              properties:
+                capture:
+                  type: string
+                  enum: [writer, recovered]
+                  description: >-
+                    writer = stamped as the forecast was produced, from the
+                    score row itself (carries live_score_id and stats).
+                    recovered = reconstructed from the stored prompt text of
+                    that same forecast; the score is exact but there is no
+                    live_score_id and no stats.
+                live_score_id: { type: [integer, "null"] }
+                total_games: { type: [integer, "null"] }
+                score:
+                  type: [object, "null"]
+                  description: >-
+                    server is the serving SIDE (1 or 2); on doubles that is the
+                    team, not the individual.
+                  properties:
+                    sets: { type: [array, "null"], items: { type: integer } }
+                    games: { type: [array, "null"] }
+                    points: { type: [array, "null"] }
+                    server: { type: [integer, "null"] }
+                    is_tiebreak: { type: [boolean, "null"] }
+                    timestamp: { type: [string, "null"], format: date-time }
+                stats: { type: [object, "null"] }
             key_factors: { type: [array, "null"], items: { type: string } }
             created_at: { type: [string, "null"], format: date-time }
     Market:
@@ -660,6 +1093,10 @@ components:
           items: { $ref: "#/components/schemas/Price" }
     Price:
       type: object
+      description: >-
+        Prediction-market top-of-book quote (probability-like, [0,1]); reflects
+        market trading, not an official line, and can lag live scores. Tagged
+        so a synthesised quote is never mistaken for a live book.
       properties:
         side:
           type: [integer, "null"]
@@ -668,6 +1105,14 @@ components:
         ask: { type: [number, "null"] }
         mid: { type: [number, "null"] }
         spread: { type: [number, "null"] }
+        price_source:
+          type: [string, "null"]
+          description: Feed category, e.g. prediction_market
+        synthetic:
+          type: [boolean, "null"]
+          description: >-
+            true = bid/ask estimated from mid (not a live order book);
+            false = real top-of-book; null = unknown (older ticks)
         timestamp: { type: [string, "null"], format: date-time }
     Event:
       type: object
@@ -704,23 +1149,63 @@ components:
         win_probability_p1: { type: [number, "null"] }
         expected_closeness: { type: [number, "null"] }
         volatility_rating: { type: [string, "null"], enum: [low, med, high, null] }
+        stage:
+          type: [string, "null"]
+          enum: [pregame, live, null]
+          description: >-
+            Did this forecast already see the match? null = UNKNOWN, never
+            pregame.
+        model_version:
+          type: [string, "null"]
+          description: >-
+            The prompt-scaffold version this forecast was produced under. Null
+            on profiles written before the stamp existed.
         key_factors: { type: [array, "null"], items: { type: string } }
         created_at: { type: [string, "null"], format: date-time }
+    HistoryTapeRow:
+      type: object
+      description: >-
+        One row of the score sequence. Rows we watched live carry a real
+        `timestamp`. Rows expanded after the fact from a finished-match
+        point-by-point record carry a null `timestamp` AND null model fields,
+        because neither a wall clock nor a model output ever existed for them —
+        nothing is synthesised. A null `timestamp` is the reliable row-level
+        marker of a reconstructed row; the model fields alone are not, since
+        they are stamped best-effort and an observed row may lack them.
+        `meta.point_source` / `meta.coverage` say which kind of tape you are
+        holding.
+      properties:
+        sets:
+          type: array
+          items: { type: integer }
+        games:
+          type: array
+          items:
+            type: array
+            items: { type: integer }
+        points:
+          type: array
+          items: { type: string }
+        server: { type: [integer, "null"], enum: [1, 2, null] }
+        is_tiebreak: { type: boolean }
+        win_probability_p1: { type: [number, "null"] }
+        danger: { type: [number, "null"] }
+        timestamp: { type: [string, "null"], format: date-time }
     HistoryTape:
       type: object
       description: >-
         The full per-match history tape (BASIC, or Historical Data API
-        Starter+). `tape` rows are Score objects and INCLUDE the model fields
-        `win_probability_p1` and `danger` per point — on this product they are
-        part of the tape itself, not an ULTRA upsell.
+        Starter+). `tape` rows INCLUDE the model fields `win_probability_p1`
+        and `danger` per point — on this product they are part of the tape
+        itself, not an ULTRA upsell.
       properties:
         match:
           $ref: "#/components/schemas/Match"
           description: Match metadata with the final score embedded.
         tape:
           type: array
-          description: Chronological score rows, one per recorded point state.
-          items: { $ref: "#/components/schemas/Score" }
+          description: Chronological score sequence — see HistoryTapeRow.
+          items: { $ref: "#/components/schemas/HistoryTapeRow" }
         profiles:
           type: array
           description: Model profiles produced during the match, oldest first.
@@ -729,7 +1214,32 @@ components:
           type: object
           properties:
             match_id: { type: integer }
-            rows: { type: integer }
+            rows:
+              type: integer
+              description: Rows RETURNED — after any `sequence=clean` collapse.
+            coverage: { $ref: "#/components/schemas/Coverage" }
+            point_source:
+              type: [string, "null"]
+              enum: [observed, reconstructed, mixed, null]
+              description: >-
+                Where the rows came from — `observed` (every row watched live),
+                `reconstructed` (every row expanded after the fact), `mixed` (a
+                reconstructed opening followed by what we watched), or null on
+                an empty tape. Reported once here and never per row, so the row
+                shape cannot carry data-source provenance.
+            raw_rows:
+              type: integer
+              description: >-
+                Rows BEFORE any collapse — equals `rows` when `sequence=raw`.
+            unique_states:
+              type: integer
+              description: >-
+                Distinct score states in the raw tape. `raw_rows` minus this is
+                pure repetition.
+            sequence:
+              type: string
+              enum: [raw, clean]
+              description: Echoes the requested `?sequence=`.
             from_archive:
               type: boolean
               description: >-
@@ -740,14 +1250,22 @@ components:
       type: object
       description: >-
         Manifest of one pre-built monthly bulk package (PRO, Historical Data
-        API Pro+, or a one-off package pass).
+        API Pro+, or a one-off package pass). Coverage is not a contiguous run
+        of months and is still being extended backwards, so treat the packages
+        listing as the authoritative set of months that exist. The JSONL file
+        holds ONE LINE PER MATCH (a whole HistoryTape object per line, coverage
+        meta included), not one line per point; the CSV is flattened to one row
+        per point and carries no coverage columns.
       properties:
         period:
           type: string
           description: Calendar month, `YYYY-MM`.
-        status: { type: string, enum: [ready] }
-        match_count: { type: integer }
-        row_count: { type: integer }
+        status:
+          type: string
+          enum: [ready]
+          description: Only built months are listed or served.
+        match_count: { type: [integer, "null"] }
+        row_count: { type: [integer, "null"] }
         files:
           type: array
           description: One entry per downloadable format.
@@ -759,6 +1277,361 @@ components:
               bytes: { type: integer }
               sha256: { type: string }
         built_at: { type: [string, "null"], format: date-time }
+        kind:
+          type: string
+          enum: [tape, rankings]
+          description: >-
+            Present only on non-tape packages, so the shape a tape client
+            already parses is unchanged. On a rankings package `match_count` is
+            the number of players covered and `row_count` the number of ranking
+            records.
+    Coverage:
+      type: string
+      enum: [from_start, partial, reconstructed, reconstructed_partial, none]
+      description: >-
+        How a tape came to exist, and specifically whether we WATCHED it.
+        `from_start` — we watched this match live from 0-0; every row was
+        committed by our own pipeline while the point was being played, so
+        every row carries a real timestamp. It is a statement about how the
+        rows were obtained, NOT a synonym for "complete".
+        `partial` — we watched it, but recording began after play had started
+        and no reconstruction is available to repair the opening.
+        `reconstructed` — the tape opens with rows expanded after the fact from
+        a finished-match point-by-point record: either the whole tape (we never
+        watched the match) or its unwatched opening followed by what we did
+        watch. True about the score, silent about the clock.
+        `reconstructed_partial` — as `reconstructed`, AND the reconstruction is
+        known not to cover the whole match. That happens two ways: it OPENS
+        AFTER 0-0 (the upstream record begins mid-match), or it STOPS SHORT of
+        the official final score (the record truncated, usually by the deciding
+        game). Every row is still a point somebody recorded — nothing is
+        synthesised to close either gap — but the match is NOT complete and
+        must not be backtested as if it were.
+        `none` — no rows; the match was on the calendar and was neither watched
+        nor reconstructable.
+    HistoryMatch:
+      allOf:
+        - { $ref: "#/components/schemas/Match" }
+        - type: object
+          properties:
+            tape:
+              type: object
+              description: What point-by-point data we hold for this match.
+              properties:
+                coverage: { $ref: "#/components/schemas/Coverage" }
+                rows:
+                  type: integer
+                  description: >-
+                    Rows we OBSERVED (watched live). This is not the length of
+                    the tape you will be served: a reconstructed or mixed tape
+                    also includes reconstructed rows, and for a
+                    partially-watched match only a prefix of the reconstruction
+                    is spliced in front. Use `meta.rows` on the per-match tape
+                    for the served length.
+                reconstructed_rows:
+                  type: integer
+                  description: Reconstructed rows available for this match.
+    Usage:
+      type: object
+      properties:
+        principal: { type: string, description: "Opaque ref to your own key" }
+        tier: { type: string, enum: [free, basic, pro, ultra] }
+        base_tier:
+          type: string
+          description: >-
+            Subscription tier; equals `tier` unless a temporary grant is active
+        tier_expires_at:
+          type: [string, "null"]
+          format: date-time
+          description: When a temporary tier grant reverts, else null
+        channel: { type: string }
+        limits:
+          type: object
+          properties:
+            per_minute: { type: [integer, "null"] }
+            per_day: { type: [integer, "null"] }
+        today:
+          type: object
+          properties:
+            calls: { type: integer }
+            errors: { type: integer }
+            remaining_day: { type: [integer, "null"] }
+        history:
+          type: array
+          description: Last 30 days, oldest first
+          items:
+            type: object
+            properties:
+              day: { type: string, format: date }
+              calls: { type: integer }
+              errors: { type: integer }
+        as_of: { type: string, format: date-time }
+    MatchStatisticsSide:
+      type: object
+      description: >-
+        One player's in-play statistics, in TWO families that are deliberately
+        not merged. The fields at this level are DERIVED from the
+        point-by-point record. `measured` holds counts taken upstream,
+        including the ones no point record can yield: aces, double faults, the
+        serve split, winners and unforced errors. Both families name some of
+        the same quantities, computed two entirely different ways — that is a
+        cross-check, not a duplication to be collapsed.
+      properties:
+        measured:
+          $ref: "#/components/schemas/MatchStatisticsMeasured"
+        service_games_played: { type: integer }
+        service_games_won: { type: integer }
+        hold_pct:
+          type: [integer, "null"]
+          description: >-
+            null when no service game was played — never 0, so a present 0 is a
+            real measured zero
+        return_games_played: { type: integer }
+        return_games_won: { type: integer }
+        break_pct: { type: [integer, "null"] }
+        break_points_faced: { type: integer }
+        break_points_saved: { type: integer }
+        break_points_saved_pct: { type: [integer, "null"] }
+        break_points_played: { type: integer }
+        break_points_converted: { type: integer }
+        break_points_converted_pct: { type: [integer, "null"] }
+        service_points_played: { type: integer }
+        service_points_won: { type: integer }
+        service_points_won_pct: { type: [integer, "null"] }
+        return_points_played: { type: integer }
+        return_points_won: { type: integer }
+        return_points_won_pct: { type: [integer, "null"] }
+        points_played: { type: integer }
+        points_won: { type: integer }
+    MatchStatisticsMeasured:
+      type: object
+      description: >-
+        Measured counting statistics for one player. These are COUNTED
+        upstream, not derived from the point record — which is why they can
+        include aces and double faults, and the derived fields above cannot.
+
+        EVERY FIELD IS OPTIONAL AND AN ABSENT FIELD IS OMITTED, never
+        zero-filled. Do not assume a fixed shape; read the keys you are given.
+        Measured over 24,552 stored payloads, coverage falls into three tiers:
+
+        TIER 1 — present on 98.6-100% of payloads, on every tour: aces, double
+        faults, points won, service and return points won, break points won,
+        service games won, longest point and game runs, return points.
+
+        TIER 2 — present on essentially all ATP, WTA and Challenger matches and
+        on NO ITF singles match: the first and second serve split, break points
+        saved, tiebreaks won, games won, service games played.
+
+        TIER 3 — present on a minority of main-tour matches only (43% of ATP,
+        24% of WTA): winners and unforced errors, in total and by shot type.
+
+        A `_of` suffix is the denominator of its base field and a `_pct` suffix
+        is the percentage, recomputed from the two counts rather than read from
+        the upstream rounding.
+      properties:
+        aces: { type: [integer, "null"] }
+        break_points_won: { type: [integer, "null"] }
+        double_faults: { type: [integer, "null"] }
+        first_return_points_won: { type: [integer, "null"] }
+        first_return_points_won_of: { type: [integer, "null"] }
+        first_return_points_won_pct: { type: [integer, "null"] }
+        max_games_in_row: { type: [integer, "null"] }
+        max_points_in_row: { type: [integer, "null"] }
+        points_won: { type: [integer, "null"] }
+        return_points_won: { type: [integer, "null"] }
+        second_return_points_won: { type: [integer, "null"] }
+        second_return_points_won_of: { type: [integer, "null"] }
+        second_return_points_won_pct: { type: [integer, "null"] }
+        service_games_won: { type: [integer, "null"] }
+        service_points_won: { type: [integer, "null"] }
+        break_points_saved: { type: [integer, "null"] }
+        break_points_saved_of: { type: [integer, "null"] }
+        break_points_saved_pct: { type: [integer, "null"] }
+        first_serve_points_won: { type: [integer, "null"] }
+        first_serve_points_won_of: { type: [integer, "null"] }
+        first_serve_points_won_pct: { type: [integer, "null"] }
+        first_serves_in: { type: [integer, "null"] }
+        first_serves_in_of: { type: [integer, "null"] }
+        first_serves_in_pct: { type: [integer, "null"] }
+        games_won: { type: [integer, "null"] }
+        second_serve_points_won: { type: [integer, "null"] }
+        second_serve_points_won_of: { type: [integer, "null"] }
+        second_serve_points_won_pct: { type: [integer, "null"] }
+        second_serves_in: { type: [integer, "null"] }
+        second_serves_in_of: { type: [integer, "null"] }
+        second_serves_in_pct: { type: [integer, "null"] }
+        service_games_played: { type: [integer, "null"] }
+        tiebreaks_won: { type: [integer, "null"] }
+        backhand_errors: { type: [integer, "null"] }
+        backhand_unforced_errors: { type: [integer, "null"] }
+        backhand_winners: { type: [integer, "null"] }
+        drop_shot_unforced_errors: { type: [integer, "null"] }
+        drop_shot_winners: { type: [integer, "null"] }
+        errors_total: { type: [integer, "null"] }
+        forehand_errors: { type: [integer, "null"] }
+        forehand_unforced_errors: { type: [integer, "null"] }
+        forehand_winners: { type: [integer, "null"] }
+        groundstroke_errors: { type: [integer, "null"] }
+        groundstroke_unforced_errors: { type: [integer, "null"] }
+        groundstroke_winners: { type: [integer, "null"] }
+        lob_unforced_errors: { type: [integer, "null"] }
+        lob_winners: { type: [integer, "null"] }
+        overhead_errors: { type: [integer, "null"] }
+        overhead_winners: { type: [integer, "null"] }
+        return_errors: { type: [integer, "null"] }
+        return_winners: { type: [integer, "null"] }
+        unforced_errors_total: { type: [integer, "null"] }
+        volley_unforced_errors: { type: [integer, "null"] }
+        volley_winners: { type: [integer, "null"] }
+        winners_total: { type: [integer, "null"] }
+    MatchStatisticsFreshness:
+      type: object
+      description: >-
+        Per-family coverage and age. Branch on this rather than on the
+        top-level `coverage`, which only summarises the response. The two ages
+        use DIFFERENT clocks and must not be compared: `derived.age_seconds` is
+        relative to the newest score row (between points there is no new score
+        either, so wall-clock age would report staleness that does not exist),
+        while `measured.age_seconds` is wall clock, because those are fetched
+        on a fixed cadence.
+      properties:
+        measured_divergence:
+          type: [object, "null"]
+          description: >-
+            Null when the families agree. Otherwise why the measured values
+            were withheld, with both match states.
+          properties:
+            reason: { type: string }
+            games_in_statistics: { type: integer }
+            games_in_score: { type: integer }
+            delta_games:
+              type: integer
+              description: >-
+                positive = statistics ahead of the score, which staleness
+                cannot cause
+            detail: { type: string }
+        derived: { $ref: "#/components/schemas/MatchStatisticsFamily" }
+        measured: { $ref: "#/components/schemas/MatchStatisticsFamily" }
+    MatchStatisticsFamily:
+      type: object
+      properties:
+        coverage: { type: string, enum: [live, stale, none, diverged] }
+        as_of: { type: [string, "null"] }
+        age_seconds: { type: [integer, "null"] }
+        describes:
+          type: [object, "null"]
+          description: >-
+            The match state these statistics describe, per upstream.
+            `age_seconds` says when we fetched; this says WHAT we fetched. Null
+            when unavailable.
+          properties:
+            games_p1: { type: array, items: { type: integer } }
+            games_p2: { type: array, items: { type: integer } }
+            total_games: { type: integer }
+    MatchStatistics:
+      type: object
+      properties:
+        match_id: { type: integer }
+        coverage: { type: string, enum: [live, stale, none, diverged] }
+        as_of:
+          type: [string, "null"]
+          description: When the underlying record was last updated (UTC)
+        age_seconds:
+          type: [integer, "null"]
+          description: Behind the newest SCORE row, not the wall clock
+        games_counted: { type: integer }
+        tiebreak_games_excluded:
+          type: integer
+          description: >-
+            Tiebreaks are excluded — the live record collapses a whole tiebreak
+            onto one entry
+        inconsistent_games_excluded:
+          type: integer
+          description: >-
+            Games whose recorded outcome is neither a legal hold nor a legal
+            break
+        sets_covered: { type: array, items: { type: integer } }
+        freshness: { $ref: "#/components/schemas/MatchStatisticsFreshness" }
+        detail:
+          type: string
+          description: Present only when coverage is none
+        players:
+          type: [object, "null"]
+          properties:
+            p1: { $ref: "#/components/schemas/MatchStatisticsSide" }
+            p2: { $ref: "#/components/schemas/MatchStatisticsSide" }
+    RankingRecord:
+      type: object
+      description: >-
+        One ranking record in force at the requested instant. `system` is
+        always explicit and the systems are never collapsed into a single
+        "rank" — they are not comparable. ATP/WTA and the ITF circuits populate
+        rank+points; UTR populates rating and leaves rank/points null, because
+        UTR is a rating and has no rank.
+      properties:
+        player_id: { type: integer }
+        system:
+          type: string
+          enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr]
+        tour: { type: [string, "null"] }
+        rank: { type: [integer, "null"], description: Null for UTR. }
+        points: { type: [integer, "null"], description: Null for UTR. }
+        rating: { type: [number, "null"], description: UTR only; null elsewhere. }
+        effective_date:
+          type: [string, "null"]
+          format: date
+          description: >-
+            The publication week this record took effect. For records ingested
+            live rather than from the official weekly publication this is
+            bucketed to the observed week, so it can sit up to six days later
+            than the moment the value actually took effect; where both exist
+            for one week the official publication is served.
+        observed_at: { type: [string, "null"], format: date-time }
+    RankingListMeta:
+      allOf:
+        - $ref: "#/components/schemas/ListMeta"
+        - type: object
+          properties:
+            coverage:
+              type: object
+              description: >-
+                What resolved against what was asked. Read it before trusting
+                an empty result — ITF and UTR history begins 2026-07-29 and
+                cannot be reconstructed earlier, so a request before that date
+                correctly returns nothing for those systems.
+              properties:
+                as_of: { type: [string, "null"], format: date }
+                players_requested: { type: integer }
+                players_resolved: { type: integer }
+                systems_requested: { type: array, items: { type: string } }
+                systems_resolved: { type: array, items: { type: string } }
+                oldest_available:
+                  type: object
+                  additionalProperties: { type: [string, "null"], format: date }
+                  description: >-
+                    Earliest effective date held, per requested system.
+    Webhook:
+      type: object
+      properties:
+        id: { type: integer }
+        url: { type: string }
+        events:
+          type: array
+          items: { type: string, enum: [score, break_point] }
+        enabled:
+          type: boolean
+          description: >-
+            Set to false automatically after 25 consecutive delivery failures —
+            delete and re-register to resume.
+        created_at: { type: [string, "null"], format: date-time }
+        last_delivery_at: { type: [string, "null"], format: date-time }
+        consecutive_failures: { type: integer }
+        last_error: { type: [string, "null"] }
+        secret:
+          type: string
+          description: >-
+            Present ONLY on the 201 registration response — shown exactly once
+        secret_note: { type: string }
     BreakPoint:
       type: object
       description: >-
