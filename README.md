@@ -8,7 +8,7 @@ The machine-readable contract for **[Live Tennis API](https://livetennisapi.com)
 tennis scores, players, rankings, match-winner market prices and model win-probability
 over REST and WebSocket.
 
-[**Documentation**](https://docs.livetennisapi.com) · [**Website**](https://livetennisapi.com) · [**Get a key**](https://livetennisapi.com/#pricing)
+[**Documentation**](https://docs.livetennisapi.com) · [**Website**](https://livetennisapi.com) · [**Get a free key**](https://livetennisapi.com/subscribe/free) · [**Pricing**](https://livetennisapi.com/#pricing)
 
 </div>
 
@@ -18,7 +18,7 @@ over REST and WebSocket.
 
 | File | Purpose |
 |---|---|
-| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 12 endpoints, 11 schemas |
+| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 22 endpoints (21 paths), 28 schemas |
 | [`docs/`](docs/) | Rendered reference, published to <https://docs.livetennisapi.com> |
 
 The spec is the **source of truth** for our official SDKs. If the spec and an SDK disagree,
@@ -58,9 +58,11 @@ Authorization: Bearer twjp_…
 X-API-Key: twjp_…
 ```
 
-**Tiers** — BASIC (matches, scores, players, fixtures, history) · PRO (+ events, markets)
-· ULTRA (+ analysis, model fields, WebSocket). Calling above your tier returns
-`403 {"error":"upgrade_required"}`.
+**Tiers** — FREE (live & upcoming matches, scores, players, fixtures, your own usage
+stats — self-serve, no card: <https://livetennisapi.com/subscribe/free>) · BASIC
+(+ completed-match history) · PRO (+ events, market prices, bulk packages) · ULTRA
+(+ analysis, model fields, in-play statistics, as-of rankings, WebSocket, webhooks).
+Calling above your tier returns `403 {"error":"upgrade_required"}`.
 
 **Conventions**
 
@@ -76,8 +78,9 @@ The spec is versioned alongside the API's `v1` surface. Changes within `v1` are 
 only** — new endpoints, new optional fields. Removing a field or changing its type would
 require `v2`.
 
-CI lints every change with [Spectral](https://github.com/stoplightio/spectral) and fails
-the build on a breaking diff against `main`.
+CI lints every change with [Redocly CLI](https://redocly.com/docs/cli/) and runs a
+structural contract check (server URL, both auth schemes, `operationId` on every
+operation, a documented 401 on every authenticated operation) on every push.
 
 ## Contributing
 
