@@ -5,6 +5,84 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.2.0] — 2026-08-03
+
+### Added
+- **Results archive (1968–2022).** The history product now runs in two
+  continuous, non-overlapping halves: the point-by-point tape (2023→now) and
+  the results archive (1968–2022). Four new endpoints, all BASIC (or any
+  Historical Data API plan): `GET /history/archive/matches` (winner/loser-
+  shaped results — ATP and WTA, main draws, qualifying and the ITF/futures
+  tiers, 1968 through 2022, with final score, seeds, ranks at the time;
+  filters `tour`, `name`, `from`/`to`, `round`, `level`; its own id space;
+  `event_date` is the TOURNAMENT START date; ends 2022-12-31, exactly where
+  the tape begins), `GET /history/archive/matches/{archiveId}` (one result,
+  with per-match serve statistics where the era recorded them — null before
+  1991 mostly, never synthesised), `GET /history/archive/players` (bios +
+  career-high rank and the week it was first reached), and
+  `GET /history/archive/career` (career aggregates — sums and ratios of sums
+  only; `serve.matches_with_stats` states the serve-stat coverage). New
+  schemas `ArchiveMatch`, `ArchivePlayer`, `ArchivePlayerBio`,
+  `ArchiveCareer`.
+- **Head-to-head.** `GET /h2h?p1=&p2=` (BASIC, or any History plan): the
+  record between two players across both halves of the product. Name-keyed;
+  an ambiguous fragment is refused with the candidate list
+  (`400 ambiguous_name`); totals count meetings with a known winner and
+  `undecided` counts the rest; every meeting carries `outcome` so walkovers
+  and retirements can be excluded. New schema `HeadToHead`.
+- **Rally construction.** `GET /rally/matches`,
+  `GET /rally/matches/{rallyMatchId}` and
+  `GET /history/matches/{matchId}/rally` (all ULTRA): shot-by-shot charted
+  data — serve direction, every stroke with wing/direction/depth, rally
+  length, how the point ended. Its own id space (`rally_match_id`);
+  `404 not_charted` distinguishes "we hold the match but nobody charted it"
+  from "no such match". New schemas `RallyMatch`, `RallyPoint`, `RallyShot`.
+- **Tournament catalogue.** `GET /tournaments` and
+  `GET /tournaments/{tournamentId}` (FREE): the stable id space
+  `Match.tournament_id` joins, with `city`/`country` from a curated table and
+  `category` only where the catalogues agree unambiguously — never derived
+  from the name. New schema `Tournament`.
+- **Rankings listing mode.** `GET /rankings` without `player` (PRO) returns
+  the FULL published table in rank order for exactly one `system` — rows
+  carry `player_name` as published and a null `player_id` outside our roster,
+  so a top-N has no silent holes; `meta.coverage.effective_date` names the
+  week served; `utr` has no listing. Per-player as-of records stay ULTRA.
+  `RankingRecord` gains `player_name`, `previous_rank` (ATP/WTA) and
+  `rank_movement` (ITF).
+- **List filters.** `/matches` gains `player` (repeatable, max 50,
+  either-participant), `country` (IOC-style lowercase 3-letter codes — NOT
+  ISO-3166), `from`/`to` (UTC day boundaries, every status) and keeps `tour`;
+  `/history/matches` gains `tour`, `player` and `country` alongside its
+  existing `from`/`to`/`coverage`.
+- **Match fields.** `Match` gains `tour` (the same vocabulary as the filter,
+  null never guessed), `tournament_id`, `round_code` (controlled vocabulary
+  `F`…`ER`, null when unrecognised), a documented `event_status` enum
+  (`Retired` | `Cancelled` | `Walk Over` | `Postponed` | `Interrupted`, with
+  the null-ambiguity caveat) and `withdrew` (1|2 on `Retired`/`Walk Over`,
+  withdrawer = loser by rule); `winner` is now served for the full archive
+  age.
+- **Fixture fields.** `Fixture` gains `start_time` (null until the order of
+  play assigns a time), `player1_id`/`player2_id` (exact-key roster
+  resolution, never a name match) and `round_code`.
+- **Tape additions.** Clean-sequence tape rows gain `point_winner` (derived
+  from single-point transitions, never guessed; absent on raw); the tape
+  detail gains a top-level `tiebreaks` array (observed terminal tiebreak
+  scores per 7-6 set) and `meta.model_rows`; the history listing's `tape`
+  object gains `model_rows`.
+- **Archive bulk packages.** `/history/packages` and
+  `/history/packages/{period}` gain `kind=archive` — the results archive
+  (1968–2022) as YEARLY exports (`period` = `YYYY`), gzipped, alongside the
+  monthly tape packages; the file manifest documents `compression`.
+- **Statistics `final`.** The in-play statistics coverage vocabulary gains
+  `final` — the closing figures of a completed match; a finished match cannot
+  be "stale", so `age_seconds` is null there.
+
+### Changed
+- `info.version` is now `1.2.0`; `info.description` states the two history
+  halves and the updated tier deltas (tournaments on FREE, the archive family
+  and `/h2h` on BASIC/History plans, the rankings listing on PRO, rally and
+  per-player as-of rankings on ULTRA).
+
 ## [1.1.0] — 2026-08-02
 
 ### Added

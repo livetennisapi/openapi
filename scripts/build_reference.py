@@ -599,9 +599,9 @@ clicking a link is the fastest route and that trade-off is fine.</p>
 <table><caption class="vh">Plans — what each tier adds over the one below, its rate limit and price</caption>
 <thead><tr><th scope="col">Plan</th><th scope="col">Adds</th><th scope="col">Rate limit</th><th scope="col">Price</th></tr></thead><tbody>
 <tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 1,000/day</td><td>$0 — no card</td></tr>
-<tr><th scope="row">BASIC</th><td>Historical data: the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match point-by-point tape with the model win-probability at every point (<code>/history/matches/{{matchId}}</code>).</td><td>60/min &middot; 10,000/day</td><td>$9.99/mo</td></tr>
-<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), and the pre-built monthly bulk history packages (<code>/history/packages</code>, JSONL/CSV).</td><td>300/min &middot; 100,000/day</td><td>$29.99/mo</td></tr>
-<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
+<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability at every point (<code>/history/matches/{{matchId}}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 10,000/day</td><td>$9.99/mo</td></tr>
+<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 100,000/day</td><td>$29.99/mo</td></tr>
+<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, per-player as-of ranking records, rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
 </tbody></table></div>
 <p class="scrollnote">The table above scrolls sideways.</p>
 <p>Calling an endpoint above your plan returns <code>403 {{"error":"upgrade_required"}}</code> —
@@ -685,12 +685,20 @@ differ in which data products and volumes they unlock, never in which
 tournaments you see.</p>
 
 <h3 id="faq-how-far-back">How far back does history go?</h3>
-<p><code>/history/matches</code> pages every completed match on record, all tours, newest
-first — filter a window with <code>from</code>/<code>to</code>. Bulk packages are built per calendar
-month; <code>GET /history/packages</code> lists exactly which months are available right
-now, with match and row counts per month, and is always the authoritative
-answer. Year-scale archive exports are part of the Historical Data API
-Business plan.</p>
+<p><strong>1968.</strong> History runs in two continuous, non-overlapping halves. The
+<strong>point-by-point tape (2023&rarr;now)</strong>: <code>/history/matches</code> pages every completed
+match from January 2023 on, all tours, newest first — filter a window with
+<code>from</code>/<code>to</code> — with the per-match point-by-point tape at
+<code>/history/matches/{{matchId}}</code>. The <strong>results archive (1968&ndash;2022)</strong>:
+<code>/history/archive/matches</code> serves winner/loser-shaped RESULTS — ATP and WTA,
+main draws, qualifying and the ITF/futures tiers, 1968 through 2022 — with
+final score, seeds, ranks at the time, and per-match serve statistics where
+the era recorded them (from 1991). The archive ends exactly where the tape
+begins, so no match is ever served from two datasets. Bulk: tape packages are
+built per calendar month, archive packages per year
+(<code>?kind=archive</code>); <code>GET /history/packages</code> lists exactly which periods
+exist and is always the authoritative answer. Year-scale exports are part of
+the Historical Data API Business plan.</p>
 
 <h3 id="faq-whats-in-tape">What's in the point-by-point tape?</h3>
 <p>One row per recorded point state, chronological: <code>sets</code>, per-set <code>games</code>,
@@ -733,7 +741,8 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "",
         "> Complete endpoint reference for the Live Tennis API. Real-time tennis scores,",
         "> players, rankings, match-winner market prices and model win-probability for ATP,",
-        "> WTA, Challenger and ITF, over REST and WebSocket.",
+        "> WTA, Challenger and ITF, over REST and WebSocket — plus the point-by-point tape",
+        "> (2023→now) and the results archive (1968–2022) of deep historical results.",
         "",
         f"Base URL: {base}",
         f"Full text reference: {DOCS_URL}/reference.html",
@@ -758,13 +767,17 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "- FREE ($0, no card) — live & upcoming matches, current scores, players, fixtures,",
         "  usage stats. 30 req/min, 1,000 req/day. No history, no market prices, no model",
         "  fields, no WebSocket.",
-        "- BASIC ($9.99/mo) — adds history: the completed-match listing and the per-match",
-        "  point-by-point tape with the model win-probability at every point.",
+        "- BASIC ($9.99/mo) — adds history, in two continuous halves: the point-by-point",
+        "  tape (2023→now) — the completed-match listing and the per-match tape with the",
+        "  model win-probability at every point — and the results archive (1968–2022):",
+        "  deep results, archive player bios, career aggregates and head-to-head (/h2h).",
         "  60 req/min, 10,000 req/day.",
-        "- PRO ($29.99/mo) — adds match events, market prices, and monthly bulk history",
-        "  packages (JSONL/CSV). 300 req/min, 100,000 req/day.",
+        "- PRO ($29.99/mo) — adds match events, market prices, bulk history packages",
+        "  (JSONL/CSV), and the rank-ordered rankings listing. 300 req/min, 100,000 req/day.",
         "- ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,",
-        "  the WebSocket push feed and webhooks. 600 req/min, 500,000 req/day.",
+        "  in-play match statistics, per-player as-of rankings, rally construction",
+        "  (shot-by-shot charted data), the WebSocket push feed and webhooks.",
+        "  600 req/min, 500,000 req/day.",
         "",
         "Coverage is identical on every plan (all tours, ATP through ITF); plans differ in",
         "which data products and volumes they unlock. Calling above your plan returns",
@@ -797,9 +810,14 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "match per request, 10,000/day. PRO = + whole months of history in one bulk file,",
         "plus events and market prices, 100,000/day. ULTRA = + model analysis and live",
         "push, 500,000/day.",
-        "How far back does history go? /history/matches pages every completed match on",
-        "record (filter with from/to); GET /history/packages lists exactly which monthly",
-        "bulk packages exist and is always the authoritative answer.",
+        "How far back does history go? 1968, in two continuous halves. The point-by-point",
+        "tape (2023→now): /history/matches pages every completed match from January 2023",
+        "on (filter with from/to). The results archive (1968–2022): /history/archive/matches",
+        "serves winner/loser-shaped results — ATP and WTA, main draws, qualifying and the",
+        "ITF/futures tiers, 1968 through 2022 — with seeds, ranks at the time, and serve",
+        "stats where the era recorded them (from 1991). The archive ends where the tape",
+        "begins. GET /history/packages lists exactly which bulk periods exist (monthly for",
+        "tape, yearly for ?kind=archive) and is always the authoritative answer.",
         "What's in the point-by-point tape? One timestamped row per recorded point state:",
         "sets, per-set games, in-game points, server, tiebreak flag, and the model's",
         "win_probability_p1 + danger at that point.",

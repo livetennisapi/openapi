@@ -18,7 +18,7 @@ over REST and WebSocket.
 
 | File | Purpose |
 |---|---|
-| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 22 endpoints (21 paths), 28 schemas |
+| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 32 endpoints (31 paths), 37 schemas |
 | [`docs/`](docs/) | Rendered reference, published to <https://docs.livetennisapi.com> |
 
 The spec is the **source of truth** for our official SDKs. If the spec and an SDK disagree,
@@ -58,10 +58,13 @@ Authorization: Bearer twjp_…
 X-API-Key: twjp_…
 ```
 
-**Tiers** — FREE (live & upcoming matches, scores, players, fixtures, your own usage
-stats — self-serve, no card: <https://livetennisapi.com/subscribe/free>) · BASIC
-(+ completed-match history) · PRO (+ events, market prices, bulk packages) · ULTRA
-(+ analysis, model fields, in-play statistics, as-of rankings, WebSocket, webhooks).
+**Tiers** — FREE (live & upcoming matches, scores, players, fixtures, tournaments,
+your own usage stats — self-serve, no card:
+<https://livetennisapi.com/subscribe/free>) · BASIC (+ history in two halves: the
+point-by-point tape (2023→now) and the results archive (1968–2022) with `/h2h` and
+career aggregates) · PRO (+ events, market prices, bulk packages, the rankings
+listing) · ULTRA (+ analysis, model fields, in-play statistics, per-player as-of
+rankings, rally construction, WebSocket, webhooks).
 Calling above your tier returns `403 {"error":"upgrade_required"}`.
 
 **Conventions**
