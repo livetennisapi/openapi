@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.1.0"
+  version: "1.2.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -18,25 +18,40 @@ info:
     everything in the tiers below it; the concrete deltas are:
 
     `FREE` — self-serve, no card (https://livetennisapi.com/subscribe/free).
-    Live and upcoming matches, current scores, players, fixtures, and your own
-    usage stats. 30 requests/minute, 1,000/day. No historical results, no
-    market prices, no model fields, no WebSocket.
+    Live and upcoming matches, current scores, players, fixtures, the
+    tournament catalogue (`/tournaments`), and your own usage stats.
+    30 requests/minute, 1,000/day. No historical results, no market prices,
+    no model fields, no WebSocket.
 
     `BASIC` — adds historical data: the completed-match listing
-    (`/history/matches`, and `status=completed` on `/matches`) and the
+    (`/history/matches`, and `status=completed` on `/matches`), the
     per-match point-by-point tape with the per-point model win-probability
-    (`/history/matches/{matchId}`). 60 requests/minute, 10,000/day.
+    (`/history/matches/{matchId}`), and the results archive (1968–2022) —
+    deep results (`/history/archive/matches`), archive player bios
+    (`/history/archive/players`), career aggregates
+    (`/history/archive/career`) and head-to-head (`/h2h`).
+    60 requests/minute, 10,000/day.
 
     `PRO` — adds match events (`/matches/{matchId}/events`), market prices
-    (`/markets`, `/markets/{matchId}/prices`, `/matches/{matchId}/prices`) and
-    the pre-built monthly bulk history packages (`/history/packages`).
+    (`/markets`, `/markets/{matchId}/prices`, `/matches/{matchId}/prices`),
+    the pre-built monthly bulk history packages (`/history/packages`) and the
+    rank-ordered rankings listing (`/rankings?system=`).
     300 requests/minute, 100,000/day.
 
     `ULTRA` — adds model analysis (`/matches/{matchId}/analysis`), the live
     model fields (`win_probability_p1`, `danger`) on every score object,
-    in-play match statistics (`/matches/{matchId}/statistics`), as-of ranking
-    records (`/rankings`), the WebSocket push feed at `/ws`, and outbound
-    webhooks (direct keys). 600 requests/minute, 500,000/day.
+    in-play match statistics (`/matches/{matchId}/statistics`), per-player
+    as-of ranking records (`/rankings?player=`), rally construction
+    (`/rally/matches`, shot-by-shot charted data), the WebSocket push feed at
+    `/ws`, and outbound webhooks (direct keys). 600 requests/minute,
+    500,000/day.
+
+    History runs in two continuous halves, deliberately non-overlapping: the
+    point-by-point tape (2023→now) covers January 2023 to now, match by
+    match, point by point; the results archive (1968–2022) covers 1968
+    through 2022 as winner/loser-shaped RESULTS (final score, seeds, ranks at
+    the time — no point-by-point). The archive ends exactly where the tape
+    begins, so no match is ever served from two datasets.
 
     A call above your tier returns `403 {"error":"upgrade_required"}` — never
     a silent empty result.
@@ -55,6 +70,9 @@ info:
     downloads and higher rate limits; **Business** — everything in Pro plus
     year-scale archive exports, top rate limits and priority support. One-off
     1-month and 1-year access passes are available without a subscription.
+    The results archive (1968–2022) endpoints (`/history/archive/*`, `/h2h`)
+    ride with the same entitlement — any active History plan, Starter
+    included, opens them alongside the tape endpoints.
     Plans and prices: https://livetennisapi.com/historical-tennis-data-api
 
     All timestamps are UTC ISO 8601 with a `Z` suffix. List endpoints return
@@ -104,6 +122,10 @@ paths:
         `status=completed` pages historical results and is part of the paid
         History product — it requires BASIC (the same rule as
         `/history/matches`) and returns `403 upgrade_required` on a FREE key.
+        The `player`, `country`, `from`/`to` and `tour` filters are optional,
+        AND-composed, applied inside the query (before pagination), and work
+        on every status — omitting them returns exactly what the endpoint
+        returned before they existed.
       operationId: listMatches
       parameters:
         - name: status
@@ -113,6 +135,10 @@ paths:
             BASIC — paging completed results is the history surface.
           schema: { type: string, enum: [live, upcoming, completed], default: live }
         - $ref: "#/components/parameters/tour"
+        - $ref: "#/components/parameters/player"
+        - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/playedFrom"
+        - $ref: "#/components/parameters/playedTo"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -238,7 +264,9 @@ paths:
 
 
         `freshness.derived` and `freshness.measured` each carry their own
-        `coverage` (`live` | `stale` | `none` | `diverged`), `as_of`,
+        `coverage` (`live` | `final` | `stale` | `none` | `diverged`;
+        `final` = the closing figures of a completed match — a finished match
+        cannot be "stale", so its `age_seconds` is null), `as_of`,
         `age_seconds` and `describes` — the match state the numbers describe.
         On `diverged` the measured VALUES are withheld and
         `freshness.measured_divergence` says why; the top-level `coverage` only
@@ -308,6 +336,58 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Player" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /tournaments:
+    get:
+      summary: Tournament catalogue — the id space `Match.tournament_id` joins (FREE)
+      description: >-
+        Stable tournament identity, one row per tournament × event type, stable
+        across seasons. `city`/`country` come from a curated table and
+        `category` only where our catalogues agree unambiguously on an
+        exact-name join — each is null otherwise, never derived from the
+        tournament name.
+      operationId: listTournaments
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Case-insensitive substring match on the tournament name.
+        - $ref: "#/components/parameters/tour"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Tournaments, name order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Tournament" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /tournaments/{tournamentId}:
+    get:
+      summary: One tournament by its stable id (FREE)
+      operationId: getTournament
+      parameters:
+        - name: tournamentId
+          in: path
+          required: true
+          schema: { type: string }
+          description: The `tournament_id` carried on match objects.
+      responses:
+        "200":
+          description: The tournament
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Tournament" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/RateLimited" }
@@ -407,7 +487,10 @@ paths:
       description: >-
         Requires BASIC on the live API, or any Historical Data API plan
         (Starter and up — see https://livetennisapi.com/historical-tennis-data-api).
-        All tours. Filter to a date range with `from`/`to`. Each item carries a
+        All tours, January 2023 → now (deeper results live in the results
+        archive, 1968–2022, at `/history/archive/matches`). Filter to a date
+        range with `from`/`to`, and by `tour`, `player` (either participant)
+        and `country` — same vocabulary as `/matches`. Each item carries a
         `tape` object saying what point-by-point data we hold for that match,
         so a whole page can be qualified in one call instead of one request per
         match. NOTE `?coverage=` is applied AFTER the page is cut, so a
@@ -420,6 +503,9 @@ paths:
         - $ref: "#/components/parameters/offset"
         - $ref: "#/components/parameters/playedFrom"
         - $ref: "#/components/parameters/playedTo"
+        - $ref: "#/components/parameters/tour"
+        - $ref: "#/components/parameters/player"
+        - $ref: "#/components/parameters/country"
         - name: coverage
           in: query
           required: false
@@ -494,6 +580,210 @@ paths:
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/RateLimited" }
+  /history/archive/matches:
+    get:
+      summary: Results archive (1968–2022) — deep historical results (BASIC)
+      description: >-
+        Completed-match RESULTS from a licensed historical corpus — ATP and
+        WTA main draws, qualifying/challengers and futures tiers, 1968 through
+        2022. Winner/loser-shaped records with final score, round, seeds, the
+        players' ranks AT THE TIME, and per-match serve statistics where the
+        era recorded them. Requires BASIC on the live API, or any Historical
+        Data API plan (Starter and up).
+
+
+        A SEPARATE id space from `/matches` — archive people are identified by
+        the corpus person id and by name, never by roster player ids — and the
+        archive ends where our own point-by-point coverage begins (2023-01),
+        so no match is ever served from two datasets. `event_date` is the
+        TOURNAMENT START date, the only date records of this era carry.
+      operationId: listArchiveMatches
+      parameters:
+        - name: tour
+          in: query
+          schema: { type: string, enum: [atp, wta] }
+          description: The archive covers the ATP and WTA corpora only.
+        - name: name
+          in: query
+          schema: { type: string, minLength: 3 }
+          description: >-
+            Case-insensitive substring match on EITHER player's name (min 3
+            chars).
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+          description: Earliest tournament start date (`YYYY-MM-DD`).
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+          description: Latest tournament start date (`YYYY-MM-DD`).
+        - name: round
+          in: query
+          schema:
+            type: string
+            enum: [F, SF, QF, R16, R32, R64, R128, RR, BR, Q1, Q2, Q3, Q4, ER]
+          description: The archive's controlled round vocabulary.
+        - name: level
+          in: query
+          schema: { type: string }
+          description: >-
+            Source tier code: G=grand slam, M=masters, A=tour, F=finals,
+            D=davis cup, C=challenger, O=olympics; the futures tiers carry
+            their category codes (e.g. 15, 25) as published.
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Archive results, newest tournament first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ArchiveMatch" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/archive/matches/{archiveId}:
+    get:
+      summary: One archive result, with serve statistics where recorded (BASIC)
+      description: >-
+        Same entitlement as the archive listing. `stats` is null for the
+        (mostly pre-1991) rows the source never recorded statistics for —
+        never synthesised.
+      operationId: getArchiveMatch
+      parameters:
+        - name: archiveId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The archive record, `stats` included where the era recorded them
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArchiveMatch" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/archive/players:
+    get:
+      summary: Archive player bios — hand, DOB, country, height, career-high (BASIC)
+      description: >-
+        People of the results archive (1968–2022), in their own id space —
+        `id` is the corpus person id that archive match rows carry as
+        `winner.player_id` / `loser.player_id`, scoped per tour; never a
+        roster id. Career-high rank and the earliest week it was reached are
+        computed offline from the corpus's own weekly ranking tables. Null
+        fields are the era's silence, never guessed. Requires BASIC, or any
+        Historical Data API plan.
+      operationId: listArchivePlayers
+      parameters:
+        - name: name
+          in: query
+          schema: { type: string, minLength: 3 }
+          description: Case-insensitive substring filter (min 3 chars).
+        - name: tour
+          in: query
+          schema: { type: string, enum: [atp, wta] }
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Archive people, ordered by name
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ArchivePlayerBio" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/archive/career:
+    get:
+      summary: Career aggregates over the results archive, 1968–2022 (BASIC)
+      description: >-
+        One player's whole archive career in one response: W-L record
+        (overall, by surface, by level, by year), titles, and the summed
+        serve-stat block with derived ratios. Everything is a sum or a ratio
+        of sums over rows you can fetch individually from
+        `/history/archive/matches` — nothing is modelled.
+        `serve.matches_with_stats` states the coverage honestly: the corpus
+        records per-match serve statistics from 1991 only, so a 1970s career
+        has a full W-L record and an empty serve block. Ambiguous name
+        fragments are refused with candidates (same rule as `/h2h`); an
+        unknown name is a 404. Requires BASIC, or any Historical Data API
+        plan.
+      operationId: getArchiveCareer
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string, minLength: 3 }
+          description: >-
+            Player name (fragment, min 3 chars — must resolve to one person).
+      responses:
+        "200":
+          description: The career aggregate body
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArchiveCareer" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /h2h:
+    get:
+      summary: >-
+        Head-to-head across the results archive (1968–2022) and our own
+        completed matches (2023→now) (BASIC)
+      description: >-
+        The record between two players, assembled from BOTH halves of the
+        product: the results archive, where the winner is a stored column, and
+        our own completed matches, where the winner is derived from the final
+        recorded state. Names are the keys — archive people have no roster
+        ids. A fragment matching more than one player is refused with the
+        candidate list (`400 ambiguous_name`), because two people summed into
+        one record is a wrong answer, not a convenience. Totals count meetings
+        with a KNOWN winner; `undecided` counts the rest. Walkovers and
+        retirements are part of the record, and each meeting carries `outcome`
+        so you can exclude them. Requires BASIC, or any Historical Data API
+        plan.
+      operationId: getHeadToHead
+      parameters:
+        - name: p1
+          in: query
+          required: true
+          schema: { type: string, minLength: 3 }
+          description: First player name (fragment, min 3 chars).
+        - name: p2
+          in: query
+          required: true
+          schema: { type: string, minLength: 3 }
+          description: Second player name (fragment, min 3 chars).
+      responses:
+        "200":
+          description: >-
+            The head-to-head record; empty totals when no player matches the
+            names
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/HeadToHead" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
   /history/packages:
     get:
       summary: List the pre-built monthly bulk history packages (PRO)
@@ -507,11 +797,14 @@ paths:
         - name: kind
           in: query
           required: false
-          schema: { type: string, enum: [tape, rankings], default: tape }
+          schema: { type: string, enum: [tape, rankings, archive], default: tape }
           description: >-
-            Package family. `tape` (default) = point-by-point match tapes;
-            `rankings` = as-of ranking records (ULTRA). The default means a
-            tape-only client never sees a new kind of row appear.
+            Package family. `tape` (default) = monthly point-by-point match
+            tapes; `rankings` = as-of ranking records (ULTRA); `archive` = the
+            results archive (1968–2022) as YEARLY exports — its `period` is
+            `YYYY`, one file per year, because a fixed historical corpus is
+            not an accruing monthly stream. The default means a tape-only
+            client never sees a new kind of row appear.
         - name: year
           in: query
           required: false
@@ -554,13 +847,18 @@ paths:
         - name: period
           in: path
           required: true
-          description: Calendar month, `YYYY-MM`.
-          schema: { type: string, pattern: '^\d{4}-\d{2}$' }
+          description: >-
+            Calendar month, `YYYY-MM` — except for the yearly `archive` kind,
+            where it is the bare year `YYYY` (`400 bad_period` otherwise).
+          schema: { type: string, pattern: '^\d{4}(-\d{2})?$' }
         - name: kind
           in: query
           required: false
-          schema: { type: string, enum: [tape, rankings], default: tape }
-          description: Package family; `rankings` requires ULTRA.
+          schema: { type: string, enum: [tape, rankings, archive], default: tape }
+          description: >-
+            Package family; `rankings` requires ULTRA. `archive` = the yearly
+            results archive (1968–2022) exports, same entitlement as the tape
+            packages.
         - name: format
           in: query
           required: false
@@ -570,13 +868,18 @@ paths:
         "200":
           description: >-
             The manifest (no `format`), or the bulk file as an attachment
-            (`format=jsonl` streams NDJSON, `format=csv` streams CSV).
+            (`format=jsonl` streams NDJSON, `format=csv` streams CSV). A
+            gzipped file (see the manifest's `compression`) is served as
+            `application/gzip`, never with `Content-Encoding: gzip` — the
+            manifest's `sha256` covers the exact bytes you receive.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HistoryPackage" }
             application/x-ndjson:
               schema: { type: string, format: binary }
             text/csv:
+              schema: { type: string, format: binary }
+            application/gzip:
               schema: { type: string, format: binary }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -593,7 +896,9 @@ paths:
         - $ref: "#/components/parameters/offset"
       responses:
         "200":
-          description: Name-only fixtures (players not yet resolved to ids)
+          description: >-
+            Fixtures with start time and player ids where resolved — the
+            nulls are real states, not gaps (names are always present)
           content:
             application/json:
               schema:
@@ -624,7 +929,7 @@ paths:
         "429": { $ref: "#/components/responses/RateLimited" }
   /rankings:
     get:
-      summary: Ranking records as they stood on a date (ULTRA)
+      summary: Rankings — rank-ordered listing (PRO), or per-player as-of records (ULTRA)
       description: >-
         Returns, per ranking system, the newest record effective ON OR BEFORE
         `as_of` — never one dated after it. Every other ranking field in this
@@ -636,14 +941,28 @@ paths:
         `meta.coverage.oldest_available` gives the earliest date each system
         can answer for — ITF and UTR history begins 2026-07-29 and cannot be
         reconstructed earlier.
+
+
+        TWO MODES. WITH `player` ids (ULTRA) — the per-player point-in-time
+        records described above. WITHOUT `player` (PRO) — the rank-ordered
+        LISTING: the FULL published table for exactly one `system` (required
+        in this mode), the newest week at or before `as_of`, paged with
+        `limit`/`offset`. Listing rows carry `player_name` as the ranking
+        publisher printed it and a null `player_id` for players outside our
+        roster, so a top-N has no silent holes; `meta.coverage.effective_date`
+        names the week served. `utr` has no listing — it is a rating, not a
+        ranking.
       operationId: listRankings
       parameters:
         - name: player
           in: query
-          required: true
+          required: false
           schema: { type: array, items: { type: integer }, maxItems: 50 }
           explode: true
-          description: Player id. Repeatable, max 50 per request.
+          description: >-
+            Player id. Repeatable, max 50 per request (ULTRA per-player
+            mode). OMIT it for the rank-ordered listing mode (PRO), which
+            then requires exactly one `system`.
         - name: as_of
           in: query
           required: false
@@ -676,6 +995,129 @@ paths:
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /rally/matches:
+    get:
+      summary: Charted matches with shot-by-shot data (ULTRA)
+      description: >-
+        Charted matches, newest first. RALLY CONSTRUCTION IS THE LAYER BELOW
+        THE TAPE: the tape says what the score became after each point, this
+        says how the point was played.
+
+
+        It has its OWN id space. The charted corpus and our own match table
+        are different populations — the corpus reaches back decades and
+        concentrates on the biggest events, while our matches begin when our
+        own collection did. Keying this on our match ids would hide most of
+        it. Ask this endpoint for the authoritative coverage list rather than
+        assuming a match is charted: charting is human work, so coverage is
+        deep, not universal.
+      operationId: listRallyMatches
+      parameters:
+        - name: player
+          in: query
+          required: false
+          schema: { type: string }
+          description: Substring match on either player name.
+        - name: from
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: "`YYYY-MM-DD`."
+        - name: to
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: "`YYYY-MM-DD`."
+        - name: surface
+          in: query
+          required: false
+          schema: { type: string }
+        - name: gender
+          in: query
+          required: false
+          schema: { type: string, enum: [M, W] }
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Charted matches, with per-match parse-quality counts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/RallyMatch" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /rally/matches/{rallyMatchId}:
+    get:
+      summary: Rally construction for one charted match (ULTRA)
+      description: >-
+        One charted match with its points, in play order. Paged with
+        `limit`/`offset`; `meta.total` is the match's full point count.
+      operationId: getRallyMatch
+      parameters:
+        - name: rallyMatchId
+          in: path
+          required: true
+          schema: { type: integer }
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: The charted match with its `rally` points
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: "#/components/schemas/RallyMatch" }
+                  - type: object
+                    properties:
+                      meta: { $ref: "#/components/schemas/ListMeta" }
+                      rally:
+                        type: array
+                        items: { $ref: "#/components/schemas/RallyPoint" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/matches/{matchId}/rally:
+    get:
+      summary: Rally construction by OUR match id (ULTRA)
+      description: >-
+        Rally construction addressed by OUR match id, resolved through the
+        optional link. Answers `404 {"error":"not_charted"}` when we hold the
+        match but nobody charted it — deliberately distinct from "no such
+        match", because most of our matches are not charted and a consumer
+        walking the archive must tell them apart.
+      operationId: getMatchRally
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: The charted match with its `rally` points
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - { $ref: "#/components/schemas/RallyMatch" }
+                  - type: object
+                    properties:
+                      meta: { $ref: "#/components/schemas/ListMeta" }
+                      rally:
+                        type: array
+                        items: { $ref: "#/components/schemas/RallyPoint" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /webhooks:
     post:
@@ -835,6 +1277,31 @@ components:
       schema:
         type: string
         enum: [atp, wta, challenger, itf, juniors]
+    player:
+      name: player
+      in: query
+      required: false
+      schema: { type: array, items: { type: integer }, maxItems: 50 }
+      explode: true
+      description: >-
+        Filter to matches where this player id is EITHER participant.
+        Repeatable (max 50 ids); multiple values return the deduplicated
+        union. An unknown id returns an honest empty list, not an error; a
+        non-integer value is a 400 `bad_request`. Before 2026-08-03 this
+        parameter was accepted and silently ignored — treat any integration
+        written against that behaviour as unfiltered.
+    country:
+      name: country
+      in: query
+      required: false
+      schema: { type: string, minLength: 3, maxLength: 3 }
+      description: >-
+        Filter to matches where EITHER participant's `player.country` equals
+        this lowercase 3-letter code — the same vocabulary the Player object
+        returns (IOC-style codes, e.g. `ned`, `sui`, `gre`; NOT ISO-3166).
+        Players with no recorded country never match, so a country filter
+        excludes unknown-nationality matches rather than guessing. A value
+        that is not 3 letters is a 400 `bad_country`.
   responses:
     BadRequest:
       description: Bad query parameter
@@ -869,7 +1336,8 @@ components:
           type: string
           description: >-
             Stable machine-readable code, e.g. bad_date, bad_coverage,
-            bad_sequence, bad_period, bad_year, bad_format, not_found,
+            bad_sequence, bad_period, bad_year, bad_format, bad_tour,
+            bad_country, ambiguous_name, not_charted, not_found,
             upgrade_required, rate_limited.
         detail:
           type: string
@@ -981,12 +1449,53 @@ components:
       properties:
         id: { type: integer }
         tournament: { type: string }
+        tour:
+          type: [string, "null"]
+          enum: [atp, wta, challenger, itf, juniors, null]
+          description: >-
+            The tour, in the SAME vocabulary the `tour` query filter accepts —
+            both are derived from one registry, so a match selected by
+            `?tour=X` always carries that value in `tour`. Null when the feed
+            never stated a tour or the event type has no public tour name
+            (exhibitions, team and mixed events) — never guessed. Safe to
+            group and filter on; never parse the tournament name for this.
+        tournament_id:
+          type: [string, "null"]
+          description: >-
+            Stable tournament identity — one id per tournament × event type,
+            stable across seasons. Joins `GET /tournaments/{tournamentId}`.
+            Null on matches ingested before the catalogue covered their
+            tournament. (Edge case — a match mislabelled as qualifying by the
+            feed has its id re-pointed to the main-draw tournament when
+            detected, so the id can change once, early, in that direction
+            only.)
         surface: { type: [string, "null"], enum: [hard, clay, grass, null] }
         indoor: { type: boolean }
         format: { type: [string, "null"], enum: [BO3, BO5, null] }
         round: { type: [string, "null"] }
+        round_code:
+          type: [string, "null"]
+          enum: [F, SF, QF, R16, R32, R64, R128, RR, BR, Q, Q1, Q2, Q3, Q4, ER, null]
+          description: >-
+            The round in the archive's controlled vocabulary, normalized from
+            the free-text label above (`Q` = qualifying round the feed does
+            not number). This is the field to branch on; it matches
+            `/history/archive/matches?round=` exactly. Null when the label is
+            unrecognised — never guessed.
         status: { type: string, enum: [upcoming, live, completed, cancelled] }
-        event_status: { type: [string, "null"] }
+        event_status:
+          type: [string, "null"]
+          enum: [Retired, Cancelled, Walk Over, Postponed, Interrupted, null]
+          description: >-
+            How the match ended (or paused) when it did not run its course:
+            retirement, cancellation, walkover, postponement, or an in-play
+            suspension (`Interrupted` — rain/darkness/medical; the match is
+            paused, not over). NULL means the match completed normally OR the
+            outcome was never resolved — the feed does not distinguish those.
+            Two honest caveats: the value is cleared if a suspended match
+            resumes (no record of the pause survives), and for
+            `Retired`/`Walk Over` the withdrawing player is reported in
+            `withdrew`, where derivable.
         is_doubles: { type: boolean }
         scheduled_time: { type: [string, "null"], format: date-time }
         players:
@@ -1000,7 +1509,19 @@ components:
             - { type: "null" }
         winner:
           type: [integer, "null"]
-          description: Completed matches only — derived from final sets
+          description: >-
+            Completed matches only — derived from final sets. Served for the
+            full archive age: a match older than the live-table window reads
+            its final state from the same store the tape serves, so old
+            completed matches carry a winner too.
+        withdrew:
+          type: [integer, "null"]
+          description: >-
+            Completed matches only — which player retired or conceded the
+            walkover (1|2). Present only when `event_status` is
+            `Retired`/`Walk Over` and the winner is derivable; the withdrawer
+            is the loser by the rules of the sport. Absent means "not a
+            withdrawal, or no evidence" — never a guess.
     MatchDetail:
       allOf:
         - { $ref: "#/components/schemas/Match" }
@@ -1137,6 +1658,22 @@ components:
       properties:
         id: { type: integer }
         event_date: { type: [string, "null"], format: date }
+        start_time:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Scheduled start (UTC). Null until the order of play assigns a
+            time — a date-only fixture is a real state, and rows written
+            before 2026-08-03 stay null.
+        player1_id:
+          type: [integer, "null"]
+          description: >-
+            Our player id, when the participant is in our roster (exact-key
+            resolution, never a name match). Null otherwise — names are
+            always present regardless.
+        player2_id:
+          type: [integer, "null"]
+          description: As `player1_id`, for the second participant.
         tour:
           type: [string, "null"]
           description: >-
@@ -1148,6 +1685,12 @@ components:
             the filter enum.
         tournament: { type: [string, "null"] }
         round: { type: [string, "null"] }
+        round_code:
+          type: [string, "null"]
+          enum: [F, SF, QF, R16, R32, R64, R128, RR, BR, Q, Q1, Q2, Q3, Q4, ER, null]
+          description: >-
+            Normalized round — same vocabulary as `Match.round_code`. Null
+            when the label is unrecognised, never guessed.
         surface: { type: [string, "null"] }
         player1_name: { type: [string, "null"] }
         player2_name: { type: [string, "null"] }
@@ -1203,6 +1746,16 @@ components:
         win_probability_p1: { type: [number, "null"] }
         danger: { type: [number, "null"] }
         timestamp: { type: [string, "null"], format: date-time }
+        point_winner:
+          type: [integer, "null"]
+          enum: [1, 2, null]
+          description: >-
+            Who won the point this row records — PRESENT ONLY on
+            `?sequence=clean` rows, and only where the transition from the
+            previous row is a single attributable point; null on gaps, torn
+            rows and the first row. Never on the raw sequence (raw is
+            deliberately non-monotonic: consecutive raw rows are corrections,
+            not points). Derived at read time, never stored or guessed.
     HistoryTape:
       type: object
       description: >-
@@ -1218,6 +1771,21 @@ components:
           type: array
           description: Chronological score sequence — see HistoryTapeRow.
           items: { $ref: "#/components/schemas/HistoryTapeRow" }
+        tiebreaks:
+          type: [array, "null"]
+          description: >-
+            Per-set tiebreak final scores from OBSERVED states only, aligned
+            to the sets of the final scoreline: `{"p1", "p2"}` for a 7-6 set
+            whose observed maximum tiebreak state is a valid terminal shape
+            (max >= 7, margin >= 2), null per set otherwise — a breaker whose
+            closing point the feed skipped reads null rather than an
+            under-report. Null when the match has no 7-6 set. Present on
+            `raw` and `clean` alike.
+          items:
+            type: [object, "null"]
+            properties:
+              p1: { type: integer }
+              p2: { type: integer }
         profiles:
           type: array
           description: Model profiles produced during the match, oldest first.
@@ -1257,21 +1825,33 @@ components:
               description: >-
                 True when the tape was served from the immutable archive
                 rather than the live-score table. Content is identical.
+            model_rows:
+              type: integer
+              description: >-
+                How many of the RETURNED rows carry a model probability. The
+                model stamp is best-effort in the live path, so no coverage
+                value implies it — this is the count for THIS response,
+                derived per read and never stored.
             generated_at: { type: string, format: date-time }
     HistoryPackage:
       type: object
       description: >-
-        Manifest of one pre-built monthly bulk package (PRO, Historical Data
-        API Pro+, or a one-off package pass). Coverage is not a contiguous run
-        of months and is still being extended backwards, so treat the packages
-        listing as the authoritative set of months that exist. The JSONL file
-        holds ONE LINE PER MATCH (a whole HistoryTape object per line, coverage
-        meta included), not one line per point; the CSV is flattened to one row
-        per point and carries no coverage columns.
+        Manifest of one pre-built bulk package (PRO, Historical Data API
+        Pro+, or a one-off package pass). Tape coverage is not a contiguous
+        run of months and is still being extended backwards, so treat the
+        packages listing as the authoritative set of periods that exist. For
+        `kind=tape` the JSONL file holds ONE LINE PER MATCH (a whole
+        HistoryTape object per line, coverage meta included), not one line
+        per point; the CSV is flattened to one row per point and carries no
+        coverage columns. For `kind=archive` (the results archive, 1968–2022)
+        the JSONL holds one line per archive result (the ArchiveMatch shape)
+        and the CSV one row per result, one file per YEAR.
       properties:
         period:
           type: string
-          description: Calendar month, `YYYY-MM`.
+          description: >-
+            Calendar month, `YYYY-MM` — or the bare year `YYYY` on the yearly
+            `archive` kind.
         status:
           type: string
           enum: [ready]
@@ -1288,15 +1868,22 @@ components:
               filename: { type: string }
               bytes: { type: integer }
               sha256: { type: string }
+              compression:
+                type: string
+                enum: [gzip]
+                description: >-
+                  Present only on compressed files (the yearly kinds ship
+                  gzipped). `bytes` and `sha256` cover the COMPRESSED bytes —
+                  exactly what you download.
         built_at: { type: [string, "null"], format: date-time }
         kind:
           type: string
-          enum: [tape, rankings]
+          enum: [tape, rankings, archive]
           description: >-
             Present only on non-tape packages, so the shape a tape client
             already parses is unchanged. On a rankings package `match_count` is
             the number of players covered and `row_count` the number of ranking
-            records.
+            records; on an archive package the counts are archive results.
     Coverage:
       type: string
       enum: [from_start, partial, reconstructed, reconstructed_partial, none]
@@ -1343,6 +1930,14 @@ components:
                 reconstructed_rows:
                   type: integer
                   description: Reconstructed rows available for this match.
+                model_rows:
+                  type: integer
+                  description: >-
+                    How many of the OBSERVED rows carry a non-null
+                    `win_probability_p1`. The model stamp is best-effort and
+                    no coverage value — `from_start` included — implies it;
+                    read this number to select tapes the model actually
+                    scored.
     Usage:
       type: object
       properties:
@@ -1527,7 +2122,14 @@ components:
     MatchStatisticsFamily:
       type: object
       properties:
-        coverage: { type: string, enum: [live, stale, none, diverged] }
+        coverage:
+          type: string
+          enum: [live, final, stale, none, diverged]
+          description: >-
+            `final` = the closing figures of a completed match. A finished
+            match cannot be "stale", so on `final` the family's `age_seconds`
+            is null; `as_of` still says when the last point/fetch was
+            recorded.
         as_of: { type: [string, "null"] }
         age_seconds: { type: [integer, "null"] }
         describes:
@@ -1544,7 +2146,7 @@ components:
       type: object
       properties:
         match_id: { type: integer }
-        coverage: { type: string, enum: [live, stale, none, diverged] }
+        coverage: { type: string, enum: [live, final, stale, none, diverged] }
         as_of:
           type: [string, "null"]
           description: When the underlying record was last updated (UTC)
@@ -1581,13 +2183,35 @@ components:
         rank+points; UTR populates rating and leaves rank/points null, because
         UTR is a rating and has no rank.
       properties:
-        player_id: { type: integer }
+        player_id:
+          type: [integer, "null"]
+          description: >-
+            Null only on listing rows for players outside our roster — the
+            listing is kept independent of the roster precisely so a top-N
+            has no silent holes. Always present on per-player records.
+        player_name:
+          type: [string, "null"]
+          description: >-
+            The name as the ranking publisher printed it — present on listing
+            rows (where `player_id` may be null), absent on per-player
+            records.
         system:
           type: string
           enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr]
         tour: { type: [string, "null"] }
         rank: { type: [integer, "null"], description: Null for UTR. }
         points: { type: [integer, "null"], description: Null for UTR. }
+        previous_rank:
+          type: [integer, "null"]
+          description: >-
+            The rank at the immediately preceding snapshot week (ATP/WTA
+            only; null when no prior week is held, and always null for
+            ITF/UTR).
+        rank_movement:
+          type: [integer, "null"]
+          description: >-
+            The circuit's own signed weekly movement (ITF systems only; null
+            elsewhere).
         rating: { type: [number, "null"], description: UTR only; null elsewhere. }
         effective_date:
           type: [string, "null"]
@@ -1613,8 +2237,18 @@ components:
                 correctly returns nothing for those systems.
               properties:
                 as_of: { type: [string, "null"], format: date }
-                players_requested: { type: integer }
-                players_resolved: { type: integer }
+                effective_date:
+                  type: [string, "null"]
+                  format: date
+                  description: >-
+                    Listing mode only — the published week actually served
+                    (the newest at or before `as_of`).
+                players_requested:
+                  type: integer
+                  description: Per-player mode only.
+                players_resolved:
+                  type: integer
+                  description: Per-player mode only.
                 systems_requested: { type: array, items: { type: string } }
                 systems_resolved: { type: array, items: { type: string } }
                 oldest_available:
@@ -1681,3 +2315,374 @@ components:
         outcome: { type: string, enum: [held, broken] }
         win_probability_p1_after: { type: [number, "null"] }
         ts: { type: [string, "null"], format: date-time }
+    Tournament:
+      type: object
+      description: >-
+        One tournament of the catalogue — the stable id space
+        `Match.tournament_id` joins, one row per tournament × event type,
+        stable across seasons.
+      properties:
+        id:
+          type: string
+          description: The stable id `Match.tournament_id` joins.
+        name: { type: [string, "null"] }
+        tour:
+          type: [string, "null"]
+          enum: [atp, wta, challenger, itf, juniors, null]
+        surface: { type: [string, "null"], enum: [hard, clay, grass, null] }
+        indoor: { type: boolean }
+        city:
+          type: [string, "null"]
+          description: Host city, from a curated table — null where not curated.
+        country:
+          type: [string, "null"]
+          description: >-
+            Host country, ISO-3166 alpha-2 — null where not curated. (NOTE
+            this differs from `player.country` and the `?country=` filter,
+            which use IOC-style lowercase 3-letter codes.)
+        category:
+          type: [string, "null"]
+          enum: [grand_slam, masters_1000, tour_finals, atp_500, atp_250,
+                 wta_1000, wta_500, wta_250, wta_125, challenger, itf,
+                 juniors, null]
+          description: >-
+            Tournament category where our catalogues agree unambiguously on an
+            exact-name join — null otherwise, never derived from the name.
+    ArchiveMatch:
+      type: object
+      description: >-
+        One result of the results archive (1968–2022). Winner/loser-shaped —
+        results data is recorded that way at the source, so the winner is a
+        field, never an inference. Its own id space; `source_id` is the
+        stable corpus key.
+      properties:
+        id: { type: integer }
+        source_id: { type: string }
+        tour: { type: string, enum: [atp, wta] }
+        level:
+          type: [string, "null"]
+          description: >-
+            Source tier code (G/M/A/F/D/C/O, or a futures category code as
+            published).
+        tournament: { type: [string, "null"] }
+        surface: { type: [string, "null"] }
+        draw_size: { type: [integer, "null"] }
+        event_date:
+          type: [string, "null"]
+          format: date
+          description: >-
+            Tournament START date — per-match dates do not exist in this
+            era's records, and we do not invent them.
+        round: { type: [string, "null"] }
+        best_of: { type: [integer, "null"] }
+        minutes: { type: [integer, "null"] }
+        winner: { $ref: "#/components/schemas/ArchivePlayer" }
+        loser: { $ref: "#/components/schemas/ArchivePlayer" }
+        score:
+          type: [string, "null"]
+          description: >-
+            The final score as published, e.g. "6-4 7-6(5)", "6-3 RET",
+            "W/O".
+        outcome:
+          type: [string, "null"]
+          enum: [completed, retired, walkover, default, abandoned, null]
+          description: >-
+            Parsed from the score's own vocabulary; null when unparseable —
+            never guessed.
+        stats:
+          type: [object, "null"]
+          description: >-
+            Detail endpoint only. {"winner":{...}, "loser":{...}} with aces,
+            double_faults, serve_points, first_in, first_won, second_won,
+            serve_games, bp_saved, bp_faced where the source recorded them;
+            null otherwise (most rows before 1991) — never synthesised.
+    ArchivePlayer:
+      type: object
+      description: One participant of an archive result, as the corpus records them.
+      properties:
+        name: { type: [string, "null"] }
+        hand: { type: [string, "null"] }
+        country:
+          type: [string, "null"]
+          description: 3-letter code, same vocabulary as `player.country`.
+        rank:
+          type: [integer, "null"]
+          description: The player's rank AT THE TIME of the match, as published.
+        seed: { type: [integer, "null"] }
+        player_id:
+          type: [integer, "null"]
+          description: >-
+            The corpus person id — joins `/history/archive/players` within
+            the same tour. NOT a roster player id.
+        height_cm: { type: [integer, "null"] }
+        age:
+          type: [number, "null"]
+          description: Age at the time of the match, as the corpus records it.
+        entry:
+          type: [string, "null"]
+          description: >-
+            Draw entry where recorded (WC, Q, LL, PR, SE, ...) — null for
+            direct acceptances.
+    ArchivePlayerBio:
+      type: object
+      description: >-
+        One archive person — own id space (the corpus person id that archive
+        match rows carry as `winner.player_id` / `loser.player_id`, scoped
+        per tour), never a roster id. Career-high is computed offline from
+        the corpus's own weekly ranking tables at ingest, never modelled.
+        Null fields are the era's silence.
+      properties:
+        id: { type: integer }
+        tour: { type: string, enum: [atp, wta] }
+        name: { type: [string, "null"] }
+        hand: { type: [string, "null"] }
+        dob: { type: [string, "null"], format: date }
+        country: { type: [string, "null"] }
+        height_cm: { type: [integer, "null"] }
+        career_high_rank: { type: [integer, "null"] }
+        career_high_date:
+          type: [string, "null"]
+          format: date
+          description: The earliest week the career-high rank was reached.
+    ArchiveCareer:
+      type: object
+      description: >-
+        Career aggregates over the results archive (1968–2022) — sums and
+        ratios of sums only, nothing modelled. Serve stats exist in the
+        corpus from 1991; `serve.matches_with_stats` states the coverage.
+      properties:
+        player:
+          type: object
+          properties:
+            name: { type: string }
+        span:
+          type: object
+          properties:
+            first: { type: [string, "null"] }
+            last: { type: [string, "null"] }
+        record:
+          type: object
+          properties:
+            wins: { type: integer }
+            losses: { type: integer }
+            titles:
+              type: integer
+              description: Finals won (excluding abandoned finals).
+            by_surface:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  wins: { type: integer }
+                  losses: { type: integer }
+            by_level:
+              type: object
+              additionalProperties:
+                type: object
+                properties:
+                  wins: { type: integer }
+                  losses: { type: integer }
+        by_year:
+          type: array
+          items:
+            type: object
+            properties:
+              year: { type: integer }
+              wins: { type: integer }
+              losses: { type: integer }
+        serve:
+          type: object
+          description: >-
+            Summed serve statistics + derived ratios; null ratios where the
+            denominator is zero.
+          properties:
+            matches_with_stats: { type: integer }
+            aces: { type: integer }
+            double_faults: { type: integer }
+            serve_points: { type: integer }
+            first_in: { type: integer }
+            first_won: { type: integer }
+            second_won: { type: integer }
+            serve_games: { type: integer }
+            bp_saved: { type: integer }
+            bp_faced: { type: integer }
+            first_in_pct: { type: [number, "null"] }
+            first_won_pct: { type: [number, "null"] }
+            second_won_pct: { type: [number, "null"] }
+            bp_saved_pct: { type: [number, "null"] }
+            aces_per_match: { type: [number, "null"] }
+    HeadToHead:
+      type: object
+      description: >-
+        The record between two players across both halves of the product —
+        the results archive (1968–2022) and our own completed matches
+        (2023→now). Totals count meetings with a KNOWN winner; `undecided`
+        counts the rest.
+      properties:
+        players:
+          type: [object, "null"]
+          description: >-
+            The resolved names ({"p1":{"name"}, "p2":{"name"}}); null when no
+            player matches the fragments.
+        totals:
+          type: object
+          properties:
+            p1_wins: { type: integer }
+            p2_wins: { type: integer }
+            meetings: { type: integer }
+            undecided:
+              type: integer
+              description: >-
+                Meetings with no derivable winner (never counted in wins).
+        by_surface:
+          type: object
+          description: >-
+            Per-surface win split of the decided meetings; keys are surface
+            names plus 'unknown'.
+          additionalProperties:
+            type: object
+            properties:
+              p1: { type: integer }
+              p2: { type: integer }
+        meetings:
+          type: array
+          description: >-
+            Newest first, capped at 200. `era` says which half served the
+            row — 'archive' rows carry `archive_match_id`/`level`/`score`;
+            'current' rows carry `match_id`/`round_code` and read their score
+            from the match endpoints. `winner` is 1|2 OF THIS H2H (p1/p2 as
+            requested), null when underivable.
+          items:
+            type: object
+            properties:
+              era: { type: string, enum: [archive, current] }
+              date: { type: [string, "null"] }
+              tournament: { type: [string, "null"] }
+              level: { type: [string, "null"] }
+              round: { type: [string, "null"] }
+              surface: { type: [string, "null"] }
+              score: { type: [string, "null"] }
+              outcome: { type: [string, "null"] }
+              winner: { type: [integer, "null"] }
+    RallyMatch:
+      type: object
+      description: >-
+        One charted match of the rally-construction corpus — its own id
+        space, keyed on `rally_match_id`.
+      properties:
+        rally_match_id:
+          type: integer
+          description: The id this product is keyed on.
+        source_id: { type: string }
+        match_id:
+          type: [integer, "null"]
+          description: >-
+            OUR match id, when the charted match is also one we hold. Null
+            otherwise — most charted matches predate our own collection.
+        date: { type: [string, "null"], format: date }
+        tournament: { type: [string, "null"] }
+        round: { type: [string, "null"] }
+        surface: { type: [string, "null"] }
+        gender: { type: [string, "null"], enum: [M, W, null] }
+        best_of: { type: [integer, "null"] }
+        players:
+          type: array
+          maxItems: 2
+          items:
+            type: object
+            properties:
+              name: { type: [string, "null"] }
+              hand: { type: [string, "null"], enum: [R, L, U, A, null] }
+        points:
+          type: integer
+          description: Charted points in this match.
+        points_parsed:
+          type: integer
+          description: >-
+            How many of them our parser read cleanly — the per-match quality
+            number.
+    RallyPoint:
+      type: object
+      description: >-
+        One charted point. `raw` is the charter's own string, verbatim, and
+        is ALWAYS present; the parsed fields are our reading of it. `parsed`
+        is false when the notation contained something we could not read
+        cleanly — the recognised part is still returned. A consumer who wants
+        only unambiguous rows filters on `parsed`.
+      properties:
+        point: { type: integer }
+        set:
+          type: array
+          items: { type: [integer, "null"] }
+          maxItems: 2
+        games:
+          type: array
+          items: { type: [integer, "null"] }
+          maxItems: 2
+        score:
+          type: [string, "null"]
+          description: e.g. '30-40'.
+        game: { type: [integer, "null"] }
+        is_tiebreak: { type: boolean }
+        server: { type: [integer, "null"], enum: [1, 2, null] }
+        point_winner: { type: [integer, "null"], enum: [1, 2, null] }
+        raw:
+          type: [string, "null"]
+          description: >-
+            The charter's shot string; both serves joined by ';' when the
+            first was a fault.
+        parsed: { type: boolean }
+        serve_number: { type: [integer, "null"], enum: [1, 2, null] }
+        serve_direction:
+          type: [string, "null"]
+          enum: [wide, body, down_the_t, null]
+        rally_length:
+          type: [integer, "null"]
+          description: >-
+            Strokes including the serve. An ace is 1, a double fault 0.
+        outcome:
+          type: [string, "null"]
+          enum: [winner, forced_error, unforced_error, error, other, null]
+          description: >-
+            `error` = the charter recorded a miss without saying whether it
+            was forced. Never guessed.
+        error_location:
+          type: [string, "null"]
+          enum: [net, wide, deep, wide_and_deep, null]
+        ending_stroke: { type: [string, "null"] }
+        ending_wing: { type: [string, "null"] }
+        is_ace: { type: boolean }
+        is_double_fault: { type: boolean }
+        is_serve_and_volley: { type: boolean }
+        shots:
+          type: array
+          items: { $ref: "#/components/schemas/RallyShot" }
+    RallyShot:
+      type: object
+      description: >-
+        One stroke. Shots are numbered from the serve: serve 1, return 2, the
+        server's next ball 3.
+      properties:
+        number: { type: integer }
+        code:
+          type: string
+          description: The charter's raw code, e.g. 'f'.
+        stroke:
+          type: [string, "null"]
+          enum: [serve, groundstroke, slice, volley, half_volley,
+                 swinging_volley, overhead, drop_shot, lob, trick, unknown,
+                 null]
+        wing:
+          type: [string, "null"]
+          enum: [forehand, backhand, null]
+          description: The side it was struck FROM.
+        direction:
+          type: [string, "null"]
+          enum: [forehand_side, middle, backhand_side, null]
+          description: Where the ball was sent.
+        depth:
+          type: [string, "null"]
+          enum: [shallow, mid, deep, null]
+        position:
+          type: [string, "null"]
+          enum: [approaching, at_net, baseline, null]
