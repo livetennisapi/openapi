@@ -111,3 +111,7 @@ it, do what you like with it.
 
 Use of the **API service itself** is governed by the
 [Terms of Service](https://livetennisapi.com/terms).
+
+## Affiliate program
+
+Know developers who need tennis data? The [affiliate program](https://affiliates.livetennisapi.com/program) pays 51% recurring commission for the life of every referred subscription — 30-day cookie, and the people you refer get 10% off.
