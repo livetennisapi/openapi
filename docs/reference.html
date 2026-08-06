@@ -194,7 +194,7 @@ ATP, WTA, Challenger, ITF and the junior Grand Slam draws.</p><p>Access is tiere
 everything in the tiers below it; the concrete deltas are:</p><p><code>FREE</code> — self-serve, no card (<a href="https://livetennisapi.com/subscribe/free">https://livetennisapi.com/subscribe/free</a>).
 Live and upcoming matches, current scores, players, fixtures, the
 tournament catalogue (<code>/tournaments</code>), and your own usage stats.
-30 requests/minute, 1,000/day. No historical results, no market prices,
+30 requests/minute, 100/day. No historical results, no market prices,
 no model fields, no WebSocket.</p><p><code>BASIC</code> — adds historical data: the completed-match listing
 (<code>/history/matches</code>, and <code>status=completed</code> on <code>/matches</code>), the
 per-match point-by-point tape with the per-point model win-probability
@@ -202,11 +202,11 @@ per-match point-by-point tape with the per-point model win-probability
 deep results (<code>/history/archive/matches</code>), archive player bios
 (<code>/history/archive/players</code>), career aggregates
 (<code>/history/archive/career</code>) and head-to-head (<code>/h2h</code>).
-60 requests/minute, 10,000/day.</p><p><code>PRO</code> — adds match events (<code>/matches/{matchId}/events</code>), market prices
+60 requests/minute, 1,000/day.</p><p><code>PRO</code> — adds match events (<code>/matches/{matchId}/events</code>), market prices
 (<code>/markets</code>, <code>/markets/{matchId}/prices</code>, <code>/matches/{matchId}/prices</code>),
 the pre-built monthly bulk history packages (<code>/history/packages</code>) and the
 rank-ordered rankings listing (<code>/rankings?system=</code>).
-300 requests/minute, 100,000/day.</p><p><code>ULTRA</code> — adds model analysis (<code>/matches/{matchId}/analysis</code>), the live
+300 requests/minute, 10,000/day.</p><p><code>ULTRA</code> — adds model analysis (<code>/matches/{matchId}/analysis</code>), the live
 model fields (<code>win_probability_p1</code>, <code>danger</code>) on every score object,
 in-play match statistics (<code>/matches/{matchId}/statistics</code>), per-player
 as-of ranking records (<code>/rankings?player=</code>), rally construction
@@ -292,9 +292,9 @@ clicking a link is the fastest route and that trade-off is fine.</p>
 <div class="scrollx" tabindex="0" role="region" aria-label="Plans and pricing">
 <table><caption class="vh">Plans — what each tier adds over the one below, its rate limit and price</caption>
 <thead><tr><th scope="col">Plan</th><th scope="col">Adds</th><th scope="col">Rate limit</th><th scope="col">Price</th></tr></thead><tbody>
-<tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 1,000/day</td><td>$0 — no card</td></tr>
-<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability at every point (<code>/history/matches/{matchId}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 10,000/day</td><td>$9.99/mo</td></tr>
-<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 100,000/day</td><td>$29.99/mo</td></tr>
+<tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 100/day</td><td>$0 — no card</td></tr>
+<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability at every point (<code>/history/matches/{matchId}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 1,000/day</td><td>$9.99/mo</td></tr>
+<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 10,000/day</td><td>$29.99/mo</td></tr>
 <tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, per-player as-of ranking records, rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
 </tbody></table></div>
 <p class="scrollnote">The table above scrolls sideways.</p>
@@ -812,11 +812,11 @@ Delivery is best-effort, at-most-once, no replay: one attempt per frame with a ~
 
 <h3 id="faq-how-much">How much data can I access on each plan?</h3>
 <p><strong>FREE</strong> sees the current state of the game only — live and upcoming matches,
-scores, players and fixtures — at 1,000 requests/day. <strong>BASIC</strong> adds every
+scores, players and fixtures — at 100 requests/day. <strong>BASIC</strong> adds every
 completed match and its full point-by-point tape (with the model
-win-probability at every point), one match per request, at 10,000/day.
+win-probability at every point), one match per request, at 1,000/day.
 <strong>PRO</strong> adds whole months of history in a single bulk file (JSONL or CSV),
-plus match events and market prices, at 100,000/day. <strong>ULTRA</strong> adds model
+plus match events and market prices, at 10,000/day. <strong>ULTRA</strong> adds model
 analysis, the live model fields and the WebSocket push feed, at 500,000/day.
 Coverage is identical on every plan: all tours, ATP through ITF — the plans
 differ in which data products and volumes they unlock, never in which

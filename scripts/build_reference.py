@@ -598,9 +598,9 @@ clicking a link is the fastest route and that trade-off is fine.</p>
 <div class="scrollx" tabindex="0" role="region" aria-label="Plans and pricing">
 <table><caption class="vh">Plans — what each tier adds over the one below, its rate limit and price</caption>
 <thead><tr><th scope="col">Plan</th><th scope="col">Adds</th><th scope="col">Rate limit</th><th scope="col">Price</th></tr></thead><tbody>
-<tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 1,000/day</td><td>$0 — no card</td></tr>
-<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability at every point (<code>/history/matches/{{matchId}}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 10,000/day</td><td>$9.99/mo</td></tr>
-<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 100,000/day</td><td>$29.99/mo</td></tr>
+<tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 100/day</td><td>$0 — no card</td></tr>
+<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability at every point (<code>/history/matches/{{matchId}}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 1,000/day</td><td>$9.99/mo</td></tr>
+<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 10,000/day</td><td>$29.99/mo</td></tr>
 <tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, per-player as-of ranking records, rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
 </tbody></table></div>
 <p class="scrollnote">The table above scrolls sideways.</p>
@@ -674,11 +674,11 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 
 <h3 id="faq-how-much">How much data can I access on each plan?</h3>
 <p><strong>FREE</strong> sees the current state of the game only — live and upcoming matches,
-scores, players and fixtures — at 1,000 requests/day. <strong>BASIC</strong> adds every
+scores, players and fixtures — at 100 requests/day. <strong>BASIC</strong> adds every
 completed match and its full point-by-point tape (with the model
-win-probability at every point), one match per request, at 10,000/day.
+win-probability at every point), one match per request, at 1,000/day.
 <strong>PRO</strong> adds whole months of history in a single bulk file (JSONL or CSV),
-plus match events and market prices, at 100,000/day. <strong>ULTRA</strong> adds model
+plus match events and market prices, at 10,000/day. <strong>ULTRA</strong> adds model
 analysis, the live model fields and the WebSocket push feed, at 500,000/day.
 Coverage is identical on every plan: all tours, ATP through ITF — the plans
 differ in which data products and volumes they unlock, never in which
@@ -765,15 +765,15 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "## Plans",
         "Every plan includes the plans below it. The concrete deltas:",
         "- FREE ($0, no card) — live & upcoming matches, current scores, players, fixtures,",
-        "  usage stats. 30 req/min, 1,000 req/day. No history, no market prices, no model",
+        "  usage stats. 30 req/min, 100 req/day. No history, no market prices, no model",
         "  fields, no WebSocket.",
         "- BASIC ($9.99/mo) — adds history, in two continuous halves: the point-by-point",
         "  tape (2023→now) — the completed-match listing and the per-match tape with the",
         "  model win-probability at every point — and the results archive (1968–2022):",
         "  deep results, archive player bios, career aggregates and head-to-head (/h2h).",
-        "  60 req/min, 10,000 req/day.",
+        "  60 req/min, 1,000 req/day.",
         "- PRO ($29.99/mo) — adds match events, market prices, bulk history packages",
-        "  (JSONL/CSV), and the rank-ordered rankings listing. 300 req/min, 100,000 req/day.",
+        "  (JSONL/CSV), and the rank-ordered rankings listing. 300 req/min, 10,000 req/day.",
         "- ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,",
         "  in-play match statistics, per-player as-of rankings, rally construction",
         "  (shot-by-shot charted data), the WebSocket push feed and webhooks.",
@@ -805,10 +805,10 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
     lines += [
         "",
         "## FAQ",
-        "How much data can I access on each plan? FREE = the current state only, 1,000",
+        "How much data can I access on each plan? FREE = the current state only, 100",
         "req/day. BASIC = + every completed match and its full point-by-point tape, one",
-        "match per request, 10,000/day. PRO = + whole months of history in one bulk file,",
-        "plus events and market prices, 100,000/day. ULTRA = + model analysis and live",
+        "match per request, 1,000/day. PRO = + whole months of history in one bulk file,",
+        "plus events and market prices, 10,000/day. ULTRA = + model analysis and live",
         "push, 500,000/day.",
         "How far back does history go? 1968, in two continuous halves. The point-by-point",
         "tape (2023→now): /history/matches pages every completed match from January 2023",
