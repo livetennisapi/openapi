@@ -20,7 +20,7 @@ info:
     `FREE` — self-serve, no card (https://livetennisapi.com/subscribe/free).
     Live and upcoming matches, current scores, players, fixtures, the
     tournament catalogue (`/tournaments`), and your own usage stats.
-    30 requests/minute, 1,000/day. No historical results, no market prices,
+    30 requests/minute, 100/day. No historical results, no market prices,
     no model fields, no WebSocket.
 
     `BASIC` — adds historical data: the completed-match listing
@@ -30,13 +30,13 @@ info:
     deep results (`/history/archive/matches`), archive player bios
     (`/history/archive/players`), career aggregates
     (`/history/archive/career`) and head-to-head (`/h2h`).
-    60 requests/minute, 10,000/day.
+    60 requests/minute, 1,000/day.
 
     `PRO` — adds match events (`/matches/{matchId}/events`), market prices
     (`/markets`, `/markets/{matchId}/prices`, `/matches/{matchId}/prices`),
     the pre-built monthly bulk history packages (`/history/packages`) and the
     rank-ordered rankings listing (`/rankings?system=`).
-    300 requests/minute, 100,000/day.
+    300 requests/minute, 10,000/day.
 
     `ULTRA` — adds model analysis (`/matches/{matchId}/analysis`), the live
     model fields (`win_probability_p1`, `danger`) on every score object,
