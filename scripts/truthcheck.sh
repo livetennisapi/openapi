@@ -8,7 +8,7 @@
 set -eu
 cd "$(dirname "$0")/.."
 
-files=$(git ls-files | grep -vE '^CHANGELOG\.md$|\.(png|jpg|jpeg|ico|svg|woff2?)$')
+files=$(git ls-files | grep -vE '^CHANGELOG\.md$|^scripts/truthcheck\.sh$|\.(png|jpg|jpeg|ico|svg|woff2?)$')
 
 fail=0
 
