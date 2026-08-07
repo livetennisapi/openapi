@@ -42,6 +42,10 @@ jobs:
         # Guards against editing the spec without regenerating reference.html.
         run: python scripts/build_reference.py --check
 
+      - name: Truth pins hold
+        # Product facts this repo must not contradict (quota grid, URLs).
+        run: sh scripts/truthcheck.sh
+
       - name: Assert the spec holds its contract
         run: |
           python - <<'PY'

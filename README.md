@@ -6,9 +6,13 @@
 
 The machine-readable contract for **[Live Tennis API](https://livetennisapi.com)** — real-time
 tennis scores, players, rankings, match-winner market prices and model win-probability
-over REST and WebSocket.
+over REST and WebSocket, across ATP, WTA, Challenger, ITF and juniors.
 
-[**Documentation**](https://docs.livetennisapi.com) · [**Website**](https://livetennisapi.com) · [**Get a free key**](https://livetennisapi.com/subscribe/free) · [**Pricing**](https://livetennisapi.com/#pricing)
+[![lint](https://github.com/livetennisapi/openapi/actions/workflows/lint.yml/badge.svg)](https://github.com/livetennisapi/openapi/actions/workflows/lint.yml)
+[![pages](https://github.com/livetennisapi/openapi/actions/workflows/pages.yml/badge.svg)](https://github.com/livetennisapi/openapi/actions/workflows/pages.yml)
+[![licence: MIT](https://img.shields.io/badge/licence-MIT-green.svg)](LICENSE)
+
+[**Documentation**](https://docs.livetennisapi.com) · [**Website**](https://livetennisapi.com) · [**Get a free key**](https://livetennisapi.com/subscribe/free) · [**Pricing**](https://livetennisapi.com/#pricing) · [**Discord**](https://discord.gg/f8WUZHgDm6)
 
 </div>
 
@@ -18,7 +22,7 @@ over REST and WebSocket.
 
 | File | Purpose |
 |---|---|
-| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 32 endpoints (31 paths), 37 schemas |
+| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 35 operations (34 paths), 37 schemas |
 | [`docs/`](docs/) | Rendered reference, published to <https://docs.livetennisapi.com> |
 
 The spec is the **source of truth** for our official SDKs. If the spec and an SDK disagree,
@@ -51,7 +55,8 @@ Or import it into Postman, Insomnia, Bruno, Hoppscotch, or Scalar directly.
 
 **Base URL** — `https://api.livetennisapi.com/api/public/v1`
 
-**Auth** — either header works:
+**Auth** — `Authorization: Bearer` is preferred; the `X-API-Key` header also works,
+and the WebSocket feed additionally accepts `?token=` for header-less clients:
 
 ```
 Authorization: Bearer twjp_…
@@ -64,8 +69,23 @@ your own usage stats — self-serve, no card:
 point-by-point tape (2023→now) and the results archive (1968–2022) with `/h2h` and
 career aggregates) · PRO (+ events, market prices, bulk packages, the rankings
 listing) · ULTRA (+ analysis, model fields, in-play statistics, per-player as-of
-rankings, rally construction, WebSocket, webhooks).
+rankings, rally construction, shot-level charting, WebSocket + the `/ws-token`
+push feed, webhooks).
 Calling above your tier returns `403 {"error":"upgrade_required"}`.
+
+**Quotas**
+
+| Tier | Requests/min | Requests/day |
+|---|---|---|
+| FREE | 30 | 100 |
+| BASIC | 60 | 1,000 |
+| PRO | 300 | 10,000 |
+| ULTRA | 600 | 500,000 |
+
+On a FREE key (100/day), poll no faster than every 15 minutes; an always-on
+dashboard should run on BASIC or above. Going over returns `429` with a
+`Retry-After` header — the body says whether the minute limit or the daily
+quota tripped (`resets_at` gives the exact daily reset instant).
 
 **Conventions**
 
@@ -103,6 +123,9 @@ Everything in the Live Tennis API developer surface:
 
 - **API reference** — <https://docs.livetennisapi.com> ([plain-HTML version](https://docs.livetennisapi.com/reference.html), no JavaScript required)
 - **Website and plans** — <https://livetennisapi.com>
+- **Get a free key** — <https://livetennisapi.com/subscribe/free>
+- **Discord** — <https://discord.gg/f8WUZHgDm6>
+- **GitHub organisation** — <https://github.com/livetennisapi>
 
 ## Licence
 
