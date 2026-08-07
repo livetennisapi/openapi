@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.3.0"
+  version: "1.3.1"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -808,12 +808,14 @@ paths:
         - name: kind
           in: query
           required: false
-          schema: { type: string, enum: [tape, rankings, archive], default: tape }
+          schema: { type: string, enum: [tape, rankings, rally, archive], default: tape }
           description: >-
             Package family. `tape` (default) = monthly point-by-point match
-            tapes; `rankings` = as-of ranking records (ULTRA); `archive` = the
-            results archive (1968–2022) as YEARLY exports — its `period` is
-            `YYYY`, one file per year, because a fixed historical corpus is
+            tapes; `rankings` = as-of ranking records (ULTRA); `rally` = the
+            charted rally corpus (shot-by-shot) as YEARLY exports (ULTRA);
+            `archive` = the results archive (1968–2022) as YEARLY exports,
+            same entitlement as the tape packages. The yearly kinds' `period`
+            is `YYYY`, one file per year, because a fixed historical corpus is
             not an accruing monthly stream. The default means a tape-only
             client never sees a new kind of row appear.
         - name: year
@@ -859,15 +861,17 @@ paths:
           in: path
           required: true
           description: >-
-            Calendar month, `YYYY-MM` — except for the yearly `archive` kind,
-            where it is the bare year `YYYY` (`400 bad_period` otherwise).
+            Calendar month, `YYYY-MM` — except for the yearly kinds (`rally`,
+            `archive`), where it is the bare year `YYYY` (`400 bad_period`
+            otherwise).
           schema: { type: string, pattern: '^\d{4}(-\d{2})?$' }
         - name: kind
           in: query
           required: false
-          schema: { type: string, enum: [tape, rankings, archive], default: tape }
+          schema: { type: string, enum: [tape, rankings, rally, archive], default: tape }
           description: >-
-            Package family; `rankings` requires ULTRA. `archive` = the yearly
+            Package family; `rankings` and `rally` require ULTRA. `rally` =
+            the yearly charted rally corpus exports; `archive` = the yearly
             results archive (1968–2022) exports, same entitlement as the tape
             packages.
         - name: format
@@ -1984,15 +1988,18 @@ components:
         `kind=tape` the JSONL file holds ONE LINE PER MATCH (a whole
         HistoryTape object per line, coverage meta included), not one line
         per point; the CSV is flattened to one row per point and carries no
-        coverage columns. For `kind=archive` (the results archive, 1968–2022)
-        the JSONL holds one line per archive result (the ArchiveMatch shape)
-        and the CSV one row per result, one file per YEAR.
+        coverage columns. For `kind=rally` (the charted rally corpus, ULTRA)
+        the JSONL holds one line per charted match with its full point list
+        and the CSV one row per point, one file per YEAR. For `kind=archive`
+        (the results archive, 1968–2022) the JSONL holds one line per archive
+        result (the ArchiveMatch shape) and the CSV one row per result, one
+        file per YEAR.
       properties:
         period:
           type: string
           description: >-
             Calendar month, `YYYY-MM` — or the bare year `YYYY` on the yearly
-            `archive` kind.
+            `rally`/`archive` kinds.
         status:
           type: string
           enum: [ready]
@@ -2019,12 +2026,13 @@ components:
         built_at: { type: [string, "null"], format: date-time }
         kind:
           type: string
-          enum: [tape, rankings, archive]
+          enum: [tape, rankings, rally, archive]
           description: >-
             Present only on non-tape packages, so the shape a tape client
             already parses is unchanged. On a rankings package `match_count` is
             the number of players covered and `row_count` the number of ranking
-            records; on an archive package the counts are archive results.
+            records; on a rally package the counts are charted matches and
+            points; on an archive package the counts are archive results.
     Coverage:
       type: string
       enum: [from_start, partial, reconstructed, reconstructed_partial, none]
