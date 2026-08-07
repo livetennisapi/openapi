@@ -5,6 +5,18 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.3.1] — 2026-08-07
+
+### Added
+- **`kind=rally` bulk packages documented.** The `/history/packages` `kind`
+  enum gains `rally` — the charted rally corpus (shot-by-shot) as YEARLY
+  exports, ULTRA, `period` = `YYYY` like `archive`. The kind has been live
+  in the API (it shipped alongside the per-match rally endpoints); the spec
+  simply did not list it. Additive only: the enum, the `HistoryPackage.kind`
+  field, and the package-shape prose now match the served surface —
+  `kind` accepts `tape` (default), `rankings` (ULTRA), `rally` (ULTRA)
+  and `archive`.
+
 ## [1.3.0] — 2026-08-07
 
 ### Added
