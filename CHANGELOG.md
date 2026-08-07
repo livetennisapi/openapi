@@ -5,6 +5,55 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.3.0] — 2026-08-07
+
+### Added
+- **Shot-level charting.** `GET /charting/players` (ULTRA) — career
+  serve/return profile from the Match Charting Project: serve placement
+  (deuce/ad × wide/body/T), return depth and outcomes, net and
+  serve-and-volley conversion, clutch break/game/set-point serving and
+  returning, winners and unforced errors by wing, rally-length and
+  shot-direction tendencies, summed over the player's charted matches
+  (`name` keyed, `gender=men|women` disambiguates, ambiguous fragments
+  refused with candidates). `GET /charting/matches/{chartingMatchId}`
+  (ULTRA) — every stat family for one charted match, both players, per-set
+  split. Coverage is curated: 11,646 charted matches back to the 1960s,
+  concentrated on the majors, not full-slate.
+- **Push-feed token.** `GET /ws-token` (ULTRA): mints a short-lived signed
+  token plus the push WebSocket URL and channel vocabulary —
+  `match:{match_id}` per-match streams and `slate:all` for every live score
+  frame. A separate high-fan-out surface from the native `/ws` feed.
+- **H2H stat splits.** On ULTRA, `GET /h2h` adds a per-player `stats` block:
+  serve/return/break-point aggregates over the pairing — `archive_serve`
+  (serve-side, from 1991) and `current` (2023+, adding return and
+  break-point conversion, aces and winners), each with
+  `meetings_with_stats`.
+- **Abuse throttle documented.** The 429 family now documents all three body
+  shapes: the per-minute limit (`rate_limited` with `upgrade_url`/`tier`/
+  `price`), the per-day quota (`rate_limited` with `scope: "day"`,
+  `limit_per_day` and `resets_at` — an absolute ISO instant), and
+  `abuse_throttled` with `retry_at_epoch` — a 24-hour block for clients
+  hammering far past their cap, which a well-behaved retry loop never sees.
+
+### Changed
+- **2026-08-06 quota grid re-set (recorded here retroactively).** On
+  2026-08-06 the daily quotas were cut, with no grandfathering: FREE
+  100/day (was 1,000), BASIC 1,000/day (was 10,000), PRO 10,000/day (was
+  100,000); ULTRA unchanged at 500,000/day; per-minute limits unchanged
+  (30/60/300/600). The shipped 1.2.0 spec text was edited in place on that
+  date without a version bump — this entry is the changelog record of that
+  change. Older entries below quote the pre-cut grid as it stood then.
+- **Tours.** Coverage phrasing is now the five tours everywhere — ATP, WTA,
+  Challenger, ITF and juniors — matching the `tour` filter enum
+  (`atp, wta, challenger, itf, juniors`).
+- **WebSocket copy.** The subscribe frame is documented as
+  `{"topics":["live-scores"]}` (+ optional `signals`) — the previously shown
+  `action` key is not read by the server. Score frames are documented as
+  carrying the ULTRA model fields (`win_probability_p1`, `danger`) live — a
+  null means the model had no output for that point. The 2-connections-per-
+  key limit is stated.
+- `info.version` is now `1.3.0`.
+
 ## [1.2.0] — 2026-08-03
 
 ### Added
