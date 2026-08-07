@@ -88,9 +88,12 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - GET /rally/matches — Charted matches with shot-by-shot data (ULTRA)
 - GET /rally/matches/{rallyMatchId} — Rally construction for one charted match (ULTRA)
 - GET /history/matches/{matchId}/rally — Rally construction by OUR match id (ULTRA)
+- GET /charting/players — Career shot-level charting aggregate for one player (ULTRA)
+- GET /charting/matches/{chartingMatchId} — One charted match, every stat family for both players (ULTRA)
 - POST /webhooks — Register an outbound webhook (ULTRA, direct keys only)
 - GET /webhooks — List your webhooks (ULTRA, direct keys only; never includes the secret)
 - DELETE /webhooks/{webhookId} — Remove one of your webhooks (ULTRA, direct keys only)
+- GET /ws-token — Mint a connection token for the high-fan-out push feed (ULTRA)
 
 ## FAQ
 How much data can I access on each plan? FREE = the current state only, 100
