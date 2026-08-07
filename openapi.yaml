@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.2.0"
+  version: "1.3.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -12,7 +12,8 @@ info:
   description: |
     Real-time tennis scores, player data, match-winner market prices, and
     model-driven match analysis. Read-only. Coverage is every tour equally:
-    ATP, WTA, Challenger, ITF and the junior Grand Slam draws.
+    ATP, WTA, Challenger, ITF and juniors (the boys' and girls' Grand Slam
+    draws).
 
     Access is tiered (FREE / BASIC / PRO / ULTRA). Each tier includes
     everything in the tiers below it; the concrete deltas are:
@@ -42,8 +43,10 @@ info:
     model fields (`win_probability_p1`, `danger`) on every score object,
     in-play match statistics (`/matches/{matchId}/statistics`), per-player
     as-of ranking records (`/rankings?player=`), rally construction
-    (`/rally/matches`, shot-by-shot charted data), the WebSocket push feed at
-    `/ws`, and outbound webhooks (direct keys). 600 requests/minute,
+    (`/rally/matches`, shot-by-shot charted data), career and per-match
+    charting stats (`/charting/players`, `/charting/matches/{chartingMatchId}`),
+    the WebSocket live feed at `/ws` and the high-fan-out push feed
+    (`/ws-token`), and outbound webhooks (direct keys). 600 requests/minute,
     500,000/day.
 
     History runs in two continuous halves, deliberately non-overlapping: the
@@ -65,8 +68,9 @@ info:
     The `/history/*` endpoints are also sold standalone as the **Historical
     Data API** (no live-API subscription required): **Starter** — single-match
     point-by-point tape reads via the API (tape plus the model win-probability
-    per point), all tours (ATP/WTA/Challenger/ITF), one match per request, no
-    bulk downloads; **Pro** — everything in Starter plus bulk monthly package
+    per point), all tours (ATP/WTA/Challenger/ITF/juniors), one match per
+    request, no bulk downloads; **Pro** — everything in Starter plus bulk
+    monthly package
     downloads and higher rate limits; **Business** — everything in Pro plus
     year-scale archive exports, top rate limits and priority support. One-off
     1-month and 1-year access passes are available without a subscription.
@@ -80,14 +84,18 @@ info:
     unknown fields — additive changes land within v1.
 
     A native WebSocket live feed (ULTRA) exists at `/ws` under the same base
-    URL. Subscribe with one JSON frame whose keys are `action`, `topics` and
-    (optionally) `signals`: `{"action":"subscribe","topics":["live-scores"]}`
-    — `topics` may also name `"match:<id>"`. The server acks with a
-    `subscribed` frame, then pushes `score` frames on every change plus a
-    `ping` heartbeat roughly every 15s. Opt into extra signals with
-    `{"action":"subscribe","topics":["live-scores"],"signals":["break_point"]}`
-    to also receive `break_point` and `break_point_result` frames (schemas
+    URL. Subscribe with one JSON frame whose keys are `topics` and
+    (optionally) `signals`: `{"topics":["live-scores"]}` — `topics` may also
+    name `"match:<id>"`. The server acks with a `subscribed` frame, then
+    pushes `score` frames on every change plus a `ping` heartbeat roughly
+    every 15s. Score frames carry the ULTRA model fields
+    (`win_probability_p1`, `danger`) live; a null there means the model had
+    no output for that point, not that the field is REST-only. Opt into extra
+    signals with `{"topics":["live-scores"],"signals":["break_point"]}` to
+    also receive `break_point` and `break_point_result` frames (schemas
     `BreakPoint` / `BreakPointResult`). Without `signals`, score frames only.
+    Max 2 concurrent connections per key. For high fan-out, `GET /ws-token`
+    mints a token for the separate push feed.
 
     Getting a match id: it is the `id` field on any match object returned by
     `GET /matches`, `GET /fixtures` or `GET /history/matches`, and the same value
@@ -759,7 +767,10 @@ paths:
         with a KNOWN winner; `undecided` counts the rest. Walkovers and
         retirements are part of the record, and each meeting carries `outcome`
         so you can exclude them. Requires BASIC, or any Historical Data API
-        plan.
+        plan. On ULTRA, a per-player `stats` block adds serve/return/break-point
+        aggregates over the pairing: `archive_serve` (serve-side, from 1991)
+        and `current` (2023+, adding return and break-point conversion, aces
+        and winners), each with `meetings_with_stats`.
       operationId: getHeadToHead
       parameters:
         - name: p1
@@ -1119,6 +1130,84 @@ paths:
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/RateLimited" }
+  /charting/players:
+    get:
+      summary: Career shot-level charting aggregate for one player (ULTRA)
+      description: >-
+        The deepest serve/return profile we hold, from the Match Charting
+        Project: serve placement (deuce/ad × wide/body/T), return depth and
+        outcomes, net and serve-and-volley conversion, clutch
+        break/game/set-point serving and returning, winners and unforced
+        errors by wing, and rally-length and shot-direction tendencies —
+        summed over the player's charted matches. `name` (min 3 chars) is the
+        key; a fragment matching more than one charted person is refused with
+        the candidate list, and `gender=men|women` disambiguates. Every field
+        is a raw SUM over the player's Total rows and `matches_charted` states
+        the sample. COVERAGE IS CURATED — 11,646 charted matches across both
+        tours back to the 1960s, concentrated on the majors, NOT full-slate
+        coverage.
+      operationId: getChartingPlayer
+      parameters:
+        - name: name
+          in: query
+          required: true
+          schema: { type: string, minLength: 3 }
+          description: Player name (fragment, min 3 chars).
+        - name: gender
+          in: query
+          required: false
+          schema: { type: string, enum: [men, women] }
+          description: Disambiguates a fragment that matches one charted person per tour side.
+      responses:
+        "200":
+          description: The player's summed charting families with the sample size
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  player: { type: object }
+                  matches_charted: { type: integer }
+                  coverage: { type: string }
+                  families:
+                    type: object
+                    description: Per-family summed numeric columns.
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /charting/matches/{chartingMatchId}:
+    get:
+      summary: One charted match, every stat family for both players (ULTRA)
+      description: >-
+        Every Match Charting Project stat family for one charted match, both
+        players, with the per-set split (row/set 1, 2, Total) exactly as
+        charted. `chartingMatchId` is this product's own id space (1960–2026,
+        mostly matches with no counterpart in the live table).
+      operationId: getChartingMatch
+      parameters:
+        - name: chartingMatchId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: The charted match's stat families, both players, per set
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  charting_match_id: { type: integer }
+                  mcp_id: { type: string }
+                  gender: { type: string }
+                  players: { type: object }
+                  families: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
   /webhooks:
     post:
       summary: Register an outbound webhook (ULTRA, direct keys only)
@@ -1215,6 +1304,49 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /ws-token:
+    get:
+      summary: Mint a connection token for the high-fan-out push feed (ULTRA)
+      description: >-
+        Returns a short-lived signed token plus the push WebSocket URL and the
+        channel vocabulary: `match:{match_id}` per-match streams and
+        `slate:all` for every live score frame. Frames are the same allowlist
+        score objects the polling endpoints return. Mint a fresh token on
+        reconnect. This is a separate surface from the native `/ws` feed
+        described above — same ULTRA gate, built for high fan-out.
+      operationId: createWsToken
+      responses:
+        "200":
+          description: Connection token, push URL and channel vocabulary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+                  expires_in: { type: integer }
+                  ws_url:
+                    type: string
+                    description: The push WebSocket URL to connect to with the token.
+                  channels:
+                    type: object
+                    description: >-
+                      Channel vocabulary — `match` is the per-match pattern
+                      (`match:{id}`), `slate` is the every-live-score channel
+                      (`slate:all`).
+                    properties:
+                      match: { type: string }
+                      slate: { type: string }
+                example:
+                  token: "eyJhbGciOi..."
+                  expires_in: 300
+                  ws_url: "wss://api.livetennisapi.com/connection/websocket"
+                  channels:
+                    match: "match:{id}"
+                    slate: "slate:all"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
         "429": { $ref: "#/components/responses/RateLimited" }
 components:
   securitySchemes:
@@ -1324,7 +1456,16 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
     RateLimited:
-      description: Rate limit exceeded (Retry-After header present)
+      description: >-
+        Rate limit exceeded (Retry-After header present). Three body shapes,
+        told apart by `error` and `scope`: the per-MINUTE limit
+        (`rate_limited`, with `upgrade_url`, `tier` and `price` naming the
+        next tier up); the per-DAY quota (`rate_limited` with `scope: "day"`,
+        `limit_per_day`, and `resets_at` — the absolute ISO instant the daily
+        window resets); and `abuse_throttled` with `retry_at_epoch` — a
+        24-hour block applied to clients that keep hammering far past their
+        cap, which a well-behaved retry loop never sees. Fix the loop rather
+        than retrying through it.
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -1338,7 +1479,7 @@ components:
             Stable machine-readable code, e.g. bad_date, bad_coverage,
             bad_sequence, bad_period, bad_year, bad_format, bad_tour,
             bad_country, ambiguous_name, not_charted, not_found,
-            upgrade_required, rate_limited.
+            upgrade_required, rate_limited, abuse_throttled.
         detail:
           type: string
           description: Human-readable explanation, when one adds anything.
@@ -2564,6 +2705,14 @@ components:
               score: { type: [string, "null"] }
               outcome: { type: [string, "null"] }
               winner: { type: [integer, "null"] }
+        stats:
+          type: [object, "null"]
+          description: >-
+            ULTRA only — per-player serve/return/break-point aggregates over
+            the pairing, keyed `p1`/`p2`. Each side carries `archive_serve`
+            (serve-side figures, meetings from 1991) and `current` (2023+,
+            adding return and break-point conversion, aces and winners), each
+            with its own `meetings_with_stats` sample size. Absent below ULTRA.
     RallyMatch:
       type: object
       description: >-
