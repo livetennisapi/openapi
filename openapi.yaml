@@ -1435,18 +1435,38 @@ paths:
         Returns a short-lived signed token plus the push WebSocket URL and the
         channel vocabulary: `match:{match_id}` per-match streams and
         `slate:all` for every live score frame. Frames are the same allowlist
-        score objects the polling endpoints return. Mint a fresh token on
-        reconnect. This is a separate surface from the native `/ws` feed
-        described above — same ULTRA gate, built for high fan-out.
+        score objects the polling endpoints return. This is a separate surface
+        from the native `/ws` feed described above — same ULTRA gate, built
+        for high fan-out (no shared connection ceiling), and the recommended
+        home for continuous/production streaming.
 
 
-        Where the live point surface is enabled, the same feed also carries
-        the `point` frames on their own channel family —
-        `point:match:{match_id}` (one match) and `point:slate` (every emitted
-        point frame, slate-wide). Deliberately separate channels: a
-        `slate:all` subscriber
-        asked for score states and never starts receiving per-point events
-        unasked. Point frames are events, not states — a missed one does NOT
+        The endpoint speaks the **Centrifugo client protocol** (v2, JSON).
+        Easiest path: the official Python (`livetennisapi` ≥ 1.4.0) and JS
+        (≥ 1.5.0) SDKs ship a built-in `PushStream` client — no extra
+        dependency. Raw protocol, if you prefer your own client: (1) open a
+        WebSocket to `ws_url`; (2) send
+        `{"connect": {"token": "<token>"}, "id": 1}` — the token goes INSIDE
+        this JSON frame, never as a raw first message; (3) subscribe per
+        channel with `{"subscribe": {"channel": "slate:all"}, "id": 2}`;
+        (4) publications arrive as
+        `{"push": {"channel": ..., "pub": {"data": <frame>}}}`; (5) the
+        server's heartbeat is an empty JSON object `{}` — reply with `{}`
+        promptly or you will be disconnected. Messages may batch several
+        newline-delimited JSON objects. Tokens are short-lived and the
+        connection closes around token expiry: mint a fresh token on EVERY
+        reconnect and re-subscribe.
+
+
+        The `channels` object lists only channels that will actually deliver
+        for your key right now (a channel name in this response is a
+        promise). Where enabled server-side, additional channel families
+        appear: `point:match:{match_id}` / `point:slate` (per-point events)
+        and `signal:match:{match_id}` / `signal:slate` (derived
+        `break_point`, `break_point_result` and `divergence` events).
+        Deliberately separate channels: a `slate:all` subscriber asked for
+        score states and never starts receiving events unasked. Point and
+        signal frames are events, not states — a missed point does NOT
         self-correct on the next frame; recover it via
         `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`.
       operationId: createWsToken
@@ -1474,10 +1494,10 @@ paths:
                       slate: { type: string }
                 example:
                   token: "eyJhbGciOi..."
-                  expires_in: 300
+                  expires_in: 3600
                   ws_url: "wss://api.livetennisapi.com/connection/websocket"
                   channels:
-                    match: "match:{id}"
+                    match: "match:{match_id}"
                     slate: "slate:all"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
