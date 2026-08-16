@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.3.1"
+  version: "1.4.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -26,7 +26,8 @@ info:
 
     `BASIC` — adds historical data: the completed-match listing
     (`/history/matches`, and `status=completed` on `/matches`), the
-    per-match point-by-point tape with the per-point model win-probability
+    per-match point-by-point tape with the model win-probability on the
+    rows where the model ran
     (`/history/matches/{matchId}`), and the results archive (1968–2022) —
     deep results (`/history/archive/matches`), archive player bios
     (`/history/archive/players`), career aggregates
@@ -94,6 +95,18 @@ info:
     signals with `{"topics":["live-scores"],"signals":["break_point"]}` to
     also receive `break_point` and `break_point_result` frames (schemas
     `BreakPoint` / `BreakPointResult`). Without `signals`, score frames only.
+
+    `signals` may also name `points` — the live per-point event stream: one
+    `point` frame (schema `PointFrame`) per persisted point of your
+    subscribed matches, ordered per match by `seq`. The signal is
+    config-gated and ships OFF by default; the `subscribed` ack echoes the
+    signals actually active, so `points` present in the ack means point
+    frames will flow and missing means they will not. Frames arrive only for
+    matches with `pbp_coverage: "point"` — a `game`-coverage match sends
+    none, honestly. Best-effort with NO replay: on reconnect (or to join
+    mid-match) catch up via `GET /matches/{matchId}/points?after_seq=` and
+    dedup by `seq`.
+
     Max 2 concurrent connections per key. For high fan-out, `GET /ws-token`
     mints a token for the separate push feed.
 
@@ -185,7 +198,8 @@ paths:
       summary: Current score only — lowest-latency REST read (FREE)
       description: >-
         This is a POINT-IN-TIME SNAPSHOT: the single current state, overwritten
-        on every point. It carries no history and no accumulated statistics.
+        on every score commit. It carries no history and no accumulated
+        statistics.
         For the SEQUENCE of states — who served each game, hold/break, every
         score state in forward order — use
         `/history/matches/{matchId}?sequence=clean`, which works on a LIVE
@@ -301,6 +315,66 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/MatchStatistics" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /matches/{matchId}/points:
+    get:
+      summary: Live per-point events in seq order — the REST catch-up for the WebSocket point stream (ULTRA)
+      description: >-
+        The live per-point event stream of one match, in `seq` order. The
+        WebSocket `point` frames are best-effort with NO replay, so this
+        endpoint is how you join mid-match and how you recover a dropped
+        connection: subscribe the WS first, then GET with `after_seq` set to
+        the last seq you hold, then dedup everything by `seq` — it is
+        per-match, monotonic and never skips a value, so it is the whole
+        reconciliation key.
+
+
+        READ THE COVERAGE HONESTLY BEFORE YOU BUILD ON IT. A match's stream
+        is per-point ONLY where a point-level feed covers it:
+        `pbp_coverage: "point"` means this match has a true per-point stream;
+        `"game"` means only the snapshot score path covers it — `points` is
+        empty and that is an answer, not an error. Per-point coverage is
+        never promised slate-wide; ITF and qualifying coverage in particular
+        is partial. `quality: "revised"` means the upstream feed rewrote an
+        already-served prefix at least once during this match; served rows
+        are never edited (append-only).
+
+
+        Each row is the state AFTER a played point: `score`/`sets`/`games`
+        (tiebreaks carry the running count in `score` with `games` frozen at
+        the pre-breaker score), its position (`set`/`game`/`number`),
+        `server` (of the next point), the derived `winner` (null when not
+        attributable to a single point — never guessed), and `ts` — CAPTURE
+        time, when our pipeline committed the state, because no feed asserts
+        a per-point clock and we fabricate none.
+
+
+        Up to 500 rows per page; `after_seq=last_seq` fetches the next page
+        while `has_more` is true. 404 unknown match; 400 `points_disabled`
+        while the surface is switched off server-side.
+      operationId: getMatchPoints
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+        - name: after_seq
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 0 }
+          description: >-
+            Return only points with `seq` greater than this — the resume
+            cursor. Pass the `last_seq` of the previous page (or the last seq
+            your WS stream delivered) to continue; 0 or absent reads from the
+            start of the match. A non-integer or negative value is a 400
+            `bad_after_seq`.
+      responses:
+        "200":
+          description: The point events page, seq order
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MatchPoints" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -504,7 +578,8 @@ paths:
         match. NOTE `?coverage=` is applied AFTER the page is cut, so a
         filtered page is routinely shorter than `limit` (and may be empty)
         while later pages still hold matching matches — a short filtered page
-        is not an end-of-data signal.
+        is not an end-of-data signal; `?points_complete=` filters the same
+        way.
       operationId: listCompletedMatches
       parameters:
         - $ref: "#/components/parameters/limit"
@@ -521,6 +596,19 @@ paths:
           description: >-
             Keep only matches whose tape has this coverage. An unknown value is
             a 400 `bad_coverage` listing the accepted values in `allowed`.
+        - name: points_complete
+          in: query
+          required: false
+          schema: { type: string, enum: ["true", "false"] }
+          description: >-
+            Keep only matches whose measured point-completeness ledger verdict
+            is this value — best-basis (the served tape OR an on-disk
+            reconstruction measured point-complete; fetch the latter with
+            `?points=complete` on the per-match tape). The ledger is a
+            per-match cache reconverged nightly. A match not yet measured
+            matches NEITHER value; anything but true/false is a 400
+            `bad_points_complete`. Applied AFTER the page is cut, exactly like
+            `?coverage=`.
       responses:
         "200":
           description: Completed matches (`winner` = 1|2|null, from final sets), each with its tape coverage
@@ -577,6 +665,28 @@ paths:
             one may correct a lower-trust one backwards. `clean` returns one
             row per distinct score state, keeping the last assertion of each.
             An unknown value is a 400 `bad_sequence`.
+        - name: points
+          in: query
+          required: false
+          schema: { type: string, enum: [default, complete], default: default }
+          description: >-
+            `default` serves observed rows first — what our own pipeline
+            committed, a SAMPLED record of the match. `complete` is the
+            explicit opt-out of that precedence for consumers who want every
+            point: where a whole-match reconstruction exists it is served
+            WHOLE, in its own point order, with `point_winner` on every row
+            and null timestamps/model fields per the reconstruction contract.
+            Where none exists, the response is exactly the default read plus
+            `meta.points` (whose `available_complete` tells the cases apart) —
+            no error. Cannot combine with `sequence=clean` (400
+            `bad_combination` — the state-key collapse would delete the
+            repeated deuce states a complete point sequence contains). An
+            unknown value is a 400 `bad_points`; where not yet enabled,
+            `complete` answers 400 `points_read_disabled` rather than silently
+            serving the default. `coverage` and `meta.points` are orthogonal
+            axes: coverage says how the rows were OBTAINED, points says how
+            COMPLETE the sequence is — completeness is only ever claimed per
+            match, as measured.
       responses:
         "200":
           description: The full tape (`match` + `tape` + `profiles` + coverage `meta`)
@@ -1226,13 +1336,16 @@ paths:
         of the RAW request body with your webhook secret; verify with a
         constant-time compare), `X-LTAPI-Timestamp` (Unix seconds at send time
         — reject stale replays at your edge) and `X-LTAPI-Event` (the frame
-        type: `score`, `break_point` or `break_point_result`).
+        type: `score`, `break_point`, `break_point_result` or `point`).
 
 
         Delivery is best-effort, at-most-once, no replay: one attempt per frame
         with a ~3s timeout and redirects disabled. Every `score` frame is the
         complete current score, so a missed delivery self-corrects on the next
-        commit. After 25 consecutive failures the webhook is disabled
+        commit. A `point` frame is an EVENT, not a state — a missed one does
+        NOT self-correct; recover it with
+        `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`. After
+        25 consecutive failures the webhook is disabled
         automatically (`enabled:false`, `last_error` set — visible in
         `GET /webhooks`); delete and re-register to resume.
       operationId: createWebhook
@@ -1249,8 +1362,14 @@ paths:
                   description: HTTPS only, publicly routable
                 events:
                   type: array
-                  items: { type: string, enum: [score, break_point] }
+                  items: { type: string, enum: [score, break_point, point] }
                   default: [score]
+                  description: >-
+                    `score` = every accepted live-score commit; `break_point`
+                    = the derived `break_point` / `break_point_result`
+                    frames; `point` = one POST per live point (the
+                    `PointFrame` shape), where that surface is enabled and
+                    the match has `pbp_coverage: "point"`.
       responses:
         "201":
           description: Created — includes `secret` (shown exactly once)
@@ -1319,6 +1438,17 @@ paths:
         score objects the polling endpoints return. Mint a fresh token on
         reconnect. This is a separate surface from the native `/ws` feed
         described above — same ULTRA gate, built for high fan-out.
+
+
+        Where the live point surface is enabled, the same feed also carries
+        the `point` frames on their own channel family —
+        `point:match:{match_id}` (one match) and `point:slate` (every emitted
+        point frame, slate-wide). Deliberately separate channels: a
+        `slate:all` subscriber
+        asked for score states and never starts receiving per-point events
+        unasked. Point frames are events, not states — a missed one does NOT
+        self-correct on the next frame; recover it via
+        `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`.
       operationId: createWsToken
       responses:
         "200":
@@ -1481,9 +1611,11 @@ components:
           type: string
           description: >-
             Stable machine-readable code, e.g. bad_date, bad_coverage,
-            bad_sequence, bad_period, bad_year, bad_format, bad_tour,
-            bad_country, ambiguous_name, not_charted, not_found,
-            upgrade_required, rate_limited, abuse_throttled.
+            bad_sequence, bad_points, bad_points_complete, bad_combination,
+            points_read_disabled, bad_after_seq, points_disabled, bad_period,
+            bad_year, bad_format, bad_tour, bad_country, ambiguous_name,
+            not_charted, not_found, upgrade_required, rate_limited,
+            abuse_throttled.
         detail:
           type: string
           description: Human-readable explanation, when one adds anything.
@@ -1896,11 +2028,14 @@ components:
           enum: [1, 2, null]
           description: >-
             Who won the point this row records — PRESENT ONLY on
-            `?sequence=clean` rows, and only where the transition from the
-            previous row is a single attributable point; null on gaps, torn
-            rows and the first row. Never on the raw sequence (raw is
-            deliberately non-monotonic: consecutive raw rows are corrections,
-            not points). Derived at read time, never stored or guessed.
+            `?sequence=clean` and `?points=complete` rows, and only where the
+            transition from the previous row of the served sequence is a
+            single attributable point; null on gaps, torn rows and the first
+            row. Never on the plain raw sequence (raw is deliberately
+            non-monotonic: consecutive raw rows are corrections, not points —
+            a `points=complete` read is the exception, because there the
+            served order IS point order). Derived at read time, never stored
+            or guessed.
     HistoryTape:
       type: object
       description: >-
@@ -1970,6 +2105,8 @@ components:
               description: >-
                 True when the tape was served from the immutable archive
                 rather than the live-score table. Content is identical.
+            points:
+              $ref: "#/components/schemas/PointsMeta"
             model_rows:
               type: integer
               description: >-
@@ -1978,6 +2115,65 @@ components:
                 value implies it — this is the count for THIS response,
                 derived per read and never stored.
             generated_at: { type: string, format: date-time }
+    PointsMeta:
+      type: object
+      description: >-
+        Measured point-completeness of the sequence ACTUALLY RETURNED,
+        computed at read time — never a stored blanket claim, and only ever a
+        per-match measurement. Always present on `?points=complete` responses
+        (with `available_complete`); on default reads it appears where
+        enabled. Orthogonal to `coverage`: coverage says how the rows were
+        OBTAINED, this says how COMPLETE the sequence is.
+      properties:
+        complete:
+          type: boolean
+          description: >-
+            The contract bit: the sequence opens at 0-0, EVERY transition is a
+            legal single-point step, it carries at least as many point
+            transitions as the final scoreline implies the match contained,
+            it reaches a finished legal final scoreline (or the match ended
+            early — retirement/walkover), and it is not known-truncated.
+        completeness:
+          type: [number, "null"]
+          description: >-
+            Legal single-point transitions over a LOWER-BOUND expected point
+            count derived from the final scoreline. 1.0 for any complete
+            tape, low for a sampled one. Descriptive only — the denominator
+            is a floor, not the true point count — and null when the final
+            scoreline is unreadable.
+        rows:
+          type: integer
+          description: Rows measured — always equals `meta.rows`.
+        transitions_legal:
+          type: integer
+          description: >-
+            Transitions attributable to exactly one side winning one point.
+        transitions_total:
+          type: integer
+          description: All row-to-row transitions (rows − 1).
+        server_rows:
+          type: integer
+          description: Rows carrying a server.
+        starts_at_love:
+          type: boolean
+          description: The first row is the 0-0 opening state.
+        ends_at_final:
+          type: boolean
+          description: The last row is a complete, legal final scoreline.
+        basis:
+          type: string
+          enum: [raw, clean, recon]
+          description: >-
+            Which serve was measured: `raw` | `clean` (the default read, as
+            returned) or `recon` (the whole reconstruction,
+            `?points=complete`).
+        available_complete:
+          type: [boolean, "null"]
+          description: >-
+            `?points=complete` responses only. The nightly ledger's verdict
+            on whether a point-complete reconstruction exists for this match:
+            true/false when measured, null when not yet measured — never
+            guessed.
     HistoryPackage:
       type: object
       description: >-
@@ -2087,6 +2283,23 @@ components:
                     no coverage value — `from_start` included — implies it;
                     read this number to select tapes the model actually
                     scored.
+                points_complete:
+                  type: [boolean, "null"]
+                  description: >-
+                    Measured point-completeness, best basis: true when the
+                    served tape OR an on-disk reconstruction of the match
+                    measured point-complete (fetch the latter with
+                    `?points=complete` on the per-match tape); null when the
+                    match has not been measured yet — never a guess. Read
+                    from a per-match ledger reconverged nightly. Present
+                    where enabled.
+                completeness:
+                  type: [number, "null"]
+                  description: >-
+                    The better of the two measured completeness fractions
+                    (0..1, lower-bound denominator — see the per-match tape's
+                    `meta.points`). Null when not measured. Present where
+                    enabled.
     Usage:
       type: object
       properties:
@@ -2464,6 +2677,102 @@ components:
         outcome: { type: string, enum: [held, broken] }
         win_probability_p1_after: { type: [number, "null"] }
         ts: { type: [string, "null"], format: date-time }
+    LivePoint:
+      type: object
+      description: >-
+        One PLAYED point of a live match — the expanded score state AFTER the
+        point. `seq` is per-match, monotonic and never skips a value: the
+        ordering, dedup and resume key across the WS frames, the webhook
+        deliveries and the REST catch-up read. `ts` is CAPTURE time (when our
+        pipeline committed the state), never a per-point clock — no feed
+        asserts one and we fabricate none.
+      properties:
+        seq:
+          type: integer
+          description: >-
+            Per-match monotonic position 1..N — dedup and resume on this.
+        set: { type: [integer, "null"] }
+        game:
+          type: [integer, "null"]
+          description: Game within the current set — 13 for a 6-6 tiebreak.
+        number:
+          type: [integer, "null"]
+          description: >-
+            Points already recorded in this game at this state — 0 for a
+            game's opening state.
+        tiebreak: { type: boolean }
+        server:
+          type: [integer, "null"]
+          enum: [1, 2, null]
+          description: >-
+            Server of the point played FROM this state; null when the feed
+            omits it.
+        winner:
+          type: [integer, "null"]
+          enum: [1, 2, null]
+          description: >-
+            Who won the point that produced this state — null when not
+            attributable to a single point, never guessed.
+        score:
+          type: object
+          description: >-
+            In-game score AFTER the point ('0'/'15'/'30'/'40'/'AD'; the
+            running tiebreak count as integer strings when `tiebreak` is
+            true).
+          properties:
+            p1: { type: [string, "null"] }
+            p2: { type: [string, "null"] }
+        sets:
+          type: array
+          items: { type: [integer, "null"] }
+        games:
+          type: array
+          description: >-
+            `[games_p1, games_p2]`; each a per-set list, frozen at the
+            pre-breaker score during a tiebreak.
+          items:
+            type: array
+            items: { type: integer }
+        ts: { type: [string, "null"], format: date-time }
+    MatchPoints:
+      type: object
+      description: One page of a match's live per-point stream, seq order.
+      properties:
+        match_id: { type: integer }
+        pbp_coverage:
+          type: string
+          enum: [point, game]
+          description: >-
+            `point` = this match has a true per-point stream; `game` = only
+            the snapshot score path covers it (`points` is empty — an answer,
+            not an error).
+        quality:
+          type: string
+          enum: [clean, revised]
+          description: >-
+            `revised` = the upstream feed rewrote an already-served prefix at
+            least once during this match; served rows are never edited.
+        points:
+          type: array
+          items: { $ref: "#/components/schemas/LivePoint" }
+        last_seq:
+          type: integer
+          description: The resume cursor — pass as `after_seq` to continue.
+        has_more: { type: boolean }
+    PointFrame:
+      type: object
+      description: >-
+        WebSocket `point` frame (ULTRA, opt-in via
+        `signals: ["points"]`; also the webhook `point` event body): one
+        PLAYED point of a subscribed match. Ordered per match by `seq`;
+        dedup/resume on `seq`. Best-effort, NO replay — catch up via
+        `GET /matches/{matchId}/points?after_seq=`.
+      properties:
+        type: { type: string, const: point }
+        match_id: { type: integer }
+        point: { $ref: "#/components/schemas/LivePoint" }
+        pbp_coverage: { type: string, enum: [point, game] }
+        quality: { type: string, enum: [clean, revised] }
     Tournament:
       type: object
       description: >-

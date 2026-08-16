@@ -68,7 +68,9 @@ your own usage stats — self-serve, no card:
 <https://livetennisapi.com/subscribe/free>) · BASIC (+ history in two halves: the
 point-by-point tape (2023→now) and the results archive (1968–2022) with `/h2h` and
 career aggregates) · PRO (+ events, market prices, bulk packages, the rankings
-listing) · ULTRA (+ analysis, model fields, in-play statistics, per-player as-of
+listing) · ULTRA (+ analysis, model fields, in-play statistics, live per-point
+events (`/matches/{matchId}/points` + the WebSocket `point` frames, where a
+point-level feed covers the match), per-player as-of
 rankings, rally construction, shot-level charting, WebSocket + the `/ws-token`
 push feed, webhooks).
 Calling above your tier returns `403 {"error":"upgrade_required"}`.

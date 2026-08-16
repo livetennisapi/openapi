@@ -599,9 +599,9 @@ clicking a link is the fastest route and that trade-off is fine.</p>
 <table><caption class="vh">Plans — what each tier adds over the one below, its rate limit and price</caption>
 <thead><tr><th scope="col">Plan</th><th scope="col">Adds</th><th scope="col">Rate limit</th><th scope="col">Price</th></tr></thead><tbody>
 <tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 100/day</td><td>$0 — no card</td></tr>
-<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability at every point (<code>/history/matches/{{matchId}}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 1,000/day</td><td>$9.99/mo</td></tr>
+<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability on the rows where the model ran (<code>/history/matches/{{matchId}}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 1,000/day</td><td>$9.99/mo</td></tr>
 <tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 10,000/day</td><td>$29.99/mo</td></tr>
-<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, per-player as-of ranking records, rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
+<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, live per-point events (<code>/matches/{{matchId}}/points</code> + the WebSocket <code>point</code> frames, where a point-level feed covers the match), per-player as-of ranking records, rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
 </tbody></table></div>
 <p class="scrollnote">The table above scrolls sideways.</p>
 <p>Calling an endpoint above your plan returns <code>403 {{"error":"upgrade_required"}}</code> —
@@ -613,7 +613,7 @@ subscription:</p>
 <div class="scrollx" tabindex="0" role="region" aria-label="Historical Data API plans">
 <table><caption class="vh">Historical Data API plans — what each adds</caption>
 <thead><tr><th scope="col">Plan</th><th scope="col">Adds</th></tr></thead><tbody>
-<tr><th scope="row">Starter</th><td>Single-match point-by-point tape reads via the API — the tape plus the model win-probability per point — for all tours (ATP, WTA, Challenger, ITF), one match per request. No bulk downloads.</td></tr>
+<tr><th scope="row">Starter</th><td>Single-match point-by-point tape reads via the API — the tape plus the model win-probability where computed — for all tours (ATP, WTA, Challenger, ITF), one match per request. No bulk downloads.</td></tr>
 <tr><th scope="row">Pro</th><td>Everything in Starter, plus bulk monthly package downloads and higher rate limits.</td></tr>
 <tr><th scope="row">Business</th><td>Everything in Pro, plus year-scale archive exports, top rate limits and priority support.</td></tr>
 <tr><th scope="row">One-off passes</th><td>1-month and 1-year access passes, no subscription.</td></tr>
@@ -669,6 +669,19 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <code>break_point_result</code> frame when it resolves. Their shapes are the
 <code>BreakPoint</code> and <code>BreakPointResult</code> schemas below. Without
 <code>signals</code> the feed pushes <code>score</code> frames only, exactly as before.</p>
+<p><code>signals</code> may also name <code>points</code> — the live per-point event
+stream: one <code>point</code> frame per persisted point of your subscribed matches
+(shape <code>PointFrame</code> below), ordered per match by <code>seq</code>. The signal
+is config-gated and ships off by default; the <code>subscribed</code> ack echoes the
+signals actually active, so <code>points</code> missing from the ack means no point
+frames will flow. Frames arrive only for matches with
+<code>pbp_coverage: "point"</code> — a <code>game</code>-coverage match sends none,
+honestly. Point frames are events, not states, and there is no WS replay: a missed
+one does not self-correct on the next frame — on reconnect, or to join mid-match,
+catch up via <code>GET /matches/{{matchId}}/points?after_seq=</code> and dedup by
+<code>seq</code>. The push feed carries the same frames on their own channel family
+(<code>point:match:{{matchId}}</code> and <code>point:slate</code>), deliberately separate
+from the score channels.</p>
 
 <h2 id="faq">FAQ — plans and data depth</h2>
 
@@ -676,7 +689,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <p><strong>FREE</strong> sees the current state of the game only — live and upcoming matches,
 scores, players and fixtures — at 100 requests/day. <strong>BASIC</strong> adds every
 completed match and its full point-by-point tape (with the model
-win-probability at every point), one match per request, at 1,000/day.
+win-probability where computed), one match per request, at 1,000/day.
 <strong>PRO</strong> adds whole months of history in a single bulk file (JSONL or CSV),
 plus match events and market prices, at 10,000/day. <strong>ULTRA</strong> adds model
 analysis, the live model fields and the WebSocket push feed, at 500,000/day.
@@ -703,11 +716,17 @@ the Historical Data API Business plan.</p>
 <h3 id="faq-whats-in-tape">What's in the point-by-point tape?</h3>
 <p>One row per recorded point state, chronological: <code>sets</code>, per-set <code>games</code>,
 in-game <code>points</code>, the <code>server</code>, the tiebreak flag, and the model's
-<code>win_probability_p1</code> and <code>danger</code> at that exact point, each row timestamped.
+<code>win_probability_p1</code> and <code>danger</code> on the rows where the model ran (null
+elsewhere — check <code>meta.model_rows</code>); rows we watched live carry a real
+timestamp, reconstructed rows a null one.
 <code>GET /history/matches/{{matchId}}</code> returns it per match (shape
 <code>HistoryTape</code>: match metadata + tape + the model profiles produced during the
-match); the monthly bulk packages ship the same per-point rows for every
-completed match of the month.</p>
+match). Add <code>?points=complete</code> to opt into a whole-match reconstruction
+where one exists — the response's <code>meta.points</code> block reports the measured
+point-completeness of exactly the sequence you were served, per match, never as
+a blanket claim. Filter the listing by that measured verdict with
+<code>?points_complete=true</code> on <code>/history/matches</code>. The monthly bulk
+packages ship the same per-point rows for every completed match of the month.</p>
 
 <h2 id="schemas">Schemas</h2>
 {schema_html}
@@ -769,13 +788,15 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "  fields, no WebSocket.",
         "- BASIC ($9.99/mo) — adds history, in two continuous halves: the point-by-point",
         "  tape (2023→now) — the completed-match listing and the per-match tape with the",
-        "  model win-probability at every point — and the results archive (1968–2022):",
+        "  model win-probability where computed — and the results archive (1968–2022):",
         "  deep results, archive player bios, career aggregates and head-to-head (/h2h).",
         "  60 req/min, 1,000 req/day.",
         "- PRO ($29.99/mo) — adds match events, market prices, bulk history packages",
         "  (JSONL/CSV), and the rank-ordered rankings listing. 300 req/min, 10,000 req/day.",
         "- ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,",
-        "  in-play match statistics, per-player as-of rankings, rally construction",
+        "  in-play match statistics, live per-point events (/matches/{matchId}/points +",
+        "  the WebSocket point frames, where a point-level feed covers the match),",
+        "  per-player as-of rankings, rally construction",
         "  (shot-by-shot charted data), the WebSocket push feed and webhooks.",
         "  600 req/min, 500,000 req/day.",
         "",
@@ -785,7 +806,7 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "",
         "## Historical Data API (standalone plans for the /history endpoints)",
         "- Starter — single-match point-by-point tape reads (tape + model win-probability",
-        "  per point), all tours, one match per request. No bulk downloads.",
+        "  where computed), all tours, one match per request. No bulk downloads.",
         "- Pro — everything in Starter + bulk monthly package downloads + higher rate limits.",
         "- Business — everything in Pro + year-scale archive exports + top rate limits +",
         "  priority support.",
@@ -818,9 +839,13 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "stats where the era recorded them (from 1991). The archive ends where the tape",
         "begins. GET /history/packages lists exactly which bulk periods exist (monthly for",
         "tape, yearly for ?kind=archive) and is always the authoritative answer.",
-        "What's in the point-by-point tape? One timestamped row per recorded point state:",
+        "What's in the point-by-point tape? One row per recorded point state:",
         "sets, per-set games, in-game points, server, tiebreak flag, and the model's",
-        "win_probability_p1 + danger at that point.",
+        "win_probability_p1 + danger on the rows where the model ran (null elsewhere —",
+        "check meta.model_rows). ?points=complete opts into a whole-match reconstruction",
+        "where one exists; the response's meta.points block reports the measured",
+        "point-completeness of exactly the sequence served — per match, never a blanket",
+        "claim. ?points_complete=true filters /history/matches by that measured verdict.",
         "",
         "## Official client libraries",
         "- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python",

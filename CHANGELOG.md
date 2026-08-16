@@ -5,6 +5,60 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.4.0] — 2026-08-16
+
+### Added
+- **Live per-point events.** `GET /matches/{matchId}/points` (ULTRA) — the
+  live per-point event stream of one match in `seq` order, paged with
+  `?after_seq=` (the resume cursor; up to 500 rows per page, continue on
+  `last_seq` while `has_more`). It is the REST catch-up for the WebSocket
+  `point` frames, which are best-effort with no replay. Per-match
+  `pbp_coverage` states honestly whether the match has a true per-point
+  stream (`point`) or only the snapshot score path (`game` — `points` empty,
+  an answer rather than an error); per-point coverage is never promised
+  slate-wide. New schemas `MatchPoints`, `LivePoint` and `PointFrame`; new
+  error codes `bad_after_seq` and `points_disabled` (the surface switched
+  off server-side).
+- **WebSocket `points` signal.** The native `/ws` feed's `signals` array may
+  now name `points` to opt into one `point` frame (schema `PointFrame`) per
+  persisted point of the subscribed matches. Config-gated, off by default —
+  the `subscribed` ack echoes the signals actually active. The push feed
+  carries the same frames on their own channel family
+  (`point:match:{match_id}`, `point:slate`), deliberately separate from the
+  score channels; webhooks gain the matching `point` event (one POST per
+  live point, `X-LTAPI-Event: point`). Point frames are events, not states —
+  a missed one does not self-correct; recovery is the REST catch-up read.
+- **Point-complete tape reads.** `?points=default|complete` on
+  `GET /history/matches/{matchId}`: `complete` opts out of
+  observed-rows-first precedence and serves a whole-match reconstruction
+  WHOLE, in point order, where one exists (`point_winner` on every row, null
+  timestamps/model fields per the reconstruction contract); where none
+  exists the response is the default read plus `meta.points` — no error.
+  Cannot combine with `sequence=clean` (400 `bad_combination`); an unknown
+  value is a 400 `bad_points`; where not yet enabled, `complete` answers
+  400 `points_read_disabled` rather than silently serving the default. The
+  tape's `meta.points` block (schema `PointsMeta`) reports the measured
+  point-completeness of exactly the sequence returned — computed at read
+  time, per match, never a stored blanket claim.
+- **Point-completeness on the listing.** `HistoryMatch.tape` gains
+  `points_complete` (bool|null — the nightly ledger's best-basis verdict;
+  null means not yet measured, never a guess) and `completeness`
+  (0..1|null), and `GET /history/matches` gains the
+  `?points_complete=true|false` filter (applied after the page is cut,
+  exactly like `?coverage=`; anything but true/false is a 400
+  `bad_points_complete`).
+
+### Changed
+- **Model win-probability copy tells the truth about density.** The plan and
+  FAQ copy no longer claims the tape carries the model win-probability "at
+  every point" / "per point": the model stamp is best-effort and rides the
+  rows where the model ran — `meta.model_rows` is the count, and null is the
+  honest value elsewhere. The current-score snapshot is described as
+  overwritten on every score commit, not "on every point".
+- `HistoryTapeRow.point_winner` is documented on `?points=complete` rows as
+  well as `?sequence=clean` (there the served order IS point order).
+- `info.version` is now `1.4.0`.
+
 ## [1.3.1] — 2026-08-07
 
 ### Added
