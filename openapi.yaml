@@ -2398,21 +2398,32 @@ components:
         Measured counting statistics for one player. These are COUNTED
         upstream, not derived from the point record — which is why they can
         include aces and double faults, and the derived fields above cannot.
+        They are MATCH TOTALS only — one whole-match rollup per player; there
+        are no per-set measured statistics.
 
         EVERY FIELD IS OPTIONAL AND AN ABSENT FIELD IS OMITTED, never
-        zero-filled. Do not assume a fixed shape; read the keys you are given.
-        Measured over 24,552 stored payloads, coverage falls into three tiers:
+        zero-filled — absent means NOT MEASURED, and a present 0 is a real
+        measured zero. Do not assume a fixed shape; read the keys you are
+        given. Measured over 24,552 stored payloads (2026-07-31), coverage
+        falls into three tiers:
 
-        TIER 1 — present on 98.6-100% of payloads, on every tour: aces, double
-        faults, points won, service and return points won, break points won,
-        service games won, longest point and game runs, return points.
+        TIER 1 — present on 98.6-100% of payloads, on every tour including
+        ITF: aces, double faults, points won, service and return points won,
+        break points won, service games won, longest point and game runs,
+        return points.
 
         TIER 2 — present on essentially all ATP, WTA and Challenger matches and
         on NO ITF singles match: the first and second serve split, break points
         saved, tiebreaks won, games won, service games played.
 
-        TIER 3 — present on a minority of main-tour matches only (43% of ATP,
-        24% of WTA): winners and unforced errors, in total and by shot type.
+        TIER 3 — the winners / unforced-errors / forced-errors family, in
+        total and by shot type. Historically delivered on ~43% of ATP singles,
+        ~24% of WTA singles and ~47% of tour doubles, and on NONE of
+        Challenger, ITF or juniors — those zeros are hard, not sampling noise.
+        The upstream feed has NOT DELIVERED this group at all since 2026-07-12
+        (measured 2026-08-17: 0 of 4,513 August payloads carry it, live ATP
+        Masters included), so expect it absent on current matches until the
+        upstream feed resumes it.
 
         A `_of` suffix is the denominator of its base field and a `_pct` suffix
         is the percentage, recomputed from the two counts rather than read from
@@ -2451,28 +2462,86 @@ components:
         second_serves_in_pct: { type: [integer, "null"] }
         service_games_played: { type: [integer, "null"] }
         tiebreaks_won: { type: [integer, "null"] }
-        backhand_errors: { type: [integer, "null"] }
-        backhand_unforced_errors: { type: [integer, "null"] }
-        backhand_winners: { type: [integer, "null"] }
-        drop_shot_unforced_errors: { type: [integer, "null"] }
-        drop_shot_winners: { type: [integer, "null"] }
-        errors_total: { type: [integer, "null"] }
-        forehand_errors: { type: [integer, "null"] }
-        forehand_unforced_errors: { type: [integer, "null"] }
-        forehand_winners: { type: [integer, "null"] }
-        groundstroke_errors: { type: [integer, "null"] }
-        groundstroke_unforced_errors: { type: [integer, "null"] }
-        groundstroke_winners: { type: [integer, "null"] }
-        lob_unforced_errors: { type: [integer, "null"] }
-        lob_winners: { type: [integer, "null"] }
-        overhead_errors: { type: [integer, "null"] }
-        overhead_winners: { type: [integer, "null"] }
-        return_errors: { type: [integer, "null"] }
-        return_winners: { type: [integer, "null"] }
-        unforced_errors_total: { type: [integer, "null"] }
-        volley_unforced_errors: { type: [integer, "null"] }
-        volley_winners: { type: [integer, "null"] }
-        winners_total: { type: [integer, "null"] }
+        backhand_errors:
+          type: [integer, "null"]
+          description: Forced errors off the backhand.
+        backhand_unforced_errors:
+          type: [integer, "null"]
+          description: Unforced errors off the backhand.
+        backhand_winners:
+          type: [integer, "null"]
+          description: Winners off the backhand.
+        drop_shot_unforced_errors:
+          type: [integer, "null"]
+          description: Unforced errors on the drop shot.
+        drop_shot_winners:
+          type: [integer, "null"]
+          description: Winners on the drop shot.
+        errors_total:
+          type: [integer, "null"]
+          description: >-
+            The total of FORCED errors, not of all errors. Verified over 3,766
+            stored payload sides (June-July 2026): it equals the forehand +
+            backhand + return + overhead error sum in 96.2% of sides, it is
+            SMALLER than `unforced_errors_total` in 11.7% of sides (impossible
+            for a superset), and per-match points accounting — points won =
+            own winners + opponent forced errors + opponent unforced errors —
+            closes with median residual 0 over 367 matches only under the
+            forced reading. Total errors = `errors_total` +
+            `unforced_errors_total`; there is no separate forced-errors field
+            to wait for, because these fields ARE the forced counts.
+        forehand_errors:
+          type: [integer, "null"]
+          description: Forced errors off the forehand.
+        forehand_unforced_errors:
+          type: [integer, "null"]
+          description: Unforced errors off the forehand.
+        forehand_winners:
+          type: [integer, "null"]
+          description: Winners off the forehand.
+        groundstroke_errors:
+          type: [integer, "null"]
+          description: >-
+            `forehand_errors` + `backhand_errors` — a rollup of the two, not
+            an additive extra.
+        groundstroke_unforced_errors:
+          type: [integer, "null"]
+          description: Unforced errors off the ground strokes.
+        groundstroke_winners:
+          type: [integer, "null"]
+          description: Winners off the ground strokes.
+        lob_unforced_errors:
+          type: [integer, "null"]
+          description: Unforced errors on the lob.
+        lob_winners:
+          type: [integer, "null"]
+          description: Winners on the lob.
+        overhead_errors:
+          type: [integer, "null"]
+          description: Forced errors on the overhead — the upstream's
+            overhead-stroke count.
+        overhead_winners:
+          type: [integer, "null"]
+          description: Winners on the overhead.
+        return_errors:
+          type: [integer, "null"]
+          description: Forced errors on the return.
+        return_winners:
+          type: [integer, "null"]
+          description: Winners on the return.
+        unforced_errors_total:
+          type: [integer, "null"]
+          description: The total of unforced errors. Total errors =
+            `errors_total` + `unforced_errors_total`.
+        volley_unforced_errors:
+          type: [integer, "null"]
+          description: Unforced errors on the volley.
+        volley_winners:
+          type: [integer, "null"]
+          description: Winners on the volley.
+        winners_total:
+          type: [integer, "null"]
+          description: Total winners.
     MatchStatisticsFreshness:
       type: object
       description: >-
