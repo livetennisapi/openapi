@@ -2403,7 +2403,17 @@ components:
         `kind=tape` the JSONL file holds ONE LINE PER MATCH (a whole
         HistoryTape object per line, coverage meta included), not one line
         per point; the CSV is flattened to one row per point and carries no
-        coverage columns. For `kind=rally` (the charted rally corpus, ULTRA)
+        coverage columns. A month may also list the complete-basis ADDENDUM
+        files (tennis_history_points_complete_<period>.jsonl.gz / .csv.gz,
+        gzipped and marked by `compression`, added 2026-08-18). The two
+        bases, plainly: the BASE files carry every match's DEFAULT read —
+        already the complete tape for most point-complete matches — and the
+        ADDENDUM carries, for exactly the matches whose complete point
+        sequence exists only as the on-disk reconstruction, the same tape
+        `?points=complete` serves (reconstruction contract: null timestamps
+        and null model fields). Base files are never rewritten by the
+        addendum; their sha256 values do not move.
+        For `kind=rally` (the charted rally corpus, ULTRA)
         the JSONL holds one line per charted match with its full point list
         and the CSV one row per point, one file per YEAR. For `kind=archive`
         (the results archive, 1968–2022) the JSONL holds one line per archive
@@ -2440,9 +2450,9 @@ components:
                 type: string
                 enum: [gzip]
                 description: >-
-                  Present only on compressed files (the yearly kinds ship
-                  gzipped). `bytes` and `sha256` cover the COMPRESSED bytes —
-                  exactly what you download.
+                  Present only on compressed files (the yearly kinds and the
+                  points_complete addendum ship gzipped). `bytes` and `sha256`
+                  cover the COMPRESSED bytes — exactly what you download.
         built_at: { type: [string, "null"], format: date-time }
         kind:
           type: string
