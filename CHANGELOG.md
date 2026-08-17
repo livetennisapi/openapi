@@ -31,11 +31,12 @@ removing a field or changing its type would require `v2`.
   whether the persisted stream opens at the match's 0-0 opener (seq 1 is
   the love-love state) — strictly affirmative; null only when the match has
   no rows at all.
-- **Point channels live on the push feed.** As of 2026-08-17
-  `point:match:{match_id}` / `point:slate` deliver, and `/ws-token` lists
-  them (as `point_match` / `point_slate` in the channel vocabulary) for
-  keys whose plan carries the point surface. A channel named in that
-  response is a promise; a missing one will not deliver.
+- **The point channel family enters the `/ws-token` vocabulary.**
+  `point:match:{match_id}` / `point:slate` are documented as
+  `point_match` / `point_slate` in the channel vocabulary, listed only when
+  the point feed is enabled server-side and the key's plan carries the
+  point surface. A channel named in that response is a promise; a missing
+  one will not deliver.
 
 ### Changed
 - **Measured statistics stop rounding the truth.**
