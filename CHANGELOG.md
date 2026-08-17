@@ -5,6 +5,71 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.5.0] — 2026-08-17
+
+### Added
+- **The as-of Elo tape.** `GET /rankings?system=elo` (ULTRA, both modes) —
+  our own computed Elo as point-in-time records: per-player as-of (also via
+  `archive_player` for the ~62,000 rated people outside the roster, `tour`
+  required there) and a leaderboard (`tour` required — the ATP and WTA walks
+  are disjoint; exactly one `surface`, default `overall`; `min_matches`
+  default 20 and `activity_weeks` default 52 / max 104, both echoed in
+  `meta.coverage.qualified`). Four independent ladders
+  (overall/hard/clay/grass), ATP from 1877, WTA from 1968, main tours plus
+  challengers plus the futures tier. `rating` always; `rank`
+  leaderboard-only; `points` always null; `matches` is the ladder-scoped
+  count. `meta.coverage` gains `newest_available`, `players_rated` /
+  `players_linked`, `qualified` and the `model` block
+  (`publication_lag_days: 14` — a week's results become effective 14 days
+  after the week begins, so the failure direction is staleness, never
+  look-ahead). The corpus head is frozen at 2026-05-25 and does not
+  advance; `elo` is never included implicitly. The free current Elo on
+  `GET /players/{id}` is a DIFFERENT scale (~150 Elo of per-player standard
+  deviation apart) — never present a rating from one scale against a rating
+  from the other. `kind=elo` yearly bulk packages join `/history/packages`.
+- **`covers_from_start` on `GET /matches/{matchId}/points`** (bool|null):
+  whether the persisted stream opens at the match's 0-0 opener (seq 1 is
+  the love-love state) — strictly affirmative; null only when the match has
+  no rows at all.
+- **Point channels live on the push feed.** As of 2026-08-17
+  `point:match:{match_id}` / `point:slate` deliver, and `/ws-token` lists
+  them (as `point_match` / `point_slate` in the channel vocabulary) for
+  keys whose plan carries the point surface. A channel named in that
+  response is a promise; a missing one will not deliver.
+
+### Changed
+- **Measured statistics stop rounding the truth.**
+  `MatchStatisticsMeasured` now states: match totals only (no per-set
+  measured statistics); absent = not measured while a present 0 is a real
+  measured zero; the three coverage tiers with their hard zeros — the
+  winners/unforced/forced-errors family historically on ~43% of ATP
+  singles, ~24% of WTA singles and ~47% of tour doubles, and NONE of
+  Challenger, ITF or juniors (24,552 payloads, 2026-07-31) — and that the
+  upstream feed has not delivered that family since 2026-07-12 (0 of 4,513
+  August payloads carry it, measured 2026-08-17).
+- **`errors_total` is documented as the total of FORCED errors**, with the
+  evidence (3,766 payload sides, June–July 2026: equals the per-stroke
+  error sum in 96.2%; smaller than `unforced_errors_total` in 11.7% of
+  sides — impossible for a superset; per-match points accounting closes
+  only under the forced reading, median residual 0 over 367 matches).
+  Total errors = `errors_total` + `unforced_errors_total`; the `*_errors`
+  shot family is the forced-error breakdown, and `groundstroke_errors` =
+  `forehand_errors` + `backhand_errors`, a rollup rather than an addition.
+- **UTR honesty.** `system=utr` is documented as observed from UTR's public
+  search: withheld ratings are ABSENT, never 0; per-player as-of only — no
+  listing by design (a table of only the players we happen to track would
+  be a fake leaderboard); history since 2026-07-29; and the sweep's
+  deliberate rankless / no-Elo (ITF-skewed) bias with its measured
+  coverage (2026-08-17, players active in the last 60 days): ITF 931 of
+  5,606 (16.6%), Challenger 197 of 1,903 (10.4%), WTA 43 of 573 (7.5%),
+  ATP 15 of 525 (2.9%).
+- *(recorded retroactively)* On 2026-08-16 the `/ws-token` description was
+  expanded in place to teach the push-feed protocol (Centrifugo v2
+  connect/subscribe/heartbeat, token-per-reconnect, the SDK `PushStream`
+  pointer) without a version bump; this entry is the changelog record of
+  that change.
+- `info.version` is now `1.5.0`.
+
 ## [1.4.0] — 2026-08-16
 
 ### Added

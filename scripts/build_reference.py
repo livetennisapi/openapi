@@ -601,7 +601,7 @@ clicking a link is the fastest route and that trade-off is fine.</p>
 <tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 100/day</td><td>$0 — no card</td></tr>
 <tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability on the rows where the model ran (<code>/history/matches/{{matchId}}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 1,000/day</td><td>$9.99/mo</td></tr>
 <tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 10,000/day</td><td>$29.99/mo</td></tr>
-<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, live per-point events (<code>/matches/{{matchId}}/points</code> + the WebSocket <code>point</code> frames, where a point-level feed covers the match), per-player as-of ranking records, rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
+<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, live per-point events (<code>/matches/{{matchId}}/points</code> + the WebSocket <code>point</code> frames, where a point-level feed covers the match), per-player as-of ranking records, the as-of Elo tape (<code>/rankings?system=elo</code>), rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
 </tbody></table></div>
 <p class="scrollnote">The table above scrolls sideways.</p>
 <p>Calling an endpoint above your plan returns <code>403 {{"error":"upgrade_required"}}</code> —
@@ -796,7 +796,7 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "- ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,",
         "  in-play match statistics, live per-point events (/matches/{matchId}/points +",
         "  the WebSocket point frames, where a point-level feed covers the match),",
-        "  per-player as-of rankings, rally construction",
+        "  per-player as-of rankings, the as-of Elo tape (system=elo), rally construction",
         "  (shot-by-shot charted data), the WebSocket push feed and webhooks.",
         "  600 req/min, 500,000 req/day.",
         "",

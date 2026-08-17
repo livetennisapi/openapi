@@ -38,7 +38,7 @@ Every plan includes the plans below it. The concrete deltas:
 - ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,
   in-play match statistics, live per-point events (/matches/{matchId}/points +
   the WebSocket point frames, where a point-level feed covers the match),
-  per-player as-of rankings, rally construction
+  per-player as-of rankings, the as-of Elo tape (system=elo), rally construction
   (shot-by-shot charted data), the WebSocket push feed and webhooks.
   600 req/min, 500,000 req/day.
 
@@ -87,7 +87,7 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - GET /history/packages/{period} — One monthly package — manifest, or the bulk file itself (PRO)
 - GET /fixtures — Upcoming scheduled fixtures, earliest first (FREE)
 - GET /usage — Your own usage vs quota (FREE — any tier)
-- GET /rankings — Rankings — rank-ordered listing (PRO), or per-player as-of records (ULTRA)
+- GET /rankings — Rankings and Elo — rank-ordered listing (PRO) or per-player as-of records (ULTRA); the as-of Elo tape is ULTRA in both modes
 - GET /rally/matches — Charted matches with shot-by-shot data (ULTRA)
 - GET /rally/matches/{rallyMatchId} — Rally construction for one charted match (ULTRA)
 - GET /history/matches/{matchId}/rally — Rally construction by OUR match id (ULTRA)
