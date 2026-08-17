@@ -1068,8 +1068,7 @@ paths:
         ATP/WTA and the ITF circuits carry rank+points, UTR carries a rating
         with null rank and points because it has neither.
         `meta.coverage.oldest_available` gives the earliest date each system
-        can answer for — ITF and UTR history begins 2026-07-29 and cannot be
-        reconstructed earlier.
+        can answer for — ITF and UTR observations reach back to 2026-06-01 (append-only per-player history accumulates from 2026-07-29) and nothing earlier can be reconstructed.
 
 
         TWO MODES — with `player` ids (ULTRA) — the per-player point-in-time
@@ -1085,8 +1084,7 @@ paths:
         ABSENT, never as 0, and `rating` is the only populated value —
         `rank` and `points` are always null. Per-player as-of ONLY — there
         is deliberately no UTR listing, because a table of only the players
-        we happen to track would be a fake leaderboard. History accumulates
-        from 2026-07-29. Coverage is a deliberate bias, not a roster
+        we happen to track would be a fake leaderboard. Per-player history accumulates from 2026-07-29; scattered earlier single-snapshot observations reach back to 2026-06-01. Coverage is a deliberate bias, not a roster
         mirror: the 24-hour sweep targets players with no official rank and
         no Elo rating (so it skews ITF), and among players active in the
         last 60 days it holds 931 of 5,606 ITF players (16.6%), 197 of
@@ -1100,10 +1098,7 @@ paths:
         main tours plus challengers plus the futures tier. It answers what a
         player was rated BEFORE a given match, which is the only shape a
         backtest can consume. It is a HISTORICAL TAPE rather than a live
-        leaderboard — the corpus behind it is fixed and no longer receives
-        new results (its head is frozen at 2026-05-25), so
-        `meta.coverage.newest_available` states the head date on every
-        response, and you should read it before treating the table as
+        leaderboard — the corpus behind it is fixed and no longer receives new results, so `meta.coverage.newest_available` states the tape's head date on every response (2026-06-15 at publication), and you should read it before treating the table as
         current. A week's results become effective 14 days after that week
         begins — strictly after the longest event in tennis — so the failure
         direction is staleness, never look-ahead. `rating` is the Elo.
@@ -2846,9 +2841,7 @@ components:
               type: object
               description: >-
                 What resolved against what was asked. Read it before trusting
-                an empty result — ITF and UTR history begins 2026-07-29 and
-                cannot be reconstructed earlier, so a request before that date
-                correctly returns nothing for those systems.
+                an empty result — ITF and UTR observations reach back to 2026-06-01 (append-only per-player history accumulates from 2026-07-29); nothing earlier can be reconstructed, so a request before `oldest_available` correctly returns nothing for those systems.
               properties:
                 as_of: { type: [string, "null"], format: date }
                 effective_date:
