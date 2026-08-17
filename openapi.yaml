@@ -28,7 +28,8 @@ info:
     (`/history/matches`, and `status=completed` on `/matches`), the
     per-match point-by-point tape with the model win-probability on the
     rows where the model ran
-    (`/history/matches/{matchId}`), and the results archive (1968–2022) —
+    (`/history/matches/{matchId}`), the measured completeness rollup
+    (`/history/coverage`), and the results archive (1968–2022) —
     deep results (`/history/archive/matches`), archive player bios
     (`/history/archive/players`), career aggregates
     (`/history/archive/career`) and head-to-head (`/h2h`).
@@ -632,6 +633,44 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "429": { $ref: "#/components/responses/RateLimited" }
+  /history/coverage:
+    get:
+      summary: Measured completeness rollup per tour × draw bucket (BASIC)
+      description: >-
+        Requires BASIC on the live API, or any Historical Data API plan
+        (Starter and up — see https://livetennisapi.com/historical-tennis-data-api).
+        The numbers to read BEFORE choosing what to backtest, in one call
+        instead of paging the archive. A PREBUILT snapshot rebuilt nightly
+        right after the completeness ledger reconverges — never computed at
+        read time — so `as_of` (= `built_at`) dates every number, and
+        `ledger_max_computed_at` is the newest underlying per-match
+        measurement. Buckets are atp/wta/challenger/itf/juniors ×
+        singles/doubles plus `other` (team ties, mixed, exhibitions, and
+        matches with no stated event type — counted, never dropped, so the
+        totals cannot lie), derived from the same registries as the `tour` and
+        `draw` fields. `method` states the full measurement rule in one
+        paragraph, so every number carries its own definition. As of
+        2026-08-18 the headline spread it exposes: 51.1% of ITF singles
+        matches are point-complete on the best basis against 3.5% of ITF
+        doubles — do not extrapolate a completeness rate across a tour group.
+      operationId: getHistoryCoverage
+      responses:
+        "200":
+          description: The rollup artifact, dated by its own as_of
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CoverageRollup" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "503":
+          description: >-
+            coverage_unavailable — the artifact has not been built yet (or is
+            unreadable). Honest and temporary; retry after the nightly build.
+            The rollup is never computed inline.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
   /history/matches/{matchId}:
     get:
       summary: Per-match tape — point-by-point score + per-point model probabilities (BASIC)
@@ -2439,6 +2478,67 @@ components:
         must not be backtested as if it were.
         `none` — no rows; the match was on the calendar and was neither watched
         nor reconstructable.
+    CoverageRollup:
+      type: object
+      description: >-
+        The measured completeness rollup — what the archive HOLDS, per tour ×
+        draw bucket, as of the artifact's own build clock.
+      properties:
+        as_of:
+          type: string
+          format: date-time
+          description: >-
+            Equal to `built_at`, verbatim — the artifact's own clock, and the
+            date to quote with every number in this response.
+        built_at:
+          type: string
+          format: date-time
+          description: When the rollup was built (UTC).
+        ledger_max_computed_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            The newest underlying per-match measurement in the completeness
+            ledger.
+        method:
+          type: string
+          description: >-
+            The full measurement rule for point_complete, in one paragraph —
+            every number carries its own definition.
+        buckets:
+          type: object
+          description: >-
+            One CoverageBucket per tour × draw bucket (`atp_singles` …
+            `juniors_doubles`, plus `other`). A bucket with zero completed
+            matches is OMITTED rather than emitted as zeros — read a missing
+            key as "nothing to count", not an error.
+          additionalProperties: { $ref: "#/components/schemas/CoverageBucket" }
+        totals:
+          $ref: "#/components/schemas/CoverageBucket"
+    CoverageBucket:
+      type: object
+      description: The five verifiable numbers for one bucket.
+      properties:
+        completed:
+          type: integer
+          description: Completed matches in the bucket.
+        any_tape:
+          type: integer
+          description: Matches with at least one tape row on any basis.
+        point_complete:
+          type: integer
+          description: >-
+            Measured point-complete on the BEST basis — what
+            `?points=complete` can serve.
+        complete_on_default_read:
+          type: integer
+          description: >-
+            Point-complete on the default read alone. The difference against
+            `point_complete` is the set of matches where `?points=complete` is
+            load-bearing.
+        share:
+          type: [number, "null"]
+          description: point_complete / completed. Null on an empty bucket.
     HistoryMatch:
       allOf:
         - { $ref: "#/components/schemas/Match" }
