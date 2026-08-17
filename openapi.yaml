@@ -11,9 +11,9 @@ info:
   termsOfService: https://livetennisapi.com/terms
   description: |
     Real-time tennis scores, player data, match-winner market prices, and
-    model-driven match analysis. Read-only. Coverage is every tour equally:
-    ATP, WTA, Challenger, ITF and juniors (the boys' and girls' Grand Slam
-    draws).
+    model-driven match analysis. Read-only. Coverage spans ATP, WTA,
+    Challenger, ITF and the junior Grand Slam draws — depth differs by tour
+    and surface; `GET /history/coverage` states the measured numbers.
 
     Access is tiered (FREE / BASIC / PRO / ULTRA). Each tier includes
     everything in the tiers below it; the concrete deltas are:
