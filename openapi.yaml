@@ -145,10 +145,10 @@ paths:
         `status=completed` pages historical results and is part of the paid
         History product — it requires BASIC (the same rule as
         `/history/matches`) and returns `403 upgrade_required` on a FREE key.
-        The `player`, `country`, `from`/`to` and `tour` filters are optional,
-        AND-composed, applied inside the query (before pagination), and work
-        on every status — omitting them returns exactly what the endpoint
-        returned before they existed.
+        The `player`, `country`, `from`/`to`, `tour` and `draw` filters are
+        optional, AND-composed, applied inside the query (before pagination),
+        and work on every status — omitting them returns exactly what the
+        endpoint returned before they existed.
       operationId: listMatches
       parameters:
         - name: status
@@ -158,6 +158,7 @@ paths:
             BASIC — paging completed results is the history surface.
           schema: { type: string, enum: [live, upcoming, completed], default: live }
         - $ref: "#/components/parameters/tour"
+        - $ref: "#/components/parameters/draw"
         - $ref: "#/components/parameters/player"
         - $ref: "#/components/parameters/country"
         - $ref: "#/components/parameters/playedFrom"
@@ -440,6 +441,7 @@ paths:
           schema: { type: string }
           description: Case-insensitive substring match on the tournament name.
         - $ref: "#/components/parameters/tour"
+        - $ref: "#/components/parameters/draw"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -574,8 +576,9 @@ paths:
         (Starter and up — see https://livetennisapi.com/historical-tennis-data-api).
         All tours, January 2023 → now (deeper results live in the results
         archive, 1968–2022, at `/history/archive/matches`). Filter to a date
-        range with `from`/`to`, and by `tour`, `player` (either participant)
-        and `country` — same vocabulary as `/matches`. Each item carries a
+        range with `from`/`to`, and by `tour`, `draw` (singles/doubles),
+        `player` (either participant) and `country` — same vocabulary as
+        `/matches`. Each item carries a
         `tape` object saying what point-by-point data we hold for that match,
         so a whole page can be qualified in one call instead of one request per
         match. NOTE `?coverage=` is applied AFTER the page is cut, so a
@@ -590,6 +593,7 @@ paths:
         - $ref: "#/components/parameters/playedFrom"
         - $ref: "#/components/parameters/playedTo"
         - $ref: "#/components/parameters/tour"
+        - $ref: "#/components/parameters/draw"
         - $ref: "#/components/parameters/player"
         - $ref: "#/components/parameters/country"
         - name: coverage
@@ -1021,6 +1025,7 @@ paths:
       operationId: listFixtures
       parameters:
         - $ref: "#/components/parameters/tour"
+        - $ref: "#/components/parameters/draw"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -1679,6 +1684,24 @@ components:
       schema:
         type: string
         enum: [atp, wta, challenger, itf, juniors]
+    draw:
+      name: draw
+      in: query
+      schema:
+        type: string
+        enum: [singles, doubles]
+      description: >-
+        Draw filter (added 2026-08-18) — the axis the tour filter deliberately
+        collapses; the two compose (`?tour=itf&draw=doubles` is the ITF doubles
+        slice). Same vocabulary as the `draw` field on Match, decided by the
+        same shared definition, so filter and field cannot disagree. A row
+        whose draw is null — a team tie, or no stated event type and no
+        doubles-team participant — matches NEITHER value: null is an answer,
+        not a wildcard. Two honesty notes: on /tournaments the answer comes
+        from the event type alone (a tournament row has no participants to
+        supply the doubles-team evidence matches have), and draw=doubles alone
+        also returns mixed and exhibition doubles that no tour value reaches.
+        An unknown value is a 400 bad_draw with the allowed values.
     player:
       name: player
       in: query
@@ -1909,7 +1932,28 @@ components:
             resumes (no record of the pause survives), and for
             `Retired`/`Walk Over` the withdrawing player is reported in
             `withdrew`, where derivable.
-        is_doubles: { type: boolean }
+        is_doubles:
+          type: boolean
+          description: >-
+            Doubles match — kept for compatibility, and LOSSY. Evidence order:
+            a doubles-team participant proves true regardless of the event
+            type; otherwise the feed's event type decides. The loss: false
+            also covers "unknown" — a match with no stated event type and no
+            team participant reads false here, which is not a claim of
+            singles. Prefer `draw`, whose null says so honestly.
+        draw:
+          type: [string, "null"]
+          enum: [singles, doubles, null]
+          description: >-
+            The honest THREE-VALUED draw (added 2026-08-18) — same vocabulary
+            as the `?draw=` filter, decided by the same shared definition, so
+            filter and field cannot disagree. Evidence order as is_doubles: a
+            doubles-team participant proves doubles over any event type;
+            otherwise the feed's event type decides. Null means neither says
+            anything — the feed stated no event type, or the match is part of
+            a team tie (Davis Cup / BJK Cup / United Cup class), where one
+            event type covers both singles and doubles rubbers and we will not
+            guess which this is. Null is NOT singles.
         scheduled_time: { type: [string, "null"], format: date-time }
         players:
           type: object
