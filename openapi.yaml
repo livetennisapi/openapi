@@ -1079,6 +1079,20 @@ paths:
         silent holes. `utr` has no listing (a rating, not a ranking).
 
 
+        SYSTEM=UTR — observed ratings, honestly bounded. UTR records are
+        observed from UTR's public search: a rating UTR withholds appears as
+        ABSENT, never as 0, and `rating` is the only populated value —
+        `rank` and `points` are always null. Per-player as-of ONLY — there
+        is deliberately no UTR listing, because a table of only the players
+        we happen to track would be a fake leaderboard. History accumulates
+        from 2026-07-29. Coverage is a deliberate bias, not a roster
+        mirror: the 24-hour sweep targets players with no official rank and
+        no Elo rating (so it skews ITF), and among players active in the
+        last 60 days it holds 931 of 5,606 ITF players (16.6%), 197 of
+        1,903 Challenger (10.4%), 43 of 573 WTA (7.5%) and 15 of 525 ATP
+        (2.9%) — measured 2026-08-17.
+
+
         SYSTEM=ELO — THE AS-OF ELO TAPE (ULTRA in BOTH modes). Our own
         computed Elo for 65,622 players on four independent ladders (overall,
         hard, clay, grass), back to 1877 (ATP) and 1968 (WTA), covering the
