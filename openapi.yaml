@@ -43,7 +43,9 @@ info:
     `ULTRA` — adds model analysis (`/matches/{matchId}/analysis`), the live
     model fields (`win_probability_p1`, `danger`) on every score object,
     in-play match statistics (`/matches/{matchId}/statistics`), per-player
-    as-of ranking records (`/rankings?player=`), rally construction
+    as-of ranking records (`/rankings?player=`), the as-of Elo tape
+    (`/rankings?system=elo` — both modes, plus `kind=elo` bulk packages),
+    rally construction
     (`/rally/matches`, shot-by-shot charted data), career and per-match
     charting stats (`/charting/players`, `/charting/matches/{chartingMatchId}`),
     the WebSocket live feed at `/ws` and the high-fan-out push feed
@@ -918,13 +920,14 @@ paths:
         - name: kind
           in: query
           required: false
-          schema: { type: string, enum: [tape, rankings, rally, archive], default: tape }
+          schema: { type: string, enum: [tape, rankings, rally, archive, elo], default: tape }
           description: >-
             Package family. `tape` (default) = monthly point-by-point match
             tapes; `rankings` = as-of ranking records (ULTRA); `rally` = the
             charted rally corpus (shot-by-shot) as YEARLY exports (ULTRA);
             `archive` = the results archive (1968–2022) as YEARLY exports,
-            same entitlement as the tape packages. The yearly kinds' `period`
+            same entitlement as the tape packages; `elo` = the as-of Elo tape
+            as YEARLY exports (ULTRA). The yearly kinds' `period`
             is `YYYY`, one file per year, because a fixed historical corpus is
             not an accruing monthly stream. The default means a tape-only
             client never sees a new kind of row appear.
@@ -972,18 +975,18 @@ paths:
           required: true
           description: >-
             Calendar month, `YYYY-MM` — except for the yearly kinds (`rally`,
-            `archive`), where it is the bare year `YYYY` (`400 bad_period`
-            otherwise).
+            `archive`, `elo`), where it is the bare year `YYYY`
+            (`400 bad_period` otherwise).
           schema: { type: string, pattern: '^\d{4}(-\d{2})?$' }
         - name: kind
           in: query
           required: false
-          schema: { type: string, enum: [tape, rankings, rally, archive], default: tape }
+          schema: { type: string, enum: [tape, rankings, rally, archive, elo], default: tape }
           description: >-
-            Package family; `rankings` and `rally` require ULTRA. `rally` =
-            the yearly charted rally corpus exports; `archive` = the yearly
-            results archive (1968–2022) exports, same entitlement as the tape
-            packages.
+            Package family; `rankings`, `rally` and `elo` require ULTRA.
+            `rally` = the yearly charted rally corpus exports; `archive` =
+            the yearly results archive (1968–2022) exports, same entitlement
+            as the tape packages; `elo` = the yearly as-of Elo tape exports.
         - name: format
           in: query
           required: false
@@ -1054,7 +1057,7 @@ paths:
         "429": { $ref: "#/components/responses/RateLimited" }
   /rankings:
     get:
-      summary: Rankings — rank-ordered listing (PRO), or per-player as-of records (ULTRA)
+      summary: Rankings and Elo — rank-ordered listing (PRO) or per-player as-of records (ULTRA); the as-of Elo tape is ULTRA in both modes
       description: >-
         Returns, per ranking system, the newest record effective ON OR BEFORE
         `as_of` — never one dated after it. Every other ranking field in this
@@ -1068,15 +1071,46 @@ paths:
         reconstructed earlier.
 
 
-        TWO MODES. WITH `player` ids (ULTRA) — the per-player point-in-time
-        records described above. WITHOUT `player` (PRO) — the rank-ordered
-        LISTING: the FULL published table for exactly one `system` (required
-        in this mode), the newest week at or before `as_of`, paged with
-        `limit`/`offset`. Listing rows carry `player_name` as the ranking
-        publisher printed it and a null `player_id` for players outside our
-        roster, so a top-N has no silent holes; `meta.coverage.effective_date`
-        names the week served. `utr` has no listing — it is a rating, not a
-        ranking.
+        TWO MODES — with `player` ids (ULTRA) — the per-player point-in-time
+        records described above. WITHOUT `player` (PRO) — the FULL published
+        table in rank order for exactly one `system`, the newest week at or
+        before `as_of`; rows carry `player_name` as published and a null
+        `player_id` for players outside our roster, so the table has no
+        silent holes. `utr` has no listing (a rating, not a ranking).
+
+
+        SYSTEM=ELO — THE AS-OF ELO TAPE (ULTRA in BOTH modes). Our own
+        computed Elo for 65,622 players on four independent ladders (overall,
+        hard, clay, grass), back to 1877 (ATP) and 1968 (WTA), covering the
+        main tours plus challengers plus the futures tier. It answers what a
+        player was rated BEFORE a given match, which is the only shape a
+        backtest can consume. It is a HISTORICAL TAPE rather than a live
+        leaderboard — the corpus behind it is fixed and no longer receives
+        new results (its head is frozen at 2026-05-25), so
+        `meta.coverage.newest_available` states the head date on every
+        response, and you should read it before treating the table as
+        current. A week's results become effective 14 days after that week
+        begins — strictly after the longest event in tennis — so the failure
+        direction is staleness, never look-ahead. `rating` is the Elo.
+        `rank` is LISTING MODE ONLY and is null in per-player mode, because
+        an Elo has no global rank at a past instant until you say which
+        field and which activity window you mean. `points` is always null.
+        `matches` is the count on THAT ladder, published so that a rating
+        still near its 1500 cold start is visible rather than inferred. A
+        ladder a player has never played is omitted, never substituted.
+        Ratings are on our own scale, are not comparable with Elo published
+        elsewhere, and do not decay — a surface played only a few weeks a
+        year (grass in particular) moves slowly, so a rising player can sit
+        below an established one for several seasons while beating them. A
+        CURRENT per-player Elo remains free on `GET /players/{id}`; this is
+        the point-in-time series, the leaderboard and the bulk export. That
+        free rating is sourced differently and sits on a DIFFERENT scale —
+        the two differ by roughly 150 Elo of per-player standard deviation —
+        so never present a rating from one scale against a rating from the
+        other. The Elo listing REQUIRES `tour` — the ATP and WTA walks are
+        disjoint, so a combined leaderboard would not be comparable — and
+        takes exactly one `surface` (default `overall`). `elo` is never
+        implicit — omitting `system` returns the official systems only.
       operationId: listRankings
       parameters:
         - name: player
@@ -1085,9 +1119,59 @@ paths:
           schema: { type: array, items: { type: integer }, maxItems: 50 }
           explode: true
           description: >-
-            Player id. Repeatable, max 50 per request (ULTRA per-player
-            mode). OMIT it for the rank-ordered listing mode (PRO), which
-            then requires exactly one `system`.
+            Player id — repeatable, max 50 (ULTRA per-player mode). OMIT it
+            for the rank-ordered listing mode (PRO), which then requires
+            exactly one `system`.
+        - name: archive_player
+          in: query
+          required: false
+          schema: { type: array, items: { type: integer }, maxItems: 50 }
+          explode: true
+          description: >-
+            Historical-corpus person id — repeatable, max 50, `system=elo`
+            only, and REQUIRES `tour` because that id is only unique within
+            one tour. It is the same id `GET /history/archive/players`
+            returns as its `id`. Use it to reach the ~62,000 rated people
+            who have no row in our player roster; `player` reaches the rest.
+        - name: tour
+          in: query
+          required: false
+          schema: { type: string, enum: [atp, wta] }
+          description: >-
+            REQUIRED for an `elo` listing and for `archive_player`. The ATP
+            and WTA Elo walks are disjoint universes whose players never
+            meet, so a combined leaderboard would not be comparable.
+        - name: surface
+          in: query
+          required: false
+          schema:
+            type: array
+            items: { type: string, enum: [overall, hard, clay, grass] }
+          explode: true
+          description: >-
+            `system=elo` only. Listing mode takes exactly one (default
+            `overall`); per-player mode is repeatable and defaults to all
+            four ladders. A ladder the player has never played is omitted,
+            never substituted.
+        - name: min_matches
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0, default: 20 }
+          description: >-
+            `system=elo` listing only. Minimum matches on that ladder. Every
+            ladder starts at 1500, so without a floor the top of the table
+            is players who won a handful of matches from the starting
+            rating. Echoed back in `meta.coverage.qualified`.
+        - name: activity_weeks
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 104, default: 52 }
+          description: >-
+            `system=elo` listing only. The ladder must have moved within
+            this many weeks of `as_of`. Elo does not decay, so without an
+            activity window every leaderboard is topped permanently by
+            players who have stopped playing. Echoed back in
+            `meta.coverage.qualified`.
         - name: as_of
           in: query
           required: false
@@ -1100,9 +1184,14 @@ paths:
             type: array
             items:
               type: string
-              enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr]
+              enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr, elo]
           explode: true
-          description: Restrict to one or more systems. Omit for all.
+          description: >-
+            Restrict to one or more systems. Omit for all of the official
+            systems — `elo` is NEVER included implicitly and must be named,
+            so an existing request's response is unchanged. Naming a system
+            your plan does not cover refuses the whole call with 403 rather
+            than silently returning the part you are entitled to.
         - { $ref: "#/components/parameters/limit" }
         - { $ref: "#/components/parameters/offset" }
       responses:
@@ -2209,13 +2298,18 @@ components:
         and the CSV one row per point, one file per YEAR. For `kind=archive`
         (the results archive, 1968–2022) the JSONL holds one line per archive
         result (the ArchiveMatch shape) and the CSV one row per result, one
-        file per YEAR.
+        file per YEAR. For `kind=elo` (the as-of Elo tape, ULTRA) the JSONL
+        holds one rating record per line — the endpoint's field set plus
+        `archive_player_id`, the stable person key a bulk join needs — and
+        the CSV one row per record, one file per YEAR; the files are written
+        in primary-key order, so a rebuild of the same data is byte-identical
+        and the published `sha256` is a real checksum.
       properties:
         period:
           type: string
           description: >-
             Calendar month, `YYYY-MM` — or the bare year `YYYY` on the yearly
-            `rally`/`archive` kinds.
+            `rally`/`archive`/`elo` kinds.
         status:
           type: string
           enum: [ready]
@@ -2242,13 +2336,14 @@ components:
         built_at: { type: [string, "null"], format: date-time }
         kind:
           type: string
-          enum: [tape, rankings, rally, archive]
+          enum: [tape, rankings, rally, archive, elo]
           description: >-
             Present only on non-tape packages, so the shape a tape client
             already parses is unchanged. On a rankings package `match_count` is
             the number of players covered and `row_count` the number of ranking
             records; on a rally package the counts are charted matches and
-            points; on an archive package the counts are archive results.
+            points; on an archive package the counts are archive results; on
+            an `elo` package `row_count` is the number of rating records.
     Coverage:
       type: string
       enum: [from_start, partial, reconstructed, reconstructed_partial, none]
@@ -2639,7 +2734,11 @@ components:
           description: >-
             Null only on listing rows for players outside our roster — the
             listing is kept independent of the roster precisely so a top-N
-            has no silent holes. Always present on per-player records.
+            has no silent holes. Always present on per-player records for
+            the official systems and UTR. For `elo` it is also null on rows
+            for the ~62,000 rated people with no roster row — normal, not an
+            error; `player_name` is always populated, and `archive_player`
+            fetches that person directly.
         player_name:
           type: [string, "null"]
           description: >-
@@ -2648,10 +2747,37 @@ components:
             records.
         system:
           type: string
-          enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr]
+          enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr, elo]
         tour: { type: [string, "null"] }
-        rank: { type: [integer, "null"], description: Null for UTR. }
-        points: { type: [integer, "null"], description: Null for UTR. }
+        rank:
+          type: [integer, "null"]
+          description: >-
+            Null for UTR. Null for `elo` in per-player mode too — an Elo has
+            no global rank at a past instant until you say which field and
+            which activity window you mean, and the per-player read is given
+            neither. In `elo` listing mode it is the position in the
+            qualified field of THAT call.
+        points:
+          type: [integer, "null"]
+          description: >-
+            Null for UTR and for `elo` — both are ratings, and neither has
+            points.
+        surface:
+          type: string
+          enum: [overall, hard, clay, grass]
+          description: >-
+            `elo` only, and absent on every other system. Which of the four
+            independent ladders this rating is. A ladder the player has never
+            played is omitted from the response rather than substituted with
+            another.
+        matches:
+          type: [integer, "null"]
+          description: >-
+            `elo` only, and absent on every other system. Cumulative matches
+            on THAT ladder at that date — not the player's career total.
+            Every ladder starts at 1500, so this is what tells you whether a
+            rating is an assessment or a cold start, and it is the number
+            `min_matches` filters on.
         previous_rank:
           type: [integer, "null"]
           description: >-
@@ -2663,7 +2789,12 @@ components:
           description: >-
             The circuit's own signed weekly movement (ITF systems only; null
             elsewhere).
-        rating: { type: [number, "null"], description: UTR only; null elsewhere. }
+        rating:
+          type: [number, "null"]
+          description: >-
+            UTR and `elo` only; null elsewhere. For `elo` this is the Elo
+            itself, on our own scale, which is not comparable with Elo
+            published anywhere else.
         effective_date:
           type: [string, "null"]
           format: date
@@ -2692,8 +2823,10 @@ components:
                   type: [string, "null"]
                   format: date
                   description: >-
-                    Listing mode only — the published week actually served
-                    (the newest at or before `as_of`).
+                    Listing mode. For the official systems, the published
+                    week the table is from. For `elo`, the as-of instant the
+                    leaderboard was resolved at (each row carries its own
+                    `effective_date`, since a sparse tape moves per player).
                 players_requested:
                   type: integer
                   description: Per-player mode only.
@@ -2707,6 +2840,73 @@ components:
                   additionalProperties: { type: [string, "null"], format: date }
                   description: >-
                     Earliest effective date held, per requested system.
+                newest_available:
+                  type: object
+                  additionalProperties: { type: [string, "null"], format: date }
+                  description: >-
+                    Present only when `elo` was requested. The NEWEST
+                    effective date the Elo tape holds. The corpus behind it
+                    is fixed and no longer receives new results, so this
+                    date does not advance and will keep receding from
+                    today — that is a property of a historical tape, not a
+                    fault. Read it before treating an Elo leaderboard as a
+                    current one.
+                tour:
+                  type: [string, "null"]
+                  description: >-
+                    Present only when `elo` was requested — which walk
+                    answered.
+                surface:
+                  description: >-
+                    Present only when `elo` was requested. The ladder
+                    (listing) or the list of ladders (per-player) the
+                    response covers.
+                players_rated:
+                  type: integer
+                  description: >-
+                    Present only when `elo` was requested. People with at
+                    least one rating in the tape.
+                players_linked:
+                  type: integer
+                  description: >-
+                    Present only when `elo` was requested. How many of those
+                    have a row in our player roster, and therefore can be
+                    reached with `player`. The rest are reachable with
+                    `archive_player` and appear on the leaderboard with a
+                    null `player_id` and their name. The gap between these
+                    two numbers is large and is reported rather than buried.
+                qualified:
+                  type: object
+                  description: >-
+                    Present only on an `elo` listing. The two filters that
+                    DEFINE the field this table ranks. A top-N is not
+                    quotable without them — change either and it is a
+                    different top-N, and neither is more correct than the
+                    other.
+                  properties:
+                    activity_weeks: { type: integer }
+                    min_matches: { type: integer }
+                model:
+                  type: object
+                  description: >-
+                    Present only when `elo` was requested. What the numbers
+                    ARE.
+                  properties:
+                    name: { type: string }
+                    start_rating: { type: number }
+                    k_base: { type: number }
+                    publication_lag_days:
+                      type: integer
+                      description: >-
+                        A result becomes effective this many days after its
+                        tournament WEEK begins. The corpus dates a match by
+                        its tournament start, so without the lag a Slam
+                        final would be visible under the Monday the Slam
+                        began. The lag clears the longest event in tennis,
+                        so the failure direction is staleness and never
+                        look-ahead.
+                    built_at: { type: [string, "null"], format: date-time }
+                    note: { type: string }
     Webhook:
       type: object
       properties:
