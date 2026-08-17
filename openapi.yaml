@@ -2586,6 +2586,22 @@ components:
                     (0..1, lower-bound denominator — see the per-match tape's
                     `meta.points`). Null when not measured. Present where
                     enabled.
+                starts_at_love:
+                  type: [boolean, "null"]
+                  description: >-
+                    Whether a measured basis OPENS at the 0-0 state — the SAME
+                    best-basis rule as points_complete: true when either basis
+                    starts at love, so if any on-disk sequence opens at 0-0
+                    you can obtain one that does. Null when the match has not
+                    been measured. Present where enabled.
+                computed_at:
+                  type: [string, "null"]
+                  format: date-time
+                  description: >-
+                    When the ledger last measured this match (UTC). Every
+                    field in this block is a nightly-reconverged cache; this
+                    is the as-of to quote with any of them. Null when the
+                    match has not been measured. Present where enabled.
     Usage:
       type: object
       properties:
