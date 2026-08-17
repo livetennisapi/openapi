@@ -5,6 +5,72 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.6.0] — 2026-08-18
+
+### Added
+- **The three-valued `draw` field on Match.** `singles` | `doubles` | null —
+  same vocabulary as the new `?draw=` filter, decided by one shared
+  definition, so filter and field cannot disagree. Evidence order: a
+  doubles-team participant proves doubles over any event type; otherwise the
+  feed's event type decides. Null means neither says anything — no stated
+  event type, or a team tie (Davis Cup / BJK Cup / United Cup class), where
+  one event type covers both singles and doubles rubbers and we will not
+  guess which this is. Null is NOT singles. `is_doubles` stays for
+  compatibility and is now documented as LOSSY, with its evidence order:
+  false also covers "unknown", which is not a claim of singles — prefer
+  `draw`, whose null says so honestly.
+- **`?draw=singles|doubles` on four listings** — `GET /matches`,
+  `/history/matches`, `/tournaments` and `/fixtures`: the axis the `tour`
+  filter deliberately collapses; the two compose (`?tour=itf&draw=doubles`
+  is the ITF doubles slice). A row whose draw is null matches NEITHER value
+  — null is an answer, not a wildcard. An unknown value is a 400 `bad_draw`
+  with the allowed values. Two honesty notes carried into the spec: on
+  `/tournaments` the answer comes from the event type alone (a tournament
+  row has no participants to supply the doubles-team evidence matches
+  have), and `?draw=doubles` alone also returns mixed and exhibition
+  doubles that no `?tour=` value reaches.
+- **`GET /history/coverage`** (BASIC, or any Historical Data API plan) —
+  the measured completeness rollup per tour × draw bucket: the numbers to
+  read BEFORE choosing what to backtest, in one call instead of paging the
+  archive. A prebuilt snapshot rebuilt nightly right after the completeness
+  ledger reconverges — never computed at read time — so `as_of`
+  (= `built_at`) dates every number and `ledger_max_computed_at` is the
+  newest underlying per-match measurement; `503 coverage_unavailable`
+  before the first nightly build. Buckets are atp/wta/challenger/itf/juniors
+  × singles/doubles plus `other` (team ties, mixed, exhibitions and matches
+  with no stated event type — counted, never dropped, so the totals cannot
+  lie); a bucket with zero completed matches is OMITTED, never emitted as
+  zeros. Each bucket carries the five verifiable numbers (`completed`,
+  `any_tape`, `point_complete`, `complete_on_default_read`, `share`), and
+  `method` states the full measurement rule so every number carries its own
+  definition. As of 2026-08-18: 174,393 completed matches; 91,318
+  point-complete on the best basis (52.4%) against 81,196 on the default
+  read alone (46.6%); ITF singles 51.1% against ITF doubles 3.5% — do not
+  extrapolate a completeness rate across a tour group.
+- **`tape.starts_at_love` and `tape.computed_at` on `/history/matches`
+  items** (both nullable, present where enabled). `starts_at_love` follows
+  the SAME best-basis rule as `points_complete` — true when either measured
+  basis opens at the 0-0 state, so if any on-disk sequence opens at love
+  you can obtain one that does. `computed_at` is when the ledger last
+  measured the match: every field in the tape's measured block is a
+  nightly-reconverged cache, and this is the as-of to quote with any of
+  them. Null on either means the match has not been measured — never a
+  guess.
+- **The complete-basis addendum package files.** An affected month's
+  manifest may also list
+  `tennis_history_points_complete_<period>.jsonl.gz` / `.csv.gz` (marked
+  `compression: gzip`; `bytes`/`sha256` cover the compressed bytes —
+  exactly the download): for exactly the matches whose complete point
+  sequence exists only as the on-disk reconstruction, the same tape
+  `?points=complete` serves (reconstruction contract: null timestamps and
+  null model fields). The base files keep carrying every match's DEFAULT
+  read — already the complete tape for most point-complete matches — and
+  are never rewritten by the addendum; their `bytes` and `sha256` values do
+  not move.
+
+### Changed
+- `info.version` is now `1.6.0`.
+
 ## [1.5.0] — 2026-08-17
 
 ### Added

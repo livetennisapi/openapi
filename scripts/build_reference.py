@@ -599,7 +599,7 @@ clicking a link is the fastest route and that trade-off is fine.</p>
 <table><caption class="vh">Plans — what each tier adds over the one below, its rate limit and price</caption>
 <thead><tr><th scope="col">Plan</th><th scope="col">Adds</th><th scope="col">Rate limit</th><th scope="col">Price</th></tr></thead><tbody>
 <tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 100/day</td><td>$0 — no card</td></tr>
-<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability on the rows where the model ran (<code>/history/matches/{{matchId}}</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 1,000/day</td><td>$9.99/mo</td></tr>
+<tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability on the rows where the model ran (<code>/history/matches/{{matchId}}</code>) and the measured completeness rollup per tour &times; draw bucket (<code>/history/coverage</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 1,000/day</td><td>$9.99/mo</td></tr>
 <tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 10,000/day</td><td>$29.99/mo</td></tr>
 <tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, live per-point events (<code>/matches/{{matchId}}/points</code> + the WebSocket <code>point</code> frames, where a point-level feed covers the match), per-player as-of ranking records, the as-of Elo tape (<code>/rankings?system=elo</code>), rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
 </tbody></table></div>
@@ -726,7 +726,18 @@ where one exists — the response's <code>meta.points</code> block reports the m
 point-completeness of exactly the sequence you were served, per match, never as
 a blanket claim. Filter the listing by that measured verdict with
 <code>?points_complete=true</code> on <code>/history/matches</code>. The monthly bulk
-packages ship the same per-point rows for every completed match of the month.</p>
+packages' base files carry each match's default read — the same tape the API
+serves — and a month may also list the complete-basis addendum files
+(<code>tennis_history_points_complete_&lt;period&gt;.jsonl.gz</code>/<code>.csv.gz</code>): the same
+tape <code>?points=complete</code> serves, for exactly the matches whose complete point
+sequence exists only as the on-disk reconstruction. Existing base files are
+never rewritten by the addendum; their <code>sha256</code> values do not move.
+Measured completeness also differs sharply by draw on some circuits — as of
+2026-08-18, 51.1% of ITF singles matches are point-complete on the best basis
+against 3.5% of ITF doubles — which is exactly the split the <code>?draw=</code> filter
+and <code>GET /history/coverage</code> (the per-bucket rollup, rebuilt nightly, dated by
+its own <code>as_of</code>) exist to expose. Do not extrapolate a completeness rate
+across a <code>?tour=</code> group.</p>
 
 <h2 id="schemas">Schemas</h2>
 {schema_html}
@@ -787,10 +798,11 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "  usage stats. 30 req/min, 100 req/day. No history, no market prices, no model",
         "  fields, no WebSocket.",
         "- BASIC ($9.99/mo) — adds history, in two continuous halves: the point-by-point",
-        "  tape (2023→now) — the completed-match listing and the per-match tape with the",
-        "  model win-probability where computed — and the results archive (1968–2022):",
-        "  deep results, archive player bios, career aggregates and head-to-head (/h2h).",
-        "  60 req/min, 1,000 req/day.",
+        "  tape (2023→now) — the completed-match listing, the per-match tape with the",
+        "  model win-probability where computed, and the measured completeness rollup",
+        "  per tour × draw bucket (/history/coverage) — and the results archive",
+        "  (1968–2022): deep results, archive player bios, career aggregates and",
+        "  head-to-head (/h2h). 60 req/min, 1,000 req/day.",
         "- PRO ($29.99/mo) — adds match events, market prices, bulk history packages",
         "  (JSONL/CSV), and the rank-ordered rankings listing. 300 req/min, 10,000 req/day.",
         "- ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,",
@@ -845,7 +857,14 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "check meta.model_rows). ?points=complete opts into a whole-match reconstruction",
         "where one exists; the response's meta.points block reports the measured",
         "point-completeness of exactly the sequence served — per match, never a blanket",
-        "claim. ?points_complete=true filters /history/matches by that measured verdict.",
+        "claim. ?points_complete=true filters /history/matches by that measured verdict,",
+        "and ?draw=singles|doubles slices four listings (/matches, /history/matches,",
+        "/tournaments, /fixtures) by the three-valued draw field — a null-draw row",
+        "matches neither value. Measured completeness differs sharply by draw on some",
+        "circuits (as of 2026-08-18: 51.1% of ITF singles point-complete on the best",
+        "basis vs 3.5% of ITF doubles) — read GET /history/coverage, the per-bucket",
+        "rollup rebuilt nightly and dated by its own as_of, before choosing what to",
+        "backtest.",
         "",
         "## Official client libraries",
         "- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python",

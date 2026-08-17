@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.5.0"
+  version: "1.6.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
