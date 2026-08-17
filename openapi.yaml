@@ -283,8 +283,9 @@ paths:
         an absent field is OMITTED, never zero-filled, so read the keys you are
         given. Aces and double faults are present across every tour. The serve
         split and break points saved are present on the main tours and absent
-        on ITF singles. Winners and unforced errors appear on a minority of
-        main-tour matches.
+        on ITF singles. Winners and unforced errors historically appeared on
+        a minority of main-tour matches and have not been delivered upstream
+        since 2026-07-12 (measured 2026-08-17).
 
 
         `freshness.derived` and `freshness.measured` each carry their own
@@ -1563,13 +1564,14 @@ paths:
 
         The `channels` object lists only channels that will actually deliver
         for your key right now (a channel name in this response is a
-        promise). The per-point channel family is LIVE (since 2026-08-17):
-        `point:match:{match_id}` / `point:slate` (per-point events) are
-        listed — as `point_match` / `point_slate` in the vocabulary — for
-        keys whose plan carries the point surface. Where enabled
-        server-side, `signal:match:{match_id}` / `signal:slate` (derived
-        `break_point`, `break_point_result` and `divergence` events) appear
-        too. Deliberately separate channels: a `slate:all` subscriber asked
+        promise). Where enabled server-side, additional channel families
+        appear: `point:match:{match_id}` / `point:slate` (per-point events),
+        listed — as `point_match` / `point_slate` in the vocabulary — only
+        for keys whose plan carries the point surface, and
+        `signal:match:{match_id}` / `signal:slate` (derived `break_point`,
+        `break_point_result` and `divergence` events). A family absent from
+        the response will not deliver for your key right now.
+        Deliberately separate channels: a `slate:all` subscriber asked
         for score states and never starts receiving events unasked. Point
         and signal frames are events, not states — a missed point does NOT
         self-correct on the next frame; recover it via
@@ -1602,14 +1604,15 @@ paths:
                         type: string
                         description: >-
                           Per-match point events (`point:match:{match_id}`).
-                          Present only for keys whose plan carries the point
-                          surface (live since 2026-08-17).
+                          Present only when the point feed is enabled
+                          server-side and the key's plan carries the point
+                          surface.
                       point_slate:
                         type: string
                         description: >-
-                          Every point frame (`point:slate`). Present only for
-                          keys whose plan carries the point surface (live
-                          since 2026-08-17).
+                          Every point frame (`point:slate`). Present only
+                          when the point feed is enabled server-side and the
+                          key's plan carries the point surface.
                 example:
                   token: "eyJhbGciOi..."
                   expires_in: 3600
@@ -1617,8 +1620,6 @@ paths:
                   channels:
                     match: "match:{match_id}"
                     slate: "slate:all"
-                    point_match: "point:match:{match_id}"
-                    point_slate: "point:slate"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "429": { $ref: "#/components/responses/RateLimited" }
