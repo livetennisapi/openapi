@@ -1563,13 +1563,15 @@ paths:
 
         The `channels` object lists only channels that will actually deliver
         for your key right now (a channel name in this response is a
-        promise). Where enabled server-side, additional channel families
-        appear: `point:match:{match_id}` / `point:slate` (per-point events)
-        and `signal:match:{match_id}` / `signal:slate` (derived
-        `break_point`, `break_point_result` and `divergence` events).
-        Deliberately separate channels: a `slate:all` subscriber asked for
-        score states and never starts receiving events unasked. Point and
-        signal frames are events, not states — a missed point does NOT
+        promise). The per-point channel family is LIVE (since 2026-08-17):
+        `point:match:{match_id}` / `point:slate` (per-point events) are
+        listed — as `point_match` / `point_slate` in the vocabulary — for
+        keys whose plan carries the point surface. Where enabled
+        server-side, `signal:match:{match_id}` / `signal:slate` (derived
+        `break_point`, `break_point_result` and `divergence` events) appear
+        too. Deliberately separate channels: a `slate:all` subscriber asked
+        for score states and never starts receiving events unasked. Point
+        and signal frames are events, not states — a missed point does NOT
         self-correct on the next frame; recover it via
         `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`.
       operationId: createWsToken
@@ -1591,10 +1593,23 @@ paths:
                     description: >-
                       Channel vocabulary — `match` is the per-match pattern
                       (`match:{id}`), `slate` is the every-live-score channel
-                      (`slate:all`).
+                      (`slate:all`). A channel listed here will actually
+                      deliver for your key; one missing will not.
                     properties:
                       match: { type: string }
                       slate: { type: string }
+                      point_match:
+                        type: string
+                        description: >-
+                          Per-match point events (`point:match:{match_id}`).
+                          Present only for keys whose plan carries the point
+                          surface (live since 2026-08-17).
+                      point_slate:
+                        type: string
+                        description: >-
+                          Every point frame (`point:slate`). Present only for
+                          keys whose plan carries the point surface (live
+                          since 2026-08-17).
                 example:
                   token: "eyJhbGciOi..."
                   expires_in: 3600
@@ -1602,6 +1617,8 @@ paths:
                   channels:
                     match: "match:{match_id}"
                     slate: "slate:all"
+                    point_match: "point:match:{match_id}"
+                    point_slate: "point:slate"
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "429": { $ref: "#/components/responses/RateLimited" }
@@ -3055,6 +3072,14 @@ components:
           description: >-
             `revised` = the upstream feed rewrote an already-served prefix at
             least once during this match; served rows are never edited.
+        covers_from_start:
+          type: [boolean, "null"]
+          description: >-
+            Whether the persisted stream OPENS at the match's 0-0 opener —
+            seq 1 exists and is the love-love state — i.e. whether replaying
+            from `after_seq=0` yields the whole match or joins it mid-play.
+            Null when the match has no rows at all (nothing to judge — null
+            means not measured, never "no").
         points:
           type: array
           items: { $ref: "#/components/schemas/LivePoint" }
