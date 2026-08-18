@@ -5,6 +5,33 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.7.0] — 2026-08-18
+
+### Added
+- **`basis` on `GET /matches/{matchId}/points` responses.** `live` |
+  `reconstruction` — which base served the page. Live capture is inherently
+  partial: the stream serves what arrived while the match ran, and the
+  match-closing point never streams live. For a COMPLETED match where a
+  measured-complete recorded point sequence exists, the endpoint now serves
+  that complete sequence instead, projected into the same point-frame shape
+  — love-love opener through the match-closing point, `seq` contiguous
+  `1..N`, `quality` `clean` — and says so with `basis: "reconstruction"`.
+  Every other case (every live match, and any completed match without a
+  measured-complete recorded sequence) stays `basis: "live"` — the persisted
+  stream rows, byte-for-byte what was served before. Completeness beats the
+  partial live capture WHOLESALE — the two sequences are never interleaved
+  (they share no key, so any merge would fabricate an order), the same rule
+  `?points=complete` follows on the history read. On projected frames `ts`
+  is null on every row: the recorded sequence carries no per-point clock and
+  none is fabricated (`LivePoint.ts` now documents this). `after_seq`
+  pagination and `seq` dedup work identically on either basis, but the two
+  bases are different sequences: after a match completes and flips to
+  `reconstruction`, re-read from `after_seq=0` rather than resuming a live
+  cursor into it. Additive only — no existing field moved or changed type.
+
+### Changed
+- `info.version` is now `1.7.0`.
+
 ## [1.6.0] — 2026-08-18
 
 ### Added

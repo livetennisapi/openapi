@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.6.0"
+  version: "1.7.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -360,6 +360,27 @@ paths:
         Up to 500 rows per page; `after_seq=last_seq` fetches the next page
         while `has_more` is true. 404 unknown match; 400 `points_disabled`
         while the surface is switched off server-side.
+
+
+        COMPLETED MATCHES: live capture is inherently partial — the stream
+        serves what arrived while the match ran, and the match-closing point
+        never streams live. Where a measured-complete recorded point sequence
+        of the finished match exists, this endpoint serves THAT instead — the
+        complete sequence projected into the same point-frame shape, love-love
+        opener through the match-closing point, `seq` contiguous 1..N. The
+        response field `basis` says which base served the page: `live` (the
+        persisted live stream rows — every live match, and any completed match
+        without a measured-complete recorded sequence) or `reconstruction`
+        (the projected complete sequence; `quality` is `clean`, every
+        transition measured legal). Completeness beats the partial live
+        capture wholesale — the two sequences are never interleaved (they
+        share no key, so any merge would fabricate an order). On projected
+        frames `ts` is null on every row: the recorded sequence carries no
+        per-point clock and we fabricate none. `after_seq` pagination and
+        `seq` dedup work identically on either basis, but the two bases are
+        different sequences: after a match completes and flips to
+        `reconstruction`, re-read from `after_seq=0` rather than resuming a
+        live cursor into it.
       operationId: getMatchPoints
       parameters:
         - $ref: "#/components/parameters/matchId"
@@ -3217,10 +3238,20 @@ components:
           items:
             type: array
             items: { type: integer }
-        ts: { type: [string, "null"], format: date-time }
+        ts:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Capture time (UTC) — when our pipeline committed this state. Null
+            on every frame of a `reconstruction`-basis page — the recorded
+            sequence carries no per-point clock and none is fabricated.
     MatchPoints:
       type: object
-      description: One page of a match's live per-point stream, seq order.
+      description: >-
+        One page of a match's per-point stream, seq order. `basis` says which
+        base served it: the persisted live stream rows, or — for a completed
+        match where a measured-complete recorded sequence exists — that
+        complete sequence projected into point frames.
       properties:
         match_id: { type: integer }
         pbp_coverage:
@@ -3251,6 +3282,18 @@ components:
           type: integer
           description: The resume cursor — pass as `after_seq` to continue.
         has_more: { type: boolean }
+        basis:
+          type: string
+          enum: [live, reconstruction]
+          description: >-
+            Which base served this page. `live` = the persisted live stream
+            rows (every live match, and any completed match without a
+            measured-complete recorded sequence); `reconstruction` = the
+            complete recorded point sequence of a finished match, projected
+            into point frames at read time — includes the match-closing point,
+            `seq` contiguous 1..N, `ts` null on every frame. Completeness
+            beats the partial live capture wholesale; the two bases are never
+            interleaved.
     PointFrame:
       type: object
       description: >-
