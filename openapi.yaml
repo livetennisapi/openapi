@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.7.0"
+  version: "1.7.1"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1992,6 +1992,19 @@ components:
             resumes (no record of the pause survives), and for
             `Retired`/`Walk Over` the withdrawing player is reported in
             `withdrew`, where derivable.
+        event_status_updated_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            When `event_status` last CHANGED, UTC (ISO-8601, `Z`) — added
+            2026-08-19. The instant WE recorded the walkover / retirement /
+            cancellation / postponement / suspension (or its clearing), not
+            when the tournament desk or the feed did: this is the field to
+            measure our admin-status latency with. Bumps only on a change of
+            value (a re-read of the same status never moves it; a clear back
+            to null does). Null while `event_status` has never changed since
+            the field was introduced (2026-08-19) — never backfilled, never
+            guessed.
         is_doubles:
           type: boolean
           description: >-
