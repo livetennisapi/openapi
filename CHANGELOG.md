@@ -5,6 +5,23 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.7.1] — 2026-08-19
+
+### Added
+- **`event_status_updated_at` on Match.** Nullable ISO-8601 UTC (`Z`)
+  timestamp, right after `event_status`: when `event_status` last CHANGED —
+  the instant WE recorded the walkover / retirement / cancellation /
+  postponement / suspension (or its clearing), not when the tournament desk
+  or the feed did. It is the field to measure our admin-status latency with.
+  Bumps only on a change of value (a re-read of the same status never moves
+  it; a clear back to null does). Null while `event_status` has never changed
+  since the field was introduced (2026-08-19) — never backfilled, never
+  guessed. Inherited by every schema built on Match (`MatchDetail`,
+  `HistoryMatch`). Additive only — no existing field moved or changed type.
+
+### Changed
+- `info.version` is now `1.7.1`.
+
 ## [1.7.0] — 2026-08-18
 
 ### Added
