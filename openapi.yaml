@@ -1048,7 +1048,7 @@ paths:
           required: false
           schema: { type: string, enum: [tape, rankings, rally, archive, elo], default: tape }
           description: >-
-            Package family; `rankings`, `rally` and `elo` require ULTRA.
+            Package family; `rankings`, `rally` and `elo` require ULTRA or a History Pro/Business subscription (changed 2026-08-19).
             `rally` = the yearly charted rally corpus exports; `archive` =
             the yearly results archive (1968–2022) exports, same entitlement
             as the tape packages; `elo` = the yearly as-of Elo tape exports.
@@ -2452,7 +2452,7 @@ components:
         and the CSV one row per point, one file per YEAR. For `kind=archive`
         (the results archive, 1968–2022) the JSONL holds one line per archive
         result (the ArchiveMatch shape) and the CSV one row per result, one
-        file per YEAR. For `kind=elo` (the as-of Elo tape, ULTRA) the JSONL
+        file per YEAR. For `kind=elo` (the as-of Elo tape; ULTRA or History Pro/Business) the JSONL
         holds one rating record per line — the endpoint's field set plus
         `archive_player_id`, the stable person key a bulk join needs — and
         the CSV one row per record, one file per YEAR; the files are written
