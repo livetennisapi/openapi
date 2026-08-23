@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.7.1"
+  version: "1.7.2"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1978,7 +1978,22 @@ components:
             not number). This is the field to branch on; it matches
             `/history/archive/matches?round=` exactly. Null when the label is
             unrecognised — never guessed.
-        status: { type: string, enum: [upcoming, live, completed, cancelled] }
+        status:
+          type: string
+          enum: [upcoming, live, completed, cancelled]
+          description: >-
+            The settled lifecycle. `completed` is asserted only for a match
+            we observed being played or whose match-winner market settled
+            decisively (one side paid out) — a closed market alone never
+            finishes a match (rule stated 2026-08-23; rows mis-published
+            before it were corrected). `cancelled` with `event_status: null`
+            means we hold positive evidence the match was not played as
+            scheduled (the market settled void) but no vendor word for why —
+            `outcome` and the fixture `reason` stay null rather than guessed,
+            and the row upgrades to a completed walkover with `winner` /
+            `withdrew` if a `Walk Over` with a stated winner lands later. The
+            flip `upcoming → cancelled` runs through a gate (well past the
+            scheduled time, no play recorded), never inline on a feed flap.
         event_status:
           type: [string, "null"]
           enum: [Retired, Cancelled, Walk Over, Postponed, Interrupted, null]

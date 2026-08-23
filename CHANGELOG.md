@@ -5,6 +5,21 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.7.2] — 2026-08-23
+
+### Changed
+- **`status` on Match now documents the lifecycle rule.** `completed` is
+  asserted only for a match we observed being played or whose match-winner
+  market settled decisively; a closed market alone never finishes a match.
+  `cancelled` with `event_status: null` means positive evidence the match
+  was not played as scheduled (the market settled void) and no vendor word
+  for why — `outcome` / fixture `reason` stay null rather than guessed, and
+  the row upgrades to a completed walkover if a `Walk Over` with a stated
+  winner lands later. Before 2026-08-23 a void market closure completed the
+  match and stamped `Finished`; those rows were corrected. No field added or
+  changed type — prose only.
+- `info.version` is now `1.7.2`.
+
 ## [1.7.1] — 2026-08-19
 
 ### Added
