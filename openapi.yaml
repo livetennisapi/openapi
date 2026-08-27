@@ -248,6 +248,27 @@ paths:
   /matches/{matchId}/analysis:
     get:
       summary: Model analysis for a match (ULTRA)
+      description: >-
+        The model's thesis and profile for one match.
+
+
+        COVERAGE IS NOT UNIVERSAL, and a polling client should plan for that.
+        Analysis is produced per match by the model pipeline rather than
+        emitted for every fixture: over the seven days to 2026-08-27, 1,225 of
+        2,863 matches that went live or completed carried one (42.8%). A match
+        that has none yet returns `404 {"error":"not_found"}` — that is the
+        documented absence, not a fault, and it can turn into a 200 later in
+        the same match once the pipeline has run. Never treat this 404 as a
+        reason to retry harder.
+
+
+        ONE CALL INSTEAD OF THREE. `GET /matches/{matchId}` carries the same
+        thesis and profile in its `analysis` key on ULTRA, alongside `market`
+        and `market_price` on PRO and above, next to the live score. It answers
+        `200` whether or not analysis and a market exist — the keys are `null`
+        instead — so a per-match poll built on the detail route replaces the
+        score, analysis and prices calls with one request and never spends a
+        call on a 404.
       operationId: getMatchAnalysis
       parameters: [ { $ref: "#/components/parameters/matchId" } ]
       responses:
@@ -532,6 +553,18 @@ paths:
   /markets/{matchId}/prices:
     get:
       summary: Market + recent price ticks per side, newest first (PRO)
+      description: >-
+        The mapped match-winner market for one match, with its recent price
+        ticks per side, newest first.
+
+
+        404 when no match-winner market is mapped to the match — a market is
+        mapped only where one is published for that fixture, so a client
+        walking every live match will meet this. `GET /matches/{matchId}`
+        answers `200` for the same match with `market` and `market_price` set
+        to `null` instead, and carries the live score in the same response, so
+        a per-match poll built on the detail route never spends a call on a
+        404.
       operationId: getMarketPrices
       parameters:
         - $ref: "#/components/parameters/matchId"

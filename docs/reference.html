@@ -483,6 +483,11 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <h3><span class="method">GET</span> <code>/matches/{matchId}/analysis</code></h3>
 <p class="summary">Model analysis for a match (ULTRA)</p>
 <p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>getMatchAnalysis</code></p>
+<p>The model&#x27;s thesis and profile for one match.
+
+COVERAGE IS NOT UNIVERSAL, and a polling client should plan for that. Analysis is produced per match by the model pipeline rather than emitted for every fixture: over the seven days to 2026-08-27, 1,225 of 2,863 matches that went live or completed carried one (42.8%). A match that has none yet returns <code>404 {&quot;error&quot;:&quot;not_found&quot;}</code> — that is the documented absence, not a fault, and it can turn into a 200 later in the same match once the pipeline has run. Never treat this 404 as a reason to retry harder.
+
+ONE CALL INSTEAD OF THREE. <code>GET /matches/{matchId}</code> carries the same thesis and profile in its <code>analysis</code> key on ULTRA, alongside <code>market</code> and <code>market_price</code> on PRO and above, next to the live score. It answers <code>200</code> whether or not analysis and a market exist — the keys are <code>null</code> instead — so a per-match poll built on the detail route replaces the score, analysis and prices calls with one request and never spends a call on a 404.</p>
 <h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/analysis parameters"><table><caption class="vh">GET /matches/{matchId}/analysis — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
 
 Get it from any match list, where it is the <code>id</code> field of each match object:
@@ -604,6 +609,9 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <h3><span class="method">GET</span> <code>/markets/{matchId}/prices</code></h3>
 <p class="summary">Market + recent price ticks per side, newest first (PRO)</p>
 <p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>getMarketPrices</code></p>
+<p>The mapped match-winner market for one match, with its recent price ticks per side, newest first.
+
+404 when no match-winner market is mapped to the match — a market is mapped only where one is published for that fixture, so a client walking every live match will meet this. <code>GET /matches/{matchId}</code> answers <code>200</code> for the same match with <code>market</code> and <code>market_price</code> set to <code>null</code> instead, and carries the live score in the same response, so a per-match poll built on the detail route never spends a call on a 404.</p>
 <h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /markets/{matchId}/prices parameters"><table><caption class="vh">GET /markets/{matchId}/prices — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
 
 Get it from any match list, where it is the <code>id</code> field of each match object:
