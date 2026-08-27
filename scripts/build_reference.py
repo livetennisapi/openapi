@@ -577,6 +577,12 @@ the second to player 2. Once that clicks, the rest of the API reads the same way
 <p>Two more you can click, swapping <code>21131</code> for any <code>id</code> from the list above:</p>
 <pre class="urls"><code>{E(base)}/matches/21131?token=YOUR_KEY
 {E(base)}/matches/21131/score?token=YOUR_KEY</code></pre>
+<p>The same first call from a terminal — copy, paste, replace <code>YOUR_KEY</code>.
+In code the key travels in the <code>X-API-Key</code> header rather than the URL:</p>
+<pre><code>curl -H "X-API-Key: YOUR_KEY" \\
+  "{E(base)}/matches?status=live"</code></pre>
+<p>Your key is on <a href="{SITE}/account">{SITE}/account</a> behind
+<strong>Show my key</strong>.</p>
 
 <h2 id="base-url">Base URL</h2>
 <pre class="urls"><code>{E(base)}</code></pre>
