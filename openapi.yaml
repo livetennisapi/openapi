@@ -727,11 +727,19 @@ paths:
           required: false
           schema: { type: string, enum: [raw, clean], default: raw }
           description: >-
-            `raw` (default) is every row we committed — deliberately
-            non-monotonic, since independent sources race and a higher-trust
-            one may correct a lower-trust one backwards. `clean` returns one
-            row per distinct score state, keeping the last assertion of each.
-            An unknown value is a 400 `bad_sequence`.
+            `raw` (default) is every row we committed, in commit order —
+            deliberately non-monotonic, since independent sources race and a
+            higher-trust one may correct a lower-trust one backwards. `clean`
+            returns one row per distinct score state, keeping the last
+            assertion of each, ordered by MATCH PROGRESS (the same ranking
+            our arbiter uses), not by wall clock — so array order is the
+            authoritative point order, and `timestamp` values may locally
+            disagree with it by a few seconds where a stale re-assertion
+            carried a later clock. Within a game, deuce states legitimately
+            cycle (40-40 ↔ AD) and rank equally, so consecutive clean rows
+            are not guaranteed point-monotonic there; `point_winner` is only
+            set where the transition is a single attributable point. An
+            unknown value is a 400 `bad_sequence`.
         - name: points
           in: query
           required: false
@@ -1876,9 +1884,12 @@ components:
         points:
           type: array
           description: >-
-            In-game points as tennis strings ("0", "15", "40", "AD"). Entries
-            can be NULL — observed live on completed matches, which also carry
-            empty games arrays. Do not decode into non-nullable strings.
+            In-game points as tennis strings ("0", "15", "30", "40", "AD") —
+            EXCEPT during a tiebreak, where they are the running tiebreak
+            count as plain integer strings ("0", "1", "2", …); `is_tiebreak`
+            tells the two notations apart. Entries can be NULL — observed
+            live on completed matches, which also carry empty games arrays.
+            Do not decode into non-nullable strings.
           items: { type: [string, "null"] }
         server: { type: [integer, "null"], enum: [1, 2, null] }
         is_tiebreak: { type: boolean }
@@ -2285,8 +2296,23 @@ components:
             items: { type: integer }
         points:
           type: array
+          description: >-
+            In-game points as tennis strings ("0", "15", "30", "40", "AD") —
+            EXCEPT during a tiebreak, where they are the running tiebreak
+            count as plain integer strings ("0", "1", "2", …); `is_tiebreak`
+            tells the two notations apart.
           items: { type: string }
-        server: { type: [integer, "null"], enum: [1, 2, null] }
+        server:
+          type: [integer, "null"]
+          enum: [1, 2, null]
+          description: >-
+            Who is serving — null where the feed never asserted it. On
+            `?sequence=clean` the server is SETTLED per non-tiebreak game
+            (the server is physically constant within a game, so the game's
+            majority assertion fills nulls and corrects transient
+            disagreements; a tie settles nothing). The raw sequence carries
+            every row exactly as committed, so a transient wrong-server read
+            can appear there and be corrected by a later row.
         is_tiebreak: { type: boolean }
         win_probability_p1: { type: [number, "null"] }
         danger: { type: [number, "null"] }
@@ -2317,7 +2343,10 @@ components:
           description: Match metadata with the final score embedded.
         tape:
           type: array
-          description: Chronological score sequence — see HistoryTapeRow.
+          description: >-
+            The score sequence — see HistoryTapeRow. Array order is the
+            authoritative order: commit order on `raw`, match-progress order
+            on `?sequence=clean` (see the `sequence` parameter).
           items: { $ref: "#/components/schemas/HistoryTapeRow" }
         tiebreaks:
           type: [array, "null"]
