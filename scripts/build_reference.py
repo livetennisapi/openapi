@@ -713,11 +713,63 @@ match from January 2023 on, all tours, newest first — filter a window with
 main draws, qualifying and the ITF/futures tiers, 1968 through 2022 — with
 final score, seeds, ranks at the time, and per-match serve statistics where
 the era recorded them (from 1991). The archive ends exactly where the tape
-begins, so no match is ever served from two datasets. Bulk: tape packages are
+begins, so no match is ever served from two datasets. Archive results played
+<strong>2013&ndash;2022</strong> additionally carry a reconstructed point-by-point tape
+(next question). Bulk: tape packages are
 built per calendar month, archive packages per year
-(<code>?kind=archive</code>); <code>GET /history/packages</code> lists exactly which periods
+(<code>?kind=archive</code>), the reconstructed archive tape per year
+(<code>?kind=archive_tape</code>, 2013&ndash;2022);
+<code>GET /history/packages</code> lists exactly which periods
 exist and is always the authoritative answer. Year-scale exports are part of
 the Historical Data API Business plan.</p>
+
+<h3 id="faq-pre-2023-points">Is there point-by-point data before 2023?</h3>
+<p><strong>For 2013&ndash;2022, yes — reconstructed, not recorded.</strong>
+<code>GET /history/archive/matches/{{archiveId}}/tape</code> serves the score sequence
+behind a 2013&ndash;2022 archive result, rebuilt from the public record after the
+fact: <strong>97,901 matches and 14,340,663 rows</strong>. The floor is hard. The
+archive holds a further <strong>977,903 results from 1968&ndash;2012 and not one of
+them has a tape</strong> — there is no public point-by-point record of those years
+to rebuild, and we do not manufacture one.</p>
+<p><strong>Nobody watched those matches, and the data says so.</strong>
+<code>timestamp</code>, <code>win_probability_p1</code> and <code>danger</code> are
+null on <em>every</em> row and cannot be filled in later — the production table has no
+timestamp column at all, and the promotion script refuses to run if one ever
+appears. This is structural, not a convention. Do not time
+anything with this tape: it is true about the score sequence and silent about the
+clock. That is the opposite of the 2023&rarr;now tape, which is our own recording —
+there, the rows we actually watched carry a real clock and most of them a model
+probability. <code>meta</code> states the rest per match:
+<code>coverage</code> (<code>reconstructed</code> | <code>reconstructed_partial</code>),
+<code>granularity</code> (<code>point</code> on 99.4% of the corpus; 556 matches resolve
+only to one row per game, 555 of them in 2013), <code>point_source</code> and
+<code>rows</code>. <code>reconstructed_partial</code> (3,594 matches) has two causes and
+does not say which: 3,038 are matches that genuinely stopped early (3,027
+retirements, 11 defaults) and the other 556 carry the label only because their tape
+is per-game — read <code>granularity</code> and the match's own score, not the
+label.</p>
+<p><strong>How much of the era it covers, thin spots included:</strong> 19.3% of all
+archive matches played 2013&ndash;2022 and 44.9% of tour-level play. Main-draw tour
+buckets are close to complete — ATP Masters 98.7%, ATP slam 98.0%, WTA slam 97.4%,
+WTA Premier Mandatory 97.9%, ATP 250&ndash;500 95.4%, WTA Premier 94.1%. Below that
+it thins fast: ATP Challenger main draws 55.3%, Challenger qualifying 33.6%, slam
+<em>qualifying</em> only 16.0% (ATP) and 18.1% (WTA), and ITF and futures effectively
+nothing — 25 of 116,575 ATP futures matches, 68 of 19,162 ITF M15, 48 of 9,380 ITF
+M25. If your work is ITF, this is the wrong dataset and we would rather you knew
+now. 31% of the corpus is qualifying-draw play, which is the part you are least
+likely to hold already.</p>
+<p><strong>Each tape is proved to belong to its match before it is published.</strong>
+A five-clause identity proof — edition, names, round, an exact match of the derived
+set spine against the published final score, and the date window — then a step-by-step
+walk against 23 interior invariants. A tape that cannot prove its binding is refused
+rather than published against a guess, which is why a missing tape and an unproven one
+both answer 404.</p>
+<p><strong>Who can read it:</strong> core ULTRA, <em>or any active History plan
+including Starter</em> (which opens it on a FREE core key). The per-year bulk files
+(<code>/history/packages?kind=archive_tape</code>, 2013&ndash;2022, JSONL and CSV, all
+ready) are a separate gate: core ULTRA, a History Pro/Business subscription, or an
+active one-off package window. <strong>Core PRO carries neither</strong> — it reads the
+archive result and is refused the tape.</p>
 
 <h3 id="faq-whats-in-tape">What's in the point-by-point tape?</h3>
 <p>One row per recorded point state, chronological: <code>sets</code>, per-set <code>games</code>,
@@ -778,7 +830,8 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "> Complete endpoint reference for the Live Tennis API. Real-time tennis scores,",
         "> players, rankings, match-winner market prices and model win-probability for ATP,",
         "> WTA, Challenger and ITF, over REST and WebSocket — plus the point-by-point tape",
-        "> (2023→now) and the results archive (1968–2022) of deep historical results.",
+        "> (2023→now), the results archive (1968–2022) of deep historical results, and the",
+        "> reconstructed 2013–2022 archive tape (97,901 matches, 14,340,663 rows).",
         "",
         f"Base URL: {base}",
         f"Full text reference: {DOCS_URL}/reference.html",
@@ -815,7 +868,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "  in-play match statistics, live per-point events (/matches/{matchId}/points +",
         "  the WebSocket point frames, where a point-level feed covers the match),",
         "  per-player as-of rankings, the as-of Elo tape (system=elo), rally construction",
-        "  (shot-by-shot charted data), the WebSocket push feed and webhooks.",
+        "  (shot-by-shot charted data), the reconstructed 2013–2022 archive tape",
+        "  (/history/archive/matches/{archiveId}/tape — also opened by ANY active History",
+        "  plan, Starter included), the WebSocket push feed and webhooks.",
         "  600 req/min, 500,000 req/day.",
         "",
         "Coverage is identical on every plan (all tours, ATP through ITF); plans differ in",
@@ -824,8 +879,10 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "",
         "## Historical Data API (standalone plans for the /history endpoints)",
         "- Starter — single-match point-by-point tape reads (tape + model win-probability",
-        "  where computed), all tours, one match per request. No bulk downloads.",
-        "- Pro — everything in Starter + bulk monthly package downloads + higher rate limits.",
+        "  where computed), all tours, one match per request, INCLUDING the reconstructed",
+        "  2013–2022 archive tape. No bulk downloads.",
+        "- Pro — everything in Starter + bulk monthly package downloads (and the per-year",
+        "  archive_tape files) + higher rate limits.",
         "- Business — everything in Pro + year-scale archive exports + top rate limits +",
         "  priority support.",
         "- One-off passes — 1-month and 1-year access, no subscription.",
@@ -856,7 +913,37 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "ITF/futures tiers, 1968 through 2022 — with seeds, ranks at the time, and serve",
         "stats where the era recorded them (from 1991). The archive ends where the tape",
         "begins. GET /history/packages lists exactly which bulk periods exist (monthly for",
-        "tape, yearly for ?kind=archive) and is always the authoritative answer.",
+        "tape, yearly for ?kind=archive and ?kind=archive_tape) and is always the",
+        "authoritative answer.",
+        "Is there point-by-point data before 2023? For 2013–2022 yes, RECONSTRUCTED, not",
+        "recorded: GET /history/archive/matches/{archiveId}/tape rebuilds the score sequence",
+        "behind a 2013–2022 archive result from the public record — 97,901 matches and",
+        "14,340,663 rows. The floor is hard: 977,903 archive results from 1968–2012 have NO",
+        "tape and never will, because no public point-by-point record of those years exists",
+        "to rebuild and we do not manufacture one. Nobody watched those matches, so",
+        "timestamp, win_probability_p1 and danger are null on EVERY row and cannot be filled",
+        "in later — the production table has no timestamp column at all, and the promotion",
+        "script refuses to run if one ever appears. Do not time",
+        "anything with this tape. The 2023→now tape is the opposite: it is our own",
+        "recording, and the rows we actually watched carry a real clock and most of them a",
+        "model probability. meta per match: coverage (reconstructed | reconstructed_partial),",
+        "granularity (point on 99.4% of the corpus; 556 matches are one row per game, 555 of",
+        "them in 2013), point_source, rows. reconstructed_partial (3,594 matches) has two",
+        "causes and does not say which — 3,038 matches that genuinely stopped early (3,027",
+        "retirements, 11 defaults) and 556 that carry the label only for being per-game.",
+        "Coverage of the era, thin spots included: 19.3% of archive matches played 2013–2022",
+        "and 44.9% of tour-level play; ATP slam main 98.0%, WTA slam main 97.4%, ATP Masters",
+        "98.7%, ATP 250–500 95.4%, WTA Premier 94.1%, WTA Premier Mandatory 97.9%, Challenger",
+        "main 55.3%, Challenger qualifying 33.6%; slam QUALIFYING only 16.0% (ATP) / 18.1%",
+        "(WTA); ITF and futures effectively zero (25 of 116,575 ATP futures, 68 of 19,162",
+        "M15, 48 of 9,380 M25). 31% of the corpus is qualifying-draw play. It is not a",
+        "complete record of the era and is not sold as one. Every tape is bound to its match",
+        "by a five-clause identity proof and a 23-invariant interior audit; one that cannot",
+        "prove its binding is refused rather than published against a guess. Tier: core ULTRA",
+        "or ANY active History plan including Starter; the per-year bulk files",
+        "(?kind=archive_tape, 2013–2022, JSONL + CSV, all ready) need core ULTRA, a History",
+        "Pro/Business subscription, or an active one-off package window. Core PRO carries",
+        "NEITHER.",
         "What's in the point-by-point tape? One row per recorded point state:",
         "sets, per-set games, in-game points, server, tiebreak flag, and the model's",
         "win_probability_p1 + danger on the rows where the model ran (null elsewhere —",

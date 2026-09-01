@@ -3,7 +3,8 @@
 > Complete endpoint reference for the Live Tennis API. Real-time tennis scores,
 > players, rankings, match-winner market prices and model win-probability for ATP,
 > WTA, Challenger and ITF, over REST and WebSocket — plus the point-by-point tape
-> (2023→now) and the results archive (1968–2022) of deep historical results.
+> (2023→now), the results archive (1968–2022) of deep historical results, and the
+> reconstructed 2013–2022 archive tape (97,901 matches, 14,340,663 rows).
 
 Base URL: https://api.livetennisapi.com/api/public/v1
 Full text reference: https://docs.livetennisapi.com/reference.html
@@ -40,7 +41,9 @@ Every plan includes the plans below it. The concrete deltas:
   in-play match statistics, live per-point events (/matches/{matchId}/points +
   the WebSocket point frames, where a point-level feed covers the match),
   per-player as-of rankings, the as-of Elo tape (system=elo), rally construction
-  (shot-by-shot charted data), the WebSocket push feed and webhooks.
+  (shot-by-shot charted data), the reconstructed 2013–2022 archive tape
+  (/history/archive/matches/{archiveId}/tape — also opened by ANY active History
+  plan, Starter included), the WebSocket push feed and webhooks.
   600 req/min, 500,000 req/day.
 
 Coverage is identical on every plan (all tours, ATP through ITF); plans differ in
@@ -49,8 +52,10 @@ which data products and volumes they unlock. Calling above your plan returns
 
 ## Historical Data API (standalone plans for the /history endpoints)
 - Starter — single-match point-by-point tape reads (tape + model win-probability
-  where computed), all tours, one match per request. No bulk downloads.
-- Pro — everything in Starter + bulk monthly package downloads + higher rate limits.
+  where computed), all tours, one match per request, INCLUDING the reconstructed
+  2013–2022 archive tape. No bulk downloads.
+- Pro — everything in Starter + bulk monthly package downloads (and the per-year
+  archive_tape files) + higher rate limits.
 - Business — everything in Pro + year-scale archive exports + top rate limits +
   priority support.
 - One-off passes — 1-month and 1-year access, no subscription.
@@ -82,6 +87,7 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - GET /history/matches/{matchId} — Per-match tape — point-by-point score + per-point model probabilities (BASIC)
 - GET /history/archive/matches — Results archive (1968–2022) — deep historical results (BASIC)
 - GET /history/archive/matches/{archiveId} — One archive result, with serve statistics where recorded (BASIC)
+- GET /history/archive/matches/{archiveId}/tape — Reconstructed 2013–2022 point-by-point tape for one archive result (ULTRA, or any History plan)
 - GET /history/archive/players — Archive player bios — hand, DOB, country, height, career-high (BASIC)
 - GET /history/archive/career — Career aggregates over the results archive, 1968–2022 (BASIC)
 - GET /h2h — Head-to-head across the results archive (1968–2022) and our own completed matches (2023→now) (BASIC)
@@ -113,7 +119,37 @@ serves winner/loser-shaped results — ATP and WTA, main draws, qualifying and t
 ITF/futures tiers, 1968 through 2022 — with seeds, ranks at the time, and serve
 stats where the era recorded them (from 1991). The archive ends where the tape
 begins. GET /history/packages lists exactly which bulk periods exist (monthly for
-tape, yearly for ?kind=archive) and is always the authoritative answer.
+tape, yearly for ?kind=archive and ?kind=archive_tape) and is always the
+authoritative answer.
+Is there point-by-point data before 2023? For 2013–2022 yes, RECONSTRUCTED, not
+recorded: GET /history/archive/matches/{archiveId}/tape rebuilds the score sequence
+behind a 2013–2022 archive result from the public record — 97,901 matches and
+14,340,663 rows. The floor is hard: 977,903 archive results from 1968–2012 have NO
+tape and never will, because no public point-by-point record of those years exists
+to rebuild and we do not manufacture one. Nobody watched those matches, so
+timestamp, win_probability_p1 and danger are null on EVERY row and cannot be filled
+in later — the production table has no timestamp column at all, and the promotion
+script refuses to run if one ever appears. Do not time
+anything with this tape. The 2023→now tape is the opposite: it is our own
+recording, and the rows we actually watched carry a real clock and most of them a
+model probability. meta per match: coverage (reconstructed | reconstructed_partial),
+granularity (point on 99.4% of the corpus; 556 matches are one row per game, 555 of
+them in 2013), point_source, rows. reconstructed_partial (3,594 matches) has two
+causes and does not say which — 3,038 matches that genuinely stopped early (3,027
+retirements, 11 defaults) and 556 that carry the label only for being per-game.
+Coverage of the era, thin spots included: 19.3% of archive matches played 2013–2022
+and 44.9% of tour-level play; ATP slam main 98.0%, WTA slam main 97.4%, ATP Masters
+98.7%, ATP 250–500 95.4%, WTA Premier 94.1%, WTA Premier Mandatory 97.9%, Challenger
+main 55.3%, Challenger qualifying 33.6%; slam QUALIFYING only 16.0% (ATP) / 18.1%
+(WTA); ITF and futures effectively zero (25 of 116,575 ATP futures, 68 of 19,162
+M15, 48 of 9,380 M25). 31% of the corpus is qualifying-draw play. It is not a
+complete record of the era and is not sold as one. Every tape is bound to its match
+by a five-clause identity proof and a 23-invariant interior audit; one that cannot
+prove its binding is refused rather than published against a guess. Tier: core ULTRA
+or ANY active History plan including Starter; the per-year bulk files
+(?kind=archive_tape, 2013–2022, JSONL + CSV, all ready) need core ULTRA, a History
+Pro/Business subscription, or an active one-off package window. Core PRO carries
+NEITHER.
 What's in the point-by-point tape? One row per recorded point state:
 sets, per-set games, in-game points, server, tiebreak flag, and the model's
 win_probability_p1 + danger on the rows where the model ran (null elsewhere —

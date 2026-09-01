@@ -5,6 +5,68 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.8.0] — 2026-09-01
+
+### Added
+- **`GET /history/archive/matches/{archiveId}/tape`** (`getArchiveTape`) — the
+  RECONSTRUCTED 2013–2022 point-by-point tape for one archive result: the score
+  sequence behind the published result, rebuilt from the public record after
+  the fact. Shipped to production 2026-09-01; the spec was the last place it
+  was missing. Tier: core ULTRA, **or any active History plan including
+  Starter** (which opens it on a FREE core key). The archive RESULT stays on
+  BASIC, so core BASIC and core PRO read the result and are refused the tape —
+  `403 upgrade_required` carrying `capability: archive_tape`.
+- **`ArchiveTape` schema.** Same envelope as `HistoryTape` so one parser reads
+  both halves of the tape product, with the differences that are true: `match`
+  is the winner/loser-shaped archive row (rows are WINNER-FIRST, not p1/p2),
+  `profiles` is always `[]`, and `meta` carries `archive_match_id` rather than
+  `match_id` — an archive id is not a match id, and passing one to the other's
+  routes resolves a different, real record without erroring. Rows are
+  `HistoryTapeRow`, reused unchanged.
+- **`kind=archive_tape` on `/history/packages` and `/history/packages/{period}`,
+  and on `HistoryPackage.kind`.** Ten per-year bulk files, `period` 2013 through
+  2022, JSONL + CSV, all `ready`. The JSONL record is byte-for-byte what the
+  per-match endpoint returns; the CSV is the flat per-row view keyed on
+  `archive_match_id` and deliberately carries no `timestamp`,
+  `win_probability_p1` or `danger` column. A SEPARATE gate from the per-match
+  tape: ULTRA, a History Pro/Business subscription, or an active one-off package
+  window — a Starter grant reads tapes one at a time and does not download years
+  of them. **Core PRO carries neither gate.**
+
+### Changed
+- **`info.description` states the provenance and the coverage, thin spots
+  included.** Nobody watched these matches: `timestamp`, `win_probability_p1`
+  and `danger` are null on EVERY row and cannot be filled in later — the
+  production table has no timestamp column at all, so this is a structural fact
+  and not a convention. That is the opposite of the 2023→now tape, which is our
+  own recording, where the rows we actually watched carry a real clock and most
+  of them a model probability. The corpus is 97,901 matches / 14,340,663 rows,
+  seasons **2013–2022 only**: 977,903 archive results from 1968–2012 have no
+  tape and never will. Coverage of the era is 19.3% overall and 44.9% of
+  tour-level play — main-draw tour buckets 91.6–98.7%, ATP Challenger main
+  55.3% and Challenger qualifying 33.6%, slam QUALIFYING 16.0% (ATP) / 18.1%
+  (WTA), ITF and futures effectively zero (25 of 116,575 ATP futures). Stated
+  together, because a strong number published without its thin counterpart sells
+  a corpus nobody has.
+- **`ArchiveTape.meta.coverage` names the measured split rather than glossing
+  the label.** `reconstructed_partial` (3,594 matches) has TWO causes and does
+  not say which: 3,038 are point-granular tapes of matches that genuinely
+  stopped early (3,027 retirements, 11 defaults) — the larger cause — and the
+  other 556 carry the label only because their tape is per-GAME. Read
+  `granularity` and the match's own score, not the label, when the question is
+  whether the whole match is there. `granularity` is `point` on 99.4% of the
+  corpus; the 556 `game` tapes are 555 in 2013 and one in 2014.
+- **`Coverage` says where its vocabulary stops.** It describes the 2023+ tape;
+  the archive tape reuses two of its five values and derives
+  `reconstructed_partial` differently.
+- **`ArchiveMatch` points at the tape**, and `GET /history/archive/matches/{archiveId}`
+  says the RESULT stays on BASIC either way.
+- The plain-HTML reference gains an FAQ entry — "Is there point-by-point data
+  before 2023?" — and the history FAQ, `llms.txt` digest and README plan summary
+  carry the same numbers, so an answer engine reading any one of them gets the
+  corpus, the null clock and the coverage floor together.
+- `info.version` is now `1.8.0`.
+
 ## [1.7.2] — 2026-08-23
 
 ### Changed

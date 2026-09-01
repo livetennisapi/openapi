@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.7.2"
+  version: "1.8.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -49,9 +49,11 @@ info:
     rally construction
     (`/rally/matches`, shot-by-shot charted data), career and per-match
     charting stats (`/charting/players`, `/charting/matches/{chartingMatchId}`),
-    the WebSocket live feed at `/ws` and the high-fan-out push feed
-    (`/ws-token`), and outbound webhooks (direct keys). 600 requests/minute,
-    500,000/day.
+    the reconstructed 2013–2022 archive tape
+    (`/history/archive/matches/{archiveId}/tape` — also opened by ANY active
+    History plan, Starter included), the WebSocket live feed at `/ws` and the
+    high-fan-out push feed (`/ws-token`), and outbound webhooks (direct keys).
+    600 requests/minute, 500,000/day.
 
     History runs in two continuous halves, deliberately non-overlapping: the
     point-by-point tape (2023→now) covers January 2023 to now, match by
@@ -59,6 +61,36 @@ info:
     through 2022 as winner/loser-shaped RESULTS (final score, seeds, ranks at
     the time — no point-by-point). The archive ends exactly where the tape
     begins, so no match is ever served from two datasets.
+
+    Archive results played **2013–2022** additionally carry a RECONSTRUCTED
+    point-by-point tape at `/history/archive/matches/{archiveId}/tape` — the
+    score sequence behind the published result, rebuilt from the public record
+    after the fact. 97,901 matches / 14,340,663 rows, seasons **2013–2022
+    ONLY**: the archive holds a further 977,903 results from 1968–2012 and NOT
+    ONE of them has a tape, because there is no public point-by-point record of
+    those years to rebuild and we do not manufacture one. Write the range as
+    2013–2022, never as "pre-2023" — the second phrasing reads as 1968 onward
+    and is wrong by 45 seasons.
+
+    Nobody watched those matches, and the data says so: `timestamp`,
+    `win_probability_p1` and `danger` are null on EVERY row and cannot be
+    filled in later — the production table has no timestamp column at all, and
+    the promotion script refuses to run if one ever appears.
+    Contrast the 2023→now tape, which is our own recording: the rows we
+    actually watched carry a real clock, and most of them a model probability.
+    Coverage of the era is real but partial — 19.3% of archive matches played
+    2013–2022 and 44.9% of tour-level play; main-draw tour buckets run
+    91.6–98.7%, ATP Challenger main draws 55.3% and Challenger qualifying
+    33.6%, slam QUALIFYING only 16.0% (ATP) / 18.1% (WTA), and ITF/futures
+    effectively nothing (25 of 116,575 ATP futures matches). It is not a
+    complete record of the era and is not sold as one.
+
+    Two different gates, on purpose: the per-match tape needs core ULTRA **or
+    any active History plan, Starter included**; the per-year bulk files
+    (`/history/packages?kind=archive_tape`, 2013–2022, JSONL + CSV) need core
+    ULTRA **or** a History Pro/Business subscription (an active one-off package
+    window counts). Core PRO carries NEITHER — it reads the archive RESULT and
+    is refused the tape.
 
     A call above your tier returns `403 {"error":"upgrade_required"}` — never
     a silent empty result.
@@ -80,7 +112,11 @@ info:
     1-month and 1-year access passes are available without a subscription.
     The results archive (1968–2022) endpoints (`/history/archive/*`, `/h2h`)
     ride with the same entitlement — any active History plan, Starter
-    included, opens them alongside the tape endpoints.
+    included, opens them alongside the tape endpoints, and that includes the
+    reconstructed 2013–2022 archive tape. The per-year `archive_tape` bulk
+    files do not: those need Pro, Business or an active one-off package pass,
+    because a Starter grant reads tapes one at a time and does not download
+    years of them.
     Plans and prices: https://livetennisapi.com/historical-tennis-data-api
 
     All timestamps are UTC ISO 8601 with a `Z` suffix. List endpoints return
@@ -880,7 +916,10 @@ paths:
       description: >-
         Same entitlement as the archive listing. `stats` is null for the
         (mostly pre-1991) rows the source never recorded statistics for —
-        never synthesised.
+        never synthesised. A result played 2013–2022 may also have a
+        reconstructed point-by-point tape at
+        `/history/archive/matches/{archiveId}/tape`; the RESULT stays on BASIC
+        either way.
       operationId: getArchiveMatch
       parameters:
         - name: archiveId
@@ -896,6 +935,125 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/archive/matches/{archiveId}/tape:
+    get:
+      summary: >-
+        Reconstructed 2013–2022 point-by-point tape for one archive result
+        (ULTRA, or any History plan)
+      description: >-
+        The score sequence behind a 2013–2022 archive result, REBUILT FROM THE
+        PUBLIC RECORD. The result tells you what happened; this tells you how.
+
+
+        NOBODY WATCHED THESE MATCHES, and every field that would imply
+        otherwise is null. `timestamp` is null on every row — not by
+        convention, but because the production table has no timestamp column at
+        all, so no repair, backfill or re-archive can put a wall clock on a
+        2016 row, and the promotion script refuses to run if such a column ever
+        appears.
+        `win_probability_p1` and `danger` are null on every row: the model was
+        not running in 2016 and nothing has been back-computed and served as if
+        it had been (`meta.model_rows` and `meta.observed_rows` are both 0,
+        always). `profiles` is always `[]`. The rule we publish for the 2023+
+        tape — a non-null `timestamp` means we watched that point live — holds
+        across both halves of the product.
+
+
+        YEARS: 2013–2022 ONLY. 97,901 matches and 14,340,663 rows. The results
+        archive holds a further 977,903 matches from 1968–2012 and NONE of them
+        has a tape — there is no public point-by-point record of those years to
+        rebuild and we do not manufacture one. A match with no tape answers
+        404, which is also the answer when a tape exists and failed the proof
+        below; the two are deliberately not distinguished.
+
+
+        COVERAGE OF THE ERA, thin spots beside the strong ones: 19.3% of
+        archive matches played 2013–2022 overall, 44.9% of tour-level play.
+        Main-draw tour buckets run 91.6–98.7% (ATP Masters 98.7%, ATP slam
+        98.0%, WTA Premier Mandatory 97.9%, WTA slam 97.4%, ATP 250–500 95.4%,
+        WTA Premier 94.1%, WTA International 91.6%); ATP Challenger main draws
+        55.3% and Challenger qualifying 33.6%; slam QUALIFYING is thin at 16.0%
+        (ATP) and 18.1% (WTA); ITF and futures are effectively absent — 25 of
+        116,575 ATP futures matches, 68 of 19,162 ITF M15, 48 of 9,380 ITF M25
+        — and this product does not cover them. If your work is ITF, this is
+        the wrong dataset and we would rather you knew now. 31.0% of the corpus
+        is qualifying-draw play, which is unusual at this scale and is the part
+        you are least likely to hold already.
+
+
+        HOW A TAPE IS BOUND TO ITS MATCH. A tape attached to the wrong match is
+        silent, permanent and poisons anything trained on it, so each one
+        proves five things before publication: the EDITION binds by majority
+        vote onto one archive tournament; the NAMES resolve to exactly one
+        archive row with an unambiguous orientation; the ROUND agrees through
+        an explicit map (this is what separates the qualifying and main-draw
+        meetings of the same pair inside one edition); the SET SPINE derived
+        from the rows equals the published final score exactly (a retirement
+        matches on a one-directional prefix rule — a tape may stop short, never
+        run past the printed score); and the vendor DATE lies inside the
+        tournament's window. The tape is then walked step by step against 23
+        interior invariants — games and sets never regress or jump, a closed
+        set holds a score a set can actually finish on, a tiebreak is flagged
+        only where one can be played, points never run backwards inside a game,
+        `seq` is contiguous. A tape that fails any clause or any invariant is
+        REFUSED WHOLESALE rather than published against a guess, which is why
+        this endpoint answers 404 instead of serving a probable match.
+
+
+        `archiveId` is an `archive_matches.id` (the `id` on a
+        `/history/archive/matches` row), NOT a match id — the two are separate,
+        overlapping integer spaces, so passing one to the other's routes
+        resolves a different, real record without erroring. The response names
+        it `meta.archive_match_id` for exactly that reason. Rows are
+        WINNER-FIRST (`sets[0]` / `games[0]` / `points[0]` are the winner's,
+        `server: 1` means the winner was serving), unlike the p1/p2-shaped
+        2023+ tape — a live match has no winner while it is being played.
+
+
+        This operation takes NO query parameters: `sequence` and `points` are
+        ignored rather than refused. `meta.sequence` is always `raw` — a
+        reconstructed tape has one source and no corrections, so there is
+        nothing for a clean collapse to remove.
+
+
+        Tier: core ULTRA, or any active History plan (Starter included, which
+        opens it on a FREE core key). The archive RESULT itself
+        (`GET /history/archive/matches/{archiveId}`) stays on BASIC — core
+        BASIC and core PRO read the result and are refused the tape, and the
+        refusal is `403 upgrade_required` carrying `capability: archive_tape`.
+        The per-year BULK files (`?kind=archive_tape`) are a separate gate:
+        core ULTRA, or a History Pro/Business subscription, or an active
+        one-off package window.
+      operationId: getArchiveTape
+      parameters:
+        - name: archiveId
+          in: path
+          required: true
+          description: >-
+            An `archive_matches.id` — the `id` on a
+            `/history/archive/matches` row, never a match id.
+          schema: { type: integer }
+      responses:
+        "200":
+          description: >-
+            The reconstructed tape (`match` + `tape` + `tiebreaks` +
+            an always-empty `profiles` + provenance `meta`)
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ArchiveTape" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404":
+          description: >-
+            No tape for this archive result — it is 1968–2012, it is
+            2013–2022 and was never reconstructed, or a reconstruction exists
+            and did not prove its binding. The three are deliberately not
+            distinguished: "we hold something we will not stand behind" is not
+            a state this product reports.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /history/archive/players:
     get:
@@ -1026,14 +1184,20 @@ paths:
         - name: kind
           in: query
           required: false
-          schema: { type: string, enum: [tape, rankings, rally, archive, elo], default: tape }
+          schema: { type: string, enum: [tape, rankings, rally, archive, elo, archive_tape], default: tape }
           description: >-
             Package family. `tape` (default) = monthly point-by-point match
             tapes; `rankings` = as-of ranking records (ULTRA); `rally` = the
             charted rally corpus (shot-by-shot) as YEARLY exports (ULTRA);
             `archive` = the results archive (1968–2022) as YEARLY exports,
             same entitlement as the tape packages; `elo` = the as-of Elo tape
-            as YEARLY exports (ULTRA). The yearly kinds' `period`
+            as YEARLY exports (ULTRA); `archive_tape` = the RECONSTRUCTED
+            2013–2022 point-by-point tape as YEARLY exports — ten periods, 2013
+            through 2022, each with a JSONL and a CSV file, all `ready`,
+            needing ULTRA or a
+            History Pro/Business subscription or an active one-off package
+            window (a History Starter grant reads a tape per call and does not
+            download years of them). The yearly kinds' `period`
             is `YYYY`, one file per year, because a fixed historical corpus is
             not an accruing monthly stream. The default means a tape-only
             client never sees a new kind of row appear.
@@ -1081,18 +1245,21 @@ paths:
           required: true
           description: >-
             Calendar month, `YYYY-MM` — except for the yearly kinds (`rally`,
-            `archive`, `elo`), where it is the bare year `YYYY`
-            (`400 bad_period` otherwise).
+            `archive`, `elo`, `archive_tape`), where it is the bare year
+            `YYYY` (`400 bad_period` otherwise).
           schema: { type: string, pattern: '^\d{4}(-\d{2})?$' }
         - name: kind
           in: query
           required: false
-          schema: { type: string, enum: [tape, rankings, rally, archive, elo], default: tape }
+          schema: { type: string, enum: [tape, rankings, rally, archive, elo, archive_tape], default: tape }
           description: >-
-            Package family; `rankings`, `rally` and `elo` require ULTRA or a History Pro/Business subscription (changed 2026-08-19).
+            Package family; `rankings`, `rally`, `elo` and `archive_tape` require ULTRA, a History
+            Pro/Business subscription, or an active one-off package window (changed 2026-08-19).
             `rally` = the yearly charted rally corpus exports; `archive` =
             the yearly results archive (1968–2022) exports, same entitlement
-            as the tape packages; `elo` = the yearly as-of Elo tape exports.
+            as the tape packages; `elo` = the yearly as-of Elo tape exports;
+            `archive_tape` = the yearly reconstructed 2013–2022 point-by-point
+            tape exports (`period` 2013 through 2022 — no other year exists).
         - name: format
           in: query
           required: false
@@ -2529,7 +2696,19 @@ components:
         and the CSV one row per point, one file per YEAR. For `kind=archive`
         (the results archive, 1968–2022) the JSONL holds one line per archive
         result (the ArchiveMatch shape) and the CSV one row per result, one
-        file per YEAR. For `kind=elo` (the as-of Elo tape; ULTRA or History Pro/Business) the JSONL
+        file per YEAR. For `kind=archive_tape` (the reconstructed 2013–2022
+        point-by-point tape; ULTRA, History Pro/Business, or an active one-off
+        package window) the JSONL record is byte-for-byte what
+        `GET /history/archive/matches/{archiveId}/tape` returns — one whole
+        ArchiveTape object per line, `meta` included — so a parser written
+        against one match runs over a whole year unchanged; the CSV is the flat
+        per-row view keyed on `archive_match_id` and deliberately carries NO
+        `timestamp`, `win_probability_p1` or `danger` column, because a column
+        empty in 100% of a file invites the belief that it is sometimes
+        populated. Ten periods, `period` 2013 through 2022, each with a JSONL
+        and a CSV file, all `ready`; no earlier year exists, because no tape
+        earlier than 2013 exists.
+        For `kind=elo` (the as-of Elo tape; ULTRA or History Pro/Business) the JSONL
         holds one rating record per line — the endpoint's field set plus
         `archive_player_id`, the stable person key a bulk join needs — and
         the CSV one row per record, one file per YEAR; the files are written
@@ -2540,7 +2719,7 @@ components:
           type: string
           description: >-
             Calendar month, `YYYY-MM` — or the bare year `YYYY` on the yearly
-            `rally`/`archive`/`elo` kinds.
+            `rally`/`archive`/`elo`/`archive_tape` kinds.
         status:
           type: string
           enum: [ready]
@@ -2567,14 +2746,17 @@ components:
         built_at: { type: [string, "null"], format: date-time }
         kind:
           type: string
-          enum: [tape, rankings, rally, archive, elo]
+          enum: [tape, rankings, rally, archive, elo, archive_tape]
           description: >-
             Present only on non-tape packages, so the shape a tape client
             already parses is unchanged. On a rankings package `match_count` is
             the number of players covered and `row_count` the number of ranking
             records; on a rally package the counts are charted matches and
             points; on an archive package the counts are archive results; on
-            an `elo` package `row_count` is the number of rating records.
+            an `elo` package `row_count` is the number of rating records; on an
+            `archive_tape` package `match_count` is the reconstructed tapes in
+            that year and `row_count` their score rows (97,901 and 14,340,663
+            across the ten years).
     Coverage:
       type: string
       enum: [from_start, partial, reconstructed, reconstructed_partial, none]
@@ -2599,6 +2781,11 @@ components:
         must not be backtested as if it were.
         `none` — no rows; the match was on the calendar and was neither watched
         nor reconstructable.
+        This vocabulary describes the 2023+ tape. The 2013–2022 archive tape
+        (`ArchiveTape`) reuses it restricted to `reconstructed` and
+        `reconstructed_partial`, and derives the second DIFFERENTLY: there a
+        per-GAME tape carries that label however complete it is — see
+        `ArchiveTape.meta.coverage` before reading it the same way.
     CoverageRollup:
       type: object
       description: >-
@@ -3437,7 +3624,9 @@ components:
         One result of the results archive (1968–2022). Winner/loser-shaped —
         results data is recorded that way at the source, so the winner is a
         field, never an inference. Its own id space; `source_id` is the
-        stable corpus key.
+        stable corpus key. A result played 2013–2022 may additionally carry a
+        reconstructed point-by-point tape (`ArchiveTape`); results from
+        1968–2012 have none and never will.
       properties:
         id: { type: integer }
         source_id: { type: string }
@@ -3594,6 +3783,123 @@ components:
             second_won_pct: { type: [number, "null"] }
             bp_saved_pct: { type: [number, "null"] }
             aces_per_match: { type: [number, "null"] }
+    ArchiveTape:
+      type: object
+      description: >-
+        The reconstructed 2013–2022 point-by-point tape for one archive result
+        (ULTRA, or any active History plan). Same envelope as HistoryTape so
+        one parser reads both halves of the tape product, with the differences
+        that are TRUE: `match` is the archive result row (winner/loser-shaped,
+        so the rows are winner-first rather than p1/p2), `profiles` is always
+        empty, `meta` has no `match_id` because an archive id is not a match
+        id, and every row carries a null `timestamp` and null model fields
+        because nobody watched these matches and no model ever scored them.
+      properties:
+        match:
+          $ref: "#/components/schemas/ArchiveMatch"
+          description: The archive result the tape was proved to belong to.
+        tape:
+          type: array
+          description: >-
+            The score sequence in `seq` order, WINNER-FIRST — `sets[0]` /
+            `games[0]` / `points[0]` are the winner's, and `server: 1` means
+            the winner was serving. Row shape is HistoryTapeRow, with
+            `timestamp`, `win_probability_p1` and `danger` null throughout.
+            `point_winner` is present on every row and is null throughout a
+            per-GAME tape, where consecutive rows differ by a whole game and
+            no single point is attributable.
+          items: { $ref: "#/components/schemas/HistoryTapeRow" }
+        tiebreaks:
+          type: [array, "null"]
+          description: >-
+            Per-set tiebreak final scores, same rule and shape as on
+            HistoryTape. Usually PRESENT even on a per-game tape — the
+            2013–2022 public record expands points inside tiebreaks even where
+            it does not elsewhere.
+          items:
+            type: [object, "null"]
+            properties:
+              p1: { type: integer }
+              p2: { type: integer }
+        profiles:
+          type: array
+          description: >-
+            Always empty. The key is kept so the envelope matches HistoryTape;
+            no model analysis exists, or could exist, for a 2013–2022 match.
+          items: { type: object }
+        meta:
+          type: object
+          properties:
+            archive_match_id:
+              type: integer
+              description: >-
+                The `archive_matches.id` this tape belongs to. Named in full
+                because it is NOT a match id — passing it to a `/matches/…`
+                route resolves a different, real record without erroring.
+            rows:
+              type: integer
+              description: >-
+                Rows returned. Read it next to `granularity` before comparing
+                with a 2023+ tape's row count: across the corpus a tape
+                averages 146 rows (median 138, range 4–570), and a per-game
+                tape is far shorter than a point tape of the same match.
+            coverage:
+              type: string
+              enum: [reconstructed, reconstructed_partial]
+              description: >-
+                The Coverage vocabulary restricted to the two values that can
+                be true here — `from_start` and `partial` are structurally
+                unreachable, because both assert we watched the match.
+                `reconstructed` (94,307 matches, 96.3% of the corpus) = the
+                tape reproduces the published final score exactly, and that
+                score is a match that finished. `reconstructed_partial` (3,594,
+                3.7%) HAS TWO CAUSES and the label does not say which: measured
+                over the whole table, 3,038 are point-granular tapes of matches
+                that genuinely stopped early (3,027 retirements, 11 defaults) —
+                the larger cause — and the remaining 556 carry the label only
+                because their tape is per-GAME (542 of complete matches, 14
+                that are both at once). So it does NOT on its own mean
+                incomplete match coverage: read `granularity` and the match's
+                own score/outcome for that. On the 2023+ tape the same word
+                means only short-at-either-end.
+            granularity:
+              type: string
+              enum: [point, game]
+              description: >-
+                What one row resolves to. `point` = the record advances within
+                a game — 99.4% of the corpus (97,293 matches). `game` = one row
+                per game, points expanded only inside tiebreaks — 556 matches,
+                555 of them in 2013 and one in 2014; every season from 2015 on
+                is 100% point-granular. A per-game tape is a true record of the
+                match and is published as one, never under a word that reads as
+                per-point. Orthogonal to `coverage` as an axis, though a `game`
+                tape is always labelled `reconstructed_partial`.
+            point_source:
+              type: string
+              enum: [reconstructed]
+              description: >-
+                Always `reconstructed`. `observed` and `mixed` are unreachable
+                here.
+            point_source_detail:
+              type: string
+              description: >-
+                Always `reconstruction from public record`. Stated in the
+                payload so the provenance travels with the data rather than
+                living only in a customer's memory of these docs.
+            model_rows:
+              type: integer
+              description: Always 0 — no model ever scored a row of this corpus.
+            observed_rows:
+              type: integer
+              description: Always 0 — no row here was watched live.
+            sequence:
+              type: string
+              enum: [raw]
+              description: >-
+                Always `raw`. A reconstructed tape has one source and no
+                corrections, so `?sequence=clean` has nothing to collapse; the
+                parameter is ignored, not refused.
+            generated_at: { type: string, format: date-time }
     HeadToHead:
       type: object
       description: >-

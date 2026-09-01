@@ -22,7 +22,7 @@ over REST and WebSocket, across ATP, WTA, Challenger, ITF and juniors.
 
 | File | Purpose |
 |---|---|
-| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 35 operations (34 paths), 37 schemas |
+| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 38 operations (37 paths), 44 schemas |
 | [`docs/`](docs/) | Rendered reference, published to <https://docs.livetennisapi.com> |
 
 The spec is the **source of truth** for our official SDKs. If the spec and an SDK disagree,
@@ -71,8 +71,9 @@ career aggregates) · PRO (+ events, market prices, bulk packages, the rankings
 listing) · ULTRA (+ analysis, model fields, in-play statistics, live per-point
 events (`/matches/{matchId}/points` + the WebSocket `point` frames, where a
 point-level feed covers the match), per-player as-of
-rankings, rally construction, shot-level charting, WebSocket + the `/ws-token`
-push feed, webhooks).
+rankings, rally construction, shot-level charting, the reconstructed 2013–2022
+archive tape — which **any** active History plan, Starter included, also opens —
+WebSocket + the `/ws-token` push feed, webhooks).
 Calling above your tier returns `403 {"error":"upgrade_required"}`.
 
 **Quotas**
