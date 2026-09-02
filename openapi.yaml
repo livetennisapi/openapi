@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.0"
+  version: "1.9.1"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2140,8 +2140,21 @@ components:
             lowercase (`atp`). Treat it as an opaque string; do not parse it into
             the filter enum.
         country: { type: [string, "null"] }
-        ranking: { type: [integer, "null"] }
-        ranking_points: { type: [integer, "null"] }
+        ranking:
+          type: [integer, "null"]
+          description: >-
+            Official singles ranking POSITION (the ordinal: 1, 25, 100) — never
+            points, seed, race, UTR, Elo or a doubles rank. Men from the official
+            ATP table, women from the WTA table, chosen by the player (a Challenger
+            or ITF man who holds an ATP ranking carries it here). Refreshed from
+            the standings ahead of each match the player has with us; a player who
+            has not played recently keeps their last refreshed position. `null`
+            when no ranking is held (doubles teams, most ITF/junior-only players).
+            Always the CURRENT record, even on historical matches — use
+            `/rankings?as_of=` for the rank in force on a date.
+        ranking_points:
+          type: [integer, "null"]
+          description: Points on the same official table, refreshed with `ranking`.
         ranking_movement: { type: [string, "null"], enum: [up, down, same, null] }
         hand: { type: [string, "null"], enum: [R, L, null] }
         backhand: { type: [integer, "null"], enum: [1, 2, null] }

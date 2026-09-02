@@ -5,6 +5,16 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.1] — 2026-09-02
+
+### Clarified
+- **`Player.ranking` / `Player.ranking_points`** now say what they are: the
+  official singles ranking POSITION (the ordinal), ATP table for men and WTA
+  table for women chosen by the player, refreshed ahead of each match the
+  player has with us, `null` when no ranking is held, and always the CURRENT
+  record even on historical matches (`/rankings?as_of=` is the as-of surface).
+  Asked by a Basic customer; no wire change.
+
 ## [1.9.0] — 2026-09-02
 
 ### Added
