@@ -5,6 +5,22 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.0] — 2026-09-02
+
+### Added
+- **`has_analysis` and `has_market` on `Match`** — two booleans on every row of
+  `GET /matches` and on the detail, every tier. They carry the same fact the
+  per-match endpoints answer 404 about, so a slate is filtered in one call
+  instead of one 404 per match. Shipped to production 2026-09-02.
+- **Distinguishable absence on `GET /matches/{matchId}/analysis` and
+  `GET /markets/{matchId}/prices`.** The status stays `404` (unchanged, and
+  shipped clients branch on it), but the body now says which absence it is:
+  `{"error":"not_found"}` for an id that does not exist, and
+  `{"error":"no_analysis"|"no_market","match_id":…,"coverage":"none","detail":…}`
+  for a real match we hold nothing for — the same `coverage: "none"` vocabulary
+  `/matches/{matchId}/statistics` already uses in its `200`. New `error` codes
+  `no_analysis`, `no_market` documented on the `Error` schema.
+
 ## [1.8.0] — 2026-09-01
 
 ### Added

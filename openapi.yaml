@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.8.0"
+  version: "1.9.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -292,10 +292,19 @@ paths:
         Analysis is produced per match by the model pipeline rather than
         emitted for every fixture: over the seven days to 2026-08-27, 1,225 of
         2,863 matches that went live or completed carried one (42.8%). A match
-        that has none yet returns `404 {"error":"not_found"}` — that is the
+        that has none yet returns `404 {"error":"no_analysis"}` (since
+        2026-09-02; before that the body was a bare `not_found`) — that is the
         documented absence, not a fault, and it can turn into a 200 later in
         the same match once the pipeline has run. Never treat this 404 as a
-        reason to retry harder.
+        reason to retry harder. The body names which absence it is: `not_found`
+        is an id that does not exist; `no_analysis` carries `match_id` and
+        `coverage: "none"` for a real match with nothing computed.
+
+
+        FILTER THE SLATE FIRST. Every row of `GET /matches` and the detail
+        carries `has_analysis` (every tier), the same fact this endpoint
+        answers 404 about — read it there and call only the matches that carry
+        one, instead of spending one 404 per match.
 
 
         ONE CALL INSTEAD OF THREE. `GET /matches/{matchId}` carries the same
@@ -315,7 +324,15 @@ paths:
               schema: { $ref: "#/components/schemas/Analysis" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "404":
+          description: >-
+            `error: not_found` — no such match id. `error: no_analysis` (with
+            `match_id`, `coverage: "none"`, `detail`) — the match exists and
+            nothing has been computed for it; `has_analysis` on the match list
+            says so without a probe.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/statistics:
     get:
@@ -594,9 +611,13 @@ paths:
         ticks per side, newest first.
 
 
-        404 when no match-winner market is mapped to the match — a market is
-        mapped only where one is published for that fixture, so a client
-        walking every live match will meet this. `GET /matches/{matchId}`
+        404 with `error: no_market` (since 2026-09-02; `match_id` and
+        `coverage: "none"` alongside) when no match-winner market is mapped to
+        the match — a market is mapped only where one is published for that
+        fixture, so a client walking every live match will meet this. A bare
+        `not_found` means the match id itself does not exist. Every row of
+        `GET /matches` carries `has_market`, so a slate can be filtered before
+        any call here. `GET /matches/{matchId}`
         answers `200` for the same match with `market` and `market_price` set
         to `null` instead, and carries the live score in the same response, so
         a per-match poll built on the detail route never spends a call on a
@@ -613,7 +634,15 @@ paths:
               schema: { $ref: "#/components/schemas/Market" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "404":
+          description: >-
+            `error: not_found` — no such match id. `error: no_market` (with
+            `match_id`, `coverage: "none"`, `detail`) — the match exists and no
+            match-winner market is mapped to it; `has_market` on the match list
+            says so without a probe.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/prices:
     get:
@@ -2041,8 +2070,8 @@ components:
             bad_sequence, bad_points, bad_points_complete, bad_combination,
             points_read_disabled, bad_after_seq, points_disabled, bad_period,
             bad_year, bad_format, bad_tour, bad_country, ambiguous_name,
-            not_charted, not_found, upgrade_required, rate_limited,
-            abuse_throttled.
+            not_charted, not_found, no_analysis, no_market, upgrade_required,
+            rate_limited, abuse_throttled.
         detail:
           type: string
           description: Human-readable explanation, when one adds anything.
@@ -2278,6 +2307,19 @@ components:
             `Retired`/`Walk Over` and the winner is derivable; the withdrawer
             is the loser by the rules of the sport. Absent means "not a
             withdrawal, or no evidence" — never a guess.
+        has_analysis:
+          type: boolean
+          description: >-
+            Whether a model thesis or profile exists for this match — on every
+            list row and the detail, every tier (since 2026-09-02). Filter the
+            slate on this before calling `/matches/{matchId}/analysis`, which
+            answers `404 no_analysis` about the same fact.
+        has_market:
+          type: boolean
+          description: >-
+            Whether a match-winner market is mapped to this match (every tier,
+            since 2026-09-02). Same role for `/markets/{matchId}/prices`
+            (`404 no_market`).
     MatchDetail:
       allOf:
         - { $ref: "#/components/schemas/Match" }
