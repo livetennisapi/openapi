@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.1"
+  version: "1.9.2"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -191,15 +191,25 @@ paths:
         - name: status
           in: query
           description: >-
-            `live` (default) and `upcoming` are FREE; `completed` requires
-            BASIC — paging completed results is the history surface.
-          schema: { type: string, enum: [live, upcoming, completed], default: live }
+            `live` (default) and `upcoming` are the FREE current-state picture.
+            `completed` and `cancelled` are terminal LISTINGS, part of the
+            history product (BASIC, or any History plan on a free key).
+            `cancelled` covers feed-cancelled, walkover-with-no-stated-winner
+            and postponed-never-played matches; a walkover that named its
+            winner is `completed`. `cancelled` pages with `limit`/`offset`
+            (optionally `from`/`to`) and does NOT accept `updated_since`
+            (400 `bad_request`). Any other value is a 400 `bad_status`
+            carrying the accepted list in `allowed`.
+          schema: { type: string, enum: [live, upcoming, completed, cancelled], default: live }
         - $ref: "#/components/parameters/tour"
         - $ref: "#/components/parameters/draw"
         - $ref: "#/components/parameters/player"
         - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/tournamentId"
         - $ref: "#/components/parameters/playedFrom"
         - $ref: "#/components/parameters/playedTo"
+        - $ref: "#/components/parameters/updatedSince"
+        - $ref: "#/components/parameters/cursor"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -716,6 +726,7 @@ paths:
         - $ref: "#/components/parameters/draw"
         - $ref: "#/components/parameters/player"
         - $ref: "#/components/parameters/country"
+        - $ref: "#/components/parameters/tournamentId"
         - name: coverage
           in: query
           required: false
@@ -2012,6 +2023,59 @@ components:
         non-integer value is a 400 `bad_request`. Before 2026-08-03 this
         parameter was accepted and silently ignored — treat any integration
         written against that behaviour as unfiltered.
+    tournamentId:
+      name: tournament_id
+      in: query
+      required: false
+      schema:
+        type: string
+        pattern: '^[0-9]{1,20}$'
+      description: >-
+        Filter to one tournament — exact match on the stable numeric id every
+        match row publishes as `tournament_id` and `/tournaments` publishes as
+        `id`, so the value round-trips straight off any response. Works on
+        `/matches` (every status) and `/history/matches`, and composes with
+        every other filter: `?tour=atp&draw=singles&tournament_id=1217` is one
+        slam's men's singles, where `?tour=` alone still mixes concurrent
+        events during a slam fortnight. There is no separate edition or
+        occurrence id: `tournament_id` is stable across seasons, so one
+        EDITION is `tournament_id` plus a `from`/`to` window around its dates.
+        Matches whose `tournament_id` is null (a tournament not yet in the
+        catalogue) never match this filter; a date-window listing without it
+        still returns them. Unknown-but-numeric ids return an empty list, not
+        an error; a non-numeric value is a 400 `bad_tournament_id`.
+    updatedSince:
+      name: updated_since
+      in: query
+      required: false
+      schema:
+        type: string
+      description: >-
+        CHANGE FEED. A UTC date (YYYY-MM-DD) or ISO-8601 datetime. Returns the
+        rows whose `updated_at` is at or after it, OLDEST FIRST, with
+        `meta.next_cursor` and `meta.watermark`. Poll from `meta.watermark`,
+        not from your own clock — it trails the server by 5s on purpose,
+        because a row committed while your request was being served can carry
+        a timestamp below your `now` and still not be in your result. Overlap
+        ~60s and dedupe by `id`; the feed is at-least-once by design. CANNOT
+        be combined with `from`/`to` (400 `bad_updated_since`): those filter
+        when a match was PLAYED and sort by play time, this filters when its
+        row CHANGED, and a change cursor cannot resume a play-time ordering.
+        Not accepted with `status=cancelled` (400 `bad_request`). Anything
+        unparseable is a 400, never accepted and ignored. A physically DELETED
+        row can never appear in the feed; cancellations, walkovers and
+        withdrawals are status CHANGES and do appear.
+    cursor:
+      name: cursor
+      in: query
+      required: false
+      schema:
+        type: string
+      description: >-
+        Echo back `meta.next_cursor` to fetch the next page of a change feed.
+        Opaque — do not parse it, its contents will change. Supplies both the
+        floor and the tie-break position, so it replaces `updated_since` on
+        follow-up pages rather than accompanying it.
     country:
       name: country
       in: query
@@ -2096,7 +2160,23 @@ components:
           type: boolean
           description: >-
             More results exist beyond this page. Read this rather than
-            comparing count to limit.
+            comparing count to limit. For a complete enumeration of a filtered
+            set, page `offset` forward by `limit` until this is false; on
+            `completed`/`cancelled` listings `total` is null and this is the
+            only end-of-data signal.
+        next_cursor:
+          type: [string, "null"]
+          description: >-
+            Change-feed only (`?updated_since=` / `?cursor=`). Opaque token to
+            pass back as `?cursor=`. Null means you are caught up — stop
+            paging and switch to polling from `watermark`.
+        watermark:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Change-feed only. The floor to use on your NEXT poll. Deliberately
+            trails the server clock by 5s so a row committed during this
+            request cannot fall through the gap.
     Score:
       type: object
       description: ULTRA adds win_probability_p1 + danger.

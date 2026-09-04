@@ -5,6 +5,28 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.2] — 2026-09-04
+
+### Added (spec catch-up — every one of these has been live on the API; the document lagged)
+- **`GET /matches?status=cancelled`** is now in the `status` enum, with what it
+  covers (feed-cancelled, walkover with no stated winner, postponed and never
+  played), its tier (BASIC or any History plan, like `completed`), and the one
+  restriction: it pages with `limit`/`offset` and refuses `updated_since`.
+- **`tournament_id=`** filter on `/matches` (every status) and `/history/matches`
+  — the stable id each match row carries and `/tournaments` publishes. The
+  description states there is no separate edition/occurrence id: one edition
+  is `tournament_id` plus a `from`/`to` window, and matches with a null
+  `tournament_id` (tournament not yet catalogued) fall outside the filter.
+- **Change feed on `/matches`**: `updated_since=` / `cursor=` parameters and the
+  `meta.next_cursor` / `meta.watermark` fields, with the at-least-once and
+  no-`from`/`to` rules.
+
+### Clarified
+- `meta.has_more` says how to enumerate a filtered set completely (page
+  `offset` by `limit` until false) and that `total` is null on the terminal
+  listings, so `has_more` is the only end-of-data signal there.
+  Asked by a Basic customer on Discord; no wire change.
+
 ## [1.9.1] — 2026-09-02
 
 ### Clarified
