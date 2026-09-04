@@ -5,6 +5,16 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.3] — 2026-09-04
+
+### Clarified
+- **`Match.tournament_id` null cases** restated with the real causes and a
+  measured rate: not in the catalogue (UTR), or a secondary-source match whose
+  name matched no single catalogue edition. The API now resolves the latter at
+  ingest by name + event type + date against the vendor's own fixtures, and the
+  2026 backlog was backfilled the same day (2,547 rows); ITF null rate went
+  from about 25% to about 2.5%. No wire change.
+
 ## [1.9.2] — 2026-09-04
 
 ### Added (spec catch-up — every one of these has been live on the API; the document lagged)

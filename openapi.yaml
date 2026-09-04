@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.2"
+  version: "1.9.3"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2293,8 +2293,13 @@ components:
           description: >-
             Stable tournament identity — one id per tournament × event type,
             stable across seasons. Joins `GET /tournaments/{tournamentId}`.
-            Null on matches ingested before the catalogue covered their
-            tournament. (Edge case — a match mislabelled as qualifying by the
+            Null when the tournament is not in the catalogue at all (UTR
+            events), and on the small residue of matches discovered through a
+            secondary source whose tournament name could not be matched to
+            exactly one catalogue edition — never guessed. Measured over
+            August 2026 terminal matches: ATP 1 of 531 and WTA 3 of 513 null;
+            ITF about 2.5% after the 2026-09-04 backfill (was ~25%); UTR 100%.
+            (Edge case — a match mislabelled as qualifying by the
             feed has its id re-pointed to the main-draw tournament when
             detected, so the id can change once, early, in that direction
             only.)
