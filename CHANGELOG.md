@@ -5,6 +5,28 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.5] - 2026-09-09
+
+### Added
+- **`GET /matches/{matchId}/prices?cursor=`** — keyset paging past 500 ticks:
+  while `meta.has_more` is true, pass `meta.next_cursor` back as `?cursor=` for the
+  next (older) page; pages never overlap or skip a tick; anything else is
+  `400 bad_cursor`. Mirrors tennis 3123b27f (live 2026-09-09 06:01Z).
+- **`Match.live_at`** — the instant our feed last reported the match in play
+  (UTC), the closest thing to an actual start time. Null for matches that went
+  live before 2026-09-05 or were never observed live. Same commit.
+- **`410 Gone` with a `MatchMerged` body** on the ten per-match routes when a
+  match id was merged into another record: `error: merged`, `merged_into`
+  (the end of the chain, or null), `merged_at`, `detail`. Live since 2026-09-05
+  (tennis d131a12f).
+- **Tape point `is_unreturned` / `unreturned_kind`** (rally tapes, tennis
+  6e7b82f6, 2026-09-05).
+
+### Clarified
+- Price ticks are kept for **30 days** and then deleted: an older match answers
+  an empty `data` / `prices` array while its market stays mapped — retention,
+  not a fault. Stated on both prices endpoints.
+
 ## [1.9.4] - 2026-09-09
 
 ### Fixed

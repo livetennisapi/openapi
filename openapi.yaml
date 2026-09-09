@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.4"
+  version: "1.9.5"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -242,6 +242,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/score:
     get:
@@ -267,6 +268,7 @@ paths:
               schema: { $ref: "#/components/schemas/Score" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/events:
     get:
@@ -290,6 +292,7 @@ paths:
                   meta: { $ref: "#/components/schemas/ListMeta" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/analysis:
     get:
@@ -343,6 +346,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/statistics:
     get:
@@ -407,6 +411,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/points:
     get:
@@ -488,6 +493,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /players:
     get:
@@ -632,6 +638,12 @@ paths:
         to `null` instead, and carries the live score in the same response, so
         a per-match poll built on the detail route never spends a call on a
         404.
+
+
+        Ticks are kept for 30 days and then deleted: a market older than that
+        answers with an empty `prices` array while staying mapped — retention,
+        not a fault. For paging past 500 ticks use `/matches/{matchId}/prices`
+        with its cursor.
       operationId: getMarketPrices
       parameters:
         - $ref: "#/components/parameters/matchId"
@@ -653,6 +665,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/prices:
     get:
@@ -660,6 +673,14 @@ paths:
       description: >-
         Recent ticks only (no market wrapper). `limit` caps at 500; `minutes`
         bounds the lookback window. 404 when the match has no mapped market.
+
+
+        Ticks are kept for 30 days and then deleted, so a match older than
+        that answers an empty `data` while its market stays mapped — that is
+        retention, not a fault. Past 500 ticks, page with the cursor: read a
+        page, and while `meta.has_more` is true pass `meta.next_cursor` back as
+        `?cursor=` for the next (older) page. Pages never overlap or skip a
+        tick (added 2026-09-09).
       operationId: listMatchPrices
       parameters:
         - $ref: "#/components/parameters/matchId"
@@ -669,6 +690,13 @@ paths:
         - name: minutes
           in: query
           schema: { type: integer, minimum: 1, maximum: 1440 }
+        - name: cursor
+          in: query
+          schema: { type: string }
+          description: >-
+            Keyset cursor for the next (older) page — the `meta.next_cursor` of
+            the previous page (added 2026-09-09). Opaque; anything else is
+            `400 bad_cursor`.
       responses:
         "200":
           description: Price ticks
@@ -689,14 +717,21 @@ paths:
                         type: boolean
                         description: >-
                           The window was clipped at limit — older ticks exist.
-                          There is no offset here; raise limit or narrow
-                          minutes.
+                          There is no offset here: pass `next_cursor` back as
+                          `?cursor=` for the next older page.
+                      next_cursor:
+                        type: [string, "null"]
+                        description: >-
+                          Present (non-null) exactly when `has_more` is true —
+                          pass it back as `?cursor=` for the next older page
+                          (added 2026-09-09).
                       limit: { type: integer }
                       minutes: { type: [integer, "null"] }
         "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /history/matches:
     get:
@@ -881,6 +916,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /history/archive/matches:
     get:
@@ -1655,6 +1691,7 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /charting/players:
     get:
@@ -2109,6 +2146,15 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+    MatchGone:
+      description: >-
+        The match id existed and was merged into another match record (since
+        2026-09-05). The body is `MatchMerged`, not `Error`: it carries a
+        forwarding address, which is the whole point of answering 410 rather
+        than 404.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/MatchMerged" }
     RateLimited:
       description: >-
         Rate limit exceeded (Retry-After header present). Three body shapes,
@@ -2124,6 +2170,33 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
   schemas:
+    MatchMerged:
+      type: object
+      description: >-
+        The 410 GONE body for a match id that was merged into another match
+        record. Distinct from `Error` because it carries a forwarding address.
+      properties:
+        error:
+          type: string
+          description: Always `merged`.
+        merged_into:
+          type: [integer, "null"]
+          description: >-
+            The id that absorbed this one — re-point your records at it. Null
+            means the forwarding target is unknown: nothing to forward you to,
+            drop the id. On a merge chain this is the END of the chain, never
+            an intermediate id that would 410 in turn.
+        merged_at:
+          type: string
+          format: date-time
+          description: >-
+            When THIS id stopped existing (UTC). On a chain it is the FIRST
+            hop — the moment your copy of this id went stale.
+        detail:
+          type: string
+          description: >-
+            Human-readable explanation; differs for a merge and for a
+            retirement so the two are distinguishable without parsing prose.
     Error:
       type: object
       properties:
@@ -2381,6 +2454,16 @@ components:
             event type covers both singles and doubles rubbers and we will not
             guess which this is. Null is NOT singles.
         scheduled_time: { type: [string, "null"], format: date-time }
+        live_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            The instant our feed last reported the match in play (UTC), added
+            2026-09-09 — the closest thing to an actual start time; a match that
+            starts late has this well after `scheduled_time`, one that starts
+            early has it before. Null for matches that went live before
+            2026-09-05 (when the stamp began) or were never observed live;
+            re-stamped if a match is demoted and promoted again.
         players:
           type: object
           properties:
@@ -4208,6 +4291,22 @@ components:
         is_ace: { type: boolean }
         is_double_fault: { type: boolean }
         is_serve_and_volley: { type: boolean }
+        is_unreturned:
+          type: boolean
+          description: >-
+            Derived (added 2026-09-05). The server won the point without the
+            returner putting the ball in play. A double fault is never
+            unreturned.
+        unreturned_kind:
+          type: [string, "null"]
+          enum: [ace, serve_winner, serve_forced_error, return_forced_error,
+                 return_unforced_error, return_error, null]
+          description: >-
+            How the serve went unreturned. `serve_winner` is a serve winner
+            charted without a direction code (so `is_ace` is unset) — count it
+            with the aces. `return_error` = the return missed and the charter
+            did not say whether it was forced. Null when the return was in play
+            or the parse could not say.
         shots:
           type: array
           items: { $ref: "#/components/schemas/RallyShot" }
