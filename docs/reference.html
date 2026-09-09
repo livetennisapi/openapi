@@ -153,7 +153,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.9.3 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.9.4 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -1223,14 +1223,14 @@ across a <code>?tour=</code> group.</p>
 <h3>Price</h3>
 <p>Prediction-market top-of-book quote (probability-like, [0,1]); reflects market trading, not an official line, and can lag live scores. Tagged so a synthesised quote is never mistaken for a live book.</p>
 <div class="scrollx" tabindex="0" role="region" aria-label="Price fields"><table><caption class="vh">Price schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
-<tbody><tr><td><code>side</code></td><td>integer or null</td><td>1 = p1&#x27;s outcome, 2 = p2&#x27;s</td></tr>
+<tbody><tr><td><code>side</code></td><td>integer or null</td><td>1 = players.p1&#x27;s outcome, 2 = players.p2&#x27;s - decided by our name-verified match-market mapping, never by the venue&#x27;s own display order (the venue lists roughly half of all pairings the other way round). Fixed 2026-09-09: ticks served before that date followed the venue&#x27;s display order, so on those markets side was reversed; the mapping is stored, so re-reading any tick now returns the correct side.</td></tr>
 <tr><td><code>bid</code></td><td>number or null</td><td></td></tr>
 <tr><td><code>ask</code></td><td>number or null</td><td></td></tr>
-<tr><td><code>mid</code></td><td>number or null</td><td></td></tr>
+<tr><td><code>mid</code></td><td>number or null</td><td>The venue&#x27;s observed midpoint at the instant we polled or streamed it - never a model estimate. Only mid is always real; see synthetic.</td></tr>
 <tr><td><code>spread</code></td><td>number or null</td><td></td></tr>
 <tr><td><code>price_source</code></td><td>string or null</td><td>Feed category, e.g. prediction_market</td></tr>
-<tr><td><code>synthetic</code></td><td>boolean or null</td><td>true = bid/ask estimated from mid (not a live order book); false = real top-of-book; null = unknown (older ticks)</td></tr>
-<tr><td><code>timestamp</code></td><td>string or null</td><td></td></tr></tbody></table></div>
+<tr><td><code>synthetic</code></td><td>boolean or null</td><td>true = bid/ask are estimated from mid (mid +/- 0.005, not a live order book) - mid itself is the venue&#x27;s observed midpoint, never a model estimate; false = real top-of-book from the live order-book stream; null = unknown (older ticks). The live stream attaches when a match goes live, so pre-match ticks are synthetic: true by design.</td></tr>
+<tr><td><code>timestamp</code></td><td>string or null</td><td>When we observed this quote (UTC) - our observation clock, not a venue publication time.</td></tr></tbody></table></div>
 </section>
 <section id="schema-event">
 <h3>Event</h3>

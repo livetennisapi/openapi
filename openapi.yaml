@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.3"
+  version: "1.9.4"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2529,10 +2529,19 @@ components:
       properties:
         side:
           type: [integer, "null"]
-          description: 1 = p1's outcome, 2 = p2's
+          description: >-
+            1 = players.p1's outcome, 2 = players.p2's - decided by our name-verified
+            match-market mapping, never by the venue's own display order (the venue lists
+            roughly half of all pairings the other way round). Fixed 2026-09-09: ticks served
+            before that date followed the venue's display order, so on those markets side was
+            reversed; the mapping is stored, so re-reading any tick now returns the correct side.
         bid: { type: [number, "null"] }
         ask: { type: [number, "null"] }
-        mid: { type: [number, "null"] }
+        mid:
+          type: [number, "null"]
+          description: >-
+            The venue's observed midpoint at the instant we polled or streamed it - never a
+            model estimate. Only mid is always real; see synthetic.
         spread: { type: [number, "null"] }
         price_source:
           type: [string, "null"]
@@ -2540,9 +2549,17 @@ components:
         synthetic:
           type: [boolean, "null"]
           description: >-
-            true = bid/ask estimated from mid (not a live order book);
-            false = real top-of-book; null = unknown (older ticks)
-        timestamp: { type: [string, "null"], format: date-time }
+            true = bid/ask are estimated from mid (mid +/- 0.005, not a live order book) -
+            mid itself is the venue's observed midpoint, never a model estimate;
+            false = real top-of-book from the live order-book stream;
+            null = unknown (older ticks). The live stream attaches when a match goes
+            live, so pre-match ticks are synthetic: true by design.
+        timestamp:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            When we observed this quote (UTC) - our observation clock, not a venue
+            publication time.
     Event:
       type: object
       properties:

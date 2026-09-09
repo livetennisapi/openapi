@@ -5,6 +5,23 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.4] - 2026-09-09
+
+### Fixed
+- **`Price.side`** (per-match and per-market prices endpoints, and the match embed) now
+  follows `players.p1` / `players.p2` through our name-verified match-market mapping.
+  Until 2026-09-09 it followed the venue's display order, which lists roughly half of
+  all pairings the other way round, so on those markets `side: 1` was in fact
+  `players.p2`. The mapping is stored, so re-reading any tick - historical included -
+  returns the correct side. Reported by a PRO customer cross-checking pre-match prices
+  against rankings; mirrors tennis cbd3f647 (live 2026-09-09 04:59Z).
+
+### Clarified
+- `Price.mid` is the venue's observed midpoint, never a model estimate; `synthetic`
+  describes only `bid`/`ask` (`mid` +/- 0.005 when true); pre-match ticks are
+  `synthetic: true` by design because the live book attaches at match start;
+  `timestamp` is our observation clock (UTC), not a venue publication time.
+
 ## [1.9.3] — 2026-09-04
 
 ### Clarified
