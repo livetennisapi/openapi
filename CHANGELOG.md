@@ -5,6 +5,27 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.6] - 2026-09-10
+
+### Added
+- **`stats.ratings_as_of`** on `GET /players/{id}` — the date (UTC) the `ratings`
+  block was last refreshed. The current Elo is now refreshed every week for every
+  rated player from the published rating tables (Tuesdays); before this the rating
+  carried no date and a May capture read as this week's. Reported by a PRO customer
+  building pre-match research.
+- **`GET /history/packages/{period}?format=corrections`** — a CSV keyed by
+  `match_id` (`match_id, field, before, after, tournament_key, source,
+  corrected_at`) on every package whose stored data was repaired after publication,
+  listed in the manifest as `format: corrections`; 404 when a package has none.
+  First use: `surface` corrections on the 2023-02 → 2024-12 tape packages (19,439
+  Challenger matches whose court surface a tournament-name rule had set to grass;
+  repaired and rebuilt 2026-09-10). Reported by a History Pro customer.
+
+### Fixed
+- Merged player ids: a merge now repoints the weekly ranking tables too, so
+  `/rankings` rows carry the same `player_id` the match records carry, and the
+  retired id answers 410 with `merged_into` (see Merged and retired player ids).
+
 ## [1.9.5] - 2026-09-09
 
 ### Added

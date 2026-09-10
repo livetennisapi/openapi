@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.5"
+  version: "1.9.6"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1339,13 +1339,23 @@ paths:
         - name: format
           in: query
           required: false
-          description: Omit for the JSON manifest; set to download the file.
-          schema: { type: string, enum: [jsonl, csv] }
+          description: >-
+            Omit for the JSON manifest; set to download the file. `corrections`
+            (added 2026-09-10) streams the package's correction CSV — `match_id,
+            field, before, after, tournament_key, source, corrected_at` — when
+            stored data was repaired after the package was published; the
+            manifest's `files` lists it with `format: corrections`, and a
+            package without one answers 404 `no corrections file for that
+            package`. First use: the 2023-02 → 2024-12 tape packages carry
+            `surface` corrections for 19,439 Challenger matches (repaired
+            2026-09-10; the packages themselves were rebuilt the same day).
+          schema: { type: string, enum: [jsonl, csv, corrections] }
       responses:
         "200":
           description: >-
             The manifest (no `format`), or the bulk file as an attachment
-            (`format=jsonl` streams NDJSON, `format=csv` streams CSV). A
+            (`format=jsonl` streams NDJSON, `format=csv` streams CSV,
+            `format=corrections` streams the correction CSV). A
             gzipped file (see the manifest's `compression`) is served as
             `application/gzip`, never with `Content-Encoding: gzip` — the
             manifest's `sha256` covers the exact bytes you receive.
@@ -2345,6 +2355,14 @@ components:
           description: Single-player endpoint only
           properties:
             ratings: { type: [object, "null"] }
+            ratings_as_of:
+              type: [string, "null"]
+              format: date
+              description: >-
+                The date (UTC) the `ratings` block was last refreshed (added
+                2026-09-10). The current Elo is refreshed every week from the
+                published rating tables; read this before treating a rating
+                as this week's. Null when there is no rating.
             season: { type: [array, "null"] }
     Match:
       type: object
