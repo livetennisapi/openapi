@@ -5,6 +5,19 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.7] - 2026-09-10
+
+### Added
+- **`Match.outcome`** is now documented on the Match schema (it has been on
+  every match since 2026-08-18): `completed | retired | walkover | default |
+  abandoned | unresolved | null`, derived from `status` + `event_status`.
+- **`outcome: unresolved`** — a match every source lost before a result is
+  closed unfinished and says so: `score` is the last state observed, `winner`
+  is null, no result is asserted; it flips to `completed` with the proven
+  final when an authority confirms the result. Until 2026-09-10 such closes
+  were published as `completed` with a mid-match score, which an ULTRA
+  customer read as a wrong result.
+
 ## [1.9.6] - 2026-09-10
 
 ### Added

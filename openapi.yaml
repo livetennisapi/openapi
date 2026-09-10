@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.6"
+  version: "1.9.7"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2498,6 +2498,24 @@ components:
             full archive age: a match older than the live-table window reads
             its final state from the same store the tape serves, so old
             completed matches carry a winner too.
+        outcome:
+          type: [string, "null"]
+          enum: [completed, retired, walkover, default, abandoned, unresolved, null]
+          description: >-
+            The settlement outcome (added 2026-08-18), one closed vocabulary
+            derived from `status` + `event_status` so the two can never
+            disagree: `completed` = ran its full course; `retired` = a player
+            retired in play; `walkover` = conceded before a ball was struck;
+            `default` = a player was defaulted; `abandoned` = called off
+            unfinished with no result awarded; `unresolved` (added 2026-09-10)
+            = every source lost the match before a result and it was closed
+            unfinished — `score` is the last state we observed, `winner` is
+            null and no result is asserted; it flips to `completed` with the
+            proven final when an authority confirms the result. NULL while the
+            match is upcoming/live and on a cancelled fixture that never
+            produced a result — null is not `completed`. Branch settlement on
+            this field, never on `event_status` spellings. New values may be
+            added within v1; handle unknowns gracefully.
         withdrew:
           type: [integer, "null"]
           description: >-
