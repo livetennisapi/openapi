@@ -5,6 +5,20 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.8] - 2026-09-12
+
+### Added
+- **`GET /matches/{matchId}/status-history`** — the per-match status ledger:
+  every `status` / `event_status` transition with the UTC instant we published
+  it, the value before and after, the derived `outcome` and the score at that
+  instant. Append-only, oldest first; rows exist from 2026-09-12. History
+  capability (BASIC and the Historical Data plans). Asked for by a researcher
+  reconciling corrections against the moment they were published.
+- **`stoppage_start` / `stoppage_end` events** on `GET /matches/{matchId}/events`:
+  an in-play suspension with the score at the moment, `reason` (`unknown` until a
+  source states one — never inferred) and `duration_seconds` on the end row. Asked
+  for by a product builder wanting medical timeouts as an event.
+
 ## [1.9.7] - 2026-09-10
 
 ### Added

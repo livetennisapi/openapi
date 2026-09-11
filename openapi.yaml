@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.7"
+  version: "1.9.8"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -292,6 +292,40 @@ paths:
                   meta: { $ref: "#/components/schemas/ListMeta" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "410": { $ref: "#/components/responses/MatchGone" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /matches/{matchId}/status-history:
+    get:
+      summary: The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)
+      description: >-
+        Added 2026-09-12. Append-only, oldest first: one row per change of `status`
+        and/or `event_status`, with the instant we published it, the value before and
+        the effective value after, the derived `outcome`, and the newest score row at
+        that instant. A correction is a new row, never an edit — a close published as
+        `unresolved` and later confirmed shows the flip to `completed`; a completion
+        that reopened shows `completed -> live`. Rows exist from 2026-09-12; nothing
+        earlier was recorded and nothing is reconstructed. History capability (BASIC
+        and the Historical Data plans), like the tape.
+      operationId: getMatchStatusHistory
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+        - $ref: "#/components/parameters/limit"
+        - $ref: "#/components/parameters/offset"
+      responses:
+        "200":
+          description: Status transitions, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/StatusChange" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
         "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/analysis:
@@ -2682,9 +2716,46 @@ components:
     Event:
       type: object
       properties:
-        type: { type: string, enum: [break, set_won, game_won, momentum_run] }
+        type:
+          type: string
+          enum: [break, set_won, game_won, momentum_run, stoppage_start, stoppage_end]
+          description: >-
+            `stoppage_start` / `stoppage_end` (added 2026-09-12) bracket an
+            in-play suspension: the score at the moment, `reason` — `unknown`
+            until a source states one, never inferred — and `duration_seconds`
+            on the end row.
         player: { type: [integer, "null"], enum: [1, 2, null] }
         timestamp: { type: [string, "null"], format: date-time }
+        reason:
+          type: [string, "null"]
+          description: Stoppage rows only. `unknown` today on every tour.
+        score:
+          type: [object, "null"]
+          description: Stoppage rows only — sets, games, points, server at the moment of the stoppage.
+        duration_seconds:
+          type: [integer, "null"]
+          description: stoppage_end only.
+    StatusChange:
+      type: object
+      description: One row of the per-match status ledger (added 2026-09-12).
+      properties:
+        at: { type: string, format: date-time, description: The instant we published the change (UTC). }
+        status:
+          type: object
+          properties:
+            from: { type: [string, "null"] }
+            to: { type: [string, "null"] }
+        event_status:
+          type: object
+          properties:
+            from: { type: [string, "null"] }
+            to: { type: [string, "null"] }
+        outcome:
+          type: [string, "null"]
+          description: Derived from the after-state by the Match.outcome definition.
+        score:
+          type: [object, "null"]
+          description: The newest score row at that instant (sets, games, points, server); null when none existed.
     Fixture:
       type: object
       properties:

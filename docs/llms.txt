@@ -72,6 +72,7 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - GET /matches/{matchId} — Full match detail (FREE; +market PRO, +analysis ULTRA)
 - GET /matches/{matchId}/score — Current score only — lowest-latency REST read (FREE)
 - GET /matches/{matchId}/events — Match events, newest first (PRO)
+- GET /matches/{matchId}/status-history — The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)
 - GET /matches/{matchId}/analysis — Model analysis for a match (ULTRA)
 - GET /matches/{matchId}/statistics — In-play statistics — aces, double faults, serve split, hold/break %, break points, service & return points (ULTRA)
 - GET /matches/{matchId}/points — Live per-point events in seq order — the REST catch-up for the WebSocket point stream (ULTRA)

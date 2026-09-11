@@ -153,7 +153,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.9.7 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.9.8 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -179,7 +179,7 @@ answer engines and any HTTP client.</p>
 <li><a href="#plans">Plans</a></li>
 <li><a href="#clients">Official client libraries</a></li>
 <li><a href="#conventions">Conventions</a></li>
-<li><a href="#endpoints">Endpoints</a> — all 38, with parameters and responses</li>
+<li><a href="#endpoints">Endpoints</a> — all 39, with parameters and responses</li>
 <li><a href="#websocket">WebSocket feed (ULTRA)</a></li>
 <li><a href="#faq">FAQ — plans and data depth</a></li>
 <li><a href="#schemas">Schemas</a></li>
@@ -407,6 +407,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <li><a href="#getMatch"><code>GET /matches/{matchId}</code> — Full match detail (FREE; +market PRO, +analysis ULTRA)</a></li>
 <li><a href="#getMatchScore"><code>GET /matches/{matchId}/score</code> — Current score only — lowest-latency REST read (FREE)</a></li>
 <li><a href="#listMatchEvents"><code>GET /matches/{matchId}/events</code> — Match events, newest first (PRO)</a></li>
+<li><a href="#getMatchStatusHistory"><code>GET /matches/{matchId}/status-history</code> — The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)</a></li>
 <li><a href="#getMatchAnalysis"><code>GET /matches/{matchId}/analysis</code> — Model analysis for a match (ULTRA)</a></li>
 <li><a href="#getMatchStatistics"><code>GET /matches/{matchId}/statistics</code> — In-play statistics — aces, double faults, serve split, hold/break %, break points, service &amp; return points (ULTRA)</a></li>
 <li><a href="#getMatchPoints"><code>GET /matches/{matchId}/points</code> — Live per-point events in seq order — the REST catch-up for the WebSocket point stream (ULTRA)</a></li>
@@ -508,6 +509,23 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/events responses"><table><caption class="vh">GET /matches/{matchId}/events — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Events</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>410</code></td><td>The match id existed and was merged into another match record (since 2026-09-05). The body is <code>MatchMerged</code>, not <code>Error</code>: it carries a forwarding address, which is the whole point of answering 410 rather than 404.</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
 <h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/events response fields"><table><caption class="vh">GET /matches/{matchId}/events — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
 <h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/matches/18953/events \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+<section class="op" id="getMatchStatusHistory">
+<h3><span class="method">GET</span> <code>/matches/{matchId}/status-history</code></h3>
+<p class="summary">The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>getMatchStatusHistory</code></p>
+<p>Added 2026-09-12. Append-only, oldest first: one row per change of <code>status</code> and/or <code>event_status</code>, with the instant we published it, the value before and the effective value after, the derived <code>outcome</code>, and the newest score row at that instant. A correction is a new row, never an edit — a close published as <code>unresolved</code> and later confirmed shows the flip to <code>completed</code>; a completion that reopened shows <code>completed -&gt; live</code>. Rows exist from 2026-09-12; nothing earlier was recorded and nothing is reconstructed. History capability (BASIC and the Historical Data plans), like the tape.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/status-history parameters"><table><caption class="vh">GET /matches/{matchId}/status-history — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
+
+Get it from any match list, where it is the <code>id</code> field of each match object:
+<code>GET /matches?status=live</code> (in progress), <code>GET /matches?status=upcoming</code> or <code>GET /fixtures</code> (scheduled), <code>GET /matches?status=completed</code> or <code>GET /history/matches</code> (finished).
+
+Ids are stable for the life of a match, so one captured before it starts still resolves after it finishes.
+</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/status-history responses"><table><caption class="vh">GET /matches/{matchId}/status-history — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Status transitions, oldest first</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>410</code></td><td>The match id existed and was merged into another match record (since 2026-09-05). The body is <code>MatchMerged</code>, not <code>Error</code>: it carries a forwarding address, which is the whole point of answering 410 rather than 404.</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/status-history response fields"><table><caption class="vh">GET /matches/{matchId}/status-history — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/matches/18953/status-history \
   -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
 </section>
 <section class="op" id="getMatchAnalysis">
@@ -1252,9 +1270,22 @@ across a <code>?tour=</code> group.</p>
 <section id="schema-event">
 <h3>Event</h3>
 <div class="scrollx" tabindex="0" role="region" aria-label="Event fields"><table><caption class="vh">Event schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
-<tbody><tr><td><code>type</code></td><td>string (break, set_won, game_won, momentum_run)</td><td></td></tr>
+<tbody><tr><td><code>type</code></td><td>string (break, set_won, game_won, momentum_run, stoppage_start, stoppage_end)</td><td><code>stoppage_start</code> / <code>stoppage_end</code> (added 2026-09-12) bracket an in-play suspension: the score at the moment, <code>reason</code> — <code>unknown</code> until a source states one, never inferred — and <code>duration_seconds</code> on the end row.</td></tr>
 <tr><td><code>player</code></td><td>integer or null (1, 2, null)</td><td></td></tr>
-<tr><td><code>timestamp</code></td><td>string or null</td><td></td></tr></tbody></table></div>
+<tr><td><code>timestamp</code></td><td>string or null</td><td></td></tr>
+<tr><td><code>reason</code></td><td>string or null</td><td>Stoppage rows only. <code>unknown</code> today on every tour.</td></tr>
+<tr><td><code>score</code></td><td>object or null</td><td>Stoppage rows only — sets, games, points, server at the moment of the stoppage.</td></tr>
+<tr><td><code>duration_seconds</code></td><td>integer or null</td><td>stoppage_end only.</td></tr></tbody></table></div>
+</section>
+<section id="schema-statuschange">
+<h3>StatusChange</h3>
+<p>One row of the per-match status ledger (added 2026-09-12).</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="StatusChange fields"><table><caption class="vh">StatusChange schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>at</code></td><td>string</td><td>The instant we published the change (UTC).</td></tr>
+<tr><td><code>status</code></td><td>object</td><td></td></tr>
+<tr><td><code>event_status</code></td><td>object</td><td></td></tr>
+<tr><td><code>outcome</code></td><td>string or null</td><td>Derived from the after-state by the Match.outcome definition.</td></tr>
+<tr><td><code>score</code></td><td>object or null</td><td>The newest score row at that instant (sets, games, points, server); null when none existed.</td></tr></tbody></table></div>
 </section>
 <section id="schema-fixture">
 <h3>Fixture</h3>
