@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.10.0"
+  version: "1.10.1"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1596,7 +1596,8 @@ paths:
           description: >-
             Restrict to one or more systems. Omit for all of the official
             systems — `elo`, `atp_doubles` and `wta_doubles` are NEVER included
-            implicitly and must be named,
+            implicitly and must be named (a doubles tie prints as repeated
+            ranks, as the publisher prints it),
             so an existing request's response is unchanged. Naming a system
             your plan does not cover refuses the whole call with 403 rather
             than silently returning the part you are entitled to.

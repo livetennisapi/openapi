@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.10.1] - 2026-09-12
+
+### Clarified
+- A ranking tie is two rows with the same `rank` (doubles partners always tie).
+
 ## [1.10.0] - 2026-09-12
 
 ### Added
