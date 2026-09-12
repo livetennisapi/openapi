@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.10.1"
+  version: "1.11.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -132,7 +132,10 @@ info:
     (`win_probability_p1`, `danger`) live; a null there means the model had
     no output for that point, not that the field is REST-only. Opt into extra
     signals with `{"topics":["live-scores"],"signals":["break_point"]}` to
-    also receive `break_point` and `break_point_result` frames (schemas
+    also receive `break_point` and `break_point_result` frames — and
+    `signals:["stoppages"]` (2026-09-12) for the stoppage family: medical
+    timeouts, trainer calls, toilet breaks, whole-match stops and clock-inferred
+    pauses, each an Event object plus `match_id` — (schemas
     `BreakPoint` / `BreakPointResult`). Without `signals`, score frames only.
 
     `signals` may also name `points` — the live per-point event stream: one
@@ -1861,7 +1864,7 @@ paths:
                   description: HTTPS only, publicly routable
                 events:
                   type: array
-                  items: { type: string, enum: [score, break_point, point] }
+                  items: { type: string, enum: [score, break_point, point, status, stoppages] }
                   default: [score]
                   description: >-
                     `score` = every accepted live-score commit; `break_point`
@@ -1964,7 +1967,9 @@ paths:
         listed — as `point_match` / `point_slate` in the vocabulary — only
         for keys whose plan carries the point surface, and
         `signal:match:{match_id}` / `signal:slate` (derived `break_point`,
-        `break_point_result` and `divergence` events). A family absent from
+        `break_point_result` and `divergence` events, and since 2026-09-12 the
+        stoppage family: `medical_timeout_start/end`, `trainer_called/_end`,
+        `toilet_break_start/end`, `stoppage_start/end`, `pause_start/end`). A family absent from
         the response will not deliver for your key right now.
         Deliberately separate channels: a `slate:all` subscriber asked
         for score states and never starts receiving events unasked. Point
@@ -2741,23 +2746,56 @@ components:
       properties:
         type:
           type: string
-          enum: [break, set_won, game_won, momentum_run, stoppage_start, stoppage_end]
+          enum: [break, set_won, game_won, momentum_run, stoppage_start, stoppage_end,
+                 pause_start, pause_end, medical_timeout_start, medical_timeout_end,
+                 trainer_called, trainer_called_end, toilet_break_start, toilet_break_end]
           description: >-
-            `stoppage_start` / `stoppage_end` (added 2026-09-12) bracket an
-            in-play suspension: the score at the moment, `reason` — `unknown`
-            until a source states one, never inferred — and `duration_seconds`
-            on the end row.
+            The stoppage family (added 2026-09-12). `medical_timeout_start/end`,
+            `trainer_called/_end` and `toilet_break_start/end` are stated by the
+            match scorer, with `player` = the player concerned (ATP, WTA,
+            Challenger, WTA 125 and UTR singles). `stoppage_start/end` is a
+            whole-match stop (`reason` weather | other when stated, unknown when
+            only a bare suspension flag reached us). `pause_start/end` is an
+            interruption of play measured from our own point clocks
+            (`basis: inferred`), never labelled medical.
         player: { type: [integer, "null"], enum: [1, 2, null] }
         timestamp: { type: [string, "null"], format: date-time }
+        at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Stoppage family — the UTC instant the stoppage happened (for a pause,
+            its last score change).
+        detected_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Stoppage family — when we recorded it.
+        basis:
+          type: [string, "null"]
+          enum: [observed, inferred, null]
+          description: >-
+            Stoppage family — observed (a source stated it) or inferred (measured
+            from our clocks).
         reason:
           type: [string, "null"]
-          description: Stoppage rows only. `unknown` today on every tour.
+          description: >-
+            Stoppage family — medical_timeout | unspecified | no_treatment | taping |
+            changeover_treatment | evaluating | failed | toilet_break | weather | other |
+            resumed | unknown.
+        position:
+          type: [string, "null"]
+          enum: [point, changeover, setbreak, null]
+          description: >-
+            pause rows only — where the last point left the match, which sets the
+            silence threshold.
         score:
           type: [object, "null"]
-          description: Stoppage rows only — sets, games, points, server at the moment of the stoppage.
+          description: >-
+            Stoppage family — sets, games, points, server at the moment of the stoppage.
         duration_seconds:
           type: [integer, "null"]
-          description: stoppage_end only.
+          description: end rows only.
     StatusChange:
       type: object
       description: One row of the per-match status ledger (added 2026-09-12).

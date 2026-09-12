@@ -5,6 +5,21 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.11.0] - 2026-09-12
+
+### Added
+- **Medical timeouts, trainer calls and toilet breaks as events** on
+  `GET /matches/{matchId}/events`: `medical_timeout_start/end`, `trainer_called/_end`,
+  `toilet_break_start/end`, each with `player` (the player concerned), `at` (UTC),
+  the `score` at that instant, `reason` and `duration_seconds` on the end row — as
+  the match scorer states them (ATP, WTA, Challenger, WTA 125, UTR singles).
+  `stoppage_start/end` now carry a stated `reason` (`weather` | `other`) when one
+  exists. Asked by a prospect building on medical timeouts.
+- **`pause_start` / `pause_end`** (`basis: inferred`): interruptions of play measured
+  from our own point clocks, on every live match, never labelled medical.
+- **`signals:["stoppages"]`** on the native WebSocket and the stoppage family on the
+  `signal:*` push channels — every row above pushed the moment it is recorded.
+
 ## [1.10.1] - 2026-09-12
 
 ### Clarified
