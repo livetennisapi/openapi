@@ -5,6 +5,12 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.9.9] - 2026-09-12
+
+### Clarified
+- The status ledger records from **2026-09-11T22:45:48Z** (its first row), not the
+  calendar date of the deploy. Reported by an ULTRA customer reading match 188711.
+
 ## [1.9.8] - 2026-09-12
 
 ### Added

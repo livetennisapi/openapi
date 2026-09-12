@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.8"
+  version: "1.9.9"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -303,7 +303,7 @@ paths:
         the effective value after, the derived `outcome`, and the newest score row at
         that instant. A correction is a new row, never an edit — a close published as
         `unresolved` and later confirmed shows the flip to `completed`; a completion
-        that reopened shows `completed -> live`. Rows exist from 2026-09-12; nothing
+        that reopened shows `completed -> live`. Rows exist from 2026-09-11T22:45:48Z; nothing
         earlier was recorded and nothing is reconstructed. History capability (BASIC
         and the Historical Data plans), like the tape.
       operationId: getMatchStatusHistory

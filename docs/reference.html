@@ -153,7 +153,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.9.8 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.9.9 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -515,7 +515,7 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <h3><span class="method">GET</span> <code>/matches/{matchId}/status-history</code></h3>
 <p class="summary">The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)</p>
 <p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>getMatchStatusHistory</code></p>
-<p>Added 2026-09-12. Append-only, oldest first: one row per change of <code>status</code> and/or <code>event_status</code>, with the instant we published it, the value before and the effective value after, the derived <code>outcome</code>, and the newest score row at that instant. A correction is a new row, never an edit — a close published as <code>unresolved</code> and later confirmed shows the flip to <code>completed</code>; a completion that reopened shows <code>completed -&gt; live</code>. Rows exist from 2026-09-12; nothing earlier was recorded and nothing is reconstructed. History capability (BASIC and the Historical Data plans), like the tape.</p>
+<p>Added 2026-09-12. Append-only, oldest first: one row per change of <code>status</code> and/or <code>event_status</code>, with the instant we published it, the value before and the effective value after, the derived <code>outcome</code>, and the newest score row at that instant. A correction is a new row, never an edit — a close published as <code>unresolved</code> and later confirmed shows the flip to <code>completed</code>; a completion that reopened shows <code>completed -&gt; live</code>. Rows exist from 2026-09-11T22:45:48Z; nothing earlier was recorded and nothing is reconstructed. History capability (BASIC and the Historical Data plans), like the tape.</p>
 <h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/status-history parameters"><table><caption class="vh">GET /matches/{matchId}/status-history — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
 
 Get it from any match list, where it is the <code>id</code> field of each match object:
