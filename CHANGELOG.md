@@ -5,6 +5,22 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.12.0] - 2026-09-12
+
+### Added
+- **`serve` and `outcome` on live point rows** (`GET /matches/{matchId}/points`, the
+  `point` frames): the serve the point was played on (1 | 2) and how it ended
+  (`ace` | `double_fault` | `winner` | `forced_error` | `unforced_error`), as an
+  outside source states them, joined onto our rows by exact state; `null` when not
+  stated. Coverage per match in the new `enrichment` object; per tour in the reference.
+- **`point_update` frame** on the point opt-in — a point's `serve`/`outcome` landing
+  after its `point` frame; apply by `seq`.
+  Asked by an ULTRA customer trading on serve outcome.
+- **`published_at`** on every data frame of the native WebSocket and the push feed:
+  the UTC instant (ms) the frame left our process — the third clock next to the
+  state's `timestamp` and a point's `ts`, so processing and transport latency can be
+  separated. Asked by a prospect running a latency benchmark.
+
 ## [1.11.0] - 2026-09-12
 
 ### Added

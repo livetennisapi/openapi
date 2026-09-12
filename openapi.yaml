@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.11.0"
+  version: "1.12.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -3939,6 +3939,38 @@ components:
             Capture time (UTC) — when our pipeline committed this state. Null
             on every frame of a `reconstruction`-basis page — the recorded
             sequence carries no per-point clock and none is fabricated.
+        serve:
+          type: [integer, "null"]
+          enum: [1, 2, null]
+          description: >-
+            Added 2026-09-12. The serve the point was played on (1 first, 2
+            second) as an outside source states it, joined onto the row by
+            exact state. Null = not stated for this point; never inferred.
+            Lands a few seconds after the point's own frame (see the
+            `point_update` frame).
+        outcome:
+          type: [string, "null"]
+          enum: [ace, double_fault, winner, forced_error, unforced_error, null]
+          description: >-
+            Added 2026-09-12. How the point ended, as an outside source states
+            it (ATP main tour and Challenger: all five; the ITF World Tennis
+            Tour: ace and double fault; WTA 1000/500/250/125: ace and double
+            fault where the tour's console reports the match — read the page's
+            `enrichment` per match; Grand Slams and UTR: none). Null = not
+            stated.
+    PointUpdate:
+      type: object
+      description: >-
+        Added 2026-09-12. Pushed on the point opt-in (`signals:["points"]`,
+        channels `point:match:{id}` / `point:slate`) when a point's `serve` /
+        `outcome` land after its `point` frame went out. Apply to the row with
+        that `seq`; nothing else on the point changes.
+      properties:
+        type: { type: string, enum: [point_update] }
+        match_id: { type: integer }
+        seq: { type: integer }
+        serve: { type: [integer, "null"], enum: [1, 2, null] }
+        outcome: { type: [string, "null"], enum: [ace, double_fault, winner, forced_error, unforced_error, null] }
     MatchPoints:
       type: object
       description: >-
@@ -3961,6 +3993,16 @@ components:
           description: >-
             `revised` = the upstream feed rewrote an already-served prefix at
             least once during this match; served rows are never edited.
+        enrichment:
+          type: object
+          description: >-
+            Added 2026-09-12. What an outside source has stated for THIS match
+            so far — `serve`: stated | none; `outcome`: full |
+            ace_double_fault | none. Read it before building on the fields;
+            it is never a promise about the rest of the match.
+          properties:
+            serve: { type: string, enum: [stated, none] }
+            outcome: { type: string, enum: [full, ace_double_fault, none] }
         covers_from_start:
           type: [boolean, "null"]
           description: >-
@@ -3998,6 +4040,15 @@ components:
         `GET /matches/{matchId}/points?after_seq=`.
       properties:
         type: { type: string, const: point }
+        published_at:
+          type: string
+          format: date-time
+          description: >-
+            Added 2026-09-12, on EVERY data frame of the native WebSocket and the
+            push feed (score, point, point_update, status, the signal family):
+            the UTC instant (ms) the frame left our process for the socket or
+            the fan-out sidecar — the third clock next to the state's
+            `timestamp` (arbiter commit) and a point's `ts` (capture).
         match_id: { type: integer }
         point: { $ref: "#/components/schemas/LivePoint" }
         pbp_coverage: { type: string, enum: [point, game] }
