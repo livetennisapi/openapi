@@ -5,6 +5,26 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.10.0] - 2026-09-12
+
+### Added
+- **`win_probability_p1_model`** and **`win_probability_meta`** on ULTRA live score
+  objects: the same model read computed without the market-prior anchor (a
+  probability no market price touched), plus `model_version`, `generated_at` and
+  `market_anchored` for the pair. `win_probability_p1` is unchanged. Asked by an
+  ULTRA customer who needed to know whether the live probability is independent of
+  market prices — on anchored matches it is not, and now the row says so.
+- **`basis`** on status-ledger rows (`observed` | `backfill`); the ledger now reaches
+  back to the per-match stamps held before it existed (completions from 2026-08-21,
+  promotions to live from 2026-09-05), one reconstructed row per stamp, labelled.
+
+- **`system=atp_doubles` / `system=wta_doubles`** on `/rankings`: the official
+  weekly doubles tables (individual players), in both modes at the same gates as
+  `atp`/`wta`, never included implicitly. Loaded from 2023 forward.
+
+### Clarified
+- Status-ledger rows are ordered by their instant (`at`), not insertion order.
+
 ## [1.9.9] - 2026-09-12
 
 ### Clarified

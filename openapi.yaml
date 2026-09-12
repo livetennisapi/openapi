@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.9.9"
+  version: "1.10.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -303,9 +303,13 @@ paths:
         the effective value after, the derived `outcome`, and the newest score row at
         that instant. A correction is a new row, never an edit — a close published as
         `unresolved` and later confirmed shows the flip to `completed`; a completion
-        that reopened shows `completed -> live`. Rows exist from 2026-09-11T22:45:48Z; nothing
-        earlier was recorded and nothing is reconstructed. History capability (BASIC
-        and the Historical Data plans), like the tape.
+        that reopened shows `completed -> live`. `basis: observed` rows exist from
+        2026-09-11T22:45:48Z; `basis: backfill` rows (2026-09-12) were reconstructed
+        from the one stamp per kind the match row kept before the ledger existed (last
+        promotion to live from 2026-09-05, completion instant from 2026-08-21, last
+        reopen, last event_status change) — one row per stamp, overwritten intermediate
+        transitions are not recovered. History capability (BASIC and the Historical
+        Data plans), like the tape.
       operationId: getMatchStatusHistory
       parameters:
         - $ref: "#/components/parameters/matchId"
@@ -1587,11 +1591,12 @@ paths:
             type: array
             items:
               type: string
-              enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr, elo]
+              enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr, elo, atp_doubles, wta_doubles]
           explode: true
           description: >-
             Restrict to one or more systems. Omit for all of the official
-            systems — `elo` is NEVER included implicitly and must be named,
+            systems — `elo`, `atp_doubles` and `wta_doubles` are NEVER included
+            implicitly and must be named,
             so an existing request's response is unchanged. Naming a system
             your plan does not cover refuses the whole call with 403 rather
             than silently returning the part you are entitled to.
@@ -2321,6 +2326,23 @@ components:
         is_tiebreak: { type: boolean }
         win_probability_p1: { type: [number, "null"] }
         danger: { type: [number, "null"] }
+        win_probability_p1_model:
+          type: [number, "null"]
+          description: >-
+            ULTRA, since 2026-09-12. The same model read computed WITHOUT the
+            market-prior anchor — a probability no market price touched. Equals
+            win_probability_p1 on a match the anchor does not apply to; null on
+            rows stamped before it existed (never back-filled).
+        win_probability_meta:
+          type: [object, "null"]
+          description: >-
+            ULTRA, since 2026-09-12. Our own model-regime identifier, the UTC
+            instant the two probabilities were generated, and whether the anchor
+            moved win_probability_p1. Null on rows stamped before it existed.
+          properties:
+            model_version: { type: string, example: markov-population-2026-08-23 }
+            generated_at: { type: [string, "null"], format: date-time }
+            market_anchored: { type: boolean }
         timestamp: { type: [string, "null"], format: date-time }
     Player:
       type: object
@@ -2753,6 +2775,15 @@ components:
         outcome:
           type: [string, "null"]
           description: Derived from the after-state by the Match.outcome definition.
+        basis:
+          type: string
+          enum: [observed, backfill]
+          description: >-
+            observed = written at the instant of the change (from 2026-09-11T22:45:48Z);
+            backfill = reconstructed on 2026-09-12 from the one stamp per kind the match
+            row kept before the ledger existed (last promotion to live from 2026-09-05,
+            completion instant from 2026-08-21, last reopen, last event_status change).
+            One row per stamp; overwritten intermediate transitions are not recovered.
         score:
           type: [object, "null"]
           description: The newest score row at that instant (sets, games, points, server); null when none existed.
@@ -3589,7 +3620,7 @@ components:
             records.
         system:
           type: string
-          enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr, elo]
+          enum: [atp, wta, itf_jt, itf_mt, itf_wt, utr, elo, atp_doubles, wta_doubles]
         tour: { type: [string, "null"] }
         rank:
           type: [integer, "null"]
