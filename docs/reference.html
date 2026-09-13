@@ -153,7 +153,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.12.0 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.13.0 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -179,7 +179,7 @@ answer engines and any HTTP client.</p>
 <li><a href="#plans">Plans</a></li>
 <li><a href="#clients">Official client libraries</a></li>
 <li><a href="#conventions">Conventions</a></li>
-<li><a href="#endpoints">Endpoints</a> — all 39, with parameters and responses</li>
+<li><a href="#endpoints">Endpoints</a> — all 40, with parameters and responses</li>
 <li><a href="#websocket">WebSocket feed (ULTRA)</a></li>
 <li><a href="#faq">FAQ — plans and data depth</a></li>
 <li><a href="#schemas">Schemas</a></li>
@@ -410,6 +410,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <li><a href="#getMatch"><code>GET /matches/{matchId}</code> — Full match detail (FREE; +market PRO, +analysis ULTRA)</a></li>
 <li><a href="#getMatchScore"><code>GET /matches/{matchId}/score</code> — Current score only — lowest-latency REST read (FREE)</a></li>
 <li><a href="#listMatchEvents"><code>GET /matches/{matchId}/events</code> — Match events, newest first (PRO)</a></li>
+<li><a href="#listSlateEvents"><code>GET /events</code> — Slate-wide events feed — every match&#x27;s events in one call, oldest first, cursor by id (PRO)</a></li>
 <li><a href="#getMatchStatusHistory"><code>GET /matches/{matchId}/status-history</code> — The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)</a></li>
 <li><a href="#getMatchAnalysis"><code>GET /matches/{matchId}/analysis</code> — Model analysis for a match (ULTRA)</a></li>
 <li><a href="#getMatchStatistics"><code>GET /matches/{matchId}/statistics</code> — In-play statistics — aces, double faults, serve split, hold/break %, break points, service &amp; return points (ULTRA)</a></li>
@@ -512,6 +513,17 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/events responses"><table><caption class="vh">GET /matches/{matchId}/events — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Events</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>410</code></td><td>The match id existed and was merged into another match record (since 2026-09-05). The body is <code>MatchMerged</code>, not <code>Error</code>: it carries a forwarding address, which is the whole point of answering 410 rather than 404.</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
 <h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/events response fields"><table><caption class="vh">GET /matches/{matchId}/events — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
 <h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/matches/18953/events \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+<section class="op" id="listSlateEvents">
+<h3><span class="method">GET</span> <code>/events</code></h3>
+<p class="summary">Slate-wide events feed — every match&#x27;s events in one call, oldest first, cursor by id (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>listSlateEvents</code></p>
+<p>Added 2026-09-13. The rows of GET /matches/{matchId}/events for EVERY match in one request, so a poller watching the whole live slate spends one request per tick rather than one per match. <code>after_id</code> returns rows with id greater than the one passed, ascending, and <code>meta.next_cursor</code> names the last id served (null on a short page = caught up); <code>since</code> (UTC instant) is the first-call lower bound; with neither the newest page is served, still ascending. <code>type</code> narrows to a comma-separated list of event types or the family name <code>stoppages</code> (stoppage_*, pause_*, medical_timeout_*, trainer_called*, toilet_break_*). Rows carry <code>id</code> and <code>match_id</code> next to the per-match fields. Measured 2026-09-13: a scorer-stated stoppage reaches the feed a median 8 s (p90 13 s) after the scorer&#x27;s own instant; the WebSocket <code>stoppages</code> signal pushes the same row as it is written.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /events parameters"><table><caption class="vh">GET /events — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>type</code></td><td>query</td><td>string</td><td>no</td><td>Comma-separated event types (see Event.type), or <code>stoppages</code> for the whole stoppage family.</td></tr><tr><td><code>after_id</code></td><td>query</td><td>integer</td><td>no</td><td>Serve rows with <code>id</code> greater than this, ascending. Take it from <code>meta.next_cursor</code> or the last row&#x27;s <code>id</code>.</td></tr><tr><td><code>since</code></td><td>query</td><td>string</td><td>no</td><td>First-call lower bound, a UTC instant. Rows stamped after it, ascending.</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /events responses"><table><caption class="vh">GET /events — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Events across the slate, ascending id</td></tr><tr><td><code>400</code></td><td>bad_type, bad_after_id or bad_since</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /events response fields"><table><caption class="vh">GET /events — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/events \
   -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
 </section>
 <section class="op" id="getMatchStatusHistory">
@@ -1271,6 +1283,23 @@ across a <code>?tour=</code> group.</p>
 <tr><td><code>price_source</code></td><td>string or null</td><td>Feed category, e.g. prediction_market</td></tr>
 <tr><td><code>synthetic</code></td><td>boolean or null</td><td>true = bid/ask are estimated from mid (mid +/- 0.005, not a live order book) - mid itself is the venue&#x27;s observed midpoint, never a model estimate; false = real top-of-book from the live order-book stream; null = unknown (older ticks). The live stream attaches when a match goes live, so pre-match ticks are synthetic: true by design.</td></tr>
 <tr><td><code>timestamp</code></td><td>string or null</td><td>When we observed this quote (UTC) - our observation clock, not a venue publication time.</td></tr></tbody></table></div>
+</section>
+<section id="schema-slateevent">
+<h3>SlateEvent</h3>
+<p>An Event as served by the slate-wide feed (GET /events) — the per-match row plus its id and match.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="SlateEvent fields"><table><caption class="vh">SlateEvent schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>type</code></td><td>string (break, set_won, game_won, momentum_run, stoppage_start, stoppage_end, pause_start, pause_end, medical_timeout_start, medical_timeout_end, trainer_called, trainer_called_end, toilet_break_start, toilet_break_end)</td><td>The stoppage family (added 2026-09-12). <code>medical_timeout_start/end</code>, <code>trainer_called/_end</code> and <code>toilet_break_start/end</code> are stated by the match scorer, with <code>player</code> = the player concerned (ATP, WTA, Challenger, WTA 125 and UTR singles). <code>stoppage_start/end</code> is a whole-match stop (<code>reason</code> weather | other when stated, unknown when only a bare suspension flag reached us). <code>pause_start/end</code> is an interruption of play measured from our own point clocks (<code>basis: inferred</code>), never labelled medical.</td></tr>
+<tr><td><code>player</code></td><td>integer or null (1, 2, null)</td><td></td></tr>
+<tr><td><code>timestamp</code></td><td>string or null</td><td></td></tr>
+<tr><td><code>at</code></td><td>string or null</td><td>Stoppage family — the UTC instant the stoppage happened (for a pause, its last score change).</td></tr>
+<tr><td><code>detected_at</code></td><td>string or null</td><td>Stoppage family — when we recorded it.</td></tr>
+<tr><td><code>basis</code></td><td>string or null (observed, inferred, null)</td><td>Stoppage family — observed (a source stated it) or inferred (measured from our clocks).</td></tr>
+<tr><td><code>reason</code></td><td>string or null</td><td>Stoppage family — medical_timeout | unspecified | no_treatment | taping | changeover_treatment | evaluating | failed | toilet_break | weather | other | resumed | unknown.</td></tr>
+<tr><td><code>position</code></td><td>string or null (point, changeover, setbreak, null)</td><td>pause rows only — where the last point left the match, which sets the silence threshold.</td></tr>
+<tr><td><code>score</code></td><td>object or null</td><td>Stoppage family — sets, games, points, server at the moment of the stoppage.</td></tr>
+<tr><td><code>duration_seconds</code></td><td>integer or null</td><td>end rows only.</td></tr>
+<tr><td><code>id</code></td><td>integer</td><td>The event&#x27;s id; the <code>after_id</code> cursor.</td></tr>
+<tr><td><code>match_id</code></td><td>integer</td><td></td></tr></tbody></table></div>
 </section>
 <section id="schema-event">
 <h3>Event</h3>

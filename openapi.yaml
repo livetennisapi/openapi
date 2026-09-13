@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.12.0"
+  version: "1.13.0"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -296,6 +296,59 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "410": { $ref: "#/components/responses/MatchGone" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /events:
+    get:
+      summary: Slate-wide events feed — every match's events in one call, oldest first, cursor by id (PRO)
+      operationId: listSlateEvents
+      description: >-
+        Added 2026-09-13. The rows of GET /matches/{matchId}/events for EVERY match in
+        one request, so a poller watching the whole live slate spends one request per
+        tick rather than one per match. `after_id` returns rows with id greater than
+        the one passed, ascending, and `meta.next_cursor` names the last id served (null
+        on a short page = caught up); `since` (UTC instant) is the first-call lower
+        bound; with neither the newest page is served, still ascending. `type` narrows
+        to a comma-separated list of event types or the family name `stoppages`
+        (stoppage_*, pause_*, medical_timeout_*, trainer_called*, toilet_break_*). Rows
+        carry `id` and `match_id` next to the per-match fields. Measured 2026-09-13: a
+        scorer-stated stoppage reaches the feed a median 8 s (p90 13 s) after the
+        scorer's own instant; the WebSocket `stoppages` signal pushes the same row as it
+        is written.
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema: { type: string }
+          description: Comma-separated event types (see Event.type), or `stoppages` for the whole stoppage family.
+          example: medical_timeout_start
+        - name: after_id
+          in: query
+          required: false
+          schema: { type: integer }
+          description: Serve rows with `id` greater than this, ascending. Take it from `meta.next_cursor` or the last row's `id`.
+        - name: since
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: First-call lower bound, a UTC instant. Rows stamped after it, ascending.
+          example: "2026-09-13T09:00:00Z"
+        - $ref: "#/components/parameters/limit"
+      responses:
+        "200":
+          description: Events across the slate, ascending id
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/SlateEvent" }
+                  meta: { $ref: "#/components/schemas/ListMeta" }
+        "400":
+          description: bad_type, bad_after_id or bad_since
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/status-history:
     get:
@@ -2741,6 +2794,14 @@ components:
           description: >-
             When we observed this quote (UTC) - our observation clock, not a venue
             publication time.
+    SlateEvent:
+      description: An Event as served by the slate-wide feed (GET /events) — the per-match row plus its id and match.
+      allOf:
+        - $ref: "#/components/schemas/Event"
+        - type: object
+          properties:
+            id: { type: integer, description: "The event's id; the `after_id` cursor." }
+            match_id: { type: integer }
     Event:
       type: object
       properties:

@@ -5,6 +5,16 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.0] - 2026-09-13
+
+### Added
+- `GET /events` (PRO): the **slate-wide events feed** — the rows of `GET /matches/{id}/events`
+  for every match in one call, oldest first, cursor by `after_id` (`meta.next_cursor`, null =
+  caught up), `since` as the first-call UTC lower bound, `type` as a comma-separated list of
+  event types or the family name `stoppages`. Rows carry `id` and `match_id`. One request per
+  tick covers the whole live slate: medical timeouts across every live match on PRO by polling.
+- `SlateEvent` schema; `Event.type` documents the full vocabulary.
+
 ## [1.12.0] - 2026-09-12
 
 ### Added
