@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.2"
+  version: "1.13.3"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2815,9 +2815,12 @@ components:
             `trainer_called/_end` and `toilet_break_start/end` are stated by the
             match scorer or chair umpire, with `player` = the player concerned.
             Coverage (2026-09-13): WTA, WTA 125, Challenger and UTR singles — WTA and
-            WTA 125 from the umpire console (measured over 138 finished matches:
-            27 physio calls, 65 treatment records, 22 suspensions), Challenger and
-            UTR from the scorer timeline (22 of 70 finished Challenger matches).
+            WTA 125 from the umpire console in two layers: the match state within
+            ~20 s (`trainer_called`, `toilet_break_*`, `stoppage_*`, player null) and
+            the console's event feed, published by the tour 35–60 minutes behind
+            play (measured 2026-09-13), which adds `medical_timeout_start/end` with
+            the player and exact instants; Challenger and UTR from the scorer
+            timeline (22 of 70 finished Challenger matches, median 8 s).
             ITF World Tennis Tour singles from the court's live-scoring state
             (the state, not the player: `player` is null on ITF rows; first
             medical timeout observed and published 2026-09-13). ATP main tour:
