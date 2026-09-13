@@ -14,9 +14,14 @@ removing a field or changing its type would require `v2`.
   Same fields, same endpoints, same WebSocket signal. `stoppage_start.reason` gains `heat`,
   `darkness` and `injury`; every `stoppage_end` carries `reason: "resumed"`.
 
+- Scorer-stated stoppages for **ITF World Tennis Tour** singles from the court's live-scoring
+  state: `toilet_break_*`, `medical_timeout_*`, `trainer_called*` and `stoppage_*` rows on entering
+  and leaving the state, with `duration_seconds`; `player` is null on these rows because the feed
+  names the state, not the player.
+
 ### Changed
-- Coverage note: WTA, WTA 125, Challenger and UTR singles are covered; ATP main tour and ITF are
-  still being sourced and are stated as not covered.
+- Coverage note: WTA, WTA 125, Challenger, UTR and ITF singles are covered; ATP main tour is still
+  being sourced and is stated as not covered.
 
 ## [1.13.0] - 2026-09-13
 
