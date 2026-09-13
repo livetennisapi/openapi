@@ -15,6 +15,13 @@ removing a field or changing its type would require `v2`.
   tick covers the whole live slate: medical timeouts across every live match on PRO by polling.
 - `SlateEvent` schema; `Event.type` documents the full vocabulary.
 
+### Changed
+- Stoppage coverage, corrected: scorer-stated `medical_timeout_*`, `trainer_called*` and
+  `toilet_break_*` rows exist for **Challenger and UTR singles**. The 1.11.0/1.12.0 text said
+  ATP, WTA and WTA 125 as well; measured over 11 days those tours' scorer feed carries none
+  (0 of 70 finished matches each, against 22 of 70 for Challenger). Main-tour and ITF medical
+  timeouts are being sourced; the note changes the day they are live.
+
 ## [1.12.0] - 2026-09-12
 
 ### Added

@@ -2813,8 +2813,11 @@ components:
           description: >-
             The stoppage family (added 2026-09-12). `medical_timeout_start/end`,
             `trainer_called/_end` and `toilet_break_start/end` are stated by the
-            match scorer, with `player` = the player concerned (ATP, WTA,
-            Challenger, WTA 125 and UTR singles). `stoppage_start/end` is a
+            match scorer, with `player` = the player concerned. Coverage, measured
+            2026-09-13 over 11 days: Challenger and UTR singles (22 of 70 finished
+            Challenger matches carried one; 0 of 70 ATP, WTA and WTA 125 matches
+            did — the main tours' scorer feed does not state them; not ITF WTT, not
+            doubles). `stoppage_start/end` is a
             whole-match stop (`reason` weather | other when stated, unknown when
             only a bare suspension flag reached us). `pause_start/end` is an
             interruption of play measured from our own point clocks
