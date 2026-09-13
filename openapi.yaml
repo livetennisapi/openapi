@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.0"
+  version: "1.13.1"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2813,11 +2813,13 @@ components:
           description: >-
             The stoppage family (added 2026-09-12). `medical_timeout_start/end`,
             `trainer_called/_end` and `toilet_break_start/end` are stated by the
-            match scorer, with `player` = the player concerned. Coverage, measured
-            2026-09-13 over 11 days: Challenger and UTR singles (22 of 70 finished
-            Challenger matches carried one; 0 of 70 ATP, WTA and WTA 125 matches
-            did — the main tours' scorer feed does not state them; not ITF WTT, not
-            doubles). `stoppage_start/end` is a
+            match scorer or chair umpire, with `player` = the player concerned.
+            Coverage (2026-09-13): WTA, WTA 125, Challenger and UTR singles — WTA and
+            WTA 125 from the umpire console (measured over 138 finished matches:
+            27 physio calls, 65 treatment records, 22 suspensions), Challenger and
+            UTR from the scorer timeline (22 of 70 finished Challenger matches).
+            ATP main tour is NOT covered yet (0 of 70 matches carried one in any
+            feed we hold); not ITF WTT, not doubles. `stoppage_start/end` is a
             whole-match stop (`reason` weather | other when stated, unknown when
             only a bare suspension flag reached us). `pause_start/end` is an
             interruption of play measured from our own point clocks

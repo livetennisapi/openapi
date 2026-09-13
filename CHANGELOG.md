@@ -5,6 +5,19 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.1] - 2026-09-13
+
+### Added
+- Scorer-stated stoppages for **WTA and WTA 125** singles: `medical_timeout_*`, `trainer_called*`,
+  `toilet_break_*` and `stoppage_*` rows now come from the chair umpire's console for those tours
+  (measured over 138 finished matches: 27 physio calls, 65 treatment records, 22 suspensions).
+  Same fields, same endpoints, same WebSocket signal. `stoppage_start.reason` gains `heat`,
+  `darkness` and `injury`; every `stoppage_end` carries `reason: "resumed"`.
+
+### Changed
+- Coverage note: WTA, WTA 125, Challenger and UTR singles are covered; ATP main tour and ITF are
+  still being sourced and are stated as not covered.
+
 ## [1.13.0] - 2026-09-13
 
 ### Added
