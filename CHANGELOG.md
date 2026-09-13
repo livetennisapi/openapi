@@ -10,8 +10,8 @@ removing a field or changing its type would require `v2`.
 ### Changed
 - WTA / WTA 125 stoppages now arrive in two layers. The console's match state is read within
   about 20 seconds and yields `trainer_called`, `toilet_break_*` and `stoppage_*` rows (player
-  null). The console's event feed, which the tour publishes 35–60 minutes behind play (measured
-  2026-09-13), adds `medical_timeout_start/end` with the player and the exact instants. The
+  null). The console's event feed, which the tour publishes with a variable delay — measured on
+  2026-09-13 from about one minute to an hour behind play — adds `medical_timeout_start/end` with the player and the exact instants. The
   1.13.1 note implied the event feed was live; it is not.
 
 ## [1.13.2] - 2026-09-13

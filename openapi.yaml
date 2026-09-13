@@ -2817,8 +2817,8 @@ components:
             Coverage (2026-09-13): WTA, WTA 125, Challenger and UTR singles — WTA and
             WTA 125 from the umpire console in two layers: the match state within
             ~20 s (`trainer_called`, `toilet_break_*`, `stoppage_*`, player null) and
-            the console's event feed, published by the tour 35–60 minutes behind
-            play (measured 2026-09-13), which adds `medical_timeout_start/end` with
+            the console's event feed, published by the tour with a variable delay
+            (measured 2026-09-13: about one minute to an hour behind play), which adds `medical_timeout_start/end` with
             the player and exact instants; Challenger and UTR from the scorer
             timeline (22 of 70 finished Challenger matches, median 8 s).
             ITF World Tennis Tour singles from the court's live-scoring state
