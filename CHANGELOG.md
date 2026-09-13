@@ -5,6 +5,17 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.2] - 2026-09-13
+
+### Added
+- ATP main-tour stoppages: a public live-score service's match stage is now watched for its
+  medical-timeout and interruption stages. Those stages exist in the vocabulary but have not yet
+  been observed on a tennis match, so ATP rows are documented as mapped, not yet proven; they
+  carry `player: null` and an `at` equal to the instant the stage was observed.
+
+### Changed
+- ITF coverage note: the first medical timeout was observed and published on 2026-09-13.
+
 ## [1.13.1] - 2026-09-13
 
 ### Added

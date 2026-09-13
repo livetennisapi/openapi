@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.1"
+  version: "1.13.2"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2819,10 +2819,13 @@ components:
             27 physio calls, 65 treatment records, 22 suspensions), Challenger and
             UTR from the scorer timeline (22 of 70 finished Challenger matches).
             ITF World Tennis Tour singles from the court's live-scoring state
-            (the state, not the player: `player` is null on ITF rows; toilet
-            breaks observed, medical timeouts mapped by name). ATP main tour is
-            NOT covered yet (0 of 70 matches carried one in any feed we hold);
-            not doubles. `stoppage_start/end` is a
+            (the state, not the player: `player` is null on ITF rows; first
+            medical timeout observed and published 2026-09-13). ATP main tour:
+            a public live-score service's match stage is watched for its
+            medical-timeout and interruption stages — present in its
+            vocabulary, not yet observed on a tennis match, so ATP rows are
+            mapped, not yet proven (`player` null, `at` = our observation
+            instant). Not doubles. `stoppage_start/end` is a
             whole-match stop (`reason` weather | other when stated, unknown when
             only a bare suspension flag reached us). `pause_start/end` is an
             interruption of play measured from our own point clocks
