@@ -107,6 +107,38 @@ BEACON = (
     "\n</script>\n"
 )
 
+# Clarity, EU/EEA-gated. The beacon above says a page was LOADED; it cannot see scroll depth,
+# rage clicks, dead clicks or quick-backs, which on a reference page is most of what "did this
+# answer the question?" means. The docs were the last surface with no on-page behaviour data.
+#
+# ONLY Clarity. Deliberately not PostHog (autocapture puts URLs into a third-party tool and is
+# not geo-gated — it is what leaked 2,509 credential-bearing URLs on the apex) and not Google
+# Ads (nothing converts on a docs page, so a remarketing tag would be cost without signal).
+#
+# THE GATE. This host is GitHub Pages, not Cloudflare, so there is no local /cdn-cgi/trace — it
+# 404s. The apex one is fetched cross-origin instead, which works because Cloudflare answers it
+# with `access-control-allow-origin: *`. It FAILS CLOSED, unlike the apex copy in tennis
+# app/routes/landing.py: an unreadable or unmatched `loc` loads nothing, because a cross-origin
+# fetch has more ways to return something unexpected than a same-origin one, and the wrong
+# default here is the one that tags an EU visitor. Matches https://livetennisapi.com/privacy.
+#
+# Interpolated as {CLARITY} the same way as {BEACON}. Both are plain strings, NOT f-strings, so
+# the braces in the JS below stay single here — it is only JS written directly inside a
+# template's f-string that needs them doubled.
+CLARITY = (
+    "<script>\n"
+    '(function(){var E={};"AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT '
+    'RO SK SI ES SE IS LI NO".split(" ").forEach(function(c){E[c]=1});'
+    'fetch("https://livetennisapi.com/cdn-cgi/trace").then(function(r){return r.text()})'
+    '.then(function(t){var m=t.match(/loc=(\\w+)/);if(!m||E[m[1]])return;'
+    '(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};'
+    't=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;'
+    'y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})'
+    '(window,document,"clarity","script","xotc2pctsp");'
+    'try{clarity("set","user_state","docs")}catch(e){}}).catch(function(){})})();'
+    "\n</script>\n"
+)
+
 
 def load_spec() -> dict[str, Any]:
     return yaml.safe_load(SPEC.read_text(encoding="utf-8"))
@@ -863,7 +895,7 @@ programme pays 51% recurring for the lifetime of every subscription referred,
 </footer>
 
 </div>
-{BEACON}</body>
+{BEACON}{CLARITY}</body>
 </html>
 """
 
@@ -1163,7 +1195,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 </header>
 {articles}
 </main>
-{BEACON}</body>
+{BEACON}{CLARITY}</body>
 </html>
 """
     return page, latest
@@ -1433,7 +1465,7 @@ carries all {total_ops} operations of the API on one page.</p>
 this page is also in <a href="./reference.html">the full reference</a>.</p>
 </footer>
 </div>
-{BEACON}</body>
+{BEACON}{CLARITY}</body>
 </html>
 """
     return pages
@@ -1560,6 +1592,18 @@ def main() -> int:
         raise SystemExit(
             "generated pages with no pageview beacon: " + ", ".join(missing_beacon)
             + "\n  Add {BEACON} before </body> in that template."
+        )
+
+    # ...and the on-page behaviour tag, for the same reason: the topic pages were written after
+    # the beacon lived in one template and silently got none of it. Both guards or neither.
+    missing_clarity = [
+        path.name for path, content in outputs.items()
+        if path.suffix == ".html" and "clarity.ms" not in content
+    ]
+    if missing_clarity:
+        raise SystemExit(
+            "generated pages with no behaviour tag: " + ", ".join(missing_clarity)
+            + "\n  Add {CLARITY} before </body> in that template."
         )
 
     # The README states the spec's size in prose and nothing kept it honest: it read

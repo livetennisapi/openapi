@@ -510,5 +510,29 @@
 (function(){try{navigator.sendBeacon("https://livetennisapi.com/collect",
 JSON.stringify({kind:"docs_view",path:location.pathname,host:location.host}))}catch(e){}})();
 </script>
+<script>
+/* Clarity, EU/EEA-gated — the docs were the last surface with NO on-page behaviour data.
+   The server-side beacon above says a page was LOADED; it cannot see scroll depth, rage
+   clicks, dead clicks or quick-backs, which on a reference page is most of what "did this
+   answer the question?" means.
+
+   ONLY Clarity. Deliberately not PostHog (autocapture puts URLs into a third-party tool and
+   is not geo-gated — it is what leaked 2,509 credential-bearing URLs on the apex) and not
+   Google Ads (nothing converts on a docs page, so a remarketing tag here would be cost
+   without signal).
+
+   THE GATE. This host is GitHub Pages, not Cloudflare, so there is no local /cdn-cgi/trace —
+   it 404s. The apex one is fetched cross-origin instead, which works because Cloudflare
+   answers it with `access-control-allow-origin: *`. It FAILS CLOSED, unlike the apex copy in
+   tennis app/routes/landing.py: an unreadable or unmatched `loc` loads nothing, because a
+   cross-origin fetch has more ways to return something unexpected than a same-origin one and
+   the wrong default here is the one that tags an EU visitor. Matches
+   https://livetennisapi.com/privacy. */
+(function(){var E={};"AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO".split(" ").forEach(function(c){E[c]=1});
+fetch("https://livetennisapi.com/cdn-cgi/trace").then(function(r){return r.text()}).then(function(t){
+var m=t.match(/loc=(\w+)/);if(!m||E[m[1]])return;
+(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","xotc2pctsp");
+try{clarity("set","user_state","docs")}catch(e){}}).catch(function(){})})();
+</script>
 </body>
 </html>
