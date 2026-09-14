@@ -886,6 +886,13 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"OpenAPI spec: {DOCS_URL}/openapi.yaml",
         f"OpenAPI spec (JSON): {DOCS_URL}/openapi.json",
         f"Website: {SITE}",
+        # Plan 3 V12 asks every llms.txt to link pricing. This one linked the affiliate
+        # signup and the whole docs tree but never the pricing page, so a machine reading
+        # the DOCS host to answer "what does the Live Tennis API cost" had no pointer —
+        # while the docs HTML pages themselves have linked /pricing since WS11.2. The gap
+        # was between the human surface and the machine one, which is the surface that
+        # matters most here.
+        f"Plans and pricing: {SITE}/pricing",
         "",
         "## Pages by topic",
         "Each answers one question and carries the full parameter and response detail for its",

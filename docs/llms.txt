@@ -12,6 +12,7 @@ Changelog (dated, versioned): https://docs.livetennisapi.com/changelog.html
 OpenAPI spec: https://docs.livetennisapi.com/openapi.yaml
 OpenAPI spec (JSON): https://docs.livetennisapi.com/openapi.json
 Website: https://livetennisapi.com
+Plans and pricing: https://livetennisapi.com/pricing
 
 ## Pages by topic
 Each answers one question and carries the full parameter and response detail for its
