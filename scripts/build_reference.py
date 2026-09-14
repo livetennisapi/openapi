@@ -73,6 +73,26 @@ TIER_ORDER = {"BASIC": 0, "PRO": 1, "ULTRA": 2}
 # ---------------------------------------------------------------- spec helpers
 
 
+# The first-party pageview beacon, shared by every generated page.
+#
+# The docs are a separate origin, so the apps' server-side visit log never sees a docs request —
+# yet for a developer API the docs ARE the mid-funnel, and "did they read the docs before
+# subscribing?" was unanswerable because of it. The lt_vid cookie is Domain=.livetennisapi.com,
+# so this subdomain is same-site and the visit stitches into the same journey as the pricing page
+# and checkout. Allowlisted kind, always 204, wrapped so it can never affect the page. Covered by
+# the first-party visit log described at https://livetennisapi.com/privacy — no new cookie here.
+#
+# It lives here rather than inside the reference's template because it was inside that template,
+# and the eight topic pages and the changelog were written later and silently got none of it.
+# Nine of eleven docs pages were invisible the day the docs stopped being three pages.
+BEACON = (
+    "<script>\n"
+    "(function(){try{navigator.sendBeacon('https://livetennisapi.com/collect',"
+    "JSON.stringify({kind:'docs_view',path:location.pathname,host:location.host}))}catch(e){}})();"
+    "\n</script>\n"
+)
+
+
 def load_spec() -> dict[str, Any]:
     return yaml.safe_load(SPEC.read_text(encoding="utf-8"))
 
@@ -829,19 +849,7 @@ programme pays 51% recurring for the lifetime of every subscription referred,
 </footer>
 
 </div>
-<script>
-/* First-party pageview beacon. The docs are a separate origin, so the apps' server-side
-   visit log never sees a docs request — yet for a developer API the docs ARE the mid-funnel,
-   and "did they read the docs before subscribing?" has been unanswerable because of it.
-   The lt_vid cookie is Domain=.livetennisapi.com, so this subdomain is same-site and the
-   visit stitches into the same journey as the pricing page and checkout. Allowlisted kind,
-   always 204, wrapped so it can never affect the page. Covered by the first-party visit log
-   described at https://livetennisapi.com/privacy — no new cookie is set here.
-   NOTE: this lives inside an f-string template, hence the doubled braces. */
-(function(){{try{{navigator.sendBeacon("https://livetennisapi.com/collect",
-JSON.stringify({{kind:"docs_view",path:location.pathname,host:location.host}}))}}catch(e){{}}}})();
-</script>
-</body>
+{BEACON}</body>
 </html>
 """
 
@@ -1130,7 +1138,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 </header>
 {articles}
 </main>
-</body>
+{BEACON}</body>
 </html>
 """
     return page, latest
@@ -1393,7 +1401,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 this page is also in <a href="./reference.html">the full reference</a>.</p>
 </footer>
 </div>
-</body>
+{BEACON}</body>
 </html>
 """
     return pages
@@ -1489,6 +1497,19 @@ def main() -> int:
         # Postman import, most MCP scaffolds). Both URLs are stable and both are advertised.
         DOCS / "openapi.json": json.dumps(spec, ensure_ascii=False, indent=1) + "\n",
     }
+
+    # Every generated HTML page must carry the beacon. It used to live inside the reference's
+    # own template, so the eight topic pages and the changelog were written later and got none
+    # of it — nine of eleven docs pages invisible the day the docs stopped being three pages.
+    missing_beacon = [
+        path.name for path, content in outputs.items()
+        if path.suffix == ".html" and "sendBeacon" not in content
+    ]
+    if missing_beacon:
+        raise SystemExit(
+            "generated pages with no pageview beacon: " + ", ".join(missing_beacon)
+            + "\n  Add {BEACON} before </body> in that template."
+        )
 
     # The README states the spec's size in prose and nothing kept it honest: it read
     # "39 operations (38 paths), 47 schemas" against a spec of 40/39/48 — off by one in three

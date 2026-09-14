@@ -1901,16 +1901,7 @@ programme pays 51% recurring for the lifetime of every subscription referred,
 
 </div>
 <script>
-/* First-party pageview beacon. The docs are a separate origin, so the apps' server-side
-   visit log never sees a docs request — yet for a developer API the docs ARE the mid-funnel,
-   and "did they read the docs before subscribing?" has been unanswerable because of it.
-   The lt_vid cookie is Domain=.livetennisapi.com, so this subdomain is same-site and the
-   visit stitches into the same journey as the pricing page and checkout. Allowlisted kind,
-   always 204, wrapped so it can never affect the page. Covered by the first-party visit log
-   described at https://livetennisapi.com/privacy — no new cookie is set here.
-   NOTE: this lives inside an f-string template, hence the doubled braces. */
-(function(){try{navigator.sendBeacon("https://livetennisapi.com/collect",
-JSON.stringify({kind:"docs_view",path:location.pathname,host:location.host}))}catch(e){}})();
+(function(){try{navigator.sendBeacon('https://livetennisapi.com/collect',JSON.stringify({kind:'docs_view',path:location.pathname,host:location.host}))}catch(e){}})();
 </script>
 </body>
 </html>
