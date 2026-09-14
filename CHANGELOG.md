@@ -5,6 +5,15 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.4] - 2026-09-14
+
+### Added
+- ITF World Tennis Tour **qualifying rounds** (singles) are now listed and live-scored from the ITF's own
+  live scoring: matches appear in `GET /matches` with `round`, `tournament` and `scheduled_time`, receive
+  live scores while in play and complete on the feed's result. Sundays and Mondays, the qualifying days,
+  were previously almost empty because the schedule feed carries main draws only. `GET /fixtures` still
+  mirrors the schedule feed and does not list qualifying.
+
 ## [1.13.3] - 2026-09-13
 
 ### Changed
