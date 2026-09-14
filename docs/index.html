@@ -1,6 +1,19 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Scalar's bundle comes from jsDelivr, so the browser cannot start fetching it until it has
+       done DNS, TCP and TLS to a host it has never spoken to. Warming that connection in the head
+       overlaps it with parsing the page instead of queueing behind it. Free, and it changes
+       nothing about what loads — see the integrity-pinned script tag at the bottom of the body.
+
+       It does NOT fix the page's real problem: PageSpeed puts this page at performance 30 and
+       LCP 8.94s on throttled mobile, because Scalar's own render is the largest paint and it
+       happens late. That is inherent to a client-rendered reference, not a tuning matter, and
+       the structural options are recorded in tracker task 11.12. The CONTENT is not at risk
+       either way: the server-rendered intro above, reference.html and the eight topic pages
+       carry it all in raw HTML, which is what answer engines read. -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Live Tennis API — API Reference</title>
