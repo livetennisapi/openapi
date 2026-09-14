@@ -1063,7 +1063,12 @@ def _inline(text: str) -> str:
 
 
 def _md_block(md: str) -> str:
-    """The small Markdown subset the changelog uses: ### headings, - bullets, **bold**, paragraphs."""
+    """The small Markdown subset the changelog uses: ### headings, - bullets, **bold**, paragraphs.
+
+    A `###` inside an entry renders as <h3>, one level below the entry's own <h2>. It used to
+    render as <h4> under an <h3> entry heading; promoting the entry to <h2> without promoting its
+    body would have left h2 -> h4, which is the same skipped level in a new place.
+    """
     html_parts: list[str] = []
     in_list = False
     para: list[str] = []
@@ -1080,7 +1085,7 @@ def _md_block(md: str) -> str:
             if in_list:
                 html_parts.append("</ul>")
                 in_list = False
-            html_parts.append(f"<h4>{E(line[4:])}</h4>")
+            html_parts.append(f"<h3>{E(line[4:])}</h3>")
         elif line.startswith("- "):
             flush_para()
             if not in_list:
@@ -1111,7 +1116,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
     style = re.search(r"<style>.*?</style>", reference_html, re.S)
     style_html = style.group(0) if style else ""
     articles = "\n".join(
-        f'<article id="v{E(e["version"])}"><h3>{E(e["version"])} <time datetime="{e["date"]}">{e["date"]}</time></h3>\n{_md_block(e["body_md"])}</article>'
+        f'<article id="v{E(e["version"])}"><h2>{E(e["version"])} <time datetime="{e["date"]}">{e["date"]}</time></h2>\n{_md_block(e["body_md"])}</article>'
         for e in entries
     )
     info = spec["info"]
@@ -1338,6 +1343,10 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
         # wasted; the first crawl of these pages flagged every one of them at a flat 300, which
         # is what a bare [:300] slice looks like. Build it from the question plus whole
         # sentences of the lede until the budget runs out, so it always ends on a full stop.
+        total_ops = sum(
+            1 for pth in spec["paths"].values() for mth in pth
+            if mth in ("get", "post", "put", "patch", "delete")
+        )
         plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", topic["lede"])).strip()
         desc = topic["question"]
         for sentence in re.findall(r"[^.]+\.", plain):
@@ -1401,6 +1410,10 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 </nav>
 </header>
 <main id="main">
+<h2 id="endpoints">The endpoints</h2>
+<p>Each one below lists its plan tier, every parameter, the response shape and an example. They
+are the same entries as in <a href="./reference.html#endpoints">the full reference</a>, which
+carries all {total_ops} operations of the API on one page.</p>
 {"".join(ops_html)}
 </main>
 <footer>
@@ -1509,6 +1522,25 @@ def main() -> int:
         # Postman import, most MCP scaffolds). Both URLs are stable and both are advertised.
         DOCS / "openapi.json": json.dumps(spec, ensure_ascii=False, indent=1) + "\n",
     }
+
+    # Heading levels must not skip. h1 -> h3 is a level a screen reader reports as missing and
+    # PageSpeed flags as "Heading elements are not in a sequentially-descending order" — which is
+    # how this was found, on pages that had been live for hours: render_operation emits <h3>
+    # because on the reference it sits under <h2>Endpoints</h2>, and the topic pages had no <h2>
+    # at all. Cheap to assert, invisible otherwise.
+    skipped = {}
+    for path, content in outputs.items():
+        if path.suffix != ".html":
+            continue
+        levels = [int(m) for m in re.findall(r"<h([1-6])[ >]", content)]
+        bad = [(a, b) for a, b in zip(levels, levels[1:]) if b > a + 1]
+        if bad:
+            skipped[path.name] = bad[:3]
+    if skipped:
+        raise SystemExit(
+            "generated pages skip a heading level: "
+            + "; ".join(f"{k} {v}" for k, v in skipped.items())
+        )
 
     # Every generated HTML page must carry the beacon. It used to live inside the reference's
     # own template, so the eight topic pages and the changelog were written later and got none
