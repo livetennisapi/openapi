@@ -375,7 +375,7 @@ def build_html(spec: dict[str, Any]) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{E(info['title'])} — Full API Reference (text)</title>
-<meta name="description" content="Complete text reference for the Live Tennis API: every endpoint, parameter, response field and plan tier. Real-time tennis scores, players, rankings, match-winner odds and model win-probability for ATP, WTA, Challenger and ITF.">
+<meta name="description" content="Complete text reference for the Live Tennis API: every endpoint, parameter, response field and plan tier, for ATP, WTA, Challenger and ITF.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{DOCS_URL}/reference.html">
 <meta property="og:type" content="article">
@@ -1188,7 +1188,7 @@ TOPICS: list[dict[str, Any]] = [
     },
     {
         "slug": "tennis-odds",
-        "title": "Tennis odds API — match-winner markets and price ticks",
+        "title": "Tennis odds API — markets and price ticks",
         "question": "How do you read tennis match-winner odds and their price history?",
         "lede": (
             "<code>GET /markets</code> returns the match-winner market for a match and "
@@ -1313,10 +1313,27 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
             for t in TOPICS if t["slug"] != topic["slug"]
         )
         plans = ", ".join(sorted(t for t in tiers if t)) or "FREE"
-        desc = (
-            f"{topic['question']} {re.sub(r'<[^>]+>', '', topic['lede'])} "
-            f"{op_count} endpoints, {plans}."
-        )[:300]
+        # A meta description past ~160 characters is truncated in the result, so the tail is
+        # wasted; the first crawl of these pages flagged every one of them at a flat 300, which
+        # is what a bare [:300] slice looks like. Build it from the question plus whole
+        # sentences of the lede until the budget runs out, so it always ends on a full stop.
+        plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", topic["lede"])).strip()
+        desc = topic["question"]
+        for sentence in re.findall(r"[^.]+\.", plain):
+            if len(desc) + 1 + len(sentence.strip()) > 158:
+                break
+            desc = f"{desc} {sentence.strip()}"
+        if len(desc) < 90:
+            # Whole sentences did not fill the budget — these ledes open with one long
+            # sentence, so the loop above could add nothing. Use the space rather than waste
+            # it: cut question + lede on a word boundary. A description trimmed mid-sentence
+            # still reads; a 48-character one leaves two thirds of the result blank.
+            full = f"{topic['question']} {plain}"
+            desc = full
+            # Measure the ESCAPED length: an apostrophe becomes &#x27; in the attribute, so a
+            # 158-character cut can ship a 160-character description and trip the crawl check.
+            while len(E(desc)) > 158 and " " in desc:
+                desc = desc.rsplit(" ", 1)[0].rstrip(",;:")
         pages[topic["slug"]] = f"""<!doctype html>
 <html lang="en">
 <head>
