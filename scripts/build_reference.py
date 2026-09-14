@@ -1490,6 +1490,21 @@ def main() -> int:
         DOCS / "openapi.json": json.dumps(spec, ensure_ascii=False, indent=1) + "\n",
     }
 
+    # The README states the spec's size in prose and nothing kept it honest: it read
+    # "39 operations (38 paths), 47 schemas" against a spec of 40/39/48 — off by one in three
+    # places, on the first file anyone reads about this API. Counted, not trusted.
+    readme = ROOT / "README.md"
+    if readme.exists():
+        want = (
+            f"{sum(1 for p in spec['paths'].values() for m in p if m in ('get', 'post', 'put', 'patch', 'delete'))}"
+            f" operations ({len(spec['paths'])} paths),"
+            f" {len(spec.get('components', {}).get('schemas', {}))} schemas"
+        )
+        if want not in readme.read_text(encoding="utf-8"):
+            raise SystemExit(
+                f"README.md does not state the spec's real size.\n  Expected the phrase: {want}"
+            )
+
     # index.html is hand-written (Scalar boots into it), so it is the one page the generator
     # cannot keep in step. Fail loudly rather than let a topic exist with nothing linking to it
     # from the hub: an unlinked page is a page a crawler reaches only through the sitemap.
