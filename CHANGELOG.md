@@ -5,6 +5,17 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.5] - 2026-09-14
+
+### Changed
+- `pbp_coverage: "point"` now means a per-point stream has **delivered** for the match — at least one
+  played point past the `seq` 1 opener. Until then it reads `"game"`, including for a listed match whose
+  stream holds only its opener because play has not started. Previously any point row, including the
+  opener written before the first ball, was enough for `"point"`, so a client told to gate on the field could
+  subscribe to a match that never advanced. The admission gate we recommend is `sequence > 1` together with
+  `stale: false`. On the server, a match flagged live whose entire tape is still opener rows is demoted back to
+  upcoming after twenty minutes, so such matches no longer linger in the live list.
+
 ## [1.13.4] - 2026-09-14
 
 ### Added

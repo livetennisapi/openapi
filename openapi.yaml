@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.4"
+  version: "1.13.5"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -522,9 +522,13 @@ paths:
 
         READ THE COVERAGE HONESTLY BEFORE YOU BUILD ON IT. A match's stream
         is per-point ONLY where a point-level feed covers it:
-        `pbp_coverage: "point"` means this match has a true per-point stream;
-        `"game"` means only the snapshot score path covers it — `points` is
-        empty and that is an answer, not an error. Per-point coverage is
+        `pbp_coverage: "point"` means a per-point stream has DELIVERED for this
+        match — at least one played point past the `seq` 1 opener; `"game"`
+        means no played point has arrived — only the snapshot score path
+        covers it, or the stream holds only its opener so far (a listed match
+        that has not started). An answer, not an error; it flips to `point`
+        on the first played point. To admit a match as advancing, gate on
+        `sequence > 1` (a seeded match is 1) together with `stale: false`. Per-point coverage is
         never promised slate-wide; ITF and qualifying coverage in particular
         is partial. `quality: "revised"` means the upstream feed rewrote an
         already-served prefix at least once during this match; served rows
@@ -4059,9 +4063,11 @@ components:
           type: string
           enum: [point, game]
           description: >-
-            `point` = this match has a true per-point stream; `game` = only
-            the snapshot score path covers it (`points` is empty — an answer,
-            not an error).
+            `point` = a per-point stream has DELIVERED for this match (a played
+            point past the seq-1 opener); `game` = no played point has arrived —
+            only the snapshot score path covers it, or the stream holds only its
+            opener so far (an answer, not an error; flips to `point` on the
+            first played point — gate on `last_seq > 1`).
         quality:
           type: string
           enum: [clean, revised]
