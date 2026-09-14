@@ -143,6 +143,15 @@
     .fallback { max-width: 820px; margin: 0 auto; padding: 48px 20px;
                 color: var(--text); font: 16px/1.6 'Inter', ui-sans-serif, system-ui, sans-serif; }
     .fallback h1 { color: var(--ours); font-family: 'Space Grotesk', 'Inter', sans-serif; }
+    /* The intro is a crawler surface, not a layout participant. It was IN FLOW until 2026-09-14
+       and hiding it when Scalar painted moved everything below it — Lighthouse measured CLS 0.82
+       on mobile, worse than the 32-word page it replaced. Out of flow (fixed, same box as #boot,
+       above the splash) it can be removed at any moment for zero shift; a non-rendering crawler
+       still reads it because it is ordinary markup in the document. */
+    #static-intro {
+      position: fixed; inset: var(--docsbar) 0 auto 0; z-index: 2;
+      background: var(--bg); max-height: calc(100dvh - var(--docsbar)); overflow-y: auto;
+    }
     #static-intro[hidden] { display: none; }
     .fallback a, .boot-fail a { color: var(--ours); }
     .fallback .lead { font-size: 1.1rem; }
