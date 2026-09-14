@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis odds API — match-winner markets and price ticks — Live Tennis API</title>
+<meta name="description" content="How do you read tennis match-winner odds and their price history? GET /markets returns the match-winner market for a match and GET /markets/{matchId}/prices the recent price ticks per side, newest first; GET /matches/{matchId}/prices is the same ticks addressed by match id. All three are PRO. Every ">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.livetennisapi.com/tennis-odds.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tennis odds API — match-winner markets and price ticks">
+<meta property="og:url" content="https://docs.livetennisapi.com/tennis-odds.html">
+<meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"Tennis odds API — match-winner markets and price ticks",
+"description":"How do you read tennis match-winner odds and their price history? GET /markets returns the match-winner market for a match and GET /markets/{matchId}/prices the recent price ticks per side, newest first; GET /matches/{matchId}/prices is the same ticks addressed by match id. All three are PRO. Every ",
+"url":"https://docs.livetennisapi.com/tennis-odds.html",
+"inLanguage":"en",
+"isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
+"publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
+
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
+
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+<header>
+<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.4</p>
+<h1>Tennis odds API — match-winner markets and price ticks</h1>
+<p><strong>How do you read tennis match-winner odds and their price history?</strong> <code>GET /markets</code> returns the match-winner market for a match and <code>GET /markets/{matchId}/prices</code> the recent price ticks per side, newest first; <code>GET /matches/{matchId}/prices</code> is the same ticks addressed by match id. All three are PRO. Every tick carries its own timestamp, so a series can be reconstructed rather than inferred from poll times.</p>
+<p class="meta">3 endpoints on this page. Base URL
+<code>https://api.livetennisapi.com/api/public/v1</code>; authenticate with the <code>X-API-Key</code> header. Plans involved:
+PRO. A free key needs no card.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="https://livetennisapi.com/pricing">Pricing</a>
+<a href="https://livetennisapi.com/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+<section class="op" id="listMarkets">
+<h3><span class="method">GET</span> <code>/markets</code></h3>
+<p class="summary">Match-winner market(s) for a match (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>listMarkets</code></p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /markets parameters"><table><caption class="vh">GET /markets — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>match_id</code></td><td>query</td><td>integer</td><td>yes</td><td></td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /markets responses"><table><caption class="vh">GET /markets — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Markets</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /markets response fields"><table><caption class="vh">GET /markets — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/markets \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getMarketPrices">
+<h3><span class="method">GET</span> <code>/markets/{matchId}/prices</code></h3>
+<p class="summary">Market + recent price ticks per side, newest first (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>getMarketPrices</code></p>
+<p>The mapped match-winner market for one match, with its recent price ticks per side, newest first.
+
+404 with <code>error: no_market</code> (since 2026-09-02; <code>match_id</code> and <code>coverage: &quot;none&quot;</code> alongside) when no match-winner market is mapped to the match — a market is mapped only where one is published for that fixture, so a client walking every live match will meet this. A bare <code>not_found</code> means the match id itself does not exist. Every row of <code>GET /matches</code> carries <code>has_market</code>, so a slate can be filtered before any call here. <code>GET /matches/{matchId}</code> answers <code>200</code> for the same match with <code>market</code> and <code>market_price</code> set to <code>null</code> instead, and carries the live score in the same response, so a per-match poll built on the detail route never spends a call on a 404.
+
+Ticks are kept for 30 days and then deleted: a market older than that answers with an empty <code>prices</code> array while staying mapped — retention, not a fault. For paging past 500 ticks use <code>/matches/{matchId}/prices</code> with its cursor.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /markets/{matchId}/prices parameters"><table><caption class="vh">GET /markets/{matchId}/prices — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
+
+Get it from any match list, where it is the <code>id</code> field of each match object:
+<code>GET /matches?status=live</code> (in progress), <code>GET /matches?status=upcoming</code> or <code>GET /fixtures</code> (scheduled), <code>GET /matches?status=completed</code> or <code>GET /history/matches</code> (finished).
+
+Ids are stable for the life of a match, so one captured before it starts still resolves after it finishes.
+</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /markets/{matchId}/prices responses"><table><caption class="vh">GET /markets/{matchId}/prices — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Market with <code>prices</code></td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td><code>error: not_found</code> — no such match id. <code>error: no_market</code> (with <code>match_id</code>, <code>coverage: &quot;none&quot;</code>, <code>detail</code>) — the match exists and no match-winner market is mapped to it; <code>has_market</code> on the match list says so without a probe.</td></tr><tr><td><code>410</code></td><td>The match id existed and was merged into another match record (since 2026-09-05). The body is <code>MatchMerged</code>, not <code>Error</code>: it carries a forwarding address, which is the whole point of answering 410 rather than 404.</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /markets/{matchId}/prices response fields"><table><caption class="vh">GET /markets/{matchId}/prices — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>integer</td><td></td></tr><tr><td><code>question</code></td><td>string or null</td><td></td></tr><tr><td><code>status</code></td><td>string or null (active, resolved, closed, null)</td><td></td></tr><tr><td><code>volume</code></td><td>number or null</td><td></td></tr><tr><td><code>liquidity</code></td><td>number or null</td><td></td></tr><tr><td><code>end_date</code></td><td>string or null</td><td></td></tr><tr><td><code>prices</code></td><td>array of object</td><td>Prices endpoint / match detail only; newest first</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/markets/18953/prices \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="listMatchPrices">
+<h3><span class="method">GET</span> <code>/matches/{matchId}/prices</code></h3>
+<p class="summary">Bare price ticks of the mapped match-winner market, newest first (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>listMatchPrices</code></p>
+<p>Recent ticks only (no market wrapper). <code>limit</code> caps at 500; <code>minutes</code> bounds the lookback window. 404 when the match has no mapped market.
+
+Ticks are kept for 30 days and then deleted, so a match older than that answers an empty <code>data</code> while its market stays mapped — that is retention, not a fault. Past 500 ticks, page with the cursor: read a page, and while <code>meta.has_more</code> is true pass <code>meta.next_cursor</code> back as <code>?cursor=</code> for the next (older) page. Pages never overlap or skip a tick (added 2026-09-09).</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/prices parameters"><table><caption class="vh">GET /matches/{matchId}/prices — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
+
+Get it from any match list, where it is the <code>id</code> field of each match object:
+<code>GET /matches?status=live</code> (in progress), <code>GET /matches?status=upcoming</code> or <code>GET /fixtures</code> (scheduled), <code>GET /matches?status=completed</code> or <code>GET /history/matches</code> (finished).
+
+Ids are stable for the life of a match, so one captured before it starts still resolves after it finishes.
+</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>100</code>.</td></tr><tr><td><code>minutes</code></td><td>query</td><td>integer</td><td>no</td><td></td></tr><tr><td><code>cursor</code></td><td>query</td><td>string</td><td>no</td><td>Keyset cursor for the next (older) page — the <code>meta.next_cursor</code> of the previous page (added 2026-09-09). Opaque; anything else is <code>400 bad_cursor</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/prices responses"><table><caption class="vh">GET /matches/{matchId}/prices — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Price ticks</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>410</code></td><td>The match id existed and was merged into another match record (since 2026-09-05). The body is <code>MatchMerged</code>, not <code>Error</code>: it carries a forwarding address, which is the whole point of answering 410 rather than 404.</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/prices response fields"><table><caption class="vh">GET /matches/{matchId}/prices — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/matches/18953/prices \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+<a href="./live-scores.html">Live tennis scores API</a>
+<a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a>
+<a href="./point-by-point-history.html">Point-by-point tennis data API</a>
+<a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a>
+<a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a>
+<a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
+<a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
+</nav>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
+this page is also in <a href="./reference.html">the full reference</a>.</p>
+</footer>
+</div>
+</body>
+</html>

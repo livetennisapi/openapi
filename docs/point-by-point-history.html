@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Point-by-point tennis data API — Live Tennis API</title>
+<meta name="description" content="Which endpoints return point-by-point tennis data, and how complete is it? GET /history/matches/{matchId} returns the tape for one completed match: the score after every point, with the model&#x27;s win probability at that point. GET /history/matches lists completed matches with their tape coverage, and ">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.livetennisapi.com/point-by-point-history.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Point-by-point tennis data API">
+<meta property="og:url" content="https://docs.livetennisapi.com/point-by-point-history.html">
+<meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"Point-by-point tennis data API",
+"description":"Which endpoints return point-by-point tennis data, and how complete is it? GET /history/matches/{matchId} returns the tape for one completed match: the score after every point, with the model&#x27;s win probability at that point. GET /history/matches lists completed matches with their tape coverage, and ",
+"url":"https://docs.livetennisapi.com/point-by-point-history.html",
+"inLanguage":"en",
+"isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
+"publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
+
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
+
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+<header>
+<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.4</p>
+<h1>Point-by-point tennis data API</h1>
+<p><strong>Which endpoints return point-by-point tennis data, and how complete is it?</strong> <code>GET /history/matches/{matchId}</code> returns the tape for one completed match: the score after every point, with the model's win probability at that point. <code>GET /history/matches</code> lists completed matches with their tape coverage, and <code>GET /history/coverage</code> is the measured completeness rollup per tour and draw bucket — a number we publish rather than estimate, with its own <code>as_of</code>. <code>GET /history/packages</code> serves the same data as pre-built monthly bulk files.</p>
+<p class="meta">5 endpoints on this page. Base URL
+<code>https://api.livetennisapi.com/api/public/v1</code>; authenticate with the <code>X-API-Key</code> header. Plans involved:
+BASIC, PRO. A free key needs no card.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="https://livetennisapi.com/pricing">Pricing</a>
+<a href="https://livetennisapi.com/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+<section class="op" id="listCompletedMatches">
+<h3><span class="method">GET</span> <code>/history/matches</code></h3>
+<p class="summary">Completed matches, newest first, with derived winner and tape coverage (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>listCompletedMatches</code></p>
+<p>Requires BASIC on the live API, or any Historical Data API plan (Starter and up — see <a href="https://livetennisapi.com/historical-tennis-data-api">https://livetennisapi.com/historical-tennis-data-api</a>). All tours, January 2023 → now (deeper results live in the results archive, 1968–2022, at <code>/history/archive/matches</code>). Filter to a date range with <code>from</code>/<code>to</code>, and by <code>tour</code>, <code>draw</code> (singles/doubles), <code>player</code> (either participant) and <code>country</code> — same vocabulary as <code>/matches</code>. Each item carries a <code>tape</code> object saying what point-by-point data we hold for that match, so a whole page can be qualified in one call instead of one request per match. NOTE <code>?coverage=</code> is applied AFTER the page is cut, so a filtered page is routinely shorter than <code>limit</code> (and may be empty) while later pages still hold matching matches — a short filtered page is not an end-of-data signal; <code>?points_complete=</code> filters the same way.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches parameters"><table><caption class="vh">GET /history/matches — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr><tr><td><code>from</code></td><td>query</td><td>string</td><td>no</td><td>Earliest play date, <code>YYYY-MM-DD</code> or an ISO-8601 UTC datetime. A bare date covers that whole day. An unparseable value is a 400, never a silently unfiltered 200.</td></tr><tr><td><code>to</code></td><td>query</td><td>string</td><td>no</td><td>Latest play date, same formats as <code>from</code> (a bare date includes everything played that day). <code>from</code> after <code>to</code> is a 400.</td></tr><tr><td><code>tour</code></td><td>query</td><td>string (atp, wta, challenger, itf, juniors)</td><td>no</td><td>Restrict results to one tour. Each value covers its singles and doubles draws, so <code>atp</code> includes ATP doubles and <code>juniors</code> covers the boys&#x27; and girls&#x27; Grand Slam draws. Omit for all tours. An unrecognised value is a 400 rather than a silent pass-through, so a caller never receives a tour it did not ask for. Applied before pagination, so <code>meta.count</code> reflects the filtered set.</td></tr><tr><td><code>draw</code></td><td>query</td><td>string (singles, doubles)</td><td>no</td><td>Draw filter (added 2026-08-18) — the axis the tour filter deliberately collapses; the two compose (<code>?tour=itf&amp;draw=doubles</code> is the ITF doubles slice). Same vocabulary as the <code>draw</code> field on Match, decided by the same shared definition, so filter and field cannot disagree. A row whose draw is null — a team tie, or no stated event type and no doubles-team participant — matches NEITHER value: null is an answer, not a wildcard. Two honesty notes: on /tournaments the answer comes from the event type alone (a tournament row has no participants to supply the doubles-team evidence matches have), and draw=doubles alone also returns mixed and exhibition doubles that no tour value reaches. An unknown value is a 400 bad_draw with the allowed values.</td></tr><tr><td><code>player</code></td><td>query</td><td>array of integer</td><td>no</td><td>Filter to matches where this player id is EITHER participant. Repeatable (max 50 ids); multiple values return the deduplicated union. An unknown id returns an honest empty list, not an error; a non-integer value is a 400 <code>bad_request</code>. Before 2026-08-03 this parameter was accepted and silently ignored — treat any integration written against that behaviour as unfiltered.</td></tr><tr><td><code>country</code></td><td>query</td><td>string</td><td>no</td><td>Filter to matches where EITHER participant&#x27;s <code>player.country</code> equals this lowercase 3-letter code — the same vocabulary the Player object returns (IOC-style codes, e.g. <code>ned</code>, <code>sui</code>, <code>gre</code>; NOT ISO-3166). Players with no recorded country never match, so a country filter excludes unknown-nationality matches rather than guessing. A value that is not 3 letters is a 400 <code>bad_country</code>.</td></tr><tr><td><code>tournament_id</code></td><td>query</td><td>string</td><td>no</td><td>Filter to one tournament — exact match on the stable numeric id every match row publishes as <code>tournament_id</code> and <code>/tournaments</code> publishes as <code>id</code>, so the value round-trips straight off any response. Works on <code>/matches</code> (every status) and <code>/history/matches</code>, and composes with every other filter: <code>?tour=atp&amp;draw=singles&amp;tournament_id=1217</code> is one slam&#x27;s men&#x27;s singles, where <code>?tour=</code> alone still mixes concurrent events during a slam fortnight. There is no separate edition or occurrence id: <code>tournament_id</code> is stable across seasons, so one EDITION is <code>tournament_id</code> plus a <code>from</code>/<code>to</code> window around its dates. Matches whose <code>tournament_id</code> is null (a tournament not yet in the catalogue) never match this filter; a date-window listing without it still returns them. Unknown-but-numeric ids return an empty list, not an error; a non-numeric value is a 400 <code>bad_tournament_id</code>.</td></tr><tr><td><code>coverage</code></td><td>query</td><td>string (from_start, partial, reconstructed, reconstructed_partial, none)</td><td>no</td><td>Keep only matches whose tape has this coverage. An unknown value is a 400 <code>bad_coverage</code> listing the accepted values in <code>allowed</code>.</td></tr><tr><td><code>points_complete</code></td><td>query</td><td>string (true, false)</td><td>no</td><td>Keep only matches whose measured point-completeness ledger verdict is this value — best-basis (the served tape OR an on-disk reconstruction measured point-complete; fetch the latter with <code>?points=complete</code> on the per-match tape). The ledger is a per-match cache reconverged nightly. A match not yet measured matches NEITHER value; anything but true/false is a 400 <code>bad_points_complete</code>. Applied AFTER the page is cut, exactly like <code>?coverage=</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches responses"><table><caption class="vh">GET /history/matches — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Completed matches (<code>winner</code> = 1|2|null, from final sets), each with its tape coverage</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches response fields"><table><caption class="vh">GET /history/matches — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/matches \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getHistoryCoverage">
+<h3><span class="method">GET</span> <code>/history/coverage</code></h3>
+<p class="summary">Measured completeness rollup per tour × draw bucket (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>getHistoryCoverage</code></p>
+<p>Requires BASIC on the live API, or any Historical Data API plan (Starter and up — see <a href="https://livetennisapi.com/historical-tennis-data-api">https://livetennisapi.com/historical-tennis-data-api</a>). The numbers to read BEFORE choosing what to backtest, in one call instead of paging the archive. A PREBUILT snapshot rebuilt nightly right after the completeness ledger reconverges — never computed at read time — so <code>as_of</code> (= <code>built_at</code>) dates every number, and <code>ledger_max_computed_at</code> is the newest underlying per-match measurement. Buckets are atp/wta/challenger/itf/juniors × singles/doubles plus <code>other</code> (team ties, mixed, exhibitions, and matches with no stated event type — counted, never dropped, so the totals cannot lie), derived from the same registries as the <code>tour</code> and <code>draw</code> fields. <code>method</code> states the full measurement rule in one paragraph, so every number carries its own definition. As of 2026-08-18 the headline spread it exposes: 51.1% of ITF singles matches are point-complete on the best basis against 3.5% of ITF doubles — do not extrapolate a completeness rate across a tour group.</p>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/coverage responses"><table><caption class="vh">GET /history/coverage — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The rollup artifact, dated by its own as_of</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr><tr><td><code>503</code></td><td>coverage_unavailable — the artifact has not been built yet (or is unreadable). Honest and temporary; retry after the nightly build. The rollup is never computed inline.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/coverage response fields"><table><caption class="vh">GET /history/coverage — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>as_of</code></td><td>string</td><td>Equal to <code>built_at</code>, verbatim — the artifact&#x27;s own clock, and the date to quote with every number in this response.</td></tr><tr><td><code>built_at</code></td><td>string</td><td>When the rollup was built (UTC).</td></tr><tr><td><code>ledger_max_computed_at</code></td><td>string or null</td><td>The newest underlying per-match measurement in the completeness ledger.</td></tr><tr><td><code>method</code></td><td>string</td><td>The full measurement rule for point_complete, in one paragraph — every number carries its own definition.</td></tr><tr><td><code>buckets</code></td><td>object</td><td>One CoverageBucket per tour × draw bucket (<code>atp_singles</code> … <code>juniors_doubles</code>, plus <code>other</code>). A bucket with zero completed matches is OMITTED rather than emitted as zeros — read a missing key as &quot;nothing to count&quot;, not an error.</td></tr><tr><td><code>totals</code></td><td>object</td><td>The five verifiable numbers for one bucket.</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/coverage \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getMatchTape">
+<h3><span class="method">GET</span> <code>/history/matches/{matchId}</code></h3>
+<p class="summary">Per-match tape — point-by-point score + per-point model probabilities (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>getMatchTape</code></p>
+<p>The tape is the point-by-point score sequence we hold for this match — every recorded score row including the model fields <code>win_probability_p1</code> and <code>danger</code> at that point — plus match metadata and the model profiles produced during the match. The model fields here are part of the paid History product by design, distinct from the ULTRA-gated LIVE model fields. One match per request. Requires BASIC on the live API, or the Historical Data API Starter plan and up.
+
+The tape is NOT guaranteed to cover the whole match — check <code>meta.coverage</code> and <code>meta.point_source</code> before backtesting. Rows expanded after the fact from a finished-match point-by-point record carry a null <code>timestamp</code> and null model fields; nothing is ever synthesised.
+
+WORKS ON A LIVE MATCH, not only a completed one. The tape is assembled from whatever has been committed so far, so it is how you read the point-by-point history of a match in progress — including games played before you started watching, where we were already watching them. The LIST endpoint is completed-only; get live ids from <code>/matches?status=live</code>. <code>/matches/{matchId}/score</code> is one state; this is the sequence of states.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId} parameters"><table><caption class="vh">GET /history/matches/{matchId} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
+
+Get it from any match list, where it is the <code>id</code> field of each match object:
+<code>GET /matches?status=live</code> (in progress), <code>GET /matches?status=upcoming</code> or <code>GET /fixtures</code> (scheduled), <code>GET /matches?status=completed</code> or <code>GET /history/matches</code> (finished).
+
+Ids are stable for the life of a match, so one captured before it starts still resolves after it finishes.
+</td></tr><tr><td><code>sequence</code></td><td>query</td><td>string (raw, clean)</td><td>no</td><td><code>raw</code> (default) is every row we committed, in commit order — deliberately non-monotonic, since independent sources race and a higher-trust one may correct a lower-trust one backwards. <code>clean</code> returns one row per distinct score state, keeping the last assertion of each, ordered by MATCH PROGRESS (the same ranking our arbiter uses), not by wall clock — so array order is the authoritative point order, and <code>timestamp</code> values may locally disagree with it by a few seconds where a stale re-assertion carried a later clock. Within a game, deuce states legitimately cycle (40-40 ↔ AD) and rank equally, so consecutive clean rows are not guaranteed point-monotonic there; <code>point_winner</code> is only set where the transition is a single attributable point. An unknown value is a 400 <code>bad_sequence</code>. Default <code>raw</code>.</td></tr><tr><td><code>points</code></td><td>query</td><td>string (default, complete)</td><td>no</td><td><code>default</code> serves observed rows first — what our own pipeline committed, a SAMPLED record of the match. <code>complete</code> is the explicit opt-out of that precedence for consumers who want every point: where a whole-match reconstruction exists it is served WHOLE, in its own point order, with <code>point_winner</code> on every row and null timestamps/model fields per the reconstruction contract. Where none exists, the response is exactly the default read plus <code>meta.points</code> (whose <code>available_complete</code> tells the cases apart) — no error. Cannot combine with <code>sequence=clean</code> (400 <code>bad_combination</code> — the state-key collapse would delete the repeated deuce states a complete point sequence contains). An unknown value is a 400 <code>bad_points</code>; where not yet enabled, <code>complete</code> answers 400 <code>points_read_disabled</code> rather than silently serving the default. <code>coverage</code> and <code>meta.points</code> are orthogonal axes: coverage says how the rows were OBTAINED, points says how COMPLETE the sequence is — completeness is only ever claimed per match, as measured. Default <code>default</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId} responses"><table><caption class="vh">GET /history/matches/{matchId} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The full tape (<code>match</code> + <code>tape</code> + <code>profiles</code> + coverage <code>meta</code>)</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>410</code></td><td>The match id existed and was merged into another match record (since 2026-09-05). The body is <code>MatchMerged</code>, not <code>Error</code>: it carries a forwarding address, which is the whole point of answering 410 rather than 404.</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId} response fields"><table><caption class="vh">GET /history/matches/{matchId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>match</code></td><td>object</td><td>Match metadata with the final score embedded.</td></tr><tr><td><code>tape</code></td><td>array of object</td><td>The score sequence — see HistoryTapeRow. Array order is the authoritative order: commit order on <code>raw</code>, match-progress order on <code>?sequence=clean</code> (see the <code>sequence</code> parameter).</td></tr><tr><td><code>tiebreaks</code></td><td>array or null</td><td>Per-set tiebreak final scores from OBSERVED states only, aligned to the sets of the final scoreline: <code>{&quot;p1&quot;, &quot;p2&quot;}</code> for a 7-6 set whose observed maximum tiebreak state is a valid terminal shape (max &gt;= 7, margin &gt;= 2), null per set otherwise — a breaker whose closing point the feed skipped reads null rather than an under-report. Null when the match has no 7-6 set. Present on <code>raw</code> and <code>clean</code> alike.</td></tr><tr><td><code>profiles</code></td><td>array of object</td><td>Model profiles produced during the match, oldest first.</td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/matches/18953 \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="listHistoryPackages">
+<h3><span class="method">GET</span> <code>/history/packages</code></h3>
+<p class="summary">List the pre-built monthly bulk history packages (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>listHistoryPackages</code></p>
+<p>Bulk downloads are a heavier product than single-match tape reads. Requires PRO on the live API, or the Historical Data API Pro plan and up, or a one-off package access pass. A key that can read the tape but is not package-entitled receives <code>403 upgrade_required</code>.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages parameters"><table><caption class="vh">GET /history/packages — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>kind</code></td><td>query</td><td>string (tape, rankings, rally, archive, elo, archive_tape)</td><td>no</td><td>Package family. <code>tape</code> (default) = monthly point-by-point match tapes; <code>rankings</code> = as-of ranking records (ULTRA); <code>rally</code> = the charted rally corpus (shot-by-shot) as YEARLY exports (ULTRA); <code>archive</code> = the results archive (1968–2022) as YEARLY exports, same entitlement as the tape packages; <code>elo</code> = the as-of Elo tape as YEARLY exports (ULTRA); <code>archive_tape</code> = the RECONSTRUCTED 2013–2022 point-by-point tape as YEARLY exports — ten periods, 2013 through 2022, each with a JSONL and a CSV file, all <code>ready</code>, needing ULTRA or a History Pro/Business subscription or an active one-off package window (a History Starter grant reads a tape per call and does not download years of them). The yearly kinds&#x27; <code>period</code> is <code>YYYY</code>, one file per year, because a fixed historical corpus is not an accruing monthly stream. The default means a tape-only client never sees a new kind of row appear. Default <code>tape</code>.</td></tr><tr><td><code>year</code></td><td>query</td><td>string</td><td>no</td><td>Year archive listing — every published month of the year (History Business, a 1-year package, or ULTRA).</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages responses"><table><caption class="vh">GET /history/packages — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Ready packages, newest period first</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages response fields"><table><caption class="vh">GET /history/packages — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/packages \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getHistoryPackage">
+<h3><span class="method">GET</span> <code>/history/packages/{period}</code></h3>
+<p class="summary">One monthly package — manifest, or the bulk file itself (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>getHistoryPackage</code></p>
+<p>Without <code>format</code> returns the package manifest (file set, counts, sha256). With <code>format=jsonl</code> or <code>format=csv</code> streams that file as an attachment. Same entitlement as <code>/history/packages</code>. 404 when the month has not been built yet — list available months first.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages/{period} parameters"><table><caption class="vh">GET /history/packages/{period} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>period</code></td><td>path</td><td>string</td><td>yes</td><td>Calendar month, <code>YYYY-MM</code> — except for the yearly kinds (<code>rally</code>, <code>archive</code>, <code>elo</code>, <code>archive_tape</code>), where it is the bare year <code>YYYY</code> (<code>400 bad_period</code> otherwise).</td></tr><tr><td><code>kind</code></td><td>query</td><td>string (tape, rankings, rally, archive, elo, archive_tape)</td><td>no</td><td>Package family; <code>rankings</code>, <code>rally</code>, <code>elo</code> and <code>archive_tape</code> require ULTRA, a History Pro/Business subscription, or an active one-off package window (changed 2026-08-19). <code>rally</code> = the yearly charted rally corpus exports; <code>archive</code> = the yearly results archive (1968–2022) exports, same entitlement as the tape packages; <code>elo</code> = the yearly as-of Elo tape exports; <code>archive_tape</code> = the yearly reconstructed 2013–2022 point-by-point tape exports (<code>period</code> 2013 through 2022 — no other year exists). Default <code>tape</code>.</td></tr><tr><td><code>format</code></td><td>query</td><td>string (jsonl, csv, corrections)</td><td>no</td><td>Omit for the JSON manifest; set to download the file. <code>corrections</code> (added 2026-09-10) streams the package&#x27;s correction CSV — <code>match_id, field, before, after, tournament_key, source, corrected_at</code> — when stored data was repaired after the package was published; the manifest&#x27;s <code>files</code> lists it with <code>format: corrections</code>, and a package without one answers 404 <code>no corrections file for that package</code>. First use: the 2023-02 → 2024-12 tape packages carry <code>surface</code> corrections for 19,439 Challenger matches (repaired 2026-09-10; the packages themselves were rebuilt the same day).</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages/{period} responses"><table><caption class="vh">GET /history/packages/{period} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The manifest (no <code>format</code>), or the bulk file as an attachment (<code>format=jsonl</code> streams NDJSON, <code>format=csv</code> streams CSV, <code>format=corrections</code> streams the correction CSV). A gzipped file (see the manifest&#x27;s <code>compression</code>) is served as <code>application/gzip</code>, never with <code>Content-Encoding: gzip</code> — the manifest&#x27;s <code>sha256</code> covers the exact bytes you receive.</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/packages/{period} response fields"><table><caption class="vh">GET /history/packages/{period} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>period</code></td><td>string</td><td>Calendar month, <code>YYYY-MM</code> — or the bare year <code>YYYY</code> on the yearly <code>rally</code>/<code>archive</code>/<code>elo</code>/<code>archive_tape</code> kinds.</td></tr><tr><td><code>status</code></td><td>string (ready)</td><td>Only built months are listed or served.</td></tr><tr><td><code>match_count</code></td><td>integer or null</td><td></td></tr><tr><td><code>row_count</code></td><td>integer or null</td><td></td></tr><tr><td><code>files</code></td><td>array of object</td><td>One entry per downloadable format.</td></tr><tr><td><code>built_at</code></td><td>string or null</td><td></td></tr><tr><td><code>kind</code></td><td>string (tape, rankings, rally, archive, elo, archive_tape)</td><td>Present only on non-tape packages, so the shape a tape client already parses is unchanged. On a rankings package <code>match_count</code> is the number of players covered and <code>row_count</code> the number of ranking records; on a rally package the counts are charted matches and points; on an archive package the counts are archive results; on an <code>elo</code> package <code>row_count</code> is the number of rating records; on an <code>archive_tape</code> package <code>match_count</code> is the reconstructed tapes in that year and <code>row_count</code> their score rows (97,901 and 14,340,663 across the ten years).</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/packages/{period} \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+<a href="./live-scores.html">Live tennis scores API</a>
+<a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a>
+<a href="./tennis-odds.html">Tennis odds API — match-winner markets and price ticks</a>
+<a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a>
+<a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a>
+<a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
+<a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
+</nav>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
+this page is also in <a href="./reference.html">the full reference</a>.</p>
+</footer>
+</div>
+</body>
+</html>

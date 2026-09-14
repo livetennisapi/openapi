@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis API authentication, quota and status — Live Tennis API</title>
+<meta name="description" content="How do you authenticate, and how do you see what quota is left? Send your key as X-API-Key on every request. GET /usage returns your own consumption against your plan&#x27;s quota and works on every tier including FREE, so a client can check its own headroom before a burst. GET /health is the unauthentic">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.livetennisapi.com/auth-quota-and-health.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tennis API authentication, quota and status">
+<meta property="og:url" content="https://docs.livetennisapi.com/auth-quota-and-health.html">
+<meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"Tennis API authentication, quota and status",
+"description":"How do you authenticate, and how do you see what quota is left? Send your key as X-API-Key on every request. GET /usage returns your own consumption against your plan&#x27;s quota and works on every tier including FREE, so a client can check its own headroom before a burst. GET /health is the unauthentic",
+"url":"https://docs.livetennisapi.com/auth-quota-and-health.html",
+"inLanguage":"en",
+"isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
+"publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
+
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
+
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+<header>
+<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.4</p>
+<h1>Tennis API authentication, quota and status</h1>
+<p><strong>How do you authenticate, and how do you see what quota is left?</strong> Send your key as <code>X-API-Key</code> on every request. <code>GET /usage</code> returns your own consumption against your plan's quota and works on every tier including FREE, so a client can check its own headroom before a burst. <code>GET /health</code> is the unauthenticated liveness probe.</p>
+<p class="meta">2 endpoints on this page. Base URL
+<code>https://api.livetennisapi.com/api/public/v1</code>; authenticate with the <code>X-API-Key</code> header. Plans involved:
+FREE, —. A free key needs no card.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="https://livetennisapi.com/pricing">Pricing</a>
+<a href="https://livetennisapi.com/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+<section class="op" id="healthCheck">
+<h3><span class="method">GET</span> <code>/health</code></h3>
+<p class="summary">Liveness probe (no auth)</p>
+<p class="meta">Plan required: <strong>—</strong> &middot; operationId: <code>healthCheck</code></p>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /health responses"><table><caption class="vh">GET /health — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>OK</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /health response fields"><table><caption class="vh">GET /health — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>status</code></td><td>string</td><td></td></tr><tr><td><code>version</code></td><td>string</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/health</code></pre>
+</section><section class="op" id="getUsage">
+<h3><span class="method">GET</span> <code>/usage</code></h3>
+<p class="summary">Your own usage vs quota (FREE — any tier)</p>
+<p class="meta">Plan required: <strong>FREE</strong> &middot; operationId: <code>getUsage</code></p>
+<p>Durable daily usage for the calling key: tier, limits, today&#x27;s calls (current to the second) and a 30-day history. The per-minute window is on the X-RateLimit-* headers of every response, not here. Calls to this endpoint are quota-exempt — checking your usage never consumes it.</p>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /usage responses"><table><caption class="vh">GET /usage — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Usage summary</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /usage response fields"><table><caption class="vh">GET /usage — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>principal</code></td><td>string</td><td>Opaque ref to your own key</td></tr><tr><td><code>tier</code></td><td>string (free, basic, pro, ultra)</td><td></td></tr><tr><td><code>base_tier</code></td><td>string</td><td>Subscription tier; equals <code>tier</code> unless a temporary grant is active</td></tr><tr><td><code>tier_expires_at</code></td><td>string or null</td><td>When a temporary tier grant reverts, else null</td></tr><tr><td><code>channel</code></td><td>string</td><td></td></tr><tr><td><code>limits</code></td><td>object</td><td></td></tr><tr><td><code>today</code></td><td>object</td><td></td></tr><tr><td><code>history</code></td><td>array of object</td><td>Last 30 days, oldest first</td></tr><tr><td><code>as_of</code></td><td>string</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/usage \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+<a href="./live-scores.html">Live tennis scores API</a>
+<a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a>
+<a href="./tennis-odds.html">Tennis odds API — match-winner markets and price ticks</a>
+<a href="./point-by-point-history.html">Point-by-point tennis data API</a>
+<a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a>
+<a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a>
+<a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
+</nav>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
+this page is also in <a href="./reference.html">the full reference</a>.</p>
+</footer>
+</div>
+</body>
+</html>

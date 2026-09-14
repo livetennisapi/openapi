@@ -13,6 +13,18 @@ OpenAPI spec: https://docs.livetennisapi.com/openapi.yaml
 OpenAPI spec (JSON): https://docs.livetennisapi.com/openapi.json
 Website: https://livetennisapi.com
 
+## Pages by topic
+Each answers one question and carries the full parameter and response detail for its
+endpoints, generated from the same spec as the reference:
+- How do you read live tennis scores from the API? https://docs.livetennisapi.com/live-scores.html
+- How do you look up a player, a tournament or a ranking? https://docs.livetennisapi.com/players-and-tournaments.html
+- How do you read tennis match-winner odds and their price history? https://docs.livetennisapi.com/tennis-odds.html
+- Which endpoints return point-by-point tennis data, and how complete is it? https://docs.livetennisapi.com/point-by-point-history.html
+- How far back does the historical tennis data go, and what is in it? https://docs.livetennisapi.com/historical-results-archive.html
+- Is there tennis data below the point — shot by shot? https://docs.livetennisapi.com/shot-level-rally-data.html
+- How do you receive tennis data as it happens instead of polling? https://docs.livetennisapi.com/push-feed-and-webhooks.html
+- How do you authenticate, and how do you see what quota is left? https://docs.livetennisapi.com/auth-quota-and-health.html
+
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
 Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.

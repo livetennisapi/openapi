@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis players, tournaments and rankings API — Live Tennis API</title>
+<meta name="description" content="How do you look up a player, a tournament or a ranking? GET /players searches by name and GET /players/{playerId} returns one player&#x27;s bio, current ranking and cached statistics — both FREE. GET /tournaments is the catalogue that Match.tournament_id joins against, so a match can be resolved to its e">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.livetennisapi.com/players-and-tournaments.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tennis players, tournaments and rankings API">
+<meta property="og:url" content="https://docs.livetennisapi.com/players-and-tournaments.html">
+<meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"Tennis players, tournaments and rankings API",
+"description":"How do you look up a player, a tournament or a ranking? GET /players searches by name and GET /players/{playerId} returns one player&#x27;s bio, current ranking and cached statistics — both FREE. GET /tournaments is the catalogue that Match.tournament_id joins against, so a match can be resolved to its e",
+"url":"https://docs.livetennisapi.com/players-and-tournaments.html",
+"inLanguage":"en",
+"isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
+"publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
+
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
+
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+<header>
+<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.4</p>
+<h1>Tennis players, tournaments and rankings API</h1>
+<p><strong>How do you look up a player, a tournament or a ranking?</strong> <code>GET /players</code> searches by name and <code>GET /players/{playerId}</code> returns one player's bio, current ranking and cached statistics — both FREE. <code>GET /tournaments</code> is the catalogue that <code>Match.tournament_id</code> joins against, so a match can be resolved to its event without a second vendor. <code>GET /rankings</code> (PRO) serves rank-ordered listings and per-player as-of records, including Elo.</p>
+<p class="meta">5 endpoints on this page. Base URL
+<code>https://api.livetennisapi.com/api/public/v1</code>; authenticate with the <code>X-API-Key</code> header. Plans involved:
+FREE, PRO. A free key needs no card.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="https://livetennisapi.com/pricing">Pricing</a>
+<a href="https://livetennisapi.com/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+<section class="op" id="searchPlayers">
+<h3><span class="method">GET</span> <code>/players</code></h3>
+<p class="summary">Search players by name (FREE)</p>
+<p class="meta">Plan required: <strong>FREE</strong> &middot; operationId: <code>searchPlayers</code></p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players parameters"><table><caption class="vh">GET /players — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>search</code></td><td>query</td><td>string</td><td>no</td><td></td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players responses"><table><caption class="vh">GET /players — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Players (ranked first; no stats object on the list)</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players response fields"><table><caption class="vh">GET /players — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/players \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getPlayer">
+<h3><span class="method">GET</span> <code>/players/{playerId}</code></h3>
+<p class="summary">One player&#x27;s bio + ranking + cached stats (FREE)</p>
+<p class="meta">Plan required: <strong>FREE</strong> &middot; operationId: <code>getPlayer</code></p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId} parameters"><table><caption class="vh">GET /players/{playerId} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>playerId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId} responses"><table><caption class="vh">GET /players/{playerId} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Player with <code>stats</code> ({ratings, season})</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId} response fields"><table><caption class="vh">GET /players/{playerId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>integer</td><td></td></tr><tr><td><code>name</code></td><td>string</td><td></td></tr><tr><td><code>tour</code></td><td>string or null</td><td>The record&#x27;s OWN tour, which is NOT the <code>tour</code> filter vocabulary. It is granular (<code>juniors_boys</code>, <code>juniors_girls</code>, <code>challenger_men</code>) where the filter is grouped (<code>juniors</code>, <code>challenger</code>), and a doubles team reports it UPPERCASE (<code>ATP</code>) where an individual reports lowercase (<code>atp</code>). Treat it as an opaque string; do not parse it into the filter enum.</td></tr><tr><td><code>country</code></td><td>string or null</td><td></td></tr><tr><td><code>ranking</code></td><td>integer or null</td><td>Official singles ranking POSITION (the ordinal: 1, 25, 100) — never points, seed, race, UTR, Elo or a doubles rank. Men from the official ATP table, women from the WTA table, chosen by the player (a Challenger or ITF man who holds an ATP ranking carries it here). Refreshed from the standings ahead of each match the player has with us; a player who has not played recently keeps their last refreshed position. <code>null</code> when no ranking is held (doubles teams, most ITF/junior-only players). Always the CURRENT record, even on historical matches — use <code>/rankings?as_of=</code> for the rank in force on a date.</td></tr><tr><td><code>ranking_points</code></td><td>integer or null</td><td>Points on the same official table, refreshed with <code>ranking</code>.</td></tr><tr><td><code>ranking_movement</code></td><td>string or null (up, down, same, null)</td><td></td></tr><tr><td><code>hand</code></td><td>string or null (R, L, null)</td><td></td></tr><tr><td><code>backhand</code></td><td>integer or null (1, 2, null)</td><td></td></tr><tr><td><code>birthday</code></td><td>string or null</td><td></td></tr><tr><td><code>is_doubles_team</code></td><td>boolean</td><td></td></tr><tr><td><code>data_completeness</code></td><td>object</td><td>How much biographical detail is known for this player, so a consumer can distinguish &quot;not in the feed&quot; from &quot;not yet fetched&quot; without probing. Present on every player in a match payload. Lower tours carry far less of it than main tour.</td></tr><tr><td><code>stats</code></td><td>object</td><td>Single-player endpoint only</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/players/1104 \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="listTournaments">
+<h3><span class="method">GET</span> <code>/tournaments</code></h3>
+<p class="summary">Tournament catalogue — the id space <code>Match.tournament_id</code> joins (FREE)</p>
+<p class="meta">Plan required: <strong>FREE</strong> &middot; operationId: <code>listTournaments</code></p>
+<p>Stable tournament identity, one row per tournament × event type, stable across seasons. <code>city</code>/<code>country</code> come from a curated table and <code>category</code> only where our catalogues agree unambiguously on an exact-name join — each is null otherwise, never derived from the tournament name.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /tournaments parameters"><table><caption class="vh">GET /tournaments — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>search</code></td><td>query</td><td>string</td><td>no</td><td>Case-insensitive substring match on the tournament name.</td></tr><tr><td><code>tour</code></td><td>query</td><td>string (atp, wta, challenger, itf, juniors)</td><td>no</td><td>Restrict results to one tour. Each value covers its singles and doubles draws, so <code>atp</code> includes ATP doubles and <code>juniors</code> covers the boys&#x27; and girls&#x27; Grand Slam draws. Omit for all tours. An unrecognised value is a 400 rather than a silent pass-through, so a caller never receives a tour it did not ask for. Applied before pagination, so <code>meta.count</code> reflects the filtered set.</td></tr><tr><td><code>draw</code></td><td>query</td><td>string (singles, doubles)</td><td>no</td><td>Draw filter (added 2026-08-18) — the axis the tour filter deliberately collapses; the two compose (<code>?tour=itf&amp;draw=doubles</code> is the ITF doubles slice). Same vocabulary as the <code>draw</code> field on Match, decided by the same shared definition, so filter and field cannot disagree. A row whose draw is null — a team tie, or no stated event type and no doubles-team participant — matches NEITHER value: null is an answer, not a wildcard. Two honesty notes: on /tournaments the answer comes from the event type alone (a tournament row has no participants to supply the doubles-team evidence matches have), and draw=doubles alone also returns mixed and exhibition doubles that no tour value reaches. An unknown value is a 400 bad_draw with the allowed values.</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /tournaments responses"><table><caption class="vh">GET /tournaments — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Tournaments, name order</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /tournaments response fields"><table><caption class="vh">GET /tournaments — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/tournaments \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getTournament">
+<h3><span class="method">GET</span> <code>/tournaments/{tournamentId}</code></h3>
+<p class="summary">One tournament by its stable id (FREE)</p>
+<p class="meta">Plan required: <strong>FREE</strong> &middot; operationId: <code>getTournament</code></p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /tournaments/{tournamentId} parameters"><table><caption class="vh">GET /tournaments/{tournamentId} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>tournamentId</code></td><td>path</td><td>string</td><td>yes</td><td>The <code>tournament_id</code> carried on match objects.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /tournaments/{tournamentId} responses"><table><caption class="vh">GET /tournaments/{tournamentId} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The tournament</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /tournaments/{tournamentId} response fields"><table><caption class="vh">GET /tournaments/{tournamentId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>string</td><td>The stable id <code>Match.tournament_id</code> joins.</td></tr><tr><td><code>name</code></td><td>string or null</td><td></td></tr><tr><td><code>tour</code></td><td>string or null (atp, wta, challenger, itf, juniors, null)</td><td></td></tr><tr><td><code>surface</code></td><td>string or null (hard, clay, grass, null)</td><td></td></tr><tr><td><code>indoor</code></td><td>boolean</td><td></td></tr><tr><td><code>city</code></td><td>string or null</td><td>Host city, from a curated table — null where not curated.</td></tr><tr><td><code>country</code></td><td>string or null</td><td>Host country, ISO-3166 alpha-2 — null where not curated. (NOTE this differs from <code>player.country</code> and the <code>?country=</code> filter, which use IOC-style lowercase 3-letter codes.)</td></tr><tr><td><code>category</code></td><td>string or null (grand_slam, masters_1000, tour_finals, atp_500, atp_250, wta_1000, wta_500, wta_250, wta_125, challenger, itf, juniors, null)</td><td>Tournament category where our catalogues agree unambiguously on an exact-name join — null otherwise, never derived from the name.</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/tournaments/{tournamentId} \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="listRankings">
+<h3><span class="method">GET</span> <code>/rankings</code></h3>
+<p class="summary">Rankings and Elo — rank-ordered listing (PRO) or per-player as-of records (ULTRA); the as-of Elo tape is ULTRA in both modes</p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>listRankings</code></p>
+<p>Returns, per ranking system, the newest record effective ON OR BEFORE <code>as_of</code> — never one dated after it. Every other ranking field in this API is the player&#x27;s CURRENT value joined at read time, so replaying an old match elsewhere shows today&#x27;s ranks; this endpoint is the point-in-time answer. Systems are never collapsed into a single &quot;rank&quot;: ATP/WTA and the ITF circuits carry rank+points, UTR carries a rating with null rank and points because it has neither. <code>meta.coverage.oldest_available</code> gives the earliest date each system can answer for — ITF and UTR observations reach back to 2026-06-01 (append-only per-player history accumulates from 2026-07-29) and nothing earlier can be reconstructed.
+
+TWO MODES — with <code>player</code> ids (ULTRA) — the per-player point-in-time records described above. WITHOUT <code>player</code> (PRO) — the FULL published table in rank order for exactly one <code>system</code>, the newest week at or before <code>as_of</code>; rows carry <code>player_name</code> as published and a null <code>player_id</code> for players outside our roster, so the table has no silent holes. <code>utr</code> has no listing (a rating, not a ranking).
+
+SYSTEM=UTR — observed ratings, honestly bounded. UTR records are observed from UTR&#x27;s public search: a rating UTR withholds appears as ABSENT, never as 0, and <code>rating</code> is the only populated value — <code>rank</code> and <code>points</code> are always null. Per-player as-of ONLY — there is deliberately no UTR listing, because a table of only the players we happen to track would be a fake leaderboard. Per-player history accumulates from 2026-07-29; scattered earlier single-snapshot observations reach back to 2026-06-01. Coverage is a deliberate bias, not a roster mirror: the 24-hour sweep targets players with no official rank and no Elo rating (so it skews ITF), and among players active in the last 60 days it holds 931 of 5,606 ITF players (16.6%), 197 of 1,903 Challenger (10.4%), 43 of 573 WTA (7.5%) and 15 of 525 ATP (2.9%) — measured 2026-08-17.
+
+SYSTEM=ELO — THE AS-OF ELO TAPE (ULTRA in BOTH modes). Our own computed Elo for 65,622 players on four independent ladders (overall, hard, clay, grass), back to 1877 (ATP) and 1968 (WTA), covering the main tours plus challengers plus the futures tier. It answers what a player was rated BEFORE a given match, which is the only shape a backtest can consume. It is a HISTORICAL TAPE rather than a live leaderboard — the corpus behind it is fixed and no longer receives new results, so <code>meta.coverage.newest_available</code> states the tape&#x27;s head date on every response (2026-06-15 at publication), and you should read it before treating the table as current. A week&#x27;s results become effective 14 days after that week begins — strictly after the longest event in tennis — so the failure direction is staleness, never look-ahead. <code>rating</code> is the Elo. <code>rank</code> is LISTING MODE ONLY and is null in per-player mode, because an Elo has no global rank at a past instant until you say which field and which activity window you mean. <code>points</code> is always null. <code>matches</code> is the count on THAT ladder, published so that a rating still near its 1500 cold start is visible rather than inferred. A ladder a player has never played is omitted, never substituted. Ratings are on our own scale, are not comparable with Elo published elsewhere, and do not decay — a surface played only a few weeks a year (grass in particular) moves slowly, so a rising player can sit below an established one for several seasons while beating them. A CURRENT per-player Elo remains free on <code>GET /players/{id}</code>; this is the point-in-time series, the leaderboard and the bulk export. That free rating is sourced differently and sits on a DIFFERENT scale — the two differ by roughly 150 Elo of per-player standard deviation — so never present a rating from one scale against a rating from the other. The Elo listing REQUIRES <code>tour</code> — the ATP and WTA walks are disjoint, so a combined leaderboard would not be comparable — and takes exactly one <code>surface</code> (default <code>overall</code>). <code>elo</code> is never implicit — omitting <code>system</code> returns the official systems only.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rankings parameters"><table><caption class="vh">GET /rankings — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>player</code></td><td>query</td><td>array of integer</td><td>no</td><td>Player id — repeatable, max 50 (ULTRA per-player mode). OMIT it for the rank-ordered listing mode (PRO), which then requires exactly one <code>system</code>.</td></tr><tr><td><code>archive_player</code></td><td>query</td><td>array of integer</td><td>no</td><td>Historical-corpus person id — repeatable, max 50, <code>system=elo</code> only, and REQUIRES <code>tour</code> because that id is only unique within one tour. It is the same id <code>GET /history/archive/players</code> returns as its <code>id</code>. Use it to reach the ~62,000 rated people who have no row in our player roster; <code>player</code> reaches the rest.</td></tr><tr><td><code>tour</code></td><td>query</td><td>string (atp, wta)</td><td>no</td><td>REQUIRED for an <code>elo</code> listing and for <code>archive_player</code>. The ATP and WTA Elo walks are disjoint universes whose players never meet, so a combined leaderboard would not be comparable.</td></tr><tr><td><code>surface</code></td><td>query</td><td>array of string (overall, hard, clay, grass)</td><td>no</td><td><code>system=elo</code> only. Listing mode takes exactly one (default <code>overall</code>); per-player mode is repeatable and defaults to all four ladders. A ladder the player has never played is omitted, never substituted.</td></tr><tr><td><code>min_matches</code></td><td>query</td><td>integer</td><td>no</td><td><code>system=elo</code> listing only. Minimum matches on that ladder. Every ladder starts at 1500, so without a floor the top of the table is players who won a handful of matches from the starting rating. Echoed back in <code>meta.coverage.qualified</code>. Default <code>20</code>.</td></tr><tr><td><code>activity_weeks</code></td><td>query</td><td>integer</td><td>no</td><td><code>system=elo</code> listing only. The ladder must have moved within this many weeks of <code>as_of</code>. Elo does not decay, so without an activity window every leaderboard is topped permanently by players who have stopped playing. Echoed back in <code>meta.coverage.qualified</code>. Default <code>52</code>.</td></tr><tr><td><code>as_of</code></td><td>query</td><td>string</td><td>no</td><td>YYYY-MM-DD. Omit for the latest known record.</td></tr><tr><td><code>system</code></td><td>query</td><td>array of string (atp, wta, itf_jt, itf_mt, itf_wt, utr, elo, atp_doubles, wta_doubles)</td><td>no</td><td>Restrict to one or more systems. Omit for all of the official systems — <code>elo</code>, <code>atp_doubles</code> and <code>wta_doubles</code> are NEVER included implicitly and must be named (a doubles tie prints as repeated ranks, as the publisher prints it), so an existing request&#x27;s response is unchanged. Naming a system your plan does not cover refuses the whole call with 403 rather than silently returning the part you are entitled to.</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rankings responses"><table><caption class="vh">GET /rankings — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Ranking records in force at <code>as_of</code></td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rankings response fields"><table><caption class="vh">GET /rankings — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/rankings \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+<a href="./live-scores.html">Live tennis scores API</a>
+<a href="./tennis-odds.html">Tennis odds API — match-winner markets and price ticks</a>
+<a href="./point-by-point-history.html">Point-by-point tennis data API</a>
+<a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a>
+<a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a>
+<a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
+<a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
+</nav>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
+this page is also in <a href="./reference.html">the full reference</a>.</p>
+</footer>
+</div>
+</body>
+</html>

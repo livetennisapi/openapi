@@ -2,5 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url><loc>https://docs.livetennisapi.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
   <url><loc>https://docs.livetennisapi.com/reference.html</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://docs.livetennisapi.com/live-scores.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://docs.livetennisapi.com/players-and-tournaments.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://docs.livetennisapi.com/tennis-odds.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://docs.livetennisapi.com/point-by-point-history.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://docs.livetennisapi.com/historical-results-archive.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://docs.livetennisapi.com/shot-level-rally-data.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://docs.livetennisapi.com/push-feed-and-webhooks.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://docs.livetennisapi.com/auth-quota-and-health.html</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
   <url><loc>https://docs.livetennisapi.com/changelog.html</loc><lastmod>2026-09-14</lastmod><changefreq>weekly</changefreq><priority>0.6</priority></url>
 </urlset>

@@ -363,6 +363,12 @@ def build_html(spec: dict[str, Any]) -> str:
 
     description = md_inline(info.get("description", "")).replace("\n\n", "</p><p>")
 
+    # Every topic page links back here; this is the link the other way, so neither is an
+    # orphan and a crawler reaching either one reaches all of them.
+    topic_nav = "\n".join(
+        f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>' for t in TOPICS
+    )
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -525,6 +531,10 @@ def build_html(spec: dict[str, Any]) -> str:
 <a href="./changelog.html">Changelog</a>
 <a href="{SITE}/pricing">Pricing</a>
 <a href="{SITE}">livetennisapi.com</a>
+</nav>
+
+<nav class="pagenav" aria-label="By topic">
+{topic_nav}
 </nav>
 
 <div class="banner">
@@ -855,6 +865,11 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"OpenAPI spec (JSON): {DOCS_URL}/openapi.json",
         f"Website: {SITE}",
         "",
+        "## Pages by topic",
+        "Each answers one question and carries the full parameter and response detail for its",
+        "endpoints, generated from the same spec as the reference:",
+        *[f"- {t['question']} {DOCS_URL}/{t['slug']}.html" for t in TOPICS],
+        "",
         "## Quickstart (no code required)",
         f"Open this in a browser — no install, no headers: {base}/matches?status=live&token=YOUR_KEY",
         "Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.",
@@ -1120,6 +1135,253 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 """
     return page, latest
 
+# ---------------------------------------------------------------------------
+# Per-topic pages
+#
+# WHY. The docs sitemap listed two URLs, and the whole 40-operation surface lived on one
+# 36,000-word page. An answer engine asked "which tennis API returns point-by-point data"
+# has to find that page, rank the whole of it for a question about one eighth of it, and
+# quote from the middle. The 2026-09-14 AEO benchmark measured the cost: the discovery
+# group cited us in 70% of runs against 100% for questions that name us, and the ONE
+# question never answered with us in 244 runs — "which tennis APIs publish measured latency
+# and uptime numbers" — is a question about a single topic.
+#
+# So: one page per topic, generated from the same spec, each answering its own question in
+# its first paragraph. Nothing is hand-written that the spec already states; if the spec
+# changes, these change with it.
+#
+# The matchers are exhaustive and exclusive BY ASSERTION (see build_topic_pages): a new
+# path that matches none of them, or more than one, fails the build. A new endpoint must
+# not be able to silently vanish from the documentation site.
+# ---------------------------------------------------------------------------
+
+TOPICS: list[dict[str, Any]] = [
+    {
+        "slug": "live-scores",
+        "title": "Live tennis scores API",
+        "question": "How do you read live tennis scores from the API?",
+        "lede": (
+            "Poll <code>GET /matches?status=live</code> for the slate, then "
+            "<code>GET /matches/{matchId}/score</code> for the lowest-latency read of one match. "
+            "Both are on the FREE plan. Scores carry sets, games, points and the server; "
+            "<code>/events</code> and <code>/points</code> give the same match as a stream of "
+            "changes rather than a snapshot, so a client can catch up without re-reading state."
+        ),
+        "paths": lambda p: (
+            p in ("/matches", "/events", "/fixtures")
+            or (p.startswith("/matches/{matchId}") and not p.endswith(("/prices", "/rally")))
+        ),
+    },
+    {
+        "slug": "players-and-tournaments",
+        "title": "Tennis players, tournaments and rankings API",
+        "question": "How do you look up a player, a tournament or a ranking?",
+        "lede": (
+            "<code>GET /players</code> searches by name and <code>GET /players/{playerId}</code> "
+            "returns one player's bio, current ranking and cached statistics — both FREE. "
+            "<code>GET /tournaments</code> is the catalogue that <code>Match.tournament_id</code> "
+            "joins against, so a match can be resolved to its event without a second vendor. "
+            "<code>GET /rankings</code> (PRO) serves rank-ordered listings and per-player as-of "
+            "records, including Elo."
+        ),
+        "paths": lambda p: p.startswith(("/players", "/tournaments", "/rankings")),
+    },
+    {
+        "slug": "tennis-odds",
+        "title": "Tennis odds API — match-winner markets and price ticks",
+        "question": "How do you read tennis match-winner odds and their price history?",
+        "lede": (
+            "<code>GET /markets</code> returns the match-winner market for a match and "
+            "<code>GET /markets/{matchId}/prices</code> the recent price ticks per side, newest "
+            "first; <code>GET /matches/{matchId}/prices</code> is the same ticks addressed by "
+            "match id. All three are PRO. Every tick carries its own timestamp, so a series can "
+            "be reconstructed rather than inferred from poll times."
+        ),
+        "paths": lambda p: p.startswith("/markets") or p == "/matches/{matchId}/prices",
+    },
+    {
+        "slug": "point-by-point-history",
+        "title": "Point-by-point tennis data API",
+        "question": "Which endpoints return point-by-point tennis data, and how complete is it?",
+        "lede": (
+            "<code>GET /history/matches/{matchId}</code> returns the tape for one completed match: "
+            "the score after every point, with the model's win probability at that point. "
+            "<code>GET /history/matches</code> lists completed matches with their tape coverage, and "
+            "<code>GET /history/coverage</code> is the measured completeness rollup per tour and draw "
+            "bucket — a number we publish rather than estimate, with its own <code>as_of</code>. "
+            "<code>GET /history/packages</code> serves the same data as pre-built monthly bulk files."
+        ),
+        "paths": lambda p: (
+            p.startswith("/history/") and not p.startswith("/history/archive")
+            and not p.endswith("/rally")
+        ),
+    },
+    {
+        "slug": "historical-results-archive",
+        "title": "Historical tennis results API — 1968 onward",
+        "question": "How far back does the historical tennis data go, and what is in it?",
+        "lede": (
+            "The results archive covers 1968 to 2022: <code>GET /history/archive/matches</code> for "
+            "results, <code>/archive/players</code> for bios, <code>/archive/career</code> for career "
+            "aggregates and <code>GET /h2h</code> for head-to-head across both the archive and our own "
+            "completed matches. All BASIC. Matches from 2013 onward additionally carry a reconstructed "
+            "point-by-point tape at <code>/archive/matches/{archiveId}/tape</code> (ULTRA)."
+        ),
+        "paths": lambda p: p.startswith("/history/archive") or p == "/h2h",
+    },
+    {
+        "slug": "shot-level-rally-data",
+        "title": "Shot-by-shot tennis rally and charting API",
+        "question": "Is there tennis data below the point — shot by shot?",
+        "lede": (
+            "Yes, for charted matches. <code>GET /rally/matches</code> lists them and "
+            "<code>/rally/matches/{rallyMatchId}</code> returns the rally construction; "
+            "<code>GET /history/matches/{matchId}/rally</code> reaches the same data by our own match id "
+            "so a live match and its charting share one identifier. <code>GET /charting/players</code> "
+            "aggregates a player's career at shot level and <code>/charting/matches/{chartingMatchId}</code> "
+            "returns every stat family for both players in one charted match. All ULTRA."
+        ),
+        "paths": lambda p: p.startswith(("/rally", "/charting")) or p.endswith("/rally"),
+    },
+    {
+        "slug": "push-feed-and-webhooks",
+        "title": "Tennis WebSocket feed and webhooks",
+        "question": "How do you receive tennis data as it happens instead of polling?",
+        "lede": (
+            "Two ways, both ULTRA. <code>GET /ws-token</code> mints a short-lived token for the "
+            "high-fan-out push feed, which streams score and point changes as they are written. "
+            "<code>POST /webhooks</code> registers an outbound HTTP callback for the same events; "
+            "<code>GET /webhooks</code> lists your registrations and never returns the signing secret. "
+            "Webhooks require a direct key, not a marketplace one."
+        ),
+        "paths": lambda p: p.startswith("/webhooks") or p == "/ws-token",
+    },
+    {
+        "slug": "auth-quota-and-health",
+        "title": "Tennis API authentication, quota and status",
+        "question": "How do you authenticate, and how do you see what quota is left?",
+        "lede": (
+            "Send your key as <code>X-API-Key</code> on every request. <code>GET /usage</code> returns "
+            "your own consumption against your plan's quota and works on every tier including FREE, so "
+            "a client can check its own headroom before a burst. <code>GET /health</code> is the "
+            "unauthenticated liveness probe."
+        ),
+        "paths": lambda p: p in ("/usage", "/health"),
+    },
+]
+
+
+def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, str]:
+    """{slug: html} — one page per topic, every operation rendered from the spec.
+
+    Raises if any operation lands in no topic or in more than one. That is deliberate: the
+    failure this guards against is a new endpoint quietly missing from the docs site, which
+    is invisible in review because the reference page would still list it.
+    """
+    style = re.search(r"<style>.*?</style>", reference_html, re.S)
+    style_html = style.group(0) if style else ""
+    info = spec["info"]
+    base = spec["servers"][0]["url"]
+
+    assigned: dict[str, list[str]] = {}
+    for path in spec["paths"]:
+        hits = [t["slug"] for t in TOPICS if t["paths"](path)]
+        assigned[path] = hits
+    unmatched = [p for p, h in assigned.items() if not h]
+    multi = {p: h for p, h in assigned.items() if len(h) > 1}
+    if unmatched or multi:
+        raise SystemExit(
+            "TOPICS must cover every path exactly once.\n"
+            + (f"  unmatched: {unmatched}\n" if unmatched else "")
+            + (f"  matched more than once: {multi}\n" if multi else "")
+            + "  Add or narrow a matcher in TOPICS (scripts/build_reference.py)."
+        )
+
+    pages = {}
+    for topic in TOPICS:
+        paths = [p for p in spec["paths"] if topic["paths"](p)]
+        ops_html, op_count, tiers = [], 0, set()
+        for path in paths:
+            for method, op in spec["paths"][path].items():
+                if method not in ("get", "post", "put", "patch", "delete"):
+                    continue
+                ops_html.append(render_operation(path, method, op, spec))
+                tiers.add(tier_of(op.get("summary", "")))
+                op_count += 1
+        siblings = "\n".join(
+            f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>'
+            for t in TOPICS if t["slug"] != topic["slug"]
+        )
+        plans = ", ".join(sorted(t for t in tiers if t)) or "FREE"
+        desc = (
+            f"{topic['question']} {re.sub(r'<[^>]+>', '', topic['lede'])} "
+            f"{op_count} endpoints, {plans}."
+        )[:300]
+        pages[topic["slug"]] = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{E(topic['title'])} — {E(info['title'])}</title>
+<meta name="description" content="{E(desc)}">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{DOCS_URL}/{topic['slug']}.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{E(topic['title'])}">
+<meta property="og:url" content="{DOCS_URL}/{topic['slug']}.html">
+<meta property="og:image" content="{DOCS_URL}/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"{E(topic['title'])}",
+"description":"{E(desc)}",
+"url":"{DOCS_URL}/{topic['slug']}.html",
+"inLanguage":"en",
+"isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
+"publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+{style_html}
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+<header>
+<p class="meta">Live Tennis API &middot; docs &middot; version {E(str(info.get('version','')))}</p>
+<h1>{E(topic['title'])}</h1>
+<p><strong>{E(topic['question'])}</strong> {topic['lede']}</p>
+<p class="meta">{op_count} endpoint{'s' if op_count != 1 else ''} on this page. Base URL
+<code>{E(base)}</code>; authenticate with the <code>X-API-Key</code> header. Plans involved:
+{E(plans)}. A free key needs no card.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="{SITE}/pricing">Pricing</a>
+<a href="{SITE}/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+{"".join(ops_html)}
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+{siblings}
+</nav>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
+this page is also in <a href="./reference.html">the full reference</a>.</p>
+</footer>
+</div>
+</body>
+</html>
+"""
+    return pages
+
+
 def build_robots() -> str:
     return f"""User-agent: *
 Allow: /
@@ -1168,11 +1430,19 @@ Sitemap: {DOCS_URL}/sitemap.xml
 
 
 def build_sitemap(changelog_date: str = "") -> str:
+    # The two hubs first, then one entry per topic page. The topic list is read from TOPICS,
+    # not typed here, so a topic cannot exist without being listed (the failure the docs
+    # sitemap had for months, at two URLs for a forty-endpoint API).
     pages = [f"{DOCS_URL}/", f"{DOCS_URL}/reference.html"]
     urls = "\n".join(
         f"  <url><loc>{u}</loc><changefreq>weekly</changefreq>"
         f"<priority>{'1.0' if u.endswith('/') else '0.9'}</priority></url>"
         for u in pages
+    )
+    urls += "\n" + "\n".join(
+        f'  <url><loc>{DOCS_URL}/{t["slug"]}.html</loc><changefreq>weekly</changefreq>'
+        f"<priority>0.8</priority></url>"
+        for t in TOPICS
     )
     if changelog_date:
         # lastmod ONLY here: the newest entry's date is a fact the file itself proves. The two pages
@@ -1190,9 +1460,11 @@ def main() -> int:
     spec = load_spec()
     reference = build_html(spec)
     changelog_html, changelog_date = build_changelog(spec, reference)
+    topics = build_topic_pages(spec, reference)
     outputs = {
         DOCS / "reference.html": reference,
         DOCS / "changelog.html": changelog_html,
+        **{DOCS / f"{slug}.html": html for slug, html in topics.items()},
         DOCS / "llms.txt": build_llms_txt(spec),
         DOCS / "robots.txt": build_robots(),
         DOCS / "sitemap.xml": build_sitemap(changelog_date),
@@ -1200,6 +1472,20 @@ def main() -> int:
         # Postman import, most MCP scaffolds). Both URLs are stable and both are advertised.
         DOCS / "openapi.json": json.dumps(spec, ensure_ascii=False, indent=1) + "\n",
     }
+
+    # index.html is hand-written (Scalar boots into it), so it is the one page the generator
+    # cannot keep in step. Fail loudly rather than let a topic exist with nothing linking to it
+    # from the hub: an unlinked page is a page a crawler reaches only through the sitemap.
+    index = DOCS / "index.html"
+    if index.exists():
+        index_html = index.read_text(encoding="utf-8")
+        missing = [t["slug"] for t in TOPICS if f'{t["slug"]}.html' not in index_html]
+        if missing:
+            raise SystemExit(
+                "docs/index.html does not link these topic pages: "
+                + ", ".join(missing)
+                + "\n  Add them to the static intro AND the noscript fallback (they are kept in sync)."
+            )
 
     if args.check:
         stale = [p.name for p, content in outputs.items()

@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Historical tennis results API — 1968 onward — Live Tennis API</title>
+<meta name="description" content="How far back does the historical tennis data go, and what is in it? The results archive covers 1968 to 2022: GET /history/archive/matches for results, /archive/players for bios, /archive/career for career aggregates and GET /h2h for head-to-head across both the archive and our own completed matches.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.livetennisapi.com/historical-results-archive.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Historical tennis results API — 1968 onward">
+<meta property="og:url" content="https://docs.livetennisapi.com/historical-results-archive.html">
+<meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"Historical tennis results API — 1968 onward",
+"description":"How far back does the historical tennis data go, and what is in it? The results archive covers 1968 to 2022: GET /history/archive/matches for results, /archive/players for bios, /archive/career for career aggregates and GET /h2h for head-to-head across both the archive and our own completed matches.",
+"url":"https://docs.livetennisapi.com/historical-results-archive.html",
+"inLanguage":"en",
+"isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
+"publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
+
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
+
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+<header>
+<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.4</p>
+<h1>Historical tennis results API — 1968 onward</h1>
+<p><strong>How far back does the historical tennis data go, and what is in it?</strong> The results archive covers 1968 to 2022: <code>GET /history/archive/matches</code> for results, <code>/archive/players</code> for bios, <code>/archive/career</code> for career aggregates and <code>GET /h2h</code> for head-to-head across both the archive and our own completed matches. All BASIC. Matches from 2013 onward additionally carry a reconstructed point-by-point tape at <code>/archive/matches/{archiveId}/tape</code> (ULTRA).</p>
+<p class="meta">6 endpoints on this page. Base URL
+<code>https://api.livetennisapi.com/api/public/v1</code>; authenticate with the <code>X-API-Key</code> header. Plans involved:
+BASIC, ULTRA. A free key needs no card.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="https://livetennisapi.com/pricing">Pricing</a>
+<a href="https://livetennisapi.com/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+<section class="op" id="listArchiveMatches">
+<h3><span class="method">GET</span> <code>/history/archive/matches</code></h3>
+<p class="summary">Results archive (1968–2022) — deep historical results (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>listArchiveMatches</code></p>
+<p>Completed-match RESULTS from a licensed historical corpus — ATP and WTA main draws, qualifying/challengers and futures tiers, 1968 through 2022. Winner/loser-shaped records with final score, round, seeds, the players&#x27; ranks AT THE TIME, and per-match serve statistics where the era recorded them. Requires BASIC on the live API, or any Historical Data API plan (Starter and up).
+
+A SEPARATE id space from <code>/matches</code> — archive people are identified by the corpus person id and by name, never by roster player ids — and the archive ends where our own point-by-point coverage begins (2023-01), so no match is ever served from two datasets. <code>event_date</code> is the TOURNAMENT START date, the only date records of this era carry.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches parameters"><table><caption class="vh">GET /history/archive/matches — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>tour</code></td><td>query</td><td>string (atp, wta)</td><td>no</td><td>The archive covers the ATP and WTA corpora only.</td></tr><tr><td><code>name</code></td><td>query</td><td>string</td><td>no</td><td>Case-insensitive substring match on EITHER player&#x27;s name (min 3 chars).</td></tr><tr><td><code>from</code></td><td>query</td><td>string</td><td>no</td><td>Earliest tournament start date (<code>YYYY-MM-DD</code>).</td></tr><tr><td><code>to</code></td><td>query</td><td>string</td><td>no</td><td>Latest tournament start date (<code>YYYY-MM-DD</code>).</td></tr><tr><td><code>round</code></td><td>query</td><td>string (F, SF, QF, R16, R32, R64, R128, RR, BR, Q1, Q2, Q3, Q4, ER)</td><td>no</td><td>The archive&#x27;s controlled round vocabulary.</td></tr><tr><td><code>level</code></td><td>query</td><td>string</td><td>no</td><td>Source tier code: G=grand slam, M=masters, A=tour, F=finals, D=davis cup, C=challenger, O=olympics; the futures tiers carry their category codes (e.g. 15, 25) as published.</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches responses"><table><caption class="vh">GET /history/archive/matches — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Archive results, newest tournament first</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches response fields"><table><caption class="vh">GET /history/archive/matches — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/archive/matches \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getArchiveMatch">
+<h3><span class="method">GET</span> <code>/history/archive/matches/{archiveId}</code></h3>
+<p class="summary">One archive result, with serve statistics where recorded (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>getArchiveMatch</code></p>
+<p>Same entitlement as the archive listing. <code>stats</code> is null for the (mostly pre-1991) rows the source never recorded statistics for — never synthesised. A result played 2013–2022 may also have a reconstructed point-by-point tape at <code>/history/archive/matches/{archiveId}/tape</code>; the RESULT stays on BASIC either way.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches/{archiveId} parameters"><table><caption class="vh">GET /history/archive/matches/{archiveId} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>archiveId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches/{archiveId} responses"><table><caption class="vh">GET /history/archive/matches/{archiveId} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The archive record, <code>stats</code> included where the era recorded them</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches/{archiveId} response fields"><table><caption class="vh">GET /history/archive/matches/{archiveId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>id</code></td><td>integer</td><td></td></tr><tr><td><code>source_id</code></td><td>string</td><td></td></tr><tr><td><code>tour</code></td><td>string (atp, wta)</td><td></td></tr><tr><td><code>level</code></td><td>string or null</td><td>Source tier code (G/M/A/F/D/C/O, or a futures category code as published).</td></tr><tr><td><code>tournament</code></td><td>string or null</td><td></td></tr><tr><td><code>surface</code></td><td>string or null</td><td></td></tr><tr><td><code>draw_size</code></td><td>integer or null</td><td></td></tr><tr><td><code>event_date</code></td><td>string or null</td><td>Tournament START date — per-match dates do not exist in this era&#x27;s records, and we do not invent them.</td></tr><tr><td><code>round</code></td><td>string or null</td><td></td></tr><tr><td><code>best_of</code></td><td>integer or null</td><td></td></tr><tr><td><code>minutes</code></td><td>integer or null</td><td></td></tr><tr><td><code>winner</code></td><td>object</td><td>One participant of an archive result, as the corpus records them.</td></tr><tr><td><code>loser</code></td><td>object</td><td>One participant of an archive result, as the corpus records them.</td></tr><tr><td><code>score</code></td><td>string or null</td><td>The final score as published, e.g. &quot;6-4 7-6(5)&quot;, &quot;6-3 RET&quot;, &quot;W/O&quot;.</td></tr><tr><td><code>outcome</code></td><td>string or null (completed, retired, walkover, default, abandoned, null)</td><td>Parsed from the score&#x27;s own vocabulary; null when unparseable — never guessed.</td></tr><tr><td><code>stats</code></td><td>object or null</td><td>Detail endpoint only. {&quot;winner&quot;:{...}, &quot;loser&quot;:{...}} with aces, double_faults, serve_points, first_in, first_won, second_won, serve_games, bp_saved, bp_faced where the source recorded them; null otherwise (most rows before 1991) — never synthesised.</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/archive/matches/{archiveId} \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getArchiveTape">
+<h3><span class="method">GET</span> <code>/history/archive/matches/{archiveId}/tape</code></h3>
+<p class="summary">Reconstructed 2013–2022 point-by-point tape for one archive result (ULTRA, or any History plan)</p>
+<p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>getArchiveTape</code></p>
+<p>The score sequence behind a 2013–2022 archive result, REBUILT FROM THE PUBLIC RECORD. The result tells you what happened; this tells you how.
+
+NOBODY WATCHED THESE MATCHES, and every field that would imply otherwise is null. <code>timestamp</code> is null on every row — not by convention, but because the production table has no timestamp column at all, so no repair, backfill or re-archive can put a wall clock on a 2016 row, and the promotion script refuses to run if such a column ever appears. <code>win_probability_p1</code> and <code>danger</code> are null on every row: the model was not running in 2016 and nothing has been back-computed and served as if it had been (<code>meta.model_rows</code> and <code>meta.observed_rows</code> are both 0, always). <code>profiles</code> is always <code>[]</code>. The rule we publish for the 2023+ tape — a non-null <code>timestamp</code> means we watched that point live — holds across both halves of the product.
+
+YEARS: 2013–2022 ONLY. 97,901 matches and 14,340,663 rows. The results archive holds a further 977,903 matches from 1968–2012 and NONE of them has a tape — there is no public point-by-point record of those years to rebuild and we do not manufacture one. A match with no tape answers 404, which is also the answer when a tape exists and failed the proof below; the two are deliberately not distinguished.
+
+COVERAGE OF THE ERA, thin spots beside the strong ones: 19.3% of archive matches played 2013–2022 overall, 44.9% of tour-level play. Main-draw tour buckets run 91.6–98.7% (ATP Masters 98.7%, ATP slam 98.0%, WTA Premier Mandatory 97.9%, WTA slam 97.4%, ATP 250–500 95.4%, WTA Premier 94.1%, WTA International 91.6%); ATP Challenger main draws 55.3% and Challenger qualifying 33.6%; slam QUALIFYING is thin at 16.0% (ATP) and 18.1% (WTA); ITF and futures are effectively absent — 25 of 116,575 ATP futures matches, 68 of 19,162 ITF M15, 48 of 9,380 ITF M25 — and this product does not cover them. If your work is ITF, this is the wrong dataset and we would rather you knew now. 31.0% of the corpus is qualifying-draw play, which is unusual at this scale and is the part you are least likely to hold already.
+
+HOW A TAPE IS BOUND TO ITS MATCH. A tape attached to the wrong match is silent, permanent and poisons anything trained on it, so each one proves five things before publication: the EDITION binds by majority vote onto one archive tournament; the NAMES resolve to exactly one archive row with an unambiguous orientation; the ROUND agrees through an explicit map (this is what separates the qualifying and main-draw meetings of the same pair inside one edition); the SET SPINE derived from the rows equals the published final score exactly (a retirement matches on a one-directional prefix rule — a tape may stop short, never run past the printed score); and the vendor DATE lies inside the tournament&#x27;s window. The tape is then walked step by step against 23 interior invariants — games and sets never regress or jump, a closed set holds a score a set can actually finish on, a tiebreak is flagged only where one can be played, points never run backwards inside a game, <code>seq</code> is contiguous. A tape that fails any clause or any invariant is REFUSED WHOLESALE rather than published against a guess, which is why this endpoint answers 404 instead of serving a probable match.
+
+<code>archiveId</code> is an <code>archive_matches.id</code> (the <code>id</code> on a <code>/history/archive/matches</code> row), NOT a match id — the two are separate, overlapping integer spaces, so passing one to the other&#x27;s routes resolves a different, real record without erroring. The response names it <code>meta.archive_match_id</code> for exactly that reason. Rows are WINNER-FIRST (<code>sets[0]</code> / <code>games[0]</code> / <code>points[0]</code> are the winner&#x27;s, <code>server: 1</code> means the winner was serving), unlike the p1/p2-shaped 2023+ tape — a live match has no winner while it is being played.
+
+This operation takes NO query parameters: <code>sequence</code> and <code>points</code> are ignored rather than refused. <code>meta.sequence</code> is always <code>raw</code> — a reconstructed tape has one source and no corrections, so there is nothing for a clean collapse to remove.
+
+Tier: core ULTRA, or any active History plan (Starter included, which opens it on a FREE core key). The archive RESULT itself (<code>GET /history/archive/matches/{archiveId}</code>) stays on BASIC — core BASIC and core PRO read the result and are refused the tape, and the refusal is <code>403 upgrade_required</code> carrying <code>capability: archive_tape</code>. The per-year BULK files (<code>?kind=archive_tape</code>) are a separate gate: core ULTRA, or a History Pro/Business subscription, or an active one-off package window.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches/{archiveId}/tape parameters"><table><caption class="vh">GET /history/archive/matches/{archiveId}/tape — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>archiveId</code></td><td>path</td><td>integer</td><td>yes</td><td>An <code>archive_matches.id</code> — the <code>id</code> on a <code>/history/archive/matches</code> row, never a match id.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches/{archiveId}/tape responses"><table><caption class="vh">GET /history/archive/matches/{archiveId}/tape — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The reconstructed tape (<code>match</code> + <code>tape</code> + <code>tiebreaks</code> + an always-empty <code>profiles</code> + provenance <code>meta</code>)</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No tape for this archive result — it is 1968–2012, it is 2013–2022 and was never reconstructed, or a reconstruction exists and did not prove its binding. The three are deliberately not distinguished: &quot;we hold something we will not stand behind&quot; is not a state this product reports.</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/matches/{archiveId}/tape response fields"><table><caption class="vh">GET /history/archive/matches/{archiveId}/tape — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>match</code></td><td>object</td><td>The archive result the tape was proved to belong to.</td></tr><tr><td><code>tape</code></td><td>array of object</td><td>The score sequence in <code>seq</code> order, WINNER-FIRST — <code>sets[0]</code> / <code>games[0]</code> / <code>points[0]</code> are the winner&#x27;s, and <code>server: 1</code> means the winner was serving. Row shape is HistoryTapeRow, with <code>timestamp</code>, <code>win_probability_p1</code> and <code>danger</code> null throughout. <code>point_winner</code> is present on every row and is null throughout a per-GAME tape, where consecutive rows differ by a whole game and no single point is attributable.</td></tr><tr><td><code>tiebreaks</code></td><td>array or null</td><td>Per-set tiebreak final scores, same rule and shape as on HistoryTape. Usually PRESENT even on a per-game tape — the 2013–2022 public record expands points inside tiebreaks even where it does not elsewhere.</td></tr><tr><td><code>profiles</code></td><td>array of object</td><td>Always empty. The key is kept so the envelope matches HistoryTape; no model analysis exists, or could exist, for a 2013–2022 match.</td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/archive/matches/{archiveId}/tape \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="listArchivePlayers">
+<h3><span class="method">GET</span> <code>/history/archive/players</code></h3>
+<p class="summary">Archive player bios — hand, DOB, country, height, career-high (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>listArchivePlayers</code></p>
+<p>People of the results archive (1968–2022), in their own id space — <code>id</code> is the corpus person id that archive match rows carry as <code>winner.player_id</code> / <code>loser.player_id</code>, scoped per tour; never a roster id. Career-high rank and the earliest week it was reached are computed offline from the corpus&#x27;s own weekly ranking tables. Null fields are the era&#x27;s silence, never guessed. Requires BASIC, or any Historical Data API plan.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/players parameters"><table><caption class="vh">GET /history/archive/players — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>name</code></td><td>query</td><td>string</td><td>no</td><td>Case-insensitive substring filter (min 3 chars).</td></tr><tr><td><code>tour</code></td><td>query</td><td>string (atp, wta)</td><td>no</td><td></td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/players responses"><table><caption class="vh">GET /history/archive/players — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Archive people, ordered by name</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/players response fields"><table><caption class="vh">GET /history/archive/players — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/archive/players \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getArchiveCareer">
+<h3><span class="method">GET</span> <code>/history/archive/career</code></h3>
+<p class="summary">Career aggregates over the results archive, 1968–2022 (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>getArchiveCareer</code></p>
+<p>One player&#x27;s whole archive career in one response: W-L record (overall, by surface, by level, by year), titles, and the summed serve-stat block with derived ratios. Everything is a sum or a ratio of sums over rows you can fetch individually from <code>/history/archive/matches</code> — nothing is modelled. <code>serve.matches_with_stats</code> states the coverage honestly: the corpus records per-match serve statistics from 1991 only, so a 1970s career has a full W-L record and an empty serve block. Ambiguous name fragments are refused with candidates (same rule as <code>/h2h</code>); an unknown name is a 404. Requires BASIC, or any Historical Data API plan.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/career parameters"><table><caption class="vh">GET /history/archive/career — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>name</code></td><td>query</td><td>string</td><td>yes</td><td>Player name (fragment, min 3 chars — must resolve to one person).</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/career responses"><table><caption class="vh">GET /history/archive/career — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The career aggregate body</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/archive/career response fields"><table><caption class="vh">GET /history/archive/career — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>player</code></td><td>object</td><td></td></tr><tr><td><code>span</code></td><td>object</td><td></td></tr><tr><td><code>record</code></td><td>object</td><td></td></tr><tr><td><code>by_year</code></td><td>array of object</td><td></td></tr><tr><td><code>serve</code></td><td>object</td><td>Summed serve statistics + derived ratios; null ratios where the denominator is zero.</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/archive/career \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getHeadToHead">
+<h3><span class="method">GET</span> <code>/h2h</code></h3>
+<p class="summary">Head-to-head across the results archive (1968–2022) and our own completed matches (2023→now) (BASIC)</p>
+<p class="meta">Plan required: <strong>BASIC</strong> &middot; operationId: <code>getHeadToHead</code></p>
+<p>The record between two players, assembled from BOTH halves of the product: the results archive, where the winner is a stored column, and our own completed matches, where the winner is derived from the final recorded state. Names are the keys — archive people have no roster ids. A fragment matching more than one player is refused with the candidate list (<code>400 ambiguous_name</code>), because two people summed into one record is a wrong answer, not a convenience. Totals count meetings with a KNOWN winner; <code>undecided</code> counts the rest. Walkovers and retirements are part of the record, and each meeting carries <code>outcome</code> so you can exclude them. Requires BASIC, or any Historical Data API plan. On ULTRA, a per-player <code>stats</code> block adds serve/return/break-point aggregates over the pairing: <code>archive_serve</code> (serve-side, from 1991) and <code>current</code> (2023+, adding return and break-point conversion, aces and winners), each with <code>meetings_with_stats</code>.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /h2h parameters"><table><caption class="vh">GET /h2h — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>p1</code></td><td>query</td><td>string</td><td>yes</td><td>First player name (fragment, min 3 chars).</td></tr><tr><td><code>p2</code></td><td>query</td><td>string</td><td>yes</td><td>Second player name (fragment, min 3 chars).</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /h2h responses"><table><caption class="vh">GET /h2h — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The head-to-head record; empty totals when no player matches the names</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /h2h response fields"><table><caption class="vh">GET /h2h — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>players</code></td><td>object or null</td><td>The resolved names ({&quot;p1&quot;:{&quot;name&quot;}, &quot;p2&quot;:{&quot;name&quot;}}); null when no player matches the fragments.</td></tr><tr><td><code>totals</code></td><td>object</td><td></td></tr><tr><td><code>by_surface</code></td><td>object</td><td>Per-surface win split of the decided meetings; keys are surface names plus &#x27;unknown&#x27;.</td></tr><tr><td><code>meetings</code></td><td>array of object</td><td>Newest first, capped at 200. <code>era</code> says which half served the row — &#x27;archive&#x27; rows carry <code>archive_match_id</code>/<code>level</code>/<code>score</code>; &#x27;current&#x27; rows carry <code>match_id</code>/<code>round_code</code> and read their score from the match endpoints. <code>winner</code> is 1|2 OF THIS H2H (p1/p2 as requested), null when underivable.</td></tr><tr><td><code>stats</code></td><td>object or null</td><td>ULTRA only — per-player serve/return/break-point aggregates over the pairing, keyed <code>p1</code>/<code>p2</code>. Each side carries <code>archive_serve</code> (serve-side figures, meetings from 1991) and <code>current</code> (2023+, adding return and break-point conversion, aces and winners), each with its own <code>meetings_with_stats</code> sample size. Absent below ULTRA.</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/h2h \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+<a href="./live-scores.html">Live tennis scores API</a>
+<a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a>
+<a href="./tennis-odds.html">Tennis odds API — match-winner markets and price ticks</a>
+<a href="./point-by-point-history.html">Point-by-point tennis data API</a>
+<a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a>
+<a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
+<a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
+</nav>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
+this page is also in <a href="./reference.html">the full reference</a>.</p>
+</footer>
+</div>
+</body>
+</html>

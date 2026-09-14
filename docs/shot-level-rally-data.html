@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Shot-by-shot tennis rally and charting API — Live Tennis API</title>
+<meta name="description" content="Is there tennis data below the point — shot by shot? Yes, for charted matches. GET /rally/matches lists them and /rally/matches/{rallyMatchId} returns the rally construction; GET /history/matches/{matchId}/rally reaches the same data by our own match id so a live match and its charting share one ide">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.livetennisapi.com/shot-level-rally-data.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Shot-by-shot tennis rally and charting API">
+<meta property="og:url" content="https://docs.livetennisapi.com/shot-level-rally-data.html">
+<meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"Shot-by-shot tennis rally and charting API",
+"description":"Is there tennis data below the point — shot by shot? Yes, for charted matches. GET /rally/matches lists them and /rally/matches/{rallyMatchId} returns the rally construction; GET /history/matches/{matchId}/rally reaches the same data by our own match id so a live match and its charting share one ide",
+"url":"https://docs.livetennisapi.com/shot-level-rally-data.html",
+"inLanguage":"en",
+"isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
+"publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+<style>
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
+
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
+
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<div class="wrap">
+<header>
+<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.4</p>
+<h1>Shot-by-shot tennis rally and charting API</h1>
+<p><strong>Is there tennis data below the point — shot by shot?</strong> Yes, for charted matches. <code>GET /rally/matches</code> lists them and <code>/rally/matches/{rallyMatchId}</code> returns the rally construction; <code>GET /history/matches/{matchId}/rally</code> reaches the same data by our own match id so a live match and its charting share one identifier. <code>GET /charting/players</code> aggregates a player's career at shot level and <code>/charting/matches/{chartingMatchId}</code> returns every stat family for both players in one charted match. All ULTRA.</p>
+<p class="meta">5 endpoints on this page. Base URL
+<code>https://api.livetennisapi.com/api/public/v1</code>; authenticate with the <code>X-API-Key</code> header. Plans involved:
+ULTRA. A free key needs no card.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="https://livetennisapi.com/pricing">Pricing</a>
+<a href="https://livetennisapi.com/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+<section class="op" id="listRallyMatches">
+<h3><span class="method">GET</span> <code>/rally/matches</code></h3>
+<p class="summary">Charted matches with shot-by-shot data (ULTRA)</p>
+<p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>listRallyMatches</code></p>
+<p>Charted matches, newest first. RALLY CONSTRUCTION IS THE LAYER BELOW THE TAPE: the tape says what the score became after each point, this says how the point was played.
+
+It has its OWN id space. The charted corpus and our own match table are different populations — the corpus reaches back decades and concentrates on the biggest events, while our matches begin when our own collection did. Keying this on our match ids would hide most of it. Ask this endpoint for the authoritative coverage list rather than assuming a match is charted: charting is human work, so coverage is deep, not universal.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rally/matches parameters"><table><caption class="vh">GET /rally/matches — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>player</code></td><td>query</td><td>string</td><td>no</td><td>Substring match on either player name.</td></tr><tr><td><code>from</code></td><td>query</td><td>string</td><td>no</td><td><code>YYYY-MM-DD</code>.</td></tr><tr><td><code>to</code></td><td>query</td><td>string</td><td>no</td><td><code>YYYY-MM-DD</code>.</td></tr><tr><td><code>surface</code></td><td>query</td><td>string</td><td>no</td><td></td></tr><tr><td><code>gender</code></td><td>query</td><td>string (M, W)</td><td>no</td><td></td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rally/matches responses"><table><caption class="vh">GET /rally/matches — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Charted matches, with per-match parse-quality counts</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rally/matches response fields"><table><caption class="vh">GET /rally/matches — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/rally/matches \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getRallyMatch">
+<h3><span class="method">GET</span> <code>/rally/matches/{rallyMatchId}</code></h3>
+<p class="summary">Rally construction for one charted match (ULTRA)</p>
+<p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>getRallyMatch</code></p>
+<p>One charted match with its points, in play order. Paged with <code>limit</code>/<code>offset</code>; <code>meta.total</code> is the match&#x27;s full point count.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rally/matches/{rallyMatchId} parameters"><table><caption class="vh">GET /rally/matches/{rallyMatchId} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>rallyMatchId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rally/matches/{rallyMatchId} responses"><table><caption class="vh">GET /rally/matches/{rallyMatchId} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The charted match with its <code>rally</code> points</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /rally/matches/{rallyMatchId} response fields"><table><caption class="vh">GET /rally/matches/{rallyMatchId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>rally_match_id</code></td><td>integer</td><td>The id this product is keyed on.</td></tr><tr><td><code>source_id</code></td><td>string</td><td></td></tr><tr><td><code>match_id</code></td><td>integer or null</td><td>OUR match id, when the charted match is also one we hold. Null otherwise — most charted matches predate our own collection.</td></tr><tr><td><code>date</code></td><td>string or null</td><td></td></tr><tr><td><code>tournament</code></td><td>string or null</td><td></td></tr><tr><td><code>round</code></td><td>string or null</td><td></td></tr><tr><td><code>surface</code></td><td>string or null</td><td></td></tr><tr><td><code>gender</code></td><td>string or null (M, W, null)</td><td></td></tr><tr><td><code>best_of</code></td><td>integer or null</td><td></td></tr><tr><td><code>players</code></td><td>array of object</td><td></td></tr><tr><td><code>points</code></td><td>integer</td><td>Charted points in this match.</td></tr><tr><td><code>points_parsed</code></td><td>integer</td><td>How many of them our parser read cleanly — the per-match quality number.</td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr><tr><td><code>rally</code></td><td>array of object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/rally/matches/{rallyMatchId} \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getMatchRally">
+<h3><span class="method">GET</span> <code>/history/matches/{matchId}/rally</code></h3>
+<p class="summary">Rally construction by OUR match id (ULTRA)</p>
+<p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>getMatchRally</code></p>
+<p>Rally construction addressed by OUR match id, resolved through the optional link. Answers <code>404 {&quot;error&quot;:&quot;not_charted&quot;}</code> when we hold the match but nobody charted it — deliberately distinct from &quot;no such match&quot;, because most of our matches are not charted and a consumer walking the archive must tell them apart.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId}/rally parameters"><table><caption class="vh">GET /history/matches/{matchId}/rally — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
+
+Get it from any match list, where it is the <code>id</code> field of each match object:
+<code>GET /matches?status=live</code> (in progress), <code>GET /matches?status=upcoming</code> or <code>GET /fixtures</code> (scheduled), <code>GET /matches?status=completed</code> or <code>GET /history/matches</code> (finished).
+
+Ids are stable for the life of a match, so one captured before it starts still resolves after it finishes.
+</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr><tr><td><code>offset</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>0</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId}/rally responses"><table><caption class="vh">GET /history/matches/{matchId}/rally — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The charted match with its <code>rally</code> points</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>410</code></td><td>The match id existed and was merged into another match record (since 2026-09-05). The body is <code>MatchMerged</code>, not <code>Error</code>: it carries a forwarding address, which is the whole point of answering 410 rather than 404.</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId}/rally response fields"><table><caption class="vh">GET /history/matches/{matchId}/rally — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>rally_match_id</code></td><td>integer</td><td>The id this product is keyed on.</td></tr><tr><td><code>source_id</code></td><td>string</td><td></td></tr><tr><td><code>match_id</code></td><td>integer or null</td><td>OUR match id, when the charted match is also one we hold. Null otherwise — most charted matches predate our own collection.</td></tr><tr><td><code>date</code></td><td>string or null</td><td></td></tr><tr><td><code>tournament</code></td><td>string or null</td><td></td></tr><tr><td><code>round</code></td><td>string or null</td><td></td></tr><tr><td><code>surface</code></td><td>string or null</td><td></td></tr><tr><td><code>gender</code></td><td>string or null (M, W, null)</td><td></td></tr><tr><td><code>best_of</code></td><td>integer or null</td><td></td></tr><tr><td><code>players</code></td><td>array of object</td><td></td></tr><tr><td><code>points</code></td><td>integer</td><td>Charted points in this match.</td></tr><tr><td><code>points_parsed</code></td><td>integer</td><td>How many of them our parser read cleanly — the per-match quality number.</td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr><tr><td><code>rally</code></td><td>array of object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/history/matches/18953/rally \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getChartingPlayer">
+<h3><span class="method">GET</span> <code>/charting/players</code></h3>
+<p class="summary">Career shot-level charting aggregate for one player (ULTRA)</p>
+<p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>getChartingPlayer</code></p>
+<p>The deepest serve/return profile we hold, from the Match Charting Project: serve placement (deuce/ad × wide/body/T), return depth and outcomes, net and serve-and-volley conversion, clutch break/game/set-point serving and returning, winners and unforced errors by wing, and rally-length and shot-direction tendencies — summed over the player&#x27;s charted matches. <code>name</code> (min 3 chars) is the key; a fragment matching more than one charted person is refused with the candidate list, and <code>gender=men|women</code> disambiguates. Every field is a raw SUM over the player&#x27;s Total rows and <code>matches_charted</code> states the sample. COVERAGE IS CURATED — 11,646 charted matches across both tours back to the 1960s, concentrated on the majors, NOT full-slate coverage.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /charting/players parameters"><table><caption class="vh">GET /charting/players — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>name</code></td><td>query</td><td>string</td><td>yes</td><td>Player name (fragment, min 3 chars).</td></tr><tr><td><code>gender</code></td><td>query</td><td>string (men, women)</td><td>no</td><td>Disambiguates a fragment that matches one charted person per tour side.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /charting/players responses"><table><caption class="vh">GET /charting/players — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The player&#x27;s summed charting families with the sample size</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /charting/players response fields"><table><caption class="vh">GET /charting/players — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>player</code></td><td>object</td><td></td></tr><tr><td><code>matches_charted</code></td><td>integer</td><td></td></tr><tr><td><code>coverage</code></td><td>string</td><td></td></tr><tr><td><code>families</code></td><td>object</td><td>Per-family summed numeric columns.</td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/charting/players \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section><section class="op" id="getChartingMatch">
+<h3><span class="method">GET</span> <code>/charting/matches/{chartingMatchId}</code></h3>
+<p class="summary">One charted match, every stat family for both players (ULTRA)</p>
+<p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>getChartingMatch</code></p>
+<p>Every Match Charting Project stat family for one charted match, both players, with the per-set split (row/set 1, 2, Total) exactly as charted. <code>chartingMatchId</code> is this product&#x27;s own id space (1960–2026, mostly matches with no counterpart in the live table).</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /charting/matches/{chartingMatchId} parameters"><table><caption class="vh">GET /charting/matches/{chartingMatchId} — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>chartingMatchId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /charting/matches/{chartingMatchId} responses"><table><caption class="vh">GET /charting/matches/{chartingMatchId} — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The charted match&#x27;s stat families, both players, per set</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /charting/matches/{chartingMatchId} response fields"><table><caption class="vh">GET /charting/matches/{chartingMatchId} — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>charting_match_id</code></td><td>integer</td><td></td></tr><tr><td><code>mcp_id</code></td><td>string</td><td></td></tr><tr><td><code>gender</code></td><td>string</td><td></td></tr><tr><td><code>players</code></td><td>object</td><td></td></tr><tr><td><code>families</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/charting/matches/{chartingMatchId} \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+<a href="./live-scores.html">Live tennis scores API</a>
+<a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a>
+<a href="./tennis-odds.html">Tennis odds API — match-winner markets and price ticks</a>
+<a href="./point-by-point-history.html">Point-by-point tennis data API</a>
+<a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a>
+<a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
+<a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
+</nav>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
+this page is also in <a href="./reference.html">the full reference</a>.</p>
+</footer>
+</div>
+</body>
+</html>
