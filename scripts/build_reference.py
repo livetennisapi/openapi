@@ -29,6 +29,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import json
 import html
 import re
 import sys
@@ -383,7 +384,7 @@ def build_html(spec: dict[str, Any]) -> str:
 "url":"{DOCS_URL}/reference.html",
 "inLanguage":"en",
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
-"publisher":{{"@type":"Organization","name":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
+"publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
 <link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="fonts.css">
@@ -1014,6 +1015,27 @@ User-agent: PerplexityBot
 Allow: /
 User-agent: Google-Extended
 Allow: /
+User-agent: Claude-User
+Allow: /
+User-agent: CCBot
+Allow: /
+# User-fetch and answer agents added 2026-09-14 (SEO/AEO audit WS5).
+User-agent: Perplexity-User
+Allow: /
+User-agent: MistralAI-User
+Allow: /
+User-agent: DuckAssistBot
+Allow: /
+User-agent: Applebot
+Allow: /
+User-agent: Applebot-Extended
+Allow: /
+User-agent: Amazonbot
+Allow: /
+User-agent: meta-externalagent
+Allow: /
+User-agent: Bytespider
+Allow: /
 
 Sitemap: {DOCS_URL}/sitemap.xml
 """
@@ -1040,6 +1062,9 @@ def main() -> int:
         DOCS / "llms.txt": build_llms_txt(spec),
         DOCS / "robots.txt": build_robots(),
         DOCS / "sitemap.xml": build_sitemap(),
+        # The same spec as JSON, for the agents and tools that only read JSON (GPT Actions,
+        # Postman import, most MCP scaffolds). Both URLs are stable and both are advertised.
+        DOCS / "openapi.json": json.dumps(spec, ensure_ascii=False, indent=1) + "\n",
     }
 
     if args.check:
