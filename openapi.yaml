@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.5"
+  version: "1.13.6"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -769,8 +769,13 @@ paths:
     get:
       summary: Bare price ticks of the mapped match-winner market, newest first (PRO)
       description: >-
-        Recent ticks only (no market wrapper). `limit` caps at 500; `minutes`
-        bounds the lookback window. 404 when the match has no mapped market.
+        Recent ticks only (no market wrapper). `limit` caps at 500; `minutes` bounds the lookback
+        window; `cursor` pages an older match. 404 `no_market` when the match exists but has no
+        mapped market (404 `not_found` for an unknown id). Retention (since 2026-09-15): in-play
+        ticks of a match with a mapped market — from live to completion, plus a five-minute pad —
+        are kept at full resolution and not deleted; pre-match / idle ticks and unmapped markets
+        keep the tiers (every tick for an hour, ~1/minute to 24h, ~1/5 minutes after, deleted after
+        30 days). Ticks stamped before 2026-09-15 were already thinned under those tiers.
 
 
         Ticks are kept for 30 days and then deleted, so a match older than
@@ -831,6 +836,92 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
         "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
+  /history/matches/{matchId}/prices:
+    get:
+      summary: Per-point price history — the match-winner quote in force at every played point (PRO)
+      description: >-
+        One row per played point of a match with a mapped market, ascending by `seq` (added
+        2026-09-15). Each row carries the score state the BASIC tape publishes and, per neutral side
+        ("1" = players.p1's outcome, "2" = p2's), the newest quote observed at or before the point's
+        capture time — or, when none precedes it, the first quote after it within five minutes
+        (negative lag). A side with no usable quote is null, never invented. `resolution` is an
+        honest label of the join: tick (|lag| <= 15 s), minute (<= 90 s), coarse (older); matches
+        played from 2026-09-15 align against the full-resolution in-play tape, earlier ones against
+        the thinned tape and read minute/coarse. The ULTRA-only per-point fields (server, winner,
+        serve, outcome) are not on this surface. Works on a live match too. 404 `no_market` when the
+        match has no mapped market — enumerate with `GET /history/matches?has_market=true`.
+      parameters:
+      - $ref: '#/components/parameters/matchId'
+      - name: after_seq
+        in: query
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+        description: Resume cursor — return points with seq greater than this (meta.last_seq of the
+          previous page). Anything but a non-negative integer is a 400 bad_after_seq.
+      - name: limit
+        in: query
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 500
+          default: 100
+      responses:
+        '200':
+          description: Per-point price rows, ascending by seq
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PointPrice'
+                  meta:
+                    type: object
+                    properties:
+                      match_id:
+                        type: integer
+                      count:
+                        type: integer
+                      limit:
+                        type: integer
+                      last_seq:
+                        type: integer
+                        description: The resume cursor — pass back as ?after_seq= while has_more is true.
+                      has_more:
+                        type: boolean
+                      alignment:
+                        type: string
+                        enum:
+                        - points
+                        - none
+                        description: points = the match has a per-point stream to align to; none = it has
+                          none (a reconstruction-only tape carries no point clock and no quote is
+                          fabricated — data is empty, not an error).
+                      resolution_counts:
+                        type: object
+                        properties:
+                          tick:
+                            type: integer
+                          minute:
+                            type: integer
+                          coarse:
+                            type: integer
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/UpgradeRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/MatchGone'
+        '429':
+          $ref: '#/components/responses/RateLimited'
   /history/matches:
     get:
       summary: Completed matches, newest first, with derived winner and tape coverage (BASIC)
@@ -851,6 +942,7 @@ paths:
         way.
       operationId: listCompletedMatches
       parameters:
+        - $ref: '#/components/parameters/hasMarket'
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
         - $ref: "#/components/parameters/playedFrom"
@@ -2225,6 +2317,20 @@ components:
         Opaque — do not parse it, its contents will change. Supplies both the
         floor and the tie-break position, so it replaces `updated_since` on
         follow-up pages rather than accompanying it.
+    hasMarket:
+      name: has_market
+      in: query
+      required: false
+      schema:
+        type: boolean
+      description: >-
+        Return only matches that DO (`true`) or do NOT (`false`) have a mapped match-winner market,
+        matching the `has_market` flag each row carries (added 2026-09-15). Omit for both. Anything
+        other than true/false is a 400 `bad_has_market`, never a silently ignored filter. These are
+        the matches `/history/matches/{id}/prices` and `/matches/{id}/prices` can serve; every other
+        id answers 404 `no_market`. Measured 2026-09-15: 3,718 of the 9,741 matches completed since
+        2026-08-16 (38%) had a price tape.
+            bad_points_complete, bad_combination, points_read_disabled, bad_after_seq, bad_has_market, no_market, points_disabled,
     country:
       name: country
       in: query
@@ -2798,6 +2904,111 @@ components:
           description: >-
             When we observed this quote (UTC) - our observation clock, not a venue
             publication time.
+    PointPrice:
+      type: object
+      description: >-
+        One played point with the match-winner quote in force per side when it was captured
+        (added 2026-09-15). The score state is the BASIC tape's; the ULTRA-only per-point fields
+        (server, winner, serve, outcome) are not here. Prices are keyed by neutral side and carry
+        no venue or token identifiers.
+      properties:
+        seq:
+          type: integer
+          description: Per-match monotonic position 1..N — the same seq as the live points row.
+        at:
+          type: string
+          format: date-time
+          description: Our capture time of the point (UTC).
+        sets:
+          type: array
+          items:
+            type: integer
+        games:
+          type: array
+          description: Per-set games arrays, [p1, p2].
+          items:
+            type: array
+            items:
+              type: integer
+        score:
+          type: object
+          properties:
+            p1:
+              type:
+              - string
+              - 'null'
+            p2:
+              type:
+              - string
+              - 'null'
+        tiebreak:
+          type: boolean
+        prices:
+          type: object
+          description: Keyed by side — "1" = players.p1's outcome, "2" = players.p2's.
+          properties:
+            '1':
+              type:
+              - object
+              - 'null'
+              description: The quote for this side, or null when no usable quote exists for the point.
+              properties:
+                bid:
+                  type:
+                  - number
+                  - 'null'
+                ask:
+                  type:
+                  - number
+                  - 'null'
+                mid:
+                  type:
+                  - number
+                  - 'null'
+                spread:
+                  type:
+                  - number
+                  - 'null'
+            '2':
+              type:
+              - object
+              - 'null'
+              description: The quote for this side, or null when no usable quote exists for the point.
+              properties:
+                bid:
+                  type:
+                  - number
+                  - 'null'
+                ask:
+                  type:
+                  - number
+                  - 'null'
+                mid:
+                  type:
+                  - number
+                  - 'null'
+                spread:
+                  type:
+                  - number
+                  - 'null'
+        lag_seconds:
+          type:
+          - integer
+          - 'null'
+          description: Seconds between the quote and the point, the larger of the two sides (a
+            negative side lag means the first quote after the point was used); null when no side
+            aligned.
+        resolution:
+          type:
+          - string
+          - 'null'
+          enum:
+          - tick
+          - minute
+          - coarse
+          - null
+          description: tick |lag| <= 15 s, minute <= 90 s, coarse beyond — the coarser of the two
+            sides; null when no side aligned. An honest label, never upgraded.
     SlateEvent:
       description: An Event as served by the slate-wide feed (GET /events) — the per-match row plus its id and match.
       allOf:

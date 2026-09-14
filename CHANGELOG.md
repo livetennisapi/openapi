@@ -5,6 +5,21 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.6] - 2026-09-15
+
+### Added
+- `GET /history/matches/{id}/prices` (PRO): the per-point price history — one row per played point with the
+  score state the BASIC tape publishes and, per neutral side, the match-winner quote in force when the point was
+  captured (`bid`, `ask`, `mid`, `spread`), with `lag_seconds` and an honest `resolution` label (`tick`, `minute`,
+  `coarse`). Works on a live match too; 404 `no_market` when no market is mapped.
+- `GET /history/matches?has_market=true|false` and a `has_market` flag on every history row, so a match with a
+  price tape can be enumerated before it is pulled.
+
+### Changed
+- Price retention: from 2026-09-15 the in-play ticks of a match with a mapped market are kept at full resolution
+  and are not deleted; pre-match and idle ticks keep the existing tiers. Earlier ticks were already thinned.
+- `GET /matches/{id}/prices` answers 404 `no_market` for a known match without a market (it said `not_found`).
+
 ## [1.13.5] - 2026-09-14
 
 ### Changed

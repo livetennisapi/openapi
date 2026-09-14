@@ -153,7 +153,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <div class="wrap">
 <header>
-<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.5</p>
+<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.6</p>
 <h1>Tennis odds API — markets and price ticks</h1>
 <p><strong>How do you read tennis match-winner odds and their price history?</strong> <code>GET /markets</code> returns the match-winner market for a match and <code>GET /markets/{matchId}/prices</code> the recent price ticks per side, newest first; <code>GET /matches/{matchId}/prices</code> is the same ticks addressed by match id. All three are PRO. Every tick carries its own timestamp, so a series can be reconstructed rather than inferred from poll times.</p>
 <p class="meta">3 endpoints on this page. Base URL
@@ -172,7 +172,7 @@ PRO. A free key needs no card.</p>
 <h2 id="endpoints">The endpoints</h2>
 <p>Each one below lists its plan tier, every parameter, the response shape and an example. They
 are the same entries as in <a href="./reference.html#endpoints">the full reference</a>, which
-carries all 40 operations of the API on one page.</p>
+carries all 41 operations of the API on one page.</p>
 <section class="op" id="listMarkets">
 <h3><span class="method">GET</span> <code>/markets</code></h3>
 <p class="summary">Match-winner market(s) for a match (PRO)</p>
@@ -206,7 +206,7 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <h3><span class="method">GET</span> <code>/matches/{matchId}/prices</code></h3>
 <p class="summary">Bare price ticks of the mapped match-winner market, newest first (PRO)</p>
 <p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>listMatchPrices</code></p>
-<p>Recent ticks only (no market wrapper). <code>limit</code> caps at 500; <code>minutes</code> bounds the lookback window. 404 when the match has no mapped market.
+<p>Recent ticks only (no market wrapper). <code>limit</code> caps at 500; <code>minutes</code> bounds the lookback window; <code>cursor</code> pages an older match. 404 <code>no_market</code> when the match exists but has no mapped market (404 <code>not_found</code> for an unknown id). Retention (since 2026-09-15): in-play ticks of a match with a mapped market — from live to completion, plus a five-minute pad — are kept at full resolution and not deleted; pre-match / idle ticks and unmapped markets keep the tiers (every tick for an hour, ~1/minute to 24h, ~1/5 minutes after, deleted after 30 days). Ticks stamped before 2026-09-15 were already thinned under those tiers.
 
 Ticks are kept for 30 days and then deleted, so a match older than that answers an empty <code>data</code> while its market stays mapped — that is retention, not a fault. Past 500 ticks, page with the cursor: read a page, and while <code>meta.has_more</code> is true pass <code>meta.next_cursor</code> back as <code>?cursor=</code> for the next (older) page. Pages never overlap or skip a tick (added 2026-09-09).</p>
 <h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /matches/{matchId}/prices parameters"><table><caption class="vh">GET /matches/{matchId}/prices — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.

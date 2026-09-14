@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.5, last change 2026-09-14.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.6, last change 2026-09-15.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -17,7 +17,7 @@
 "headline":"Live Tennis API — Changelog",
 "description":"Every change to the Live Tennis API specification, dated and versioned.",
 "url":"https://docs.livetennisapi.com/changelog.html",
-"dateModified":"2026-09-14",
+"dateModified":"2026-09-15",
 "inLanguage":"en",
 "isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
 "publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
@@ -155,8 +155,19 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.5</strong>, last change <time datetime="2026-09-14">2026-09-14</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.6</strong>, last change <time datetime="2026-09-15">2026-09-15</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.6"><h2>1.13.6 <time datetime="2026-09-15">2026-09-15</time></h2>
+<h3>Added</h3>
+<ul>
+<li><code>GET /history/matches/{id}/prices</code> (PRO): the per-point price history — one row per played point with the score state the BASIC tape publishes and, per neutral side, the match-winner quote in force when the point was captured (<code>bid</code>, <code>ask</code>, <code>mid</code>, <code>spread</code>), with <code>lag_seconds</code> and an honest <code>resolution</code> label (<code>tick</code>, <code>minute</code>, <code>coarse</code>). Works on a live match too; 404 <code>no_market</code> when no market is mapped.</li>
+<li><code>GET /history/matches?has_market=true|false</code> and a <code>has_market</code> flag on every history row, so a match with a price tape can be enumerated before it is pulled.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Price retention: from 2026-09-15 the in-play ticks of a match with a mapped market are kept at full resolution and are not deleted; pre-match and idle ticks keep the existing tiers. Earlier ticks were already thinned.</li>
+<li><code>GET /matches/{id}/prices</code> answers 404 <code>no_market</code> for a known match without a market (it said <code>not_found</code>).</li>
+</ul></article>
 <article id="v1.13.5"><h2>1.13.5 <time datetime="2026-09-14">2026-09-14</time></h2>
 <h3>Changed</h3>
 <ul>
