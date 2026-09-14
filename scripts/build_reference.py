@@ -73,6 +73,21 @@ TIER_ORDER = {"BASIC": 0, "PRO": 1, "ULTRA": 2}
 # ---------------------------------------------------------------- spec helpers
 
 
+# Fonts the page needs BEFORE first paint, preloaded so they cannot swap in afterwards.
+#
+# Every face is declared font-display: swap, and only Inter 400 was preloaded — so the h1's
+# Space Grotesk and the base-URL <code>'s JetBrains Mono arrived after the header had already
+# been laid out, the header changed height, and everything below it moved. Measured on
+# live-scores.html: desktop CLS 0.237 in 3 of 4 PageSpeed runs, with the whole <main> named as
+# the shifting element. The 4th run read 0.000, which is why one reading is not a measurement.
+#
+# Preloading is the right lever rather than font-display:optional, which would fix CLS by not
+# showing the display face at all on a first visit.
+FONT_PRELOADS = "".join(
+    f'<link rel="preload" href="fonts/{f}.woff2" as="font" type="font/woff2" crossorigin>\n'
+    for f in ("inter-latin-400", "space-grotesk-latin-700", "jetbrains-mono-latin-400")
+)
+
 # The first-party pageview beacon, shared by every generated page.
 #
 # The docs are a separate origin, so the apps' server-side visit log never sees a docs request —
@@ -412,8 +427,7 @@ def build_html(spec: dict[str, Any]) -> str:
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
 "publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
-<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="fonts.css">
+{FONT_PRELOADS}<link rel="stylesheet" href="fonts.css">
 <style>
   /* Design tokens (app/services/design_tokens.py). This page used to carry the
      legacy marketing palette — every one of its six dark hexes was an exact key
@@ -1125,8 +1139,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
 "publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
-<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="fonts.css">
+{FONT_PRELOADS}<link rel="stylesheet" href="fonts.css">
 {style_html}
 </head>
 <body>
@@ -1365,8 +1378,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
 "publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
-<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="fonts.css">
+{FONT_PRELOADS}<link rel="stylesheet" href="fonts.css">
 {style_html}
 </head>
 <body>
