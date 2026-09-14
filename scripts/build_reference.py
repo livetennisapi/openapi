@@ -522,6 +522,8 @@ def build_html(spec: dict[str, Any]) -> str:
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="{SITE}/pricing">Pricing</a>
 <a href="{SITE}">livetennisapi.com</a>
 </nav>
 
@@ -848,7 +850,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "",
         f"Base URL: {base}",
         f"Full text reference: {DOCS_URL}/reference.html",
+        f"Changelog (dated, versioned): {DOCS_URL}/changelog.html",
         f"OpenAPI spec: {DOCS_URL}/openapi.yaml",
+        f"OpenAPI spec (JSON): {DOCS_URL}/openapi.json",
         f"Website: {SITE}",
         "",
         "## Quickstart (no code required)",
@@ -994,6 +998,128 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
+
+# --------------------------------------------------------------------------- changelog --------
+CHANGELOG = Path(__file__).resolve().parents[1] / "CHANGELOG.md"
+_ENTRY_RX = re.compile(r"^## \[(?P<ver>[^\]]+)\] - (?P<date>\d{4}-\d{2}-\d{2})\s*$")
+
+
+def changelog_entries(text: str) -> list[dict]:
+    """[{version, date, body_md}] newest first, from the Keep-a-Changelog headings."""
+    out: list[dict] = []
+    for line in text.splitlines():
+        m = _ENTRY_RX.match(line)
+        if m:
+            out.append({"version": m["ver"], "date": m["date"], "lines": []})
+        elif out:
+            out[-1]["lines"].append(line)
+    for e in out:
+        e["body_md"] = "\n".join(e.pop("lines")).strip()
+    return out
+
+
+_BOLD_RX = re.compile(r"\*\*(.+?)\*\*")
+
+
+def _inline(text: str) -> str:
+    return _BOLD_RX.sub(r"<strong>\1</strong>", md_inline(text))
+
+
+def _md_block(md: str) -> str:
+    """The small Markdown subset the changelog uses: ### headings, - bullets, **bold**, paragraphs."""
+    html_parts: list[str] = []
+    in_list = False
+    para: list[str] = []
+
+    def flush_para() -> None:
+        if para:
+            html_parts.append(f"<p>{_inline(' '.join(para))}</p>")
+            para.clear()
+
+    for raw in md.splitlines():
+        line = raw.rstrip()
+        if line.startswith("### "):
+            flush_para()
+            if in_list:
+                html_parts.append("</ul>")
+                in_list = False
+            html_parts.append(f"<h4>{E(line[4:])}</h4>")
+        elif line.startswith("- "):
+            flush_para()
+            if not in_list:
+                html_parts.append("<ul>")
+                in_list = True
+            html_parts.append(f"<li>{_inline(line[2:])}</li>")
+        elif line.startswith("  ") and in_list and html_parts and html_parts[-1].endswith("</li>"):
+            html_parts[-1] = html_parts[-1][:-5] + " " + _inline(line.strip()) + "</li>"
+        elif not line:
+            flush_para()
+            if in_list:
+                html_parts.append("</ul>")
+                in_list = False
+        else:
+            para.append(line.strip())
+    flush_para()
+    if in_list:
+        html_parts.append("</ul>")
+    return "\n".join(html_parts)
+
+
+def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str]:
+    """(html, latest_date). Same head shape and stylesheet as the reference so it reads as one
+    site; each entry is a dated <article> so an engine can quote 'as of' from the page itself.
+    The sitemap's lastmod for this page is the newest entry's date — a date the file proves."""
+    entries = changelog_entries(CHANGELOG.read_text(encoding="utf-8"))
+    latest = entries[0]["date"] if entries else ""
+    style = re.search(r"<style>.*?</style>", reference_html, re.S)
+    style_html = style.group(0) if style else ""
+    articles = "\n".join(
+        f'<article id="v{E(e["version"])}"><h3>{E(e["version"])} <time datetime="{e["date"]}">{e["date"]}</time></h3>\n{_md_block(e["body_md"])}</article>'
+        for e in entries
+    )
+    info = spec["info"]
+    page = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{E(info['title'])} — Changelog</title>
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version {E(info['version'])}, last change {latest}.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{DOCS_URL}/changelog.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{E(info['title'])} — Changelog">
+<meta property="og:url" content="{DOCS_URL}/changelog.html">
+<meta property="og:image" content="{DOCS_URL}/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"{E(info['title'])} — Changelog",
+"description":"Every change to the Live Tennis API specification, dated and versioned.",
+"url":"{DOCS_URL}/changelog.html",
+"dateModified":"{latest}",
+"inLanguage":"en",
+"isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
+"publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="fonts.css">
+{style_html}
+</head>
+<body>
+<main>
+<header>
+<p class="eyebrow">Live Tennis API · docs</p>
+<h1>Changelog</h1>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>{E(info['version'])}</strong>, last change <time datetime="{latest}">{latest}</time>. Also as <a href="{DOCS_URL}/reference.html">the full reference</a>, <a href="{DOCS_URL}/openapi.yaml">OpenAPI YAML</a> / <a href="{DOCS_URL}/openapi.json">JSON</a>, and <a href="{SITE}/facts.json">the dated facts file</a>.</p>
+</header>
+{articles}
+</main>
+</body>
+</html>
+"""
+    return page, latest
+
 def build_robots() -> str:
     return f"""User-agent: *
 Allow: /
@@ -1041,13 +1167,18 @@ Sitemap: {DOCS_URL}/sitemap.xml
 """
 
 
-def build_sitemap() -> str:
+def build_sitemap(changelog_date: str = "") -> str:
     pages = [f"{DOCS_URL}/", f"{DOCS_URL}/reference.html"]
     urls = "\n".join(
         f"  <url><loc>{u}</loc><changefreq>weekly</changefreq>"
         f"<priority>{'1.0' if u.endswith('/') else '0.9'}</priority></url>"
         for u in pages
     )
+    if changelog_date:
+        # lastmod ONLY here: the newest entry's date is a fact the file itself proves. The two pages
+        # above are regenerated on every push, so any date on them would be a deploy time, not a change.
+        urls += (f"\n  <url><loc>{DOCS_URL}/changelog.html</loc><lastmod>{changelog_date}</lastmod>"
+                 f"<changefreq>weekly</changefreq><priority>0.6</priority></url>")
     return f'<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n{urls}\n</urlset>\n'
 
 
@@ -1057,11 +1188,14 @@ def main() -> int:
     args = ap.parse_args()
 
     spec = load_spec()
+    reference = build_html(spec)
+    changelog_html, changelog_date = build_changelog(spec, reference)
     outputs = {
-        DOCS / "reference.html": build_html(spec),
+        DOCS / "reference.html": reference,
+        DOCS / "changelog.html": changelog_html,
         DOCS / "llms.txt": build_llms_txt(spec),
         DOCS / "robots.txt": build_robots(),
-        DOCS / "sitemap.xml": build_sitemap(),
+        DOCS / "sitemap.xml": build_sitemap(changelog_date),
         # The same spec as JSON, for the agents and tools that only read JSON (GPT Actions,
         # Postman import, most MCP scaffolds). Both URLs are stable and both are advertised.
         DOCS / "openapi.json": json.dumps(spec, ensure_ascii=False, indent=1) + "\n",
