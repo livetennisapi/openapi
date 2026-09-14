@@ -166,6 +166,15 @@
       background: var(--bg); max-height: calc(100dvh - var(--docsbar)); overflow-y: auto;
     }
     #static-intro[hidden] { display: none; }
+    /* The explorer button reads as the primary action, since the page is now the docs and the
+       explorer is the opt-in. Sized to the 44px touch target the Bearer input already uses. */
+    #open-explorer {
+      font: inherit; color: var(--bg); background: var(--ours); border: 0;
+      border-radius: var(--r); padding: 11px 18px; min-height: 44px; cursor: pointer;
+    }
+    #open-explorer:hover { filter: brightness(1.08); }
+    #open-explorer:disabled { opacity: .7; cursor: progress; }
+    #open-explorer:focus-visible { outline: 2px solid var(--ours); outline-offset: 2px; }
     .fallback a, .boot-fail a { color: var(--ours); }
     .fallback .lead { font-size: 1.1rem; }
     .fallback .dim, .boot-fail .dim { color: var(--muted); }
@@ -310,7 +319,10 @@
   </style>
 </head>
 <body>
-  <div id="boot"><div><div class="dot"></div>Loading API reference…</div></div>
+  <!-- No boot splash any more: nothing loads until asked, so there is nothing to wait for.
+       The div is kept (empty, hidden) because the on-demand loader reuses it as the mount
+       point and the failure surface. -->
+  <div id="boot" hidden></div>
 
   <!-- Server-rendered intro (SEO/AEO audit 2026-09-14). Measured before this existed: the raw
        HTML of this page carried 32 visible words and not even the API base URL; everything
@@ -324,6 +336,7 @@
     over REST and WebSocket. Base URL <code>https://api.livetennisapi.com/api/public/v1</code>,
     authenticated with an <code>X-API-Key</code> header. A free key needs no card:
     <a href="https://livetennisapi.com/subscribe/free">livetennisapi.com/subscribe/free</a>.</p>
+    <p><button id="open-explorer" type="button" class="lead">Open the interactive explorer</button></p>
     <p><a class="lead" href="reference.html">Full reference as plain HTML</a> ·
     <a href="llms.txt">Markdown digest (llms.txt)</a> ·
     <a href="openapi.yaml">OpenAPI 3.1 (YAML)</a> ·
@@ -409,35 +422,81 @@
 
        Upgrading = change the version, re-download that exact URL, and recompute:
          openssl dgst -sha384 -binary <file> | openssl base64 -A -->
-  <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.63.0/dist/browser/standalone.js"
-          integrity="sha384-PlviHlK3uCjxgh67enSuQJvyxdVZbaKHnN/6op5juN6/V2IPKFGbZ91TH/FZtSkU"
-          crossorigin="anonymous"></script>
   <script>
-    // Remove the splash once Scalar has painted, and fall back to a plain link
-    // if the CDN is blocked (or the integrity check rejects the file) so the
-    // page is never a dead end.
+    // Scalar loads ON DEMAND, not on page load.
+    //
+    // WHY. PageSpeed measured this page at performance 32 with an 8.86s LCP on throttled mobile,
+    // the only page on any host failing Core Web Vitals. The cause is structural rather than a
+    // tuning problem: Scalar's bundle renders a very large element late, and LCP tracks the
+    // LARGEST contentful paint, so it keeps updating until that arrives. Deferring the script or
+    // warming the CDN connection cannot fix it — only not painting it can.
+    //
+    // Everything the page needs to BE the documentation is already server-rendered above: the
+    // base URL, the auth header, the free-key link, and links to the full text reference and the
+    // eight per-topic pages. reference.html scores 97 and the topic pages 96. So the fast,
+    // crawlable page is the default and the explorer is one click away.
+    //
+    // The integrity hash and crossorigin attribute are carried onto the injected element, so the
+    // subresource-integrity guarantee is exactly what it was when the tag was static. Upgrading is
+    // still: change the version, re-download that exact URL, recompute the hash.
     (function () {
+      var SRC = 'https://cdn.jsdelivr.net/npm/@scalar/api-reference@1.63.0/dist/browser/standalone.js';
+      var SRI = 'sha384-PlviHlK3uCjxgh67enSuQJvyxdVZbaKHnN/6op5juN6/V2IPKFGbZ91TH/FZtSkU';
+      var btn = document.getElementById('open-explorer');
       var boot = document.getElementById('boot');
-      var done = false;
       var intro = document.getElementById('static-intro');
-      function clear() { if (!done && boot) { done = true; boot.remove(); if (intro) { intro.hidden = true; } } }
-      var obs = new MutationObserver(function () {
-        if (document.querySelector('.scalar-app, [class*="scalar"]')) { clear(); obs.disconnect(); }
-      });
-      obs.observe(document.body, { childList: true, subtree: true });
-      setTimeout(function () {
-        if (done) return;
-        obs.disconnect();
+      var started = false;
+
+      function load() {
+        if (started) return;
+        started = true;
+        if (btn) { btn.disabled = true; btn.textContent = 'Loading the explorer…'; }
         if (boot) {
+          boot.hidden = false;
+          boot.innerHTML = '<div><div class="dot"></div>Loading API reference…</div>';
+        }
+        var el = document.createElement('script');
+        el.src = SRC;
+        el.integrity = SRI;
+        el.crossOrigin = 'anonymous';
+        el.onerror = fail;
+        document.body.appendChild(el);
+
+        var done = false;
+        function clear() {
+          if (done) return;
+          done = true;
+          if (boot) boot.remove();
+          if (intro) intro.hidden = true;
+        }
+        var obs = new MutationObserver(function () {
+          if (document.querySelector('.scalar-app, [class*="scalar"]')) { clear(); obs.disconnect(); }
+        });
+        obs.observe(document.body, { childList: true, subtree: true });
+        setTimeout(function () { if (!done) { obs.disconnect(); fail(); } }, 8000);
+      }
+
+      function fail() {
+        // The page must never become a dead end: the CDN can be blocked, or the integrity check
+        // can reject the file. The static intro STAYS visible in that case, which is the whole
+        // advantage of not having hidden it in the first place.
+        if (boot) {
+          boot.hidden = false;
           boot.innerHTML =
             '<div class="boot-fail">' +
-            '<p>The interactive reference could not load.</p>' +
+            '<p>The interactive explorer could not load.</p>' +
             '<p><a class="lead" href="reference.html">Read the full text reference</a></p>' +
-            '<p class="dim small">Or download the ' +
-            '<a href="openapi.yaml">OpenAPI spec</a>.</p>' +
+            '<p class="dim small">Or download the <a href="openapi.yaml">OpenAPI spec</a>.</p>' +
             '</div>';
         }
-      }, 8000);
+        if (btn) { btn.disabled = false; btn.textContent = 'Open the interactive explorer'; }
+      }
+
+      if (btn) btn.addEventListener('click', load);
+
+      // A deep link into the explorer (#tag/..., ?api=...) means somebody asked for it
+      // explicitly — honour that and load immediately rather than making them click twice.
+      if (location.hash.length > 1 || location.search.length > 1) load();
     })();
   </script>
 <script>
