@@ -5,6 +5,13 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.9] - 2026-09-15
+### Added
+- `Score.accepted_at` (string|null, live score reads and push frames): the instant we accepted this state, stamped once and never refreshed — the clock to difference a latency study against.
+### Changed
+- `Score.timestamp` documented for what it is: our clock, stamped at acceptance and then refreshed (at most every 8 s) while the owning source keeps re-asserting an unchanged state, so on a live read it is usually the last-assertion instant. It was described as "when this state was true"; it never was. Never an upstream observation time.
+- The `Score` schema on this site now carries the full field set and descriptions: `sequence`, `age_seconds`, `stale`, `observed_age_seconds`, `sources_count` and `detail` were missing from the published table, and `sets`/`server`/`is_tiebreak`/`win_probability_p1`/`danger`/`timestamp` had no description.
+
 ## [1.13.8] - 2026-09-15
 ### Changed
 - Wording correction to 1.13.7: the pre-match hold rates enter the engine **snapped to a 0.01 grid**, not "rounded to three decimals". The mechanism and every field are unchanged; only the stated granularity was wrong.
