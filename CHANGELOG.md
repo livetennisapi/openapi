@@ -5,6 +5,12 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.7] - 2026-09-15
+### Changed
+- `win_probability_meta.market_anchored` is documented for what it always was: the market-prior anchor **applies to this match** (a two-sided pre-match price and a pre-play first score). It was described as "whether the anchor moved `win_probability_p1`", which is a per-row claim the flag never made — a small anchor shift can solve to a probability identical to `win_probability_p1_model`. Recorded values keep their meaning.
+### Added
+- `win_probability_meta.anchor_effective` (boolean|null): this row's `win_probability_p1` differs from `win_probability_p1_model`. The per-row test `win_probability_p1 != win_probability_p1_model` works on frames recorded before this field existed.
+
 ## [1.13.6] - 2026-09-15
 
 ### Added

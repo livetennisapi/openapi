@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.6",
+  "version": "1.13.7",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -3014,14 +3014,14 @@
        "number",
        "null"
       ],
-      "description": "ULTRA, since 2026-09-12. The same model read computed WITHOUT the market-prior anchor — a probability no market price touched. Equals win_probability_p1 on a match the anchor does not apply to; null on rows stamped before it existed (never back-filled)."
+      "description": "ULTRA, since 2026-09-12. The same model read computed WITHOUT the market-prior anchor — a probability no market price touched. Equals win_probability_p1 on a match the anchor does not apply to, and also on some rows of an anchored match (the anchor shifts the pre-match hold rates, which enter the engine rounded to three decimals, so a small shift can solve to an identical value); the per-row test is win_probability_p1 != win_probability_p1_model. Null on rows stamped before it existed (never back-filled)."
      },
      "win_probability_meta": {
       "type": [
        "object",
        "null"
       ],
-      "description": "ULTRA, since 2026-09-12. Our own model-regime identifier, the UTC instant the two probabilities were generated, and whether the anchor moved win_probability_p1. Null on rows stamped before it existed.",
+      "description": "ULTRA, since 2026-09-12. Our own model-regime identifier, the UTC instant the two probabilities were generated, whether the anchor applies to this MATCH (market_anchored — per match, not per row) and, since 2026-09-15, whether it moved THIS ROW's win_probability_p1 away from the twin (anchor_effective). Null on rows stamped before it existed.",
       "properties": {
        "model_version": {
         "type": "string",
@@ -3035,7 +3035,15 @@
         "format": "date-time"
        },
        "market_anchored": {
-        "type": "boolean"
+        "type": "boolean",
+        "description": "The market-prior anchor applies to this match: a two-sided pre-match price and a pre-play first score gave the model a shift to its pre-match prior. Per match, not per row."
+       },
+       "anchor_effective": {
+        "type": [
+         "boolean",
+         "null"
+        ],
+        "description": "Since 2026-09-15. This row's win_probability_p1 differs from win_probability_p1_model, i.e. the anchor moved this value. Null when either probability is null."
        }
       }
      },

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.6, last change 2026-09-15.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.7, last change 2026-09-15.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -155,8 +155,17 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.6</strong>, last change <time datetime="2026-09-15">2026-09-15</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.7</strong>, last change <time datetime="2026-09-15">2026-09-15</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.7"><h2>1.13.7 <time datetime="2026-09-15">2026-09-15</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><code>win_probability_meta.market_anchored</code> is documented for what it always was: the market-prior anchor <strong>applies to this match</strong> (a two-sided pre-match price and a pre-play first score). It was described as &quot;whether the anchor moved <code>win_probability_p1</code>&quot;, which is a per-row claim the flag never made — a small anchor shift can solve to a probability identical to <code>win_probability_p1_model</code>. Recorded values keep their meaning.</li>
+</ul>
+<h3>Added</h3>
+<ul>
+<li><code>win_probability_meta.anchor_effective</code> (boolean|null): this row&#x27;s <code>win_probability_p1</code> differs from <code>win_probability_p1_model</code>. The per-row test <code>win_probability_p1 != win_probability_p1_model</code> works on frames recorded before this field existed.</li>
+</ul></article>
 <article id="v1.13.6"><h2>1.13.6 <time datetime="2026-09-15">2026-09-15</time></h2>
 <h3>Added</h3>
 <ul>
