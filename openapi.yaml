@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.7"
+  version: "1.13.8"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2502,8 +2502,8 @@ components:
             market-prior anchor — a probability no market price touched. Equals
             win_probability_p1 on a match the anchor does not apply to, and also
             on some rows of an anchored match (the anchor shifts the pre-match
-            hold rates, which enter the engine rounded to three decimals, so a
-            small shift can solve to an identical value); the per-row test is
+            hold rates, which enter the engine snapped to a 0.01 grid, so a
+            shift smaller than a grid step often solves to an identical value); the per-row test is
             win_probability_p1 != win_probability_p1_model. Null on rows
             stamped before it existed (never back-filled).
         win_probability_meta:
