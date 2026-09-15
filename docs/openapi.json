@@ -951,6 +951,7 @@
   "/history/matches/{matchId}/prices": {
    "get": {
     "summary": "Per-point price history — the match-winner quote in force at every played point (PRO)",
+    "operationId": "listHistoryMatchPrices",
     "description": "One row per played point of a match with a mapped market, ascending by `seq` (added 2026-09-15). Each row carries the score state the BASIC tape publishes and, per neutral side (\"1\" = players.p1's outcome, \"2\" = p2's), the newest quote observed at or before the point's capture time — or, when none precedes it, the first quote after it within five minutes (negative lag). A side with no usable quote is null, never invented. `resolution` is an honest label of the join: tick (|lag| <= 15 s), minute (<= 90 s), coarse (older); matches played from 2026-09-15 align against the full-resolution in-play tape, earlier ones against the thinned tape and read minute/coarse. The ULTRA-only per-point fields (server, winner, serve, outcome) are not on this surface. Works on a live match too. 404 `no_market` when the match has no mapped market — enumerate with `GET /history/matches?has_market=true`.",
     "parameters": [
      {

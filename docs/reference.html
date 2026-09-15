@@ -437,7 +437,7 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <li><a href="#listMarkets"><code>GET /markets</code> — Match-winner market(s) for a match (PRO)</a></li>
 <li><a href="#getMarketPrices"><code>GET /markets/{matchId}/prices</code> — Market + recent price ticks per side, newest first (PRO)</a></li>
 <li><a href="#listMatchPrices"><code>GET /matches/{matchId}/prices</code> — Bare price ticks of the mapped match-winner market, newest first (PRO)</a></li>
-<li><a href="#get-/history/matches/{matchId}/prices"><code>GET /history/matches/{matchId}/prices</code> — Per-point price history — the match-winner quote in force at every played point (PRO)</a></li>
+<li><a href="#listHistoryMatchPrices"><code>GET /history/matches/{matchId}/prices</code> — Per-point price history — the match-winner quote in force at every played point (PRO)</a></li>
 <li><a href="#listCompletedMatches"><code>GET /history/matches</code> — Completed matches, newest first, with derived winner and tape coverage (BASIC)</a></li>
 <li><a href="#getHistoryCoverage"><code>GET /history/coverage</code> — Measured completeness rollup per tour × draw bucket (BASIC)</a></li>
 <li><a href="#getMatchTape"><code>GET /history/matches/{matchId}</code> — Per-match tape — point-by-point score + per-point model probabilities (BASIC)</a></li>
@@ -727,10 +727,10 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/matches/18953/prices \
   -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
 </section>
-<section class="op" id="get--history-matches-{matchId}-prices">
+<section class="op" id="listHistoryMatchPrices">
 <h3><span class="method">GET</span> <code>/history/matches/{matchId}/prices</code></h3>
 <p class="summary">Per-point price history — the match-winner quote in force at every played point (PRO)</p>
-<p class="meta">Plan required: <strong>PRO</strong></p>
+<p class="meta">Plan required: <strong>PRO</strong> &middot; operationId: <code>listHistoryMatchPrices</code></p>
 <p>One row per played point of a match with a mapped market, ascending by <code>seq</code> (added 2026-09-15). Each row carries the score state the BASIC tape publishes and, per neutral side (&quot;1&quot; = players.p1&#x27;s outcome, &quot;2&quot; = p2&#x27;s), the newest quote observed at or before the point&#x27;s capture time — or, when none precedes it, the first quote after it within five minutes (negative lag). A side with no usable quote is null, never invented. <code>resolution</code> is an honest label of the join: tick (|lag| &lt;= 15 s), minute (&lt;= 90 s), coarse (older); matches played from 2026-09-15 align against the full-resolution in-play tape, earlier ones against the thinned tape and read minute/coarse. The ULTRA-only per-point fields (server, winner, serve, outcome) are not on this surface. Works on a live match too. 404 <code>no_market</code> when the match has no mapped market — enumerate with <code>GET /history/matches?has_market=true</code>.</p>
 <h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /history/matches/{matchId}/prices parameters"><table><caption class="vh">GET /history/matches/{matchId}/prices — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>matchId</code></td><td>path</td><td>integer</td><td>yes</td><td>The match id. Every match route shares ONE id space, so the same value works everywhere <code>matchId</code> appears.
 

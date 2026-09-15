@@ -839,6 +839,7 @@ paths:
   /history/matches/{matchId}/prices:
     get:
       summary: Per-point price history — the match-winner quote in force at every played point (PRO)
+      operationId: listHistoryMatchPrices
       description: >-
         One row per played point of a match with a mapped market, ascending by `seq` (added
         2026-09-15). Each row carries the score state the BASIC tape publishes and, per neutral side
