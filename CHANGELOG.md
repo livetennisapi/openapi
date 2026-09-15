@@ -5,6 +5,10 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.10] - 2026-09-15
+### Changed
+- `Score.sequence`: a backwards move on `GET /matches/{matchId}/score` has two documented causes, not one — a withdrawn state, or the read deferring to a strictly higher-trust source's fresh state (about 1% of live reads). On the push feed and the native WebSocket the sequence only ever rises.
+
 ## [1.13.9] - 2026-09-15
 ### Added
 - `Score.accepted_at` (string|null, live score reads and push frames): the instant we accepted this state, stamped once and never refreshed — the clock to difference a latency study against.

@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.9",
+  "version": "1.13.10",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -3069,7 +3069,7 @@
        "integer",
        "null"
       ],
-      "description": "Per-match accept counter for this state: 1, 2, 3, … in the order we accepted states for THIS match, gapless within a match — higher is later, equal is the same state re-served, and a gap between two reads is exactly that many missed updates. It moves BACKWARDS only when we withdraw a state we cannot stand behind and re-serve the last good one. Null on states that predate the counter — never fabricated. Present on live score reads; absent on history-tape rows, which are already served in order."
+      "description": "Per-match accept counter for this state: 1, 2, 3, … in the order we accepted states for THIS match, gapless within a match — higher is later, equal is the same state re-served, and a gap between two reads is exactly that many missed updates. On /matches/{matchId}/score it moves BACKWARDS in two cases only: we withdrew a state we cannot stand behind and re-served the last good one, or the read deferred to a strictly higher-trust source's fresh state (about 1% of live reads, measured 2026-09-15). On the push feed and the native WebSocket it only ever rises. Null on states that predate the counter — never fabricated. Present on live score reads; absent on history-tape rows, which are already served in order."
      },
      "age_seconds": {
       "type": [

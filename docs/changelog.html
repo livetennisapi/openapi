@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.9, last change 2026-09-15.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.10, last change 2026-09-15.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -155,8 +155,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.9</strong>, last change <time datetime="2026-09-15">2026-09-15</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.10</strong>, last change <time datetime="2026-09-15">2026-09-15</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.10"><h2>1.13.10 <time datetime="2026-09-15">2026-09-15</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><code>Score.sequence</code>: a backwards move on <code>GET /matches/{matchId}/score</code> has two documented causes, not one — a withdrawn state, or the read deferring to a strictly higher-trust source&#x27;s fresh state (about 1% of live reads). On the push feed and the native WebSocket the sequence only ever rises.</li>
+</ul></article>
 <article id="v1.13.9"><h2>1.13.9 <time datetime="2026-09-15">2026-09-15</time></h2>
 <h3>Added</h3>
 <ul>
