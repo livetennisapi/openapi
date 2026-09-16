@@ -5,6 +5,10 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.11] - 2026-09-16
+### Added
+- `GET /players/{playerId}/stoppages` (PRO) and its alias `GET /players/{playerId}/injuries`: one player's in-match stoppages (medical timeouts, trainer calls; toilet breaks, pauses and other stoppages on request) plus the matches the player retired from or gave a walkover, newest first, over a window that defaults to the last 180 days. `meta.latest_medical_timeout` / `previous_medical_timeout` answer "the latest and the one before"; `meta.record_starts` states where each record begins (stoppage events from 2026-09-12; outcomes from 2026-08-18). In-match stoppages and match outcomes only; there is no off-court injury record.
+
 ## [1.13.10] - 2026-09-15
 ### Changed
 - `Score.sequence`: a backwards move on `GET /matches/{matchId}/score` has two documented causes, not one — a withdrawn state, or the read deferring to a strictly higher-trust source's fresh state (about 1% of live reads). On the push feed and the native WebSocket the sequence only ever rises.

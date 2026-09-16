@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.10"
+  version: "1.13.11"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -350,6 +350,144 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "429": { $ref: "#/components/responses/RateLimited" }
+  /players/{playerId}/stoppages:
+    get:
+      summary: One player's in-match stoppages and did-not-finish outcomes, newest first over a window (PRO)
+      description: >-
+        Added 2026-09-16. Medical timeouts and trainer calls on the player's matches
+        (from the stoppage family of GET /matches/{matchId}/events), plus retirements
+        and walkovers where THIS player is the non-winner, merged and sorted by `at`
+        descending. Window: `since`/`until` (ISO date or UTC instant; default the last
+        180 days; at most 366 days, else 400 window_too_long). `kind` filters the seven
+        row kinds (default medical_timeout,trainer_called,retirement,walkover); `before`
+        pages by `meta.next_cursor`. `meta.latest_medical_timeout` and
+        `previous_medical_timeout` are the two newest medical timeouts in the window
+        whatever the page or the kind filter. `meta.record_starts` states how far back
+        each family goes: stoppage rows exist from 2026-09-12 only; outcome rows from the
+        oldest match with a stated winner. In-match stoppages and match outcomes only —
+        no off-court injury record exists here. Same PRO capability as /events.
+        `GET /players/{playerId}/injuries` serves the identical response.
+      parameters:
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: since
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Window start — an ISO date (start of that day) or a UTC instant. Default `until` minus 180 days.
+        example: '2026-03-19'
+      - name: until
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Window end — an ISO date (the whole of that day) or a UTC instant. Default now.
+        example: '2026-09-15T00:00:00Z'
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Comma-separated row kinds from medical_timeout, trainer_called, toilet_break, pause, stoppage, retirement, walkover. Default `medical_timeout,trainer_called,retirement,walkover`.
+        example: medical_timeout,retirement
+      - name: before
+        in: query
+        required: false
+        schema:
+          type: string
+        description: The `meta.next_cursor` of the previous page (opaque `<kind>:<id>`), valid for the same window and kinds.
+      - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: The player's stoppage and outcome rows, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlayerStoppage'
+                  meta:
+                    $ref: '#/components/schemas/PlayerStoppagesMeta'
+        '400':
+          description: window_too_long, bad_window, bad_since, bad_until, bad_kind or bad_cursor
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/UpgradeRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/PlayerGone'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+  /players/{playerId}/injuries:
+    get:
+      summary: Alias of /players/{playerId}/stoppages — the identical response (PRO)
+      description: >-
+        Added 2026-09-16. The same handler, parameters, rows and meta as
+        /players/{playerId}/stoppages, under the word the request used. The honest name
+        is `stoppages`: nothing here is a diagnosis, only what the scorer, umpire or
+        result stated.
+      parameters:
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: since
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: until
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: kind
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: before
+        in: query
+        required: false
+        schema:
+          type: string
+      - $ref: '#/components/parameters/limit'
+      responses:
+        '200':
+          description: Identical to /players/{playerId}/stoppages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlayerStoppage'
+                  meta:
+                    $ref: '#/components/schemas/PlayerStoppagesMeta'
+        '400':
+          description: window_too_long, bad_window, bad_since, bad_until, bad_kind or bad_cursor
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/UpgradeRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          $ref: '#/components/responses/PlayerGone'
+        '429':
+          $ref: '#/components/responses/RateLimited'
   /matches/{matchId}/status-history:
     get:
       summary: The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)
@@ -2655,6 +2793,163 @@ components:
           description: >-
             Present only when something is withheld — plain-language reason, e.g. a
             null `games` array.
+    PlayerStoppage:
+      description: >-
+        One row of GET /players/{playerId}/stoppages — an in-match stoppage on one of the
+        player's matches, or a match the player did not finish. Stoppage rows carry
+        `score_at`, `duration_seconds` and `reason`; outcome rows carry `final_score` when a
+        score row exists. Never inferred except `pause` (source_stated false).
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+          - medical_timeout
+          - trainer_called
+          - toilet_break
+          - pause
+          - stoppage
+          - retirement
+          - walkover
+        at:
+          type: string
+          format: date-time
+          description: UTC instant of the stoppage (the source's own instant) or of the recorded outcome.
+        match_id:
+          type: integer
+        tournament:
+          type:
+          - string
+          - 'null'
+        opponent:
+          type:
+          - object
+          - 'null'
+          description: The other side of the match; null when unknown.
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        score_at:
+          type: object
+          description: Stoppage rows only — the score at the stoppage.
+          properties:
+            sets:
+              type:
+              - array
+              - 'null'
+              items:
+                type: integer
+            games:
+              type: array
+              items:
+                type: array
+                items:
+                  type: integer
+            points:
+              type:
+              - array
+              - 'null'
+              items:
+                type:
+                - string
+                - 'null'
+        final_score:
+          type: object
+          description: Outcome rows only, when a score row exists — sets and games of the newest score row.
+          properties:
+            sets:
+              type: array
+              items:
+                type: integer
+            games:
+              type: array
+              items:
+                type: array
+                items:
+                  type: integer
+        attribution:
+          type: string
+          enum:
+          - player
+          - match
+          description: >-
+            `player` — the source named this player's side (or the result names them as the
+            non-winner); `match` — the source stated the stoppage for the match without a side,
+            so the row appears in both players' lists.
+        duration_seconds:
+          type:
+          - integer
+          - 'null'
+          description: Seconds to the matching end row; null when no end row was recorded and on outcome rows.
+        source_stated:
+          type: boolean
+          description: True when a scorer, umpire, live-scoring state or result stated it; false only on `pause` (clock-inferred).
+        reason:
+          type: string
+          description: Stoppage rows only — the stated reason; `unknown` when only a flag reached us.
+    PlayerStoppagesMeta:
+      type: object
+      properties:
+        player_id:
+          type: integer
+        window:
+          type: object
+          description: The bounds actually applied, UTC.
+          properties:
+            since:
+              type: string
+              format: date-time
+            until:
+              type: string
+              format: date-time
+        kinds:
+          type: array
+          description: The kinds this response was filtered to.
+          items:
+            type: string
+        counts:
+          type: object
+          description: Per selected kind, the number of rows over the WHOLE window (not the page).
+          additionalProperties:
+            type: integer
+        latest_medical_timeout:
+          oneOf:
+          - $ref: '#/components/schemas/PlayerStoppage'
+          - type: 'null'
+          description: The newest medical timeout in the window, whatever the page or kind filter; null when none.
+        previous_medical_timeout:
+          oneOf:
+          - $ref: '#/components/schemas/PlayerStoppage'
+          - type: 'null'
+          description: The one before it; null when fewer than two.
+        record_starts:
+          type: object
+          description: How far back each family is recorded — read before trusting a long window.
+          properties:
+            stoppages:
+              type: string
+              description: '2026-09-12 — no stoppage row exists before this day.'
+            outcomes:
+              type:
+              - string
+              - 'null'
+              description: Date of the oldest match with a stated winner (the field an outcome row needs).
+        note:
+          type: string
+          description: 'In-match stoppages and match outcomes only; no off-court injury record.'
+        limit:
+          type: integer
+        count:
+          type: integer
+        has_more:
+          type: boolean
+        next_cursor:
+          type:
+          - string
+          - 'null'
+          description: Pass back as `?before=`; null when the window is exhausted.
     Player:
       type: object
       properties:
