@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.11",
+  "version": "1.13.12",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -4863,15 +4863,13 @@
    },
    "HistoryTape": {
     "type": "object",
-    "description": "The full per-match history tape (BASIC, or Historical Data API Starter+). `tape` rows INCLUDE the model fields `win_probability_p1` and `danger` per point — on this product they are part of the tape itself, not an ULTRA upsell.",
     "properties": {
      "match": {
-      "$ref": "#/components/schemas/Match",
-      "description": "Match metadata with the final score embedded."
+      "$ref": "#/components/schemas/Match"
      },
      "tape": {
       "type": "array",
-      "description": "The score sequence — see HistoryTapeRow. Array order is the authoritative order: commit order on `raw`, match-progress order on `?sequence=clean` (see the `sequence` parameter).",
+      "description": "Chronological score sequence — see HistoryTapeRow",
       "items": {
        "$ref": "#/components/schemas/HistoryTapeRow"
       }
@@ -4881,7 +4879,7 @@
        "array",
        "null"
       ],
-      "description": "Per-set tiebreak final scores from OBSERVED states only, aligned to the sets of the final scoreline: `{\"p1\", \"p2\"}` for a 7-6 set whose observed maximum tiebreak state is a valid terminal shape (max >= 7, margin >= 2), null per set otherwise — a breaker whose closing point the feed skipped reads null rather than an under-report. Null when the match has no 7-6 set. Present on `raw` and `clean` alike.",
+      "description": "Per-set tiebreak final scores, aligned to the sets of the final scoreline: {\"p1\", \"p2\"} for each 7-6 set, null per set otherwise; null when the match has no 7-6 set. Each entry comes from the tape's own terminal breaker state (max >= 7, margin >= 2 — always wins), a source's finished-match summary recorded at completion, or the point-by-point reconstruction — named per set in meta.tiebreaks_source. Nothing is inferred from a partial state: a breaker whose closing point no source states reads null rather than an under-report. Before 2026-09-16 only the tape kind existed and the array was null on ~99% of 7-6 sets.",
       "items": {
        "type": [
         "object",
@@ -4899,9 +4897,9 @@
      },
      "profiles": {
       "type": "array",
-      "description": "Model profiles produced during the match, oldest first.",
+      "description": "Model profiles, oldest first (Analysis `profile` shape)",
       "items": {
-       "$ref": "#/components/schemas/ModelProfile"
+       "type": "object"
       }
      },
      "meta": {
@@ -4948,14 +4946,29 @@
        },
        "from_archive": {
         "type": "boolean",
-        "description": "True when the tape was served from the immutable archive rather than the live-score table. Content is identical."
+        "description": "The rows were served from the immutable archive rather than the live table. Informational — the content contract is identical."
        },
        "points": {
         "$ref": "#/components/schemas/PointsMeta"
        },
-       "model_rows": {
-        "type": "integer",
-        "description": "How many of the RETURNED rows carry a model probability. The model stamp is best-effort in the live path, so no coverage value implies it — this is the count for THIS response, derived per read and never stored."
+       "tiebreaks_source": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "description": "Aligned to the top-level `tiebreaks`: per set, where that set's breaker final came from — `tape` (the served tape reached a terminal breaker state), `summary` (a source's finished-match summary, recorded at completion) or `reconstruction` (the point-by-point reconstruction) — or null where the entry is null. Null when `tiebreaks` is null.",
+        "items": {
+         "type": [
+          "string",
+          "null"
+         ],
+         "enum": [
+          "tape",
+          "summary",
+          "reconstruction",
+          null
+         ]
+        }
        },
        "generated_at": {
         "type": "string",
@@ -7114,15 +7127,14 @@
    },
    "ArchiveTape": {
     "type": "object",
-    "description": "The reconstructed 2013–2022 point-by-point tape for one archive result (ULTRA, or any active History plan). Same envelope as HistoryTape so one parser reads both halves of the tape product, with the differences that are TRUE: `match` is the archive result row (winner/loser-shaped, so the rows are winner-first rather than p1/p2), `profiles` is always empty, `meta` has no `match_id` because an archive id is not a match id, and every row carries a null `timestamp` and null model fields because nobody watched these matches and no model ever scored them.",
+    "description": "The reconstructed 2013-2022 point-by-point tape for one archive result. Same envelope as HistoryTape so one parser reads both halves of the tape product, with the differences that are TRUE: `match` is the archive result row (winner/loser-shaped), `profiles` is always empty, and every row carries a null `timestamp`, a null `age_seconds` and null model fields because nobody watched these matches and no model scored them. `meta` has no `match_id` — an archive id is not a match id.",
     "properties": {
      "match": {
-      "$ref": "#/components/schemas/ArchiveMatch",
-      "description": "The archive result the tape was proved to belong to."
+      "$ref": "#/components/schemas/ArchiveMatch"
      },
      "tape": {
       "type": "array",
-      "description": "The score sequence in `seq` order, WINNER-FIRST — `sets[0]` / `games[0]` / `points[0]` are the winner's, and `server: 1` means the winner was serving. Row shape is HistoryTapeRow, with `timestamp`, `win_probability_p1` and `danger` null throughout. `point_winner` is present on every row and is null throughout a per-GAME tape, where consecutive rows differ by a whole game and no single point is attributable.",
+      "description": "The score sequence in seq order, WINNER-FIRST (`sets[0]` / `games[0]` / `points[0]` are the winner's, and a `server` of 1 means the winner was serving) — see HistoryTapeRow. `point_winner` is present and is null on every row of a per-GAME tape, where consecutive rows differ by a whole game and no single point is attributable.",
       "items": {
        "$ref": "#/components/schemas/HistoryTapeRow"
       }
@@ -7132,7 +7144,7 @@
        "array",
        "null"
       ],
-      "description": "Per-set tiebreak final scores, same rule and shape as on HistoryTape. Usually PRESENT even on a per-game tape — the 2013–2022 public record expands points inside tiebreaks even where it does not elsewhere.",
+      "description": "Per-set tiebreak final scores, same rule and shape as on HistoryTape. Usually PRESENT even on a per-game tape — the pre-2023 record expands points inside tiebreaks even where it does not elsewhere.",
       "items": {
        "type": [
         "object",
@@ -7150,7 +7162,7 @@
      },
      "profiles": {
       "type": "array",
-      "description": "Always empty. The key is kept so the envelope matches HistoryTape; no model analysis exists, or could exist, for a 2013–2022 match.",
+      "description": "Always empty. The key is kept so the envelope matches HistoryTape; no model analysis exists, or could exist, for a pre-2023 match.",
       "items": {
        "type": "object"
       }
@@ -7160,11 +7172,24 @@
       "properties": {
        "archive_match_id": {
         "type": "integer",
-        "description": "The `archive_matches.id` this tape belongs to. Named in full because it is NOT a match id — passing it to a `/matches/…` route resolves a different, real record without erroring."
+        "description": "The `archive_matches.id` this tape belongs to. Named in full because it is NOT a match id — passing it to a `/matches/...` route resolves a different, real record without erroring."
+       },
+       "tiebreaks_source": {
+        "type": [
+         "array",
+         "null"
+        ],
+        "description": "Aligned to `tiebreaks`, same contract as on HistoryTape. Every populated entry here reads `reconstruction` — the archive tape IS the reconstruction and nothing else is consulted.",
+        "items": {
+         "type": [
+          "string",
+          "null"
+         ]
+        }
        },
        "rows": {
         "type": "integer",
-        "description": "Rows returned. Read it next to `granularity` before comparing with a 2023+ tape's row count: across the corpus a tape averages 146 rows (median 138, range 4–570), and a per-game tape is far shorter than a point tape of the same match."
+        "description": "Rows returned. Read next to `granularity` before comparing it with a 2023+ tape's row count. Across the corpus a tape averages 146 rows (median 138, range 4-570); a per-game tape carries one row per game and is far shorter than a point tape of the same match."
        },
        "coverage": {
         "type": "string",
@@ -7172,7 +7197,7 @@
          "reconstructed",
          "reconstructed_partial"
         ],
-        "description": "The Coverage vocabulary restricted to the two values that can be true here — `from_start` and `partial` are structurally unreachable, because both assert we watched the match. `reconstructed` (94,307 matches, 96.3% of the corpus) = the tape reproduces the published final score exactly, and that score is a match that finished. `reconstructed_partial` (3,594, 3.7%) HAS TWO CAUSES and the label does not say which: measured over the whole table, 3,038 are point-granular tapes of matches that genuinely stopped early (3,027 retirements, 11 defaults) — the larger cause — and the remaining 556 carry the label only because their tape is per-GAME (542 of complete matches, 14 that are both at once). So it does NOT on its own mean incomplete match coverage: read `granularity` and the match's own score/outcome for that. On the 2023+ tape the same word means only short-at-either-end."
+        "description": "`reconstructed` (96.3% of the corpus) = the tape reproduces the published final score exactly, and that score is a match that finished. `reconstructed_partial` (3.7%) HAS TWO CAUSES and the label does not say which: either the match itself stopped early (a retirement or abandonment prefix), OR the tape is per-GAME — every one of the 556 game-granular tapes carries this label however complete it is, because the coverage vocabulary is closed and `game` has no word of its own. It therefore does NOT on its own mean incomplete match coverage: read `granularity` and the match's own score/outcome for that. Never `from_start` or `partial`: both assert we watched the match, and nobody watched these. On the 2023+ tape the same word means only short-at-either-end."
        },
        "granularity": {
         "type": "string",
@@ -7180,33 +7205,33 @@
          "point",
          "game"
         ],
-        "description": "What one row resolves to. `point` = the record advances within a game — 99.4% of the corpus (97,293 matches). `game` = one row per game, points expanded only inside tiebreaks — 556 matches, 555 of them in 2013 and one in 2014; every season from 2015 on is 100% point-granular. A per-game tape is a true record of the match and is published as one, never under a word that reads as per-point. Orthogonal to `coverage` as an axis, though a `game` tape is always labelled `reconstructed_partial`."
+        "description": "What one row resolves to. `point` = the record advances within a game — 99.4% of the corpus (97,293 matches). `game` = one row per game, with points expanded only inside tiebreaks — 556 matches, 555 of them in 2013 and one in 2014; every season from 2015 on is 100% point-granular. `point_winner` is null throughout a per-game tape. Orthogonal to `coverage` as an axis, though a `game` tape is always labelled `reconstructed_partial`."
        },
        "point_source": {
         "type": "string",
         "enum": [
          "reconstructed"
         ],
-        "description": "Always `reconstructed`. `observed` and `mixed` are unreachable here."
-       },
-       "point_source_detail": {
-        "type": "string",
-        "description": "Always `reconstruction from public record`. Stated in the payload so the provenance travels with the data rather than living only in a customer's memory of these docs."
+        "description": "Always `reconstructed`. It is a property of the dataset, not a measurement of these rows, and there is no other value it can take."
        },
        "model_rows": {
         "type": "integer",
-        "description": "Always 0 — no model ever scored a row of this corpus."
+        "description": "Always 0 — no model output exists for a pre-2023 match. Present so a client parsing both halves of the tape product reads one shape."
        },
        "observed_rows": {
         "type": "integer",
         "description": "Always 0 — no row here was watched live."
+       },
+       "point_source_detail": {
+        "type": "string",
+        "description": "Always `reconstruction from public record`. Stated in the payload so the provenance travels with the data rather than living only in a customer's memory of these docs."
        },
        "sequence": {
         "type": "string",
         "enum": [
          "raw"
         ],
-        "description": "Always `raw`. A reconstructed tape has one source and no corrections, so `?sequence=clean` has nothing to collapse; the parameter is ignored, not refused."
+        "description": "Always `raw`. There is nothing to collapse — a reconstructed tape has one source and no corrections, so `?sequence=clean` has no meaning here; the parameter is ignored, not refused."
        },
        "generated_at": {
         "type": "string",

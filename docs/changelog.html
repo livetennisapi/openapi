@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.11, last change 2026-09-16.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.12, last change 2026-09-16.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -155,8 +155,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.11</strong>, last change <time datetime="2026-09-16">2026-09-16</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.12</strong>, last change <time datetime="2026-09-16">2026-09-16</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.12"><h2>1.13.12 <time datetime="2026-09-16">2026-09-16</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><code>GET /history/matches/{matchId}</code> <code>tiebreaks</code>: per-set breaker finals are now filled from the point-by-point reconstruction and from the sources&#x27; set summaries when the live tape stopped one point short (measured before this change: null on about 99% of 7-6 sets — 297 measured, 3 populated). New <code>meta.tiebreaks_source</code> says, per set, whether the final came from <code>tape</code>, <code>summary</code> or <code>reconstruction</code>. The response shape is unchanged.</li>
+</ul></article>
 <article id="v1.13.11"><h2>1.13.11 <time datetime="2026-09-16">2026-09-16</time></h2>
 <h3>Added</h3>
 <ul>
