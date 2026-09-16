@@ -3049,6 +3049,16 @@
      }
     }
    },
+   "PlayerGone": {
+    "description": "The player id existed and was merged into another player record, or was retired with no successor. The body is `PlayerMerged`, not `Error`: it carries a forwarding address, which is the whole point of answering 410 rather than 404. An id that was NEVER issued keeps its 404 — a 410 would assert it once existed.",
+    "content": {
+     "application/json": {
+      "schema": {
+       "$ref": "#/components/schemas/PlayerMerged"
+      }
+     }
+    }
+   },
    "RateLimited": {
     "description": "Rate limit exceeded (Retry-After header present). Three body shapes, told apart by `error` and `scope`: the per-MINUTE limit (`rate_limited`, with `upgrade_url`, `tier` and `price` naming the next tier up); the per-DAY quota (`rate_limited` with `scope: \"day\"`, `limit_per_day`, and `resets_at` — the absolute ISO instant the daily window resets); and `abuse_throttled` with `retry_at_epoch` — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.",
     "content": {
@@ -3075,6 +3085,32 @@
        "null"
       ],
       "description": "The id that absorbed this one — re-point your records at it. Null means the forwarding target is unknown: nothing to forward you to, drop the id. On a merge chain this is the END of the chain, never an intermediate id that would 410 in turn."
+     },
+     "merged_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When THIS id stopped existing (UTC). On a chain it is the FIRST hop — the moment your copy of this id went stale."
+     },
+     "detail": {
+      "type": "string",
+      "description": "Human-readable explanation; differs for a merge and for a retirement so the two are distinguishable without parsing prose."
+     }
+    }
+   },
+   "PlayerMerged": {
+    "type": "object",
+    "description": "The 410 GONE body for a player id that was merged into another player record, or retired outright. Same shape as `MatchMerged` and the same reasoning: a redirect would rewrite the identity inside your warehouse without you seeing it, so the id is answered rather than forwarded.",
+    "properties": {
+     "error": {
+      "type": "string",
+      "description": "Always `merged`."
+     },
+     "merged_into": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "description": "The id that absorbed this one — re-point your records at it. Null means the player was RETIRED with no successor: nothing to forward you to, drop the id. On a merge chain this is the END of the chain, never an intermediate id that would 410 in turn."
      },
      "merged_at": {
       "type": "string",
