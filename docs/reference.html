@@ -155,7 +155,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.13.10 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.13.11 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -194,7 +194,7 @@ answer engines and any HTTP client.</p>
 <li><a href="#plans">Plans</a></li>
 <li><a href="#clients">Official client libraries</a></li>
 <li><a href="#conventions">Conventions</a></li>
-<li><a href="#endpoints">Endpoints</a> — all 41, with parameters and responses</li>
+<li><a href="#endpoints">Endpoints</a> — all 43, with parameters and responses</li>
 <li><a href="#websocket">WebSocket feed (ULTRA)</a></li>
 <li><a href="#faq">FAQ — plans and data depth</a></li>
 <li><a href="#schemas">Schemas</a></li>
@@ -426,6 +426,8 @@ so <code>[[6,3,2],[4,6,1]]</code> reads 6-4, 3-6, 2-1. It is player-major, not s
 <li><a href="#getMatchScore"><code>GET /matches/{matchId}/score</code> — Current score only — lowest-latency REST read (FREE)</a></li>
 <li><a href="#listMatchEvents"><code>GET /matches/{matchId}/events</code> — Match events, newest first (PRO)</a></li>
 <li><a href="#listSlateEvents"><code>GET /events</code> — Slate-wide events feed — every match&#x27;s events in one call, oldest first, cursor by id (PRO)</a></li>
+<li><a href="#get-/players/{playerId}/stoppages"><code>GET /players/{playerId}/stoppages</code> — One player&#x27;s in-match stoppages and did-not-finish outcomes, newest first over a window (PRO)</a></li>
+<li><a href="#get-/players/{playerId}/injuries"><code>GET /players/{playerId}/injuries</code> — Alias of /players/{playerId}/stoppages — the identical response (PRO)</a></li>
 <li><a href="#getMatchStatusHistory"><code>GET /matches/{matchId}/status-history</code> — The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)</a></li>
 <li><a href="#getMatchAnalysis"><code>GET /matches/{matchId}/analysis</code> — Model analysis for a match (ULTRA)</a></li>
 <li><a href="#getMatchStatistics"><code>GET /matches/{matchId}/statistics</code> — In-play statistics — aces, double faults, serve split, hold/break %, break points, service &amp; return points (ULTRA)</a></li>
@@ -540,6 +542,28 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /events responses"><table><caption class="vh">GET /events — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Events across the slate, ascending id</td></tr><tr><td><code>400</code></td><td>bad_type, bad_after_id or bad_since</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
 <h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /events response fields"><table><caption class="vh">GET /events — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
 <h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/events \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+<section class="op" id="get--players-{playerId}-stoppages">
+<h3><span class="method">GET</span> <code>/players/{playerId}/stoppages</code></h3>
+<p class="summary">One player&#x27;s in-match stoppages and did-not-finish outcomes, newest first over a window (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong></p>
+<p>Added 2026-09-16. Medical timeouts and trainer calls on the player&#x27;s matches (from the stoppage family of GET /matches/{matchId}/events), plus retirements and walkovers where THIS player is the non-winner, merged and sorted by <code>at</code> descending. Window: <code>since</code>/<code>until</code> (ISO date or UTC instant; default the last 180 days; at most 366 days, else 400 window_too_long). <code>kind</code> filters the seven row kinds (default medical_timeout,trainer_called,retirement,walkover); <code>before</code> pages by <code>meta.next_cursor</code>. <code>meta.latest_medical_timeout</code> and <code>previous_medical_timeout</code> are the two newest medical timeouts in the window whatever the page or the kind filter. <code>meta.record_starts</code> states how far back each family goes: stoppage rows exist from 2026-09-12 only; outcome rows from the oldest match with a stated winner. In-match stoppages and match outcomes only — no off-court injury record exists here. Same PRO capability as /events. <code>GET /players/{playerId}/injuries</code> serves the identical response.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId}/stoppages parameters"><table><caption class="vh">GET /players/{playerId}/stoppages — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>playerId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr><tr><td><code>since</code></td><td>query</td><td>string</td><td>no</td><td>Window start — an ISO date (start of that day) or a UTC instant. Default <code>until</code> minus 180 days.</td></tr><tr><td><code>until</code></td><td>query</td><td>string</td><td>no</td><td>Window end — an ISO date (the whole of that day) or a UTC instant. Default now.</td></tr><tr><td><code>kind</code></td><td>query</td><td>string</td><td>no</td><td>Comma-separated row kinds from medical_timeout, trainer_called, toilet_break, pause, stoppage, retirement, walkover. Default <code>medical_timeout,trainer_called,retirement,walkover</code>.</td></tr><tr><td><code>before</code></td><td>query</td><td>string</td><td>no</td><td>The <code>meta.next_cursor</code> of the previous page (opaque <code>&lt;kind&gt;:&lt;id&gt;</code>), valid for the same window and kinds.</td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId}/stoppages responses"><table><caption class="vh">GET /players/{playerId}/stoppages — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>The player&#x27;s stoppage and outcome rows, newest first</td></tr><tr><td><code>400</code></td><td>window_too_long, bad_window, bad_since, bad_until, bad_kind or bad_cursor</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>410</code></td><td></td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId}/stoppages response fields"><table><caption class="vh">GET /players/{playerId}/stoppages — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/players/1104/stoppages \
+  -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
+</section>
+<section class="op" id="get--players-{playerId}-injuries">
+<h3><span class="method">GET</span> <code>/players/{playerId}/injuries</code></h3>
+<p class="summary">Alias of /players/{playerId}/stoppages — the identical response (PRO)</p>
+<p class="meta">Plan required: <strong>PRO</strong></p>
+<p>Added 2026-09-16. The same handler, parameters, rows and meta as /players/{playerId}/stoppages, under the word the request used. The honest name is <code>stoppages</code>: nothing here is a diagnosis, only what the scorer, umpire or result stated.</p>
+<h4>Parameters</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId}/injuries parameters"><table><caption class="vh">GET /players/{playerId}/injuries — parameters</caption><thead><tr><th scope="col">Name</th><th scope="col">In</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Notes</th></tr></thead><tbody><tr><td><code>playerId</code></td><td>path</td><td>integer</td><td>yes</td><td></td></tr><tr><td><code>since</code></td><td>query</td><td>string</td><td>no</td><td></td></tr><tr><td><code>until</code></td><td>query</td><td>string</td><td>no</td><td></td></tr><tr><td><code>kind</code></td><td>query</td><td>string</td><td>no</td><td></td></tr><tr><td><code>before</code></td><td>query</td><td>string</td><td>no</td><td></td></tr><tr><td><code>limit</code></td><td>query</td><td>integer</td><td>no</td><td> Default <code>50</code>.</td></tr></tbody></table></div>
+<h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId}/injuries responses"><table><caption class="vh">GET /players/{playerId}/injuries — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>200</code></td><td>Identical to /players/{playerId}/stoppages</td></tr><tr><td><code>400</code></td><td>window_too_long, bad_window, bad_since, bad_until, bad_kind or bad_cursor</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>404</code></td><td>No such resource, or no data yet</td></tr><tr><td><code>410</code></td><td></td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
+<h4>Response fields</h4><div class="scrollx" tabindex="0" role="region" aria-label="GET /players/{playerId}/injuries response fields"><table><caption class="vh">GET /players/{playerId}/injuries — response fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead><tbody><tr><td><code>data</code></td><td>array of object</td><td></td></tr><tr><td><code>meta</code></td><td>object</td><td></td></tr></tbody></table></div>
+<h4>Example</h4><pre><code>curl https://api.livetennisapi.com/api/public/v1/players/1104/injuries \
   -H &quot;Authorization: Bearer twjp_...&quot;</code></pre>
 </section>
 <section class="op" id="getMatchStatusHistory">
@@ -1221,6 +1245,38 @@ across a <code>?tour=</code> group.</p>
 <tr><td><code>observed_age_seconds</code></td><td>integer or null</td><td>Seconds since ANY of our sources last CONFIRMED this state — the insert itself, the owning source re-asserting it, or an independent source agreeing with it. The &quot;is anyone still watching&quot; clock, next to <code>age_seconds</code>, the &quot;has anything happened&quot; clock: a long age_seconds with a small observed_age_seconds is a changeover or set break, not a stall. Null = unknown: no observation clock stored on the row, or the archive fallback on a retention-trimmed completed match (where age_seconds and sources_count are null too). Absent on history-tape rows.</td></tr>
 <tr><td><code>sources_count</code></td><td>integer or null</td><td>How many DISTINCT sources inserted or independently confirmed this match&#x27;s state in the last 60 seconds (our public source window). A count, never a name; it counts sources we accepted a state from or that agreed with the stored state, so it can under-count and never over-counts. 1 is ordinary; 0 on a live match past a full minute means nobody we accepted a state from, or who agreed with the stored state, has reported it in the last 60 seconds; 0 on a completed match is normal. Null = unknown (a read blip, or the archive fallback). Present wherever observed_age_seconds is.</td></tr>
 <tr><td><code>detail</code></td><td>string</td><td>Present only when something is withheld — plain-language reason, e.g. a null <code>games</code> array.</td></tr></tbody></table></div>
+</section>
+<section id="schema-playerstoppage">
+<h3>PlayerStoppage</h3>
+<p>One row of GET /players/{playerId}/stoppages — an in-match stoppage on one of the player&#x27;s matches, or a match the player did not finish. Stoppage rows carry <code>score_at</code>, <code>duration_seconds</code> and <code>reason</code>; outcome rows carry <code>final_score</code> when a score row exists. Never inferred except <code>pause</code> (source_stated false).</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="PlayerStoppage fields"><table><caption class="vh">PlayerStoppage schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>kind</code></td><td>string (medical_timeout, trainer_called, toilet_break, pause, stoppage, retirement, walkover)</td><td></td></tr>
+<tr><td><code>at</code></td><td>string</td><td>UTC instant of the stoppage (the source&#x27;s own instant) or of the recorded outcome.</td></tr>
+<tr><td><code>match_id</code></td><td>integer</td><td></td></tr>
+<tr><td><code>tournament</code></td><td>string or null</td><td></td></tr>
+<tr><td><code>opponent</code></td><td>object or null</td><td>The other side of the match; null when unknown.</td></tr>
+<tr><td><code>score_at</code></td><td>object</td><td>Stoppage rows only — the score at the stoppage.</td></tr>
+<tr><td><code>final_score</code></td><td>object</td><td>Outcome rows only, when a score row exists — sets and games of the newest score row.</td></tr>
+<tr><td><code>attribution</code></td><td>string (player, match)</td><td><code>player</code> — the source named this player&#x27;s side (or the result names them as the non-winner); <code>match</code> — the source stated the stoppage for the match without a side, so the row appears in both players&#x27; lists.</td></tr>
+<tr><td><code>duration_seconds</code></td><td>integer or null</td><td>Seconds to the matching end row; null when no end row was recorded and on outcome rows.</td></tr>
+<tr><td><code>source_stated</code></td><td>boolean</td><td>True when a scorer, umpire, live-scoring state or result stated it; false only on <code>pause</code> (clock-inferred).</td></tr>
+<tr><td><code>reason</code></td><td>string</td><td>Stoppage rows only — the stated reason; <code>unknown</code> when only a flag reached us.</td></tr></tbody></table></div>
+</section>
+<section id="schema-playerstoppagesmeta">
+<h3>PlayerStoppagesMeta</h3>
+<div class="scrollx" tabindex="0" role="region" aria-label="PlayerStoppagesMeta fields"><table><caption class="vh">PlayerStoppagesMeta schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+<tbody><tr><td><code>player_id</code></td><td>integer</td><td></td></tr>
+<tr><td><code>window</code></td><td>object</td><td>The bounds actually applied, UTC.</td></tr>
+<tr><td><code>kinds</code></td><td>array of string</td><td>The kinds this response was filtered to.</td></tr>
+<tr><td><code>counts</code></td><td>object</td><td>Per selected kind, the number of rows over the WHOLE window (not the page).</td></tr>
+<tr><td><code>latest_medical_timeout</code></td><td>object or null</td><td>The newest medical timeout in the window, whatever the page or kind filter; null when none.</td></tr>
+<tr><td><code>previous_medical_timeout</code></td><td>object or null</td><td>The one before it; null when fewer than two.</td></tr>
+<tr><td><code>record_starts</code></td><td>object</td><td>How far back each family is recorded — read before trusting a long window.</td></tr>
+<tr><td><code>note</code></td><td>string</td><td>In-match stoppages and match outcomes only; no off-court injury record.</td></tr>
+<tr><td><code>limit</code></td><td>integer</td><td></td></tr>
+<tr><td><code>count</code></td><td>integer</td><td></td></tr>
+<tr><td><code>has_more</code></td><td>boolean</td><td></td></tr>
+<tr><td><code>next_cursor</code></td><td>string or null</td><td>Pass back as <code>?before=</code>; null when the window is exhausted.</td></tr></tbody></table></div>
 </section>
 <section id="schema-player">
 <h3>Player</h3>

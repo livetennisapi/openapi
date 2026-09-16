@@ -153,7 +153,7 @@
 <a class="skip-link" href="#main">Skip to content</a>
 <div class="wrap">
 <header>
-<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.10</p>
+<p class="meta">Live Tennis API &middot; docs &middot; version 1.13.11</p>
 <h1>Point-by-point tennis data API</h1>
 <p><strong>Which endpoints return point-by-point tennis data, and how complete is it?</strong> <code>GET /history/matches/{matchId}</code> returns the tape for one completed match: the score after every point, with the model's win probability at that point. <code>GET /history/matches</code> lists completed matches with their tape coverage, and <code>GET /history/coverage</code> is the measured completeness rollup per tour and draw bucket — a number we publish rather than estimate, with its own <code>as_of</code>. <code>GET /history/packages</code> serves the same data as pre-built monthly bulk files.</p>
 <p class="meta">6 endpoints on this page. Base URL
@@ -172,7 +172,7 @@ BASIC, PRO. A free key needs no card.</p>
 <h2 id="endpoints">The endpoints</h2>
 <p>Each one below lists its plan tier, every parameter, the response shape and an example. They
 are the same entries as in <a href="./reference.html#endpoints">the full reference</a>, which
-carries all 41 operations of the API on one page.</p>
+carries all 43 operations of the API on one page.</p>
 <section class="op" id="listHistoryMatchPrices">
 <h3><span class="method">GET</span> <code>/history/matches/{matchId}/prices</code></h3>
 <p class="summary">Per-point price history — the match-winner quote in force at every played point (PRO)</p>

@@ -244,12 +244,25 @@ def md_inline(text: str) -> str:
     spec's own FREE-signup URL rendered as dead plain text — the one link in the
     description a reader most wants to click. Autolinking happens after escaping
     and skips anything already inside a tag, so it cannot produce nested markup.
+
+    Running after escaping is what makes the URL body fiddly. By the time this
+    regex sees the text there are no literal `<` or `>` left to stop at: a
+    Markdown autolink written `<https://example.com/x>` has already become
+    `&lt;https://example.com/x&gt;`, so a class that merely excludes `<>` runs
+    straight through the closing entity and emits
+    `href="https://example.com/x&gt"` with a stray `;` after the anchor. That
+    shipped — Ahrefs found it on docs/changelog.html 2026-09-16 as a 303 to
+    `/subscribe/free&gt`. So the body stops at a bare `&` and `&amp;` is spelled
+    out as the one entity allowed through, because that is what a real query
+    separator looks like once escaped (`?a=1&b=2` -> `?a=1&amp;b=2`).
     """
     out = E(text or "")
     out = re.sub(r"`([^`]+)`", r"<code>\1</code>", out)
     # Trailing punctuation is sentence punctuation, not part of the URL.
+    body = r"(?:&amp;|[^\s<>()\"'&])"          # any URL char, or an escaped query separator
+    last = r"(?:&amp;|[^\s<>()\"'&.,;:])"      # ...that is not sentence punctuation
     out = re.sub(
-        r"(?<![\"'=>])(https?://[^\s<>()\"']+[^\s<>()\"'.,;:])",
+        rf"(?<![\"'=>])(https?://{body}+{last})",
         r'<a href="\1">\1</a>',
         out,
     )

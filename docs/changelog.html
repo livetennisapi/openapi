@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.10, last change 2026-09-15.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.11, last change 2026-09-16.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -17,7 +17,7 @@
 "headline":"Live Tennis API — Changelog",
 "description":"Every change to the Live Tennis API specification, dated and versioned.",
 "url":"https://docs.livetennisapi.com/changelog.html",
-"dateModified":"2026-09-15",
+"dateModified":"2026-09-16",
 "inLanguage":"en",
 "isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
 "publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
@@ -155,8 +155,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.10</strong>, last change <time datetime="2026-09-15">2026-09-15</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.11</strong>, last change <time datetime="2026-09-16">2026-09-16</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.11"><h2>1.13.11 <time datetime="2026-09-16">2026-09-16</time></h2>
+<h3>Added</h3>
+<ul>
+<li><code>GET /players/{playerId}/stoppages</code> (PRO) and its alias <code>GET /players/{playerId}/injuries</code>: one player&#x27;s in-match stoppages (medical timeouts, trainer calls; toilet breaks, pauses and other stoppages on request) plus the matches the player retired from or gave a walkover, newest first, over a window that defaults to the last 180 days. <code>meta.latest_medical_timeout</code> / <code>previous_medical_timeout</code> answer &quot;the latest and the one before&quot;; <code>meta.record_starts</code> states where each record begins (stoppage events from 2026-09-12; outcomes from 2026-08-18). In-match stoppages and match outcomes only; there is no off-court injury record.</li>
+</ul></article>
 <article id="v1.13.10"><h2>1.13.10 <time datetime="2026-09-15">2026-09-15</time></h2>
 <h3>Changed</h3>
 <ul>
@@ -499,11 +504,11 @@
 <li><strong>History endpoints documented.</strong> <code>/history/matches/{matchId}</code> (the full point-by-point tape with the per-point model win-probability — BASIC, or Historical Data API Starter+), <code>/history/packages</code> and <code>/history/packages/{period}</code> (pre-built monthly bulk downloads, manifest + <code>?format=jsonl|csv</code> — PRO, Historical Data API Pro+, or a one-off package pass), plus the <code>from</code>/<code>to</code> date-range filter and the 400/403 responses on <code>/history/matches</code>. New schemas <code>HistoryTape</code>, <code>ModelProfile</code>, <code>HistoryPackage</code>. Purely additive.</li>
 <li><strong>Concrete plan deltas.</strong> <code>info.description</code> now states exactly what each tier adds over the one below it, with its rate limits (FREE 30/min · 1,000/day; BASIC 60/min · 10,000/day; PRO 300/min · 100,000/day; ULTRA 600/min · 500,000/day), and documents the standalone Historical Data API plans (Starter / Pro / Business / one-off passes). <code>/matches</code> documents that <code>status=completed</code> requires BASIC — the gate was always enforced, just not written down.</li>
 <li><strong>WebSocket break-point signals.</strong> The <code>/ws</code> subscribe frame now documents an optional <code>signals</code> array; naming <code>break_point</code> opts the connection into two new frames — <code>break_point</code> (schema <code>BreakPoint</code>) the instant a break point arises and <code>break_point_result</code> (schema <code>BreakPointResult</code>) when it resolves. Both are ULTRA-only and purely additive: an existing subscriber that sends no <code>signals</code> sees exactly the frames it saw before. Documented in <code>info.description</code>, the two new component schemas, and the rendered reference.</li>
-<li><strong>FREE tier.</strong> Self-serve with no card at &lt;<a href="https://livetennisapi.com/subscribe/free&gt">https://livetennisapi.com/subscribe/free&gt</a>; (30 req/min, 1,000 req/day). Covers live and upcoming matches, scores, players and fixtures — the six endpoints now tagged <code>(FREE)</code> in their summary. Purely additive: no endpoint, field, or type changed, and every paid tier keeps exactly the access it had. <code>/history/matches</code> remains BASIC; market prices stay PRO; analysis, live model fields and the WebSocket feed stay ULTRA.</li>
+<li><strong>FREE tier.</strong> Self-serve with no card at &lt;<a href="https://livetennisapi.com/subscribe/free">https://livetennisapi.com/subscribe/free</a>&gt; (30 req/min, 1,000 req/day). Covers live and upcoming matches, scores, players and fixtures — the six endpoints now tagged <code>(FREE)</code> in their summary. Purely additive: no endpoint, field, or type changed, and every paid tier keeps exactly the access it had. <code>/history/matches</code> remains BASIC; market prices stay PRO; analysis, live model fields and the WebSocket feed stay ULTRA.</li>
 <li><code>operationId</code> on all 12 operations, so generated clients get stable method names.</li>
 <li><code>info.contact</code>, <code>info.license</code> (MIT) and <code>info.termsOfService</code>.</li>
 <li>Redocly lint + a structural contract check in CI.</li>
-<li>Rendered reference published to &lt;<a href="https://docs.livetennisapi.com&gt">https://docs.livetennisapi.com&gt</a>;.</li>
+<li>Rendered reference published to &lt;<a href="https://docs.livetennisapi.com">https://docs.livetennisapi.com</a>&gt;.</li>
 </ul>
 <h3>Changed</h3>
 <ul>
