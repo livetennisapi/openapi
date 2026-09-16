@@ -356,6 +356,7 @@
    "get": {
     "summary": "One player's in-match stoppages and did-not-finish outcomes, newest first over a window (PRO)",
     "description": "Added 2026-09-16. Medical timeouts and trainer calls on the player's matches (from the stoppage family of GET /matches/{matchId}/events), plus retirements and walkovers where THIS player is the non-winner, merged and sorted by `at` descending. Window: `since`/`until` (ISO date or UTC instant; default the last 180 days; at most 366 days, else 400 window_too_long). `kind` filters the seven row kinds (default medical_timeout,trainer_called,retirement,walkover); `before` pages by `meta.next_cursor`. `meta.latest_medical_timeout` and `previous_medical_timeout` are the two newest medical timeouts in the window whatever the page or the kind filter. `meta.record_starts` states how far back each family goes: stoppage rows exist from 2026-09-12 only; outcome rows from the oldest match with a stated winner. In-match stoppages and match outcomes only — no off-court injury record exists here. Same PRO capability as /events. `GET /players/{playerId}/injuries` serves the identical response.",
+    "operationId": "listPlayerStoppages",
     "parameters": [
      {
       "name": "playerId",
@@ -455,6 +456,7 @@
    "get": {
     "summary": "Alias of /players/{playerId}/stoppages — the identical response (PRO)",
     "description": "Added 2026-09-16. The same handler, parameters, rows and meta as /players/{playerId}/stoppages, under the word the request used. The honest name is `stoppages`: nothing here is a diagnosis, only what the scorer, umpire or result stated.",
+    "operationId": "listPlayerInjuries",
     "parameters": [
      {
       "name": "playerId",

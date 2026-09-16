@@ -367,6 +367,7 @@ paths:
         oldest match with a stated winner. In-match stoppages and match outcomes only —
         no off-court injury record exists here. Same PRO capability as /events.
         `GET /players/{playerId}/injuries` serves the identical response.
+      operationId: listPlayerStoppages
       parameters:
       - name: playerId
         in: path
@@ -435,6 +436,7 @@ paths:
         /players/{playerId}/stoppages, under the word the request used. The honest name
         is `stoppages`: nothing here is a diagnosis, only what the scorer, umpire or
         result stated.
+      operationId: listPlayerInjuries
       parameters:
       - name: playerId
         in: path
