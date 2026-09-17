@@ -5,6 +5,10 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.13] - 2026-09-17
+### Changed
+- `GET /history/matches/{matchId}` `tiebreaks` / `meta.tiebreaks_source`: the timing was stated wrongly. The `summary` and `reconstruction` kinds were described as "recorded at completion"; they are written by a finals pass that runs once a day, so a match that finished earlier the same day commonly reads null for its 7-6 sets and carries them from the next pass onward. Only the `tape` kind is available the instant a match ends. Measured 2026-09-17: 72-100% of 7-6 sets populated on matches completed over the five previous days, 8% on matches completed the same day. Documentation only — no behaviour or field changed.
+
 ## [1.13.12] - 2026-09-16
 ### Changed
 - `GET /history/matches/{matchId}` `tiebreaks`: per-set breaker finals are now filled from the point-by-point reconstruction and from the sources' set summaries when the live tape stopped one point short (measured before this change: null on about 99% of 7-6 sets — 297 measured, 3 populated). New `meta.tiebreaks_source` says, per set, whether the final came from `tape`, `summary` or `reconstruction`. The response shape is unchanged.

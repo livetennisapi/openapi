@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.12"
+  version: "1.13.13"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -3734,12 +3734,21 @@ components:
             scoreline: {"p1", "p2"} for each 7-6 set, null per set otherwise;
             null when the match has no 7-6 set. Each entry comes from the
             tape's own terminal breaker state (max >= 7, margin >= 2 — always
-            wins), a source's finished-match summary recorded at completion,
-            or the point-by-point reconstruction — named per set in
-            meta.tiebreaks_source. Nothing is inferred from a partial state:
-            a breaker whose closing point no source states reads null rather
-            than an under-report. Before 2026-09-16 only the tape kind
-            existed and the array was null on ~99% of 7-6 sets.
+            wins), a source's finished-match summary, or the point-by-point
+            reconstruction — named per set in meta.tiebreaks_source. Nothing
+            is inferred from a partial state: a breaker whose closing point no
+            source states reads null rather than an under-report. Before
+            2026-09-16 only the tape kind existed and the array was null on
+            ~99% of 7-6 sets.
+            TIMING. Only the `tape` kind is available the instant a match
+            ends. `summary` and `reconstruction` entries are written by a
+            finals pass that runs ONCE A DAY, so a match that finished
+            earlier the same day commonly reads null for its
+            7-6 sets and carries them from the next pass onward. Measured
+            2026-09-17: of 7-6 sets in matches completed on the five previous
+            days, 72-100% were populated; of those completed the same day,
+            8%. Re-read a fresh match the following day before treating a
+            null as final.
           items:
             type:
             - object
@@ -3803,9 +3812,11 @@ components:
                 Aligned to the top-level `tiebreaks`: per set, where that
                 set's breaker final came from — `tape` (the served tape
                 reached a terminal breaker state), `summary` (a source's
-                finished-match summary, recorded at completion) or
-                `reconstruction` (the point-by-point reconstruction) — or
-                null where the entry is null. Null when `tiebreaks` is null.
+                finished-match summary) or `reconstruction` (the
+                point-by-point reconstruction) — or null where the entry is
+                null. Null when `tiebreaks` is null. `summary` and
+                `reconstruction` are written by the once-a-day finals pass
+                (see `tiebreaks`), not at the moment a match ends.
               items:
                 type:
                 - string
