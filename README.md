@@ -75,6 +75,10 @@ rankings, rally construction, shot-level charting, the reconstructed 2013–2022
 archive tape — which **any** active History plan, Starter included, also opens —
 WebSocket + the `/ws-token` push feed, webhooks).
 Calling above your tier returns `403 {"error":"upgrade_required"}`.
+When a paid plan ends — at the period end after a cancellation, or when a renewal
+goes unpaid — the **same key drops back to FREE automatically**: nothing is
+re-issued, free endpoints keep answering at the free limits, paid ones return
+`403 upgrade_required` from that moment. Subscribing again lifts the same key.
 
 **Quotas**
 

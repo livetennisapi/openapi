@@ -5,6 +5,10 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.14] - 2026-09-17
+### Changed
+- Plan end: when a paid plan's period ends (or a renewal goes unpaid) the same key now drops to the FREE tier automatically instead of being switched off — nothing is re-issued, free endpoints keep answering at the free limits, paid endpoints answer `403 upgrade_required` from that moment, and subscribing again lifts the same key. Behaviour change on the billing side effective 2026-09-17 19:59 UTC; keys of plans that ended in the previous 30 days were moved to FREE the same evening. No field or endpoint changed.
+
 ## [1.13.13] - 2026-09-17
 ### Changed
 - `GET /history/matches/{matchId}` `tiebreaks` / `meta.tiebreaks_source`: the timing was stated wrongly. The `summary` and `reconstruction` kinds were described as "recorded at completion"; they are written by a finals pass that runs once a day, so a match that finished earlier the same day commonly reads null for its 7-6 sets and carries them from the next pass onward. Only the `tape` kind is available the instant a match ends. Measured 2026-09-17: 72-100% of 7-6 sets populated on matches completed over the five previous days, 8% on matches completed the same day. Documentation only — no behaviour or field changed.
