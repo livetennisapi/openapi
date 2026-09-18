@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.14"
+  version: "1.13.15"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -3128,17 +3128,30 @@ components:
             scheduled time, no play recorded), never inline on a feed flap.
         event_status:
           type: [string, "null"]
-          enum: [Retired, Cancelled, Walk Over, Postponed, Interrupted, null]
+          enum: [Finished, Retired, Cancelled, Walk Over, Postponed, Interrupted, Unresolved, null]
           description: >-
-            How the match ended (or paused) when it did not run its course:
-            retirement, cancellation, walkover, postponement, or an in-play
-            suspension (`Interrupted` — rain/darkness/medical; the match is
-            paused, not over). NULL means the match completed normally OR the
-            outcome was never resolved — the feed does not distinguish those.
-            Two honest caveats: the value is cleared if a suspended match
-            resumes (no record of the pause survives), and for
-            `Retired`/`Walk Over` the withdrawing player is reported in
-            `withdrew`, where derivable.
+            The feed's own designator for the match state, passed through
+            verbatim. `Finished` is by far the most common value — 144,266 of
+            the 150,678 rows carrying one at 2026-09-18 — and until this
+            version it was missing from this enum, so a strictly-validating
+            generated client rejected the majority of completed matches. It is
+            listed now, with `Unresolved` (every source lost the match before a
+            result; see `outcome`). The rest name a match that did not run its
+            course: retirement, cancellation, walkover, postponement, or an
+            in-play suspension (`Interrupted` — rain/darkness/medical; the
+            match is paused, not over). NULL does NOT mean "completed
+            normally": it means the feed never stated anything for this match,
+            which covers matches that ran their course and matches nothing was
+            ever said about alike. `event_status: Finished` while `status` is
+            still `live` is not a contradiction — one source has called the
+            match over and we have not yet confirmed the final, so the score
+            may stand still until we do (`stale` goes true, `age_seconds`
+            climbs). Measured over the seven days to 2026-09-18, across 649
+            matches, that gap closed in 111 s at the median and 911 s at the
+            ninetieth percentile; 85 ran past ten minutes. Two honest caveats:
+            the value is cleared if a suspended match resumes (no record of the
+            pause survives), and for `Retired`/`Walk Over` the withdrawing
+            player is reported in `withdrew`, where derivable.
         event_status_updated_at:
           type: [string, "null"]
           format: date-time

@@ -5,6 +5,13 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.15] - 2026-09-18
+### Fixed
+- `event_status` (match object): the enum omitted **`Finished`** and **`Unresolved`**. `Finished` is the value the field carries on a normally-completed match and is by far its most common — 144,266 of the 150,678 rows carrying one, measured on 2026-09-18 — so a client generated from this spec with strict enum validation rejected the majority of completed matches. Both values are listed now. The API has always published them; only the spec was wrong, so nothing on the wire changed.
+### Changed
+- `event_status` description: "NULL means the match completed normally" was wrong in the direction that matters — null means the feed never stated anything for the match, which covers matches that ran their course and matches nothing was ever said about alike. Branch on `outcome`, not on the absence of a badge.
+- `event_status` description: `event_status: Finished` while `status` is still `live` is documented as the pending-final state (one source has called the match over, the final is not confirmed). The score stands still through it — `stale` true, `age_seconds` climbing. Measured over the seven days to 2026-09-18, across 649 matches, that gap closed in 111 s at the median and 911 s at the ninetieth percentile; 85 ran past ten minutes.
+
 ## [1.13.14] - 2026-09-17
 ### Changed
 - Plan end: when a paid plan's period ends (or a renewal goes unpaid) the same key now drops to the FREE tier automatically instead of being switched off — nothing is re-issued, free endpoints keep answering at the free limits, paid endpoints answer `403 upgrade_required` from that moment, and subscribing again lifts the same key. Behaviour change on the billing side effective 2026-09-17 19:59 UTC; keys of plans that ended in the previous 30 days were moved to FREE the same evening. No field or endpoint changed.
