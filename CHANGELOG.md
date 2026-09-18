@@ -5,6 +5,10 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.16] - 2026-09-18
+### Changed
+- `GET /usage` → `today.remaining_day`: documented as the day allowance less **SERVED** calls (`calls - errors`), and the API now computes it that way. Refused requests have never spent the daily allowance — the `429` guidance in this spec already said so — but the endpoint subtracted gross calls, so it under-reported what a key could still send by exactly its error count. Measured on 2026-09-18, one ULTRA key was shown 14,360 fewer requests remaining than the API would have served it. `today.calls` and `today.errors` are unchanged: raw counters of everything the key sent.
+
 ## [1.13.15] - 2026-09-18
 ### Fixed
 - `event_status` (match object): the enum omitted **`Finished`** and **`Unresolved`**. `Finished` is the value the field carries on a normally-completed match and is by far its most common — 144,266 of the 150,678 rows carrying one, measured on 2026-09-18 — so a client generated from this spec with strict enum validation rejected the majority of completed matches. Both values are listed now. The API has always published them; only the spec was wrong, so nothing on the wire changed.

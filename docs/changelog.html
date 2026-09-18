@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.15, last change 2026-09-18.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.16, last change 2026-09-18.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.15</strong>, last change <time datetime="2026-09-18">2026-09-18</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.16</strong>, last change <time datetime="2026-09-18">2026-09-18</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.16"><h2>1.13.16 <time datetime="2026-09-18">2026-09-18</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><code>GET /usage</code> → <code>today.remaining_day</code>: documented as the day allowance less <strong>SERVED</strong> calls (<code>calls - errors</code>), and the API now computes it that way. Refused requests have never spent the daily allowance — the <code>429</code> guidance in this spec already said so — but the endpoint subtracted gross calls, so it under-reported what a key could still send by exactly its error count. Measured on 2026-09-18, one ULTRA key was shown 14,360 fewer requests remaining than the API would have served it. <code>today.calls</code> and <code>today.errors</code> are unchanged: raw counters of everything the key sent.</li>
+</ul></article>
 <article id="v1.13.15"><h2>1.13.15 <time datetime="2026-09-18">2026-09-18</time></h2>
 <h3>Fixed</h3>
 <ul>

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.15"
+  version: "1.13.16"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -4164,7 +4164,10 @@ components:
           properties:
             calls: { type: integer }
             errors: { type: integer }
-            remaining_day: { type: [integer, "null"] }
+            remaining_day:
+              type: [integer, "null"]
+              description: >-
+                Requests still SERVABLE today: the day allowance less SERVED calls (`calls - errors`). Refused requests never spend the allowance, so this does not fall when a `429`, `403` or `404` is returned. Null when the tier carries no day cap.
         history:
           type: array
           description: Last 30 days, oldest first
