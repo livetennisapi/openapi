@@ -44,6 +44,37 @@ DOCS = ROOT / "docs"
 SITE = "https://livetennisapi.com"
 DOCS_URL = "https://docs.livetennisapi.com"
 
+
+def site_navigation(active: str) -> str:
+    """Shared, server-rendered navigation for every documentation page."""
+    destinations = [
+        ("index", "./", "Overview"),
+        ("reference", "./reference.html", "API reference"),
+        ("changelog", "./changelog.html", "Changelog"),
+    ]
+    links = "".join(
+        f'<a href="{href}"' + (' aria-current="page"' if key == active else '')
+        + f'>{label}</a>' for key, href, label in destinations
+    )
+    topics = "".join(
+        f'<a href="./{t["slug"]}.html"'
+        + (' aria-current="page"' if t["slug"] == active else '')
+        + f'>{E(t["title"])}</a>' for t in TOPICS
+    )
+    return (
+        '<header class="docs-site-header"><a class="docs-brand" href="./">'
+        '<img src="logo.svg" width="28" height="28" alt="">'
+        'Live Tennis API <span>Docs</span></a>'
+        '<nav class="docs-desktop-nav" aria-label="Documentation">' + links + '</nav>'
+        '<a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key '
+        '<span aria-hidden="true">↗</span></a></header>'
+        '<details class="docs-topic-menu"><summary>Explore the documentation</summary>'
+        '<nav aria-label="Documentation topics">' + links + topics + '</nav></details>'
+    )
+
+
+DESIGN_STYLES = '<link rel="stylesheet" href="docs-design-20260918.css">'
+
 # --- design tokens ----------------------------------------------------------
 # Mirrored from the product's canonical palette (app/services/design_tokens.py
 # in the application repo). This repo is published separately and cannot import
@@ -596,9 +627,11 @@ def build_html(spec: dict[str, Any]) -> str:
     .scrollx::-webkit-scrollbar-thumb {{ background:var(--muted); }}
   }}
 </style>
+{DESIGN_STYLES}
 </head>
-<body>
+<body class="docs-page docs-reference">
 <a class="skip-link" href="#main">Skip to content</a>
+{site_navigation('reference')}
 <div class="wrap">
 
 <header>
@@ -1197,10 +1230,12 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 "publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
 {FONT_PRELOADS}<link rel="stylesheet" href="fonts.css">
-{style_html}
+{style_html}{DESIGN_STYLES}
 </head>
-<body>
-<main>
+<body class="docs-page docs-changelog">
+<a class="skip-link" href="#main">Skip to content</a>
+{site_navigation('changelog')}
+<main class="wrap" id="main">
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
@@ -1440,10 +1475,11 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 "publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
 {FONT_PRELOADS}<link rel="stylesheet" href="fonts.css">
-{style_html}
+{style_html}{DESIGN_STYLES}
 </head>
-<body>
+<body class="docs-page docs-topic">
 <a class="skip-link" href="#main">Skip to content</a>
+{site_navigation(topic['slug'])}
 <div class="wrap">
 <header>
 <p class="meta">Live Tennis API &middot; docs &middot; version {E(str(info.get('version','')))}</p>

@@ -62,7 +62,7 @@
   <!-- Self-hosted webfonts. Nothing here is fetched from a third party, so the
        page has no font dependency it cannot verify. -->
   <link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-  <link rel="preload" href="fonts/space-grotesk-latin-500.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="fonts/space-grotesk-latin-700.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="fonts.css">
 
   <style>
@@ -316,9 +316,24 @@
        delete working features. The badge is the one that carries
        `.no-underline`, so the selector is anchored on that. */
     .scalar-app a.no-underline[href*="scalar.com"] { display: none !important; }
+
+    /* Keep the language menu adjacent to the tabs, outside their tablist. The
+       original buttons and popover stay intact so Scalar owns their behaviour. */
+    .scalar-app .docs-client-library-tabs { display: flex; align-items: stretch; }
+    .scalar-app .docs-client-library-tabs > .client-libraries-content {
+      flex: 1; min-width: 0; border-right: 0;
+    }
+    .scalar-app .docs-client-library-tabs > .contents > .client-libraries__select {
+      width: auto; min-width: 60px; padding: 8px 10px;
+      border-right: 1px solid var(--scalar-border-color);
+    }
+    .docs-home .scalar-app[hidden] { display: none; }
   </style>
+  <link rel="stylesheet" href="docs-design-20260918.css">
 </head>
-<body>
+<body class="docs-home">
+<a class="skip-link" href="#static-intro">Skip to content</a>
+<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./" aria-current="page">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./" aria-current="page">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a></nav></details>
   <!-- No boot splash any more: nothing loads until asked, so there is nothing to wait for.
        The div is kept (empty, hidden) because the on-demand loader reuses it as the mount
        point and the failure surface. -->
@@ -329,69 +344,45 @@
        else arrived with Scalar. Answer engines fetch, they do not render, and most of them skip the
        noscript fallback too — so the essentials sit here in plain markup and the boot script hides the
        block the moment Scalar paints. Same text as the noscript fallback below, kept in sync. -->
-  <header id="static-intro" class="fallback">
-    <h1>Live Tennis API — API Reference</h1>
-    <p>Real-time tennis scores, players, rankings, results and point-by-point history,
-    match-winner market prices and model win-probability for ATP, WTA, Challenger and ITF,
-    over REST and WebSocket. Base URL <code>https://api.livetennisapi.com/api/public/v1</code>,
-    authenticated with an <code>X-API-Key</code> header. A free key needs no card:
-    <a href="https://livetennisapi.com/subscribe/free">livetennisapi.com/subscribe/free</a>.</p>
-    <p><button id="open-explorer" type="button" class="lead">Open the interactive explorer</button></p>
-    <p><a class="lead" href="reference.html">Full reference as plain HTML</a> ·
-    <a href="llms.txt">Markdown digest (llms.txt)</a> ·
-    <a href="openapi.yaml">OpenAPI 3.1 (YAML)</a> ·
-    <a href="openapi.json">OpenAPI 3.1 (JSON)</a> ·
-    <a href="changelog.html">Changelog</a> ·
-    <a href="https://livetennisapi.com/pricing">Pricing</a> ·
-    <a href="https://livetennisapi.com/best-tennis-api">Which plan fits</a></p>
-    <p><strong>By topic</strong> — each page answers one question, with full parameter and
-    response detail, generated from the same spec:<br>
-    <a href="live-scores.html">Live scores</a> ·
-    <a href="players-and-tournaments.html">Players, tournaments &amp; rankings</a> ·
-    <a href="tennis-odds.html">Odds &amp; price ticks</a> ·
-    <a href="point-by-point-history.html">Point-by-point history</a> ·
-    <a href="historical-results-archive.html">Results archive (1968–2022)</a> ·
-    <a href="shot-level-rally-data.html">Shot-by-shot rally data</a> ·
-    <a href="push-feed-and-webhooks.html">WebSocket feed &amp; webhooks</a> ·
-    <a href="auth-quota-and-health.html">Auth, quota &amp; status</a></p>
-    <p class="dim">Official clients: <code>pip install livetennisapi</code>,
-    <code>npm install livetennisapi</code>, <code>npx livetennisapi-mcp</code> (24 MCP tools).</p>
-  </header>
+  <main id="static-intro" class="fallback">
+    <div class="docs-hero">
+      <div>
+        <p class="docs-eyebrow">Developer documentation / v1</p>
+        <h1>Tennis data.<br>Start building.</h1>
+        <p class="docs-lede">From your first live score to a complete match experience. Explore players, rankings, results, point-by-point history, market prices and model probabilities over REST and WebSocket.</p>
+        <div class="docs-actions"><button id="open-explorer" type="button">Open the interactive explorer <span aria-hidden="true">↗</span></button><a href="reference.html#quickstart">Read the quickstart →</a></div>
+        <p class="docs-lede" style="font-size:12px">ATP · WTA · Challenger · ITF. <a href="https://livetennisapi.com/subscribe/free">Get a free key</a>, no card required.</p>
+      </div>
+      <div class="docs-code">
+        <div class="docs-code-label"><span>Your first request</span><span>cURL / REST</span></div>
+        <pre><span class="code-accent">curl</span> --get \
+  https://api.livetennisapi.com/api/public/v1/matches \
+  --data-urlencode 'status=live' \
+  --data-urlencode 'limit=5' \
+  --header 'X-API-Key: YOUR_API_KEY'</pre>
+        <p>Replace the placeholder with your key. A successful response may have an empty <code>data</code> array when no match is live. One request uses one call from your quota.</p>
+      </div>
+    </div>
+    <div class="docs-section-title"><h2>Find the data you need.</h2><p>Endpoints, parameters and response examples, by topic.</p></div>
+    <nav class="docs-topics" aria-label="API topics">
+      <a href="live-scores.html"><small>01 / LIVE</small><strong>Scores &amp; match state</strong><span>Sets, games, points and score changes.</span></a>
+      <a href="players-and-tournaments.html"><small>02 / DIRECTORY</small><strong>Players &amp; tournaments</strong><span>Player profiles, rankings and competition details.</span></a>
+      <a href="tennis-odds.html"><small>03 / MARKETS</small><strong>Odds &amp; price ticks</strong><span>Match-winner markets and their recorded updates.</span></a>
+      <a href="point-by-point-history.html"><small>04 / HISTORY</small><strong>Point-by-point data</strong><span>Inspect match sequences and event history.</span></a>
+      <a href="historical-results-archive.html"><small>05 / ARCHIVE</small><strong>Historical results</strong><span>Results archive from 1968 through 2022.</span></a>
+      <a href="shot-level-rally-data.html"><small>06 / DETAIL</small><strong>Shot &amp; rally data</strong><span>Charted shots and rally-level detail where covered.</span></a>
+      <a href="push-feed-and-webhooks.html"><small>07 / STREAMING</small><strong>WebSocket &amp; webhooks</strong><span>Connect to push updates and delivery endpoints.</span></a>
+      <a href="auth-quota-and-health.html"><small>08 / ESSENTIALS</small><strong>Auth, quota &amp; status</strong><span>Authenticate, understand limits and check health.</span></a>
+    </nav>
+    <nav class="docs-resources" aria-label="Reference resources"><a href="reference.html">Complete HTML reference</a><a href="llms.txt">Markdown / llms.txt</a><a href="openapi.yaml">OpenAPI YAML</a><a href="openapi.json">OpenAPI JSON</a><a href="changelog.html">Changelog</a><a href="https://livetennisapi.com/pricing">Compare plans</a></nav>
+    <div class="docs-clients"><span>Official clients</span><code>pip install livetennisapi</code><code>npm install livetennisapi</code><code>npx livetennisapi-mcp</code></div>
+  </main>
 
   <!-- The interactive reference renders client-side. No major AI crawler executes
        JavaScript (GPTBot, ClaudeBot, PerplexityBot, OAI-SearchBot all read raw HTML
        only), so without this the entire API reference is invisible to answer engines.
        reference.html carries the same content as plain server-rendered HTML. -->
-  <noscript>
-    <div class="fallback">
-      <h1>Live Tennis API</h1>
-      <p>The interactive reference needs JavaScript. The complete reference is also
-      available as plain HTML:</p>
-      <p><a class="lead" href="reference.html#quickstart">→ Quickstart: see live scores in your browser, no code</a></p>
-      <p><a class="lead" href="reference.html">→ Full API reference (no JavaScript required)</a></p>
-      <p>Or download the <a href="openapi.yaml">OpenAPI specification</a>.</p>
-      <p><strong>By topic</strong> — each page answers one question, with full parameter and
-      response detail, generated from the same spec:<br>
-      <a href="live-scores.html">Live scores</a> ·
-      <a href="players-and-tournaments.html">Players, tournaments &amp; rankings</a> ·
-      <a href="tennis-odds.html">Odds &amp; price ticks</a> ·
-      <a href="point-by-point-history.html">Point-by-point history</a> ·
-      <a href="historical-results-archive.html">Results archive (1968–2022)</a> ·
-      <a href="shot-level-rally-data.html">Shot-by-shot rally data</a> ·
-      <a href="push-feed-and-webhooks.html">WebSocket feed &amp; webhooks</a> ·
-      <a href="auth-quota-and-health.html">Auth, quota &amp; status</a></p>
-
-      <p class="dim">Real-time tennis scores, players, rankings, match-winner market
-      prices and model win-probability for ATP, WTA, Challenger and ITF, over REST and WebSocket.
-      Official clients: <code>pip install livetennisapi</code>,
-      <code>npm install livetennisapi</code>, <code>npx livetennisapi-mcp</code>.
-      More at <a href="https://livetennisapi.com">livetennisapi.com</a>.</p>
-      <p class="dim">Building something on this API, or writing for a tennis
-      audience? Our <a href="https://affiliates.livetennisapi.com/program">affiliate
-      programme</a> pays 51% recurring for the lifetime of every subscription you refer,
-      with 10% off for them.</p>
-    </div>
-  </noscript>
+  <noscript><style>#open-explorer{display:none}</style><p class="fallback">The interactive explorer needs JavaScript. All <a href="reference.html">reference pages and examples</a> remain available.</p></noscript>
 
 <nav class="docs-corner" aria-label="Documentation">
   <a href="reference.html#quickstart" id="quickref"><span class="lbl-full">Quickstart (no code)</span><span class="lbl-short">Quickstart</span></a>
@@ -446,10 +437,76 @@
       var boot = document.getElementById('boot');
       var intro = document.getElementById('static-intro');
       var started = false;
+      var attempt = 0;
+      var documentFailed = false;
+
+      // Scoped compatibility fixes for the integrity-pinned Scalar 1.63.0 DOM.
+      // Its container CSS hides all span labels on narrow screens, including
+      // sr-only labels. Its language tablist also owns a non-tab menu button.
+      // Use existing text for names, and keep that original menu node beside
+      // the actual tablist. The observer reapplies this after vendor rerenders.
+      function improveExplorer(explorer) {
+        var queued = false;
+        function improve() {
+          queued = false;
+          // The vendor mounts its shell before the spec is fetched. A failed
+          // spec must not replace all useful documentation with a dead end.
+          // This message is emitted by the pinned bundle on document failure;
+          // recovery reloads the page instead of remounting vendor internals.
+          var heading = explorer.querySelector('h1.section-header-label');
+          if (!documentFailed && heading && /^Document .+ could not be loaded$/.test(heading.textContent.trim())) {
+            documentFailed = true;
+            explorer.hidden = true;
+            if (intro) intro.hidden = false;
+            document.querySelector('.skip-link').href = '#static-intro';
+            if (boot) {
+              boot.hidden = false;
+              boot.innerHTML = '<div class="boot-fail" role="status"><p>The API document could not load. Reload this page to try again.</p><p><a href="reference.html">Read the complete reference</a> while the interactive explorer is unavailable.</p></div>';
+            }
+            if (btn) { btn.disabled = false; btn.textContent = 'Reload this page'; }
+          }
+          if (documentFailed) return;
+          explorer.querySelectorAll('.client-libraries-list').forEach(function (list) {
+            var tabs = list.querySelector('.client-libraries-content');
+            var more = list.querySelector('.client-libraries__select');
+            if (!tabs || !more || !more.parentElement.classList.contains('contents')) return;
+            if (list.hasAttribute('aria-labelledby')) {
+              tabs.setAttribute('aria-labelledby', list.getAttribute('aria-labelledby'));
+            }
+            tabs.setAttribute('role', 'tablist');
+            tabs.setAttribute('aria-orientation', 'horizontal');
+            list.removeAttribute('role');
+            list.removeAttribute('aria-orientation');
+            list.removeAttribute('aria-labelledby');
+            list.classList.add('docs-client-library-tabs');
+            if (more.parentElement.parentElement === tabs) list.appendChild(more.parentElement);
+            list.querySelectorAll('[role="tab"], .client-libraries__select').forEach(function (button) {
+              var label = button.querySelector('.sr-only') || button.querySelector('.client-libraries-text');
+              if (label && label.textContent.trim()) button.setAttribute('aria-label', label.textContent.trim());
+            });
+          });
+          // The metadata links keep their text nodes, even when Scalar hides
+          // those nodes at 320px. Their accessible names must remain available.
+          explorer.querySelectorAll('a[href]').forEach(function (link) {
+            if (link.querySelector('svg') && !link.hasAttribute('aria-label') && link.textContent.trim()) {
+              link.setAttribute('aria-label', link.textContent.trim());
+            }
+          });
+        }
+        improve();
+        new MutationObserver(function () {
+          if (!queued) { queued = true; requestAnimationFrame(improve); }
+        }).observe(explorer, {childList: true, subtree: true});
+      }
 
       function load() {
+        if (documentFailed) { location.reload(); return; }
         if (started) return;
         started = true;
+        var current = ++attempt;
+        var done = false;
+        var timer;
+        var obs;
         if (btn) { btn.disabled = true; btn.textContent = 'Loading the explorer…'; }
         if (boot) {
           boot.hidden = false;
@@ -462,41 +519,54 @@
         el.onerror = fail;
         document.body.appendChild(el);
 
-        var done = false;
         function clear() {
-          if (done) return;
+          if (done || current !== attempt) return;
           done = true;
-          if (boot) boot.remove();
+          clearTimeout(timer);
+          if (boot) boot.hidden = true;
           if (intro) intro.hidden = true;
+          var explorer = document.querySelector('.scalar-app');
+          if (explorer) {
+            explorer.id = 'interactive-reference';
+            if (!explorer.querySelector('main, [role="main"]')) explorer.setAttribute('role', 'main');
+            explorer.setAttribute('tabindex', '-1');
+            document.querySelector('.skip-link').href = '#interactive-reference';
+            improveExplorer(explorer);
+            if (!documentFailed) explorer.focus({preventScroll: true});
+          }
         }
-        var obs = new MutationObserver(function () {
-          if (document.querySelector('.scalar-app, [class*="scalar"]')) { clear(); obs.disconnect(); }
+        obs = new MutationObserver(function () {
+          if (document.querySelector('.scalar-app')) { clear(); obs.disconnect(); }
         });
         obs.observe(document.body, { childList: true, subtree: true });
-        setTimeout(function () { if (!done) { obs.disconnect(); fail(); } }, 8000);
-      }
+        timer = setTimeout(function () { if (!done) fail(); }, 15000);
 
-      function fail() {
-        // The page must never become a dead end: the CDN can be blocked, or the integrity check
-        // can reject the file. The static intro STAYS visible in that case, which is the whole
-        // advantage of not having hidden it in the first place.
-        if (boot) {
-          boot.hidden = false;
-          boot.innerHTML =
-            '<div class="boot-fail">' +
-            '<p>The interactive explorer could not load.</p>' +
-            '<p><a class="lead" href="reference.html">Read the full text reference</a></p>' +
-            '<p class="dim small">Or download the <a href="openapi.yaml">OpenAPI spec</a>.</p>' +
-            '</div>';
+        function fail() {
+          if (done || current !== attempt) return;
+          done = true;
+          started = false;
+          clearTimeout(timer);
+          if (obs) obs.disconnect();
+          el.remove();
+          if (boot) {
+            boot.hidden = false;
+            boot.innerHTML =
+              '<div class="boot-fail" role="status">' +
+              '<p>The interactive explorer could not load. You can retry below.</p>' +
+              '<p><a class="lead" href="reference.html">Read the complete reference</a> ' +
+              'or <a href="openapi.yaml">download the OpenAPI spec</a>.</p>' +
+              '</div>';
+          }
+          if (btn) { btn.disabled = false; btn.textContent = 'Retry the interactive explorer'; }
         }
-        if (btn) { btn.disabled = false; btn.textContent = 'Open the interactive explorer'; }
       }
 
       if (btn) btn.addEventListener('click', load);
 
       // A deep link into the explorer (#tag/..., ?api=...) means somebody asked for it
       // explicitly — honour that and load immediately rather than making them click twice.
-      if (location.hash.length > 1 || location.search.length > 1) load();
+      if (/^#(?:tag|operation|model|section)\//.test(location.hash) ||
+          new URLSearchParams(location.search).has('api')) load();
     })();
   </script>
 <script>
