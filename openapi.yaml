@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.16"
+  version: "1.13.17"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -140,7 +140,10 @@ info:
 
     `signals` may also name `points` — the live per-point event stream: one
     `point` frame (schema `PointFrame`) per persisted point of your
-    subscribed matches, ordered per match by `seq`. The signal is
+    subscribed matches. On the live basis `seq` is ARRIVAL order, not match
+    order: use it to page, dedup and resume, and sort by
+    `(set, game, number)` to replay in playing order (see
+    `GET /matches/{matchId}/points`). The signal is
     config-gated and ships OFF by default; the `subscribed` ack echoes the
     signals actually active, so `points` present in the ack means point
     frames will flow and missing means they will not. Frames arrive only for
@@ -151,6 +154,27 @@ info:
 
     Max 2 concurrent connections per key. For high fan-out, `GET /ws-token`
     mints a token for the separate push feed.
+
+    CLOSE CODES. Every refusal sends its `error` frame **and then closes with a
+    code that says what to do next**, so a reconnect loop or a supervisor keyed
+    on the close code alone behaves correctly without parsing the frame. The
+    close *reason* repeats the frame's `error` string, so `(code, reason)` is a
+    complete diagnosis even if the frame was missed.
+    `1013` Try Again Later — transient, the request was fine: `connection_limit`
+    (reason `connection_limit:per_key` or `connection_limit:server`) and
+    `service_unavailable`. Back off and retry; for `per_key` release a
+    connection first, or move to the push feed, which has no shared ceiling.
+    `1008` Policy Violation — the request as sent will never be accepted:
+    `unauthorized`, `upgrade_required`, `email_unverified`, `client_blocked`,
+    `bad_json`, `no_topics`, and any mid-stream loss of access. Fix the request
+    or the credentials; do not retry unchanged.
+    `1012` Service Restart — reconnect with backoff and re-subscribe.
+    `1000` Normal Closure — you closed it, or the stream ended normally.
+    Changed 2026-09-18: refusals raised during the *handshake* previously closed
+    `1000` with an empty reason, indistinguishable from an orderly shutdown, so
+    a client awaiting its `subscribed` ack saw only a normal close. The error
+    frame was, and still is, delivered before the close; only the close code and
+    reason changed.
 
     Getting a match id: it is the `id` field on any match object returned by
     `GET /matches`, `GET /fixtures` or `GET /history/matches`, and the same value
@@ -658,6 +682,22 @@ paths:
         the last seq you hold, then dedup everything by `seq` — it is
         per-match, monotonic and never skips a value, so it is the whole
         reconciliation key.
+
+
+        `seq` IS ARRIVAL ORDER, NOT MATCH ORDER, ON THE LIVE BASIS. It is
+        assigned in the order points are committed, and a live match is fed by
+        more than one upstream at different speeds, so a point from a set that
+        has just ended can be committed AFTER points from the set that follows
+        it and carry the higher `seq`. Each row is self-consistent — its `set`,
+        `game`, `number`, `score`, `sets` and `games` all describe the point
+        that was played — but reading the tape in `seq` order can show the set
+        or game counter step backwards. Measured over a recent seven-day
+        window this affected a minority of live matches, and never the
+        `reconstruction` basis. So `seq` is the right key for paging, dedup and
+        resume (unique, stable, strictly increasing — all `after_seq` needs)
+        and the wrong key for chronology: sort by `(set, game, number)` to
+        replay in playing order. On the `reconstruction` basis of a completed
+        match, `seq` is contiguous 1..N in true match order and the two agree.
 
 
         READ THE COVERAGE HONESTLY BEFORE YOU BUILD ON IT. A match's stream
@@ -4853,8 +4893,9 @@ components:
       description: >-
         WebSocket `point` frame (ULTRA, opt-in via
         `signals: ["points"]`; also the webhook `point` event body): one
-        PLAYED point of a subscribed match. Ordered per match by `seq`;
-        dedup/resume on `seq`. Best-effort, NO replay — catch up via
+        PLAYED point of a subscribed match. `seq` is arrival order, not match
+        order — dedup/resume on it, and sort by `(set, game, number)` to replay
+        in playing order. Best-effort, NO replay — catch up via
         `GET /matches/{matchId}/points?after_seq=`.
       properties:
         type: { type: string, const: point }

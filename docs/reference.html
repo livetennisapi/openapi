@@ -157,7 +157,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.13.16 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.13.17 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -305,7 +305,10 @@ timeouts, trainer calls, toilet breaks, whole-match stops and clock-inferred
 pauses, each an Event object plus <code>match_id</code> — (schemas
 <code>BreakPoint</code> / <code>BreakPointResult</code>). Without <code>signals</code>, score frames only.</p><p><code>signals</code> may also name <code>points</code> — the live per-point event stream: one
 <code>point</code> frame (schema <code>PointFrame</code>) per persisted point of your
-subscribed matches, ordered per match by <code>seq</code>. The signal is
+subscribed matches. On the live basis <code>seq</code> is ARRIVAL order, not match
+order: use it to page, dedup and resume, and sort by
+<code>(set, game, number)</code> to replay in playing order (see
+<code>GET /matches/{matchId}/points</code>). The signal is
 config-gated and ships OFF by default; the <code>subscribed</code> ack echoes the
 signals actually active, so <code>points</code> present in the ack means point
 frames will flow and missing means they will not. Frames arrive only for
@@ -313,7 +316,26 @@ matches with <code>pbp_coverage: &quot;point&quot;</code> — a <code>game</code
 none, honestly. Best-effort with NO replay: on reconnect (or to join
 mid-match) catch up via <code>GET /matches/{matchId}/points?after_seq=</code> and
 dedup by <code>seq</code>.</p><p>Max 2 concurrent connections per key. For high fan-out, <code>GET /ws-token</code>
-mints a token for the separate push feed.</p><p>Getting a match id: it is the <code>id</code> field on any match object returned by
+mints a token for the separate push feed.</p><p>CLOSE CODES. Every refusal sends its <code>error</code> frame **and then closes with a
+code that says what to do next**, so a reconnect loop or a supervisor keyed
+on the close code alone behaves correctly without parsing the frame. The
+close *reason* repeats the frame&#x27;s <code>error</code> string, so <code>(code, reason)</code> is a
+complete diagnosis even if the frame was missed.
+<code>1013</code> Try Again Later — transient, the request was fine: <code>connection_limit</code>
+(reason <code>connection_limit:per_key</code> or <code>connection_limit:server</code>) and
+<code>service_unavailable</code>. Back off and retry; for <code>per_key</code> release a
+connection first, or move to the push feed, which has no shared ceiling.
+<code>1008</code> Policy Violation — the request as sent will never be accepted:
+<code>unauthorized</code>, <code>upgrade_required</code>, <code>email_unverified</code>, <code>client_blocked</code>,
+<code>bad_json</code>, <code>no_topics</code>, and any mid-stream loss of access. Fix the request
+or the credentials; do not retry unchanged.
+<code>1012</code> Service Restart — reconnect with backoff and re-subscribe.
+<code>1000</code> Normal Closure — you closed it, or the stream ended normally.
+Changed 2026-09-18: refusals raised during the *handshake* previously closed
+<code>1000</code> with an empty reason, indistinguishable from an orderly shutdown, so
+a client awaiting its <code>subscribed</code> ack saw only a normal close. The error
+frame was, and still is, delivered before the close; only the close code and
+reason changed.</p><p>Getting a match id: it is the <code>id</code> field on any match object returned by
 <code>GET /matches</code>, <code>GET /fixtures</code> or <code>GET /history/matches</code>, and the same value
 works on every route that takes <code>matchId</code>.
 </p>
@@ -642,6 +664,8 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <p class="summary">Live per-point events in seq order — the REST catch-up for the WebSocket point stream (ULTRA)</p>
 <p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>getMatchPoints</code></p>
 <p>The live per-point event stream of one match, in <code>seq</code> order. The WebSocket <code>point</code> frames are best-effort with NO replay, so this endpoint is how you join mid-match and how you recover a dropped connection: subscribe the WS first, then GET with <code>after_seq</code> set to the last seq you hold, then dedup everything by <code>seq</code> — it is per-match, monotonic and never skips a value, so it is the whole reconciliation key.
+
+<code>seq</code> IS ARRIVAL ORDER, NOT MATCH ORDER, ON THE LIVE BASIS. It is assigned in the order points are committed, and a live match is fed by more than one upstream at different speeds, so a point from a set that has just ended can be committed AFTER points from the set that follows it and carry the higher <code>seq</code>. Each row is self-consistent — its <code>set</code>, <code>game</code>, <code>number</code>, <code>score</code>, <code>sets</code> and <code>games</code> all describe the point that was played — but reading the tape in <code>seq</code> order can show the set or game counter step backwards. Measured over a recent seven-day window this affected a minority of live matches, and never the <code>reconstruction</code> basis. So <code>seq</code> is the right key for paging, dedup and resume (unique, stable, strictly increasing — all <code>after_seq</code> needs) and the wrong key for chronology: sort by <code>(set, game, number)</code> to replay in playing order. On the <code>reconstruction</code> basis of a completed match, <code>seq</code> is contiguous 1..N in true match order and the two agree.
 
 READ THE COVERAGE HONESTLY BEFORE YOU BUILD ON IT. A match&#x27;s stream is per-point ONLY where a point-level feed covers it: <code>pbp_coverage: &quot;point&quot;</code> means a per-point stream has DELIVERED for this match — at least one played point past the <code>seq</code> 1 opener; <code>&quot;game&quot;</code> means no played point has arrived — only the snapshot score path covers it, or the stream holds only its opener so far (a listed match that has not started). An answer, not an error; it flips to <code>point</code> on the first played point. To admit a match as advancing, gate on <code>sequence &gt; 1</code> (a seeded match is 1) together with <code>stale: false</code>. Per-point coverage is never promised slate-wide; ITF and qualifying coverage in particular is partial. <code>quality: &quot;revised&quot;</code> means the upstream feed rewrote an already-served prefix at least once during this match; served rows are never edited (append-only).
 
@@ -1833,7 +1857,7 @@ A <code>_of</code> suffix is the denominator of its base field and a <code>_pct<
 </section>
 <section id="schema-pointframe">
 <h3>PointFrame</h3>
-<p>WebSocket <code>point</code> frame (ULTRA, opt-in via <code>signals: [&quot;points&quot;]</code>; also the webhook <code>point</code> event body): one PLAYED point of a subscribed match. Ordered per match by <code>seq</code>; dedup/resume on <code>seq</code>. Best-effort, NO replay — catch up via <code>GET /matches/{matchId}/points?after_seq=</code>.</p>
+<p>WebSocket <code>point</code> frame (ULTRA, opt-in via <code>signals: [&quot;points&quot;]</code>; also the webhook <code>point</code> event body): one PLAYED point of a subscribed match. <code>seq</code> is arrival order, not match order — dedup/resume on it, and sort by <code>(set, game, number)</code> to replay in playing order. Best-effort, NO replay — catch up via <code>GET /matches/{matchId}/points?after_seq=</code>.</p>
 <div class="scrollx" tabindex="0" role="region" aria-label="PointFrame fields"><table><caption class="vh">PointFrame schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
 <tbody><tr><td><code>type</code></td><td>string</td><td></td></tr>
 <tr><td><code>published_at</code></td><td>string</td><td>Added 2026-09-12, on EVERY data frame of the native WebSocket and the push feed (score, point, point_update, status, the signal family): the UTC instant (ms) the frame left our process for the socket or the fan-out sidecar — the third clock next to the state&#x27;s <code>timestamp</code> (arbiter commit) and a point&#x27;s <code>ts</code> (capture).</td></tr>
