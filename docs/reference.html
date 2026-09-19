@@ -1821,7 +1821,7 @@ A <code>_of</code> suffix is the denominator of its base field and a <code>_pct<
 <tbody><tr><td><code>seq</code></td><td>integer</td><td>Per-match monotonic position 1..N — dedup and resume on this.</td></tr>
 <tr><td><code>set</code></td><td>integer or null</td><td></td></tr>
 <tr><td><code>game</code></td><td>integer or null</td><td>Game within the current set — 13 for a 6-6 tiebreak.</td></tr>
-<tr><td><code>number</code></td><td>integer or null</td><td>Points already recorded in this game at this state — 0 for a game&#x27;s opening state.</td></tr>
+<tr><td><code>number</code></td><td>integer or null</td><td>Points already recorded in this game at this state — 0 for a game&#x27;s opening state, and **null when we joined the game already in progress**: how many points it holds is not derivable from the score (the deuce zone maps many ordinals onto one score) and is never guessed. <code>(set, game, number)</code> is NOT a unique key — a game re-expanded by a second source legitimately re-asserts ordinals it already holds, so the same tuple can name more than one row. <code>seq</code> is the only unique, stable per-row key.</td></tr>
 <tr><td><code>tiebreak</code></td><td>boolean</td><td></td></tr>
 <tr><td><code>server</code></td><td>integer or null (1, 2, null)</td><td>Server of the point played FROM this state; null when the feed omits it.</td></tr>
 <tr><td><code>winner</code></td><td>integer or null (1, 2, null)</td><td>Who won the point that produced this state — null when not attributable to a single point, never guessed.</td></tr>

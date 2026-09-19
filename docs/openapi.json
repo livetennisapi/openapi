@@ -6404,7 +6404,7 @@
        "integer",
        "null"
       ],
-      "description": "Points already recorded in this game at this state — 0 for a game's opening state."
+      "description": "Points already recorded in this game at this state — 0 for a game's opening state, and **null when we joined the game already in progress**: how many points it holds is not derivable from the score (the deuce zone maps many ordinals onto one score) and is never guessed. `(set, game, number)` is NOT a unique key — a game re-expanded by a second source legitimately re-asserts ordinals it already holds, so the same tuple can name more than one row. `seq` is the only unique, stable per-row key."
      },
      "tiebreak": {
       "type": "boolean"
