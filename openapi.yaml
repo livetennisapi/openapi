@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.17"
+  version: "1.13.18"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -142,8 +142,9 @@ info:
     `point` frame (schema `PointFrame`) per persisted point of your
     subscribed matches. On the live basis `seq` is ARRIVAL order, not match
     order: use it to page, dedup and resume, and sort by
-    `(set, game, number)` to replay in playing order (see
-    `GET /matches/{matchId}/points`). The signal is
+    `(set, game, number)` to replay in playing order — a tuple that may
+    repeat or carry a null `number`, so it orders points without identifying
+    them (see `GET /matches/{matchId}/points`). The signal is
     config-gated and ships OFF by default; the `subscribed` ack echoes the
     signals actually active, so `points` present in the ack means point
     frames will flow and missing means they will not. Frames arrive only for
@@ -696,8 +697,17 @@ paths:
         `reconstruction` basis. So `seq` is the right key for paging, dedup and
         resume (unique, stable, strictly increasing — all `after_seq` needs)
         and the wrong key for chronology: sort by `(set, game, number)` to
-        replay in playing order. On the `reconstruction` basis of a completed
-        match, `seq` is contiguous 1..N in true match order and the two agree.
+        replay in playing order. That tuple ORDERS points; it does not
+        IDENTIFY them. `number` is null wherever we joined a game already in
+        progress, and the same tuple can appear on more than one row — a game
+        re-expanded by a second source re-asserts ordinals it already holds,
+        which on the live basis is a normal re-statement rather than a
+        correction. There is no revision id, superseded-seq or correction
+        flag: rows are append-only and never rewritten, so `after_seq` never
+        needs a refetch, and the page-level `quality` field reads `revised`
+        when the page contains such a re-statement. On the `reconstruction`
+        basis of a completed match, `seq` is contiguous 1..N in true match
+        order and the two agree.
 
 
         READ THE COVERAGE HONESTLY BEFORE YOU BUILD ON IT. A match's stream
@@ -4895,7 +4905,8 @@ components:
         `signals: ["points"]`; also the webhook `point` event body): one
         PLAYED point of a subscribed match. `seq` is arrival order, not match
         order — dedup/resume on it, and sort by `(set, game, number)` to replay
-        in playing order. Best-effort, NO replay — catch up via
+        in playing order (that tuple may repeat or carry a null `number`; it
+        orders points, it does not identify them). Best-effort, NO replay — catch up via
         `GET /matches/{matchId}/points?after_seq=`.
       properties:
         type: { type: string, const: point }

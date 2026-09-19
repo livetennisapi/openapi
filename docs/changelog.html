@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.17, last change 2026-09-18.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.18, last change 2026-09-19.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -17,7 +17,7 @@
 "headline":"Live Tennis API — Changelog",
 "description":"Every change to the Live Tennis API specification, dated and versioned.",
 "url":"https://docs.livetennisapi.com/changelog.html",
-"dateModified":"2026-09-18",
+"dateModified":"2026-09-19",
 "inLanguage":"en",
 "isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
 "publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
@@ -157,8 +157,17 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.17</strong>, last change <time datetime="2026-09-18">2026-09-18</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.18</strong>, last change <time datetime="2026-09-19">2026-09-19</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.18"><h2>1.13.18 <time datetime="2026-09-19">2026-09-19</time></h2>
+<h3>Fixed</h3>
+<ul>
+<li><code>LivePoint.number</code> (<code>GET /matches/{matchId}/points</code>, the <code>point</code> frame, the webhook <code>point</code> event): the field is documented as <strong>null when we joined the game already in progress</strong>, and the API now writes null there instead of <code>0</code>. <code>0</code> asserts a game&#x27;s opening state, and on a game we picked up mid-way that is false — how many points it already holds is not derivable from the score, because the deuce zone maps many ordinals onto one score, and it is never guessed. Measured on 2026-09-19, 1,341 rows over three days carried <code>number: 0</code> at a non-love score. A second defect in the same computation is fixed with it: a late-arriving row for a *different* game committed between two points of the game in progress reset the ordinal, so on match 191801 <code>seq</code> 65 and 67 were both <code>(set 2, game 1, number 0)</code> — at 15-15 and 15-40 — with <code>seq</code> 66, a point of set 1 game 9, between them. The ordinal now continues within its own game regardless of what arrived in between. The schema already permitted null; only the description and the written values change.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li>Documented, in all three places the replay guidance appears, that <code>(set, game, number)</code> <strong>orders</strong> points and does not <strong>identify</strong> them: the tuple may repeat, and <code>number</code> may be null. A repeat on the live basis is a re-statement of a game by a second source, not a correction — there is no revision id, superseded-<code>seq</code>, version or correction flag, because rows are append-only and never rewritten. <code>after_seq</code> therefore never needs a full refetch, and the page-level <code>quality</code> field already reads <code>revised</code> when a page contains such a re-statement. <code>seq</code> remains the only unique, stable per-row key.</li>
+</ul></article>
 <article id="v1.13.17"><h2>1.13.17 <time datetime="2026-09-18">2026-09-18</time></h2>
 <h3>Added</h3>
 <ul>
