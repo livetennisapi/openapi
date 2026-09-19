@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.18, last change 2026-09-19.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.19, last change 2026-09-19.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,17 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.18</strong>, last change <time datetime="2026-09-19">2026-09-19</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.19</strong>, last change <time datetime="2026-09-19">2026-09-19</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.19"><h2>1.13.19 <time datetime="2026-09-19">2026-09-19</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><code>Score.win_probability_meta</code>: the two win-probability <strong>regime boundaries</strong> are published here for the first time, so a customer can segregate a recorded corpus without asking us. Two changes moved published live probabilities before <code>model_version</code> reflected them — 2026-08-18T11:29:28Z, when the over-inclusive deciding-set rule for lower-tier singles began, and 2026-09-16T11:02:00Z, when the draw-based rule replaced it (up to 0.20 on affected deciding-set states) — so the cut is on <code>generated_at</code>/<code>timestamp</code>, never on the version string. Published in the application&#x27;s internal reference on 2026-09-17 and not ported here until now; docs.livetennisapi.com, which is the artifact a customer opens, carried none of it.</li>
+<li>The same description states, newly measured, that <code>model_version</code> is <strong>not</strong> a safe discriminator across the second boundary: the <code>+itfdraw-2026-09-16</code> suffix first appears on rows generated 2026-09-17T05:04:25Z, 18 h 02 m after the rule landed. Measured against production on 2026-09-19: in that gap 33,510 states across 351 matches — 9,719 states over 113 matches at the ITF M15/W15/W35 levels the rule governs — were computed under the corrected rule while still carrying <code>markov-population-2026-08-23</code>. A cut on a whole-day boundary mislabels exactly those rows; a cut at the 11:02:00Z instant does not. The previous internal wording (&quot;timestamp only up to 2026-09-17&quot;) was right to the day and vague by eighteen hours.</li>
+<li><code>Score.win_probability_meta.model_version</code> now carries a description of its own, and the pre-stamp caveat is stated with its instant: no row generated before 2026-09-12T12:08:17Z carries <code>model_version</code> or <code>generated_at</code> at all.</li>
+<li><code>HistoryTapeRow.win_probability_p1</code>: documented that the tape carries no model-regime stamp — no <code>model_version</code> or <code>generated_at</code> column here or in the bulk <code>tape</code> packages — so a recorded tape corpus is segregated by the row&#x27;s own <code>timestamp</code> against those two instants.</li>
+</ul>
+<p>Documentation only. No field, endpoint or wire value changed.</p></article>
 <article id="v1.13.18"><h2>1.13.18 <time datetime="2026-09-19">2026-09-19</time></h2>
 <h3>Fixed</h3>
 <ul>

@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.18",
+  "version": "1.13.19",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -3251,11 +3251,12 @@
        "object",
        "null"
       ],
-      "description": "ULTRA, since 2026-09-12. Our own model-regime identifier, the UTC instant the two probabilities were generated, whether the anchor applies to this MATCH (market_anchored — per match, not per row) and, since 2026-09-15, whether it moved THIS ROW's win_probability_p1 away from the twin (anchor_effective). Null on rows stamped before it existed.",
+      "description": "ULTRA, since 2026-09-12. Our own model-regime identifier (`model_version`), the UTC instant the two probabilities were generated (`generated_at`), whether the anchor applies to this MATCH (`market_anchored` — per match, not per row) and, since 2026-09-15, whether it moved THIS ROW's win_probability_p1 away from the twin (`anchor_effective`). Null on rows stamped before it existed. SEGREGATING A RECORDED CORPUS — cut on the CLOCK, not on the version string. Two changes moved published live probabilities before `model_version` reflected them, so split a corpus on `generated_at` (or the row's `timestamp`) at these two instants: 2026-08-18T11:29:28Z, when the over-inclusive deciding-set rule for lower-tier singles began (some final sets priced as a race-to-ten breaker), and 2026-09-16T11:02:00Z, when the draw-based rule replaced it (main-draw singles priced as a full set — a move of up to 0.20 on affected deciding-set states). `model_version` is NOT a safe discriminator across the second boundary: the `+itfdraw-2026-09-16` suffix first appears on rows generated 2026-09-17T05:04:25Z, 18 h 02 m AFTER the rule itself landed, and in that gap 33,510 states across 351 matches (9,719 states over 113 matches at the ITF M15/W15/W35 levels the rule governs) were computed under the CORRECTED rule while still carrying `markov-population-2026-08-23`. Cutting on the version string — or on a whole-day boundary — mislabels exactly those rows; cutting at 2026-09-16T11:02:00Z does not. Measured against production 2026-09-19. Earlier than that there is no stamp to cut on at all: no row generated before 2026-09-12T12:08:17Z carries `model_version` or `generated_at`, and the bulk tape packages have no version column, so for those the row `timestamp` is the only discriminator. The `model_version` on an analysis profile (`ModelProfile`) is a different identifier for a different object — the forecast's prompt scaffold — and does not apply to score rows.",
       "properties": {
        "model_version": {
         "type": "string",
-        "example": "markov-population-2026-08-23"
+        "example": "markov-population-2026-08-23",
+        "description": "The model regime that produced this row: engine family, calibration key scheme and — since 2026-09-17 — every pricing rule in force, as a `+…` suffix. It is not a safe cut for a recorded corpus across the 2026-09-16 boundary; see this object's description for the two instants to segregate on."
        },
        "generated_at": {
         "type": [
@@ -4834,7 +4835,8 @@
       "type": [
        "number",
        "null"
-      ]
+      ],
+      "description": "The model read stamped on this row while the match was live. The tape carries NO model-regime stamp — there is no `model_version` or `generated_at` column here, nor in the bulk `tape` packages — so segregate a recorded tape corpus by this row's `timestamp` against the two regime boundaries documented on `Score.win_probability_meta`: 2026-08-18T11:29:28Z and 2026-09-16T11:02:00Z."
      },
      "danger": {
       "type": [
