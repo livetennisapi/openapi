@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.22"
+  version: "1.13.23"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1947,6 +1947,12 @@ paths:
             REQUIRED for an `elo` listing and for `archive_player`. The ATP
             and WTA Elo walks are disjoint universes whose players never
             meet, so a combined leaderboard would not be comparable.
+            On an OFFICIAL system it is accepted when it agrees with that
+            system's own tour (`system=atp&tour=atp`) and REFUSED with 400
+            when it contradicts it. CORRECTION 2026-09-20: until that date
+            `system=atp&tour=wta` returned 200 and the ATP table — the
+            parameter was accepted and ignored. If you sent a contradicting
+            pair, the rows you received were the table named by `system`.
         - name: surface
           in: query
           required: false
@@ -1958,7 +1964,12 @@ paths:
             `system=elo` only. Listing mode takes exactly one (default
             `overall`); per-player mode is repeatable and defaults to all
             four ladders. A ladder the player has never played is omitted,
-            never substituted.
+            never substituted. REFUSED with 400 when no requested system is
+            `elo` — there is no clay ATP ranking, so the filter cannot be
+            made to act. CORRECTION 2026-09-20: until that date
+            `system=atp&surface=clay` returned 200 and the OVERALL ATP
+            table. A mixed `system=atp&system=elo&surface=clay` still
+            passes, because an elo system is present.
         - name: min_matches
           in: query
           required: false
@@ -1967,7 +1978,9 @@ paths:
             `system=elo` listing only. Minimum matches on that ladder. Every
             ladder starts at 1500, so without a floor the top of the table
             is players who won a handful of matches from the starting
-            rating. Echoed back in `meta.coverage.qualified`.
+            rating. Echoed back in `meta.coverage.qualified`. REFUSED with
+            400 when no requested system is `elo` (2026-09-20); it was
+            previously accepted and ignored.
         - name: activity_weeks
           in: query
           required: false
@@ -1977,7 +1990,9 @@ paths:
             this many weeks of `as_of`. Elo does not decay, so without an
             activity window every leaderboard is topped permanently by
             players who have stopped playing. Echoed back in
-            `meta.coverage.qualified`.
+            `meta.coverage.qualified`. REFUSED with 400 when no requested
+            system is `elo` (2026-09-20); it was previously accepted and
+            ignored.
         - name: as_of
           in: query
           required: false

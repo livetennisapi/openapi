@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.22, last change 2026-09-20.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.23, last change 2026-09-20.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.22</strong>, last change <time datetime="2026-09-20">2026-09-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.23</strong>, last change <time datetime="2026-09-20">2026-09-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.23"><h2>1.13.23 <time datetime="2026-09-20">2026-09-20</time></h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong><code>GET /rankings</code> accepted <code>?surface=</code>, <code>?min_matches=</code>, <code>?activity_weeks=</code> and a contradicting <code>?tour=</code> on the official systems, and silently ignored all four.</strong> Measured on production before the fix: <code>?system=atp&amp;surface=clay</code>, <code>?system=atp&amp;min_matches=200</code>, <code>?system=atp&amp;activity_weeks=4</code> and <code>?system=atp&amp;tour=wta</code> each returned <code>200</code> and the plain overall ATP table, byte-identical to the same call with no parameter at all; <code>?system=atp&amp;tour=zzz</code> was accepted too. All four are documented &quot;Elo only&quot; / &quot;Elo listing&quot; and are read nowhere else, so a caller asking for a clay ATP leaderboard received the overall one with nothing in the response to say the filter had not run. The <code>elo</code> branch was correct throughout and is the control that makes this a defect rather than an empty population - <code>?system=elo&amp;tour=atp&amp;surface=clay</code> returns a genuinely different top 10 from <code>surface=hard</code>, and <code>surface=zzz</code> is refused with the valid list. Unlike the <code>has_market</code> hole fixed in 1.13.21, this one cannot be closed by making the filter act: there is no clay ATP ranking and no WTA row in an ATP table. <code>surface</code>, <code>min_matches</code> and <code>activity_weeks</code> are now a <code>400</code> when no requested system is <code>elo</code> (a mixed <code>?system=atp&amp;system=elo&amp;surface=clay</code> still passes); <code>tour</code> is a <code>400</code> only when it contradicts a system the caller NAMED, or when that system is not an ATP/WTA walk. <code>?system=atp&amp;tour=atp</code> is redundant rather than wrong and still answers, and the implicit default system set is unchanged.</li>
+</ul></article>
 <article id="v1.13.22"><h2>1.13.22 <time datetime="2026-09-20">2026-09-20</time></h2>
 <h3>Added</h3>
 <ul>
