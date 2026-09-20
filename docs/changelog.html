@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.32, last change 2026-09-21.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.33, last change 2026-09-21.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.32</strong>, last change <time datetime="2026-09-21">2026-09-21</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.33</strong>, last change <time datetime="2026-09-21">2026-09-21</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.33"><h2>1.13.33 <time datetime="2026-09-21">2026-09-21</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><strong><code>serve</code> and <code>outcome</code> said nothing about qualifying or doubles draws, and the internal reference called both blanket-<code>null</code>.</strong> The per-point tags (added 2026-09-12) were documented tour by tour for main draws only. Measured over completed matches carrying a per-point stream since the source went live on 2026-09-12: WTA qualifying states <code>serve</code> on 48 of 48, Challenger (men) qualifying on 153 of 155, Challenger (women) on 49 of 51; ITF qualifying states <code>outcome</code> (aces and double faults) on 95 of 107 men&#x27;s and 62 of 74 women&#x27;s. Qualifying draws are covered like their own main draw, with exactly one real gap — <code>outcome</code> on Challenger (men) qualifying, which no source states at all. The doubles half of the old claim is confirmed and now carries its denominator: across 454 completed doubles matches in the same window, not one row carries either field. Both descriptions now state where each field is stated, including the qualifying and doubles positions; <code>enrichment</code> per match remains the authority and none of it is a promise about a match not yet played. Found by the every-sweep tag-coverage check, which reads 85 of 86 Challenger qualifying matches carrying <code>serve</code> against a documented <code>null</code>. No field, endpoint or behaviour change.</li>
+</ul></article>
 <article id="v1.13.32"><h2>1.13.32 <time datetime="2026-09-21">2026-09-21</time></h2>
 <h3>Changed</h3>
 <ul>
