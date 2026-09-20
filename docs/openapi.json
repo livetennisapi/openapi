@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.25",
+  "version": "1.13.26",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -3821,7 +3821,7 @@
        "grass",
        null
       ],
-      "description": "Court surface. Null where no source states one, never inferred from a tournament's usual surface in other seasons. Measured over the 90 days to 2026-09-20: 3,702 of 31,443 matches (11.8%) carry null, and all but 8 of them fall into two structural groups. 3,428 are UTR events, which are not in the vendor tournament catalogue at all and so carry `tournament_id: null` too. 266 are TEAM COMPETITIONS — Davis Cup, Billie Jean King Cup, Laver Cup — where the surface is chosen by the nation hosting each tie, so the season-long tournament row has no single surface to state and neither does the match until a per-tie source gives us one. A surface that IS known is published on both the match and its `tournament`, and the two agree."
+      "description": "Court surface. Null where no source states one, never inferred from a tournament's usual surface in other seasons. TEAM COMPETITIONS (Davis Cup, Billie Jean King Cup, Laver Cup) have no surface at tournament level — each tie is played on the surface its host nation chose — so the match carries its TIE's surface, taken from the ITF's published tie record (venue, indoor/outdoor, surface) and the same for every rubber of that tie; `tournament.surface` stays null for them. A team-event match is null only when the tie's venue is not yet published or the match cannot be matched to a single tie (competition, date window and the nations on court must agree). The other structural null is UTR events, which are not in the vendor tournament catalogue at all and so carry `tournament_id: null` too. For every other event a surface that IS known is published on both the match and its `tournament`, and the two agree."
      },
      "indoor": {
       "type": "boolean"
@@ -6787,7 +6787,7 @@
        "grass",
        null
       ],
-      "description": "Court surface, null where the catalogue holds none — 61 of 10,287 tournaments on 2026-09-20. 35 of those are team competitions (Davis Cup, Billie Jean King Cup, Laver Cup), which have no tournament-level surface to hold: each tie is played on the host nation's choice. The upstream field for those rows carries the DRAW TIER rather than a surface (\"- Preliminary\", \"- Play Offs\", \"- Promotion\"), and a value that is not one of hard/clay/grass is rejected rather than published. 3 are the exhibition catch-all and 23 are ordinary events the upstream catalogue simply never stated a surface for."
+      "description": "Court surface, null where the catalogue holds none — 61 of 10,287 tournaments on 2026-09-20. 35 of those are team competitions (Davis Cup, Billie Jean King Cup, Laver Cup), which have no tournament-level surface to hold: each tie is played on the host nation's choice, and that surface is published on each MATCH of the tie instead. The upstream field for those rows carries the DRAW TIER rather than a surface (\"- Preliminary\", \"- Play Offs\", \"- Promotion\"), and a value that is not one of hard/clay/grass is rejected rather than published. 3 are the exhibition catch-all and 23 are ordinary events the upstream catalogue simply never stated a surface for."
      },
      "indoor": {
       "type": "boolean"

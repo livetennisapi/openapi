@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.25, last change 2026-09-20.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.26, last change 2026-09-20.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,17 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.25</strong>, last change <time datetime="2026-09-20">2026-09-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.26</strong>, last change <time datetime="2026-09-20">2026-09-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.26"><h2>1.13.26 <time datetime="2026-09-20">2026-09-20</time></h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>Team-competition matches now carry the surface of their tie.</strong> Davis Cup, Billie Jean King Cup and Laver Cup matches published <code>surface: null</code> on the match and on <code>tournament.surface</code> — 268 of 268 team-event matches in the 60 days to 2026-09-20. 1.13.25 documented that null as structural; it was only structural for the sources we had. Every surface source was per tournament, and the vendor&#x27;s team &quot;tournament&quot; (<code>ATP Davis Cup - World Group I</code>) is a tier whose surface field carries the draw stage, not a surface; a tie is played on whatever its host nation chose. The ITF&#x27;s own draw feed states the surface, venue and indoor/outdoor flag per tie, so the API now holds one row per tie and resolves each match to its tie by competition, date window and the nations on court — answering only when a single tie remains, never from a nation, a name or a previous tie. Existing team-event matches (last 60 days and upcoming) were backfilled with one audit row per write; new ties are picked up as they are drawn. Ties whose venue the ITF has not announced stay null. <code>tournament.surface</code> for a team competition remains null by design: the surface belongs to the tie, and it is published on the match. Raised by a public report that Davis Cup match 191867 returned <code>surface: null</code>; that match now serves <code>hard</code>. Payload shape unchanged.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong><code>Match.surface</code> and <code>Tournament.surface</code> descriptions</strong> now state the per-tie rule for team competitions instead of describing the null as permanent.</li>
+</ul></article>
 <article id="v1.13.25"><h2>1.13.25 <time datetime="2026-09-20">2026-09-20</time></h2>
 <h3>Fixed</h3>
 <ul>
