@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.27",
+  "version": "1.13.28",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -4879,7 +4879,7 @@
    },
    "HistoryTapeRow": {
     "type": "object",
-    "description": "One row of the score sequence. Rows we watched live carry a real `timestamp`. Rows expanded after the fact from a finished-match point-by-point record carry a null `timestamp` AND null model fields, because neither a wall clock nor a model output ever existed for them — nothing is synthesised. `origin` (since 2026-09-20) says explicitly which kind each row is, read from the row's stored provenance — never inferred from its clock; a null `timestamp` remains true of every reconstructed row. The model fields alone are not a marker, since they are stamped best-effort and an observed row may lack them. `meta.point_source` / `meta.coverage` say which kind of tape you are holding. `origin`, `serve` and `outcome` are present on `GET /history/matches/{matchId}` rows; the pre-2023 ArchiveTape (every row reconstructed) does not carry them.",
+    "description": "One row of the score sequence. Rows we watched live carry a real `timestamp`. Rows expanded after the fact from a finished-match point-by-point record carry a null `timestamp` AND null model fields, because neither a wall clock nor a model output ever existed for them — nothing is synthesised. `origin` (since 2026-09-20) says explicitly which kind each row is, read from the row's stored provenance — never inferred from its clock; a null `timestamp` remains true of every reconstructed row. The model fields alone are not a marker, since they are stamped best-effort and an observed row may lack them. `meta.point_source` / `meta.coverage` say which kind of tape you are holding. `origin`, `serve` and `outcome` are present on `GET /history/matches/{matchId}` rows; the pre-2023 ArchiveTape (every row reconstructed) does not carry them. Reconstructed rows are never repaired or reordered: a game whose vendor point record is internally inconsistent is withheld whole, not fitted or patched into a legal sequence — see `meta.points.games_withheld` (added 2026-09-20).",
     "properties": {
      "origin": {
       "type": "string",
@@ -5210,6 +5210,13 @@
        "null"
       ],
       "description": "`?points=complete` responses only. Whether a point-complete reconstruction exists for this match — never guessed. Nightly, refreshed on read when absent: the nightly ledger's verdict when it has one; when the ledger has no entry yet (a reconstruction that landed after the last nightly run) and this read served a reconstruction, it is the live verdict just measured on it (`complete`); null only when there is no ledger entry and nothing to measure. Added 2026-09-20."
+     },
+     "games_withheld": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "description": "Present only when reconstructed rows are in the response. Games whose vendor point record was internally inconsistent (the recorded in-game scores do not form a legal single-point progression from 0-0 — a state repeating or moving backwards) have their in-game points withheld rather than published; the game's opening 0-0 row is still served, so the games spine stays intact. Nothing is repaired, reordered or inferred: a game is served exactly as recorded, or not at all. `> 0` means `complete` is `false`. `null` = not measured — the reconstruction predates this check, or was built from the multi-vendor union rather than a single vendor's point record. Added 2026-09-20."
      }
     }
    },
