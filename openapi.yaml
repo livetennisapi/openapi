@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.30"
+  version: "1.13.31"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -814,6 +814,51 @@ paths:
         different sequences: after a match completes and flips to
         `reconstruction`, re-read from `after_seq=0` rather than resuming a
         live cursor into it.
+
+
+        THE MATCH-CLOSING POINT (added 2026-09-20). Every row is the state
+        AFTER a point, so the point that wins a game is carried by the next
+        game's `number: 0` opener — and the point that wins the match had no
+        next row to be carried by: the live stream never held it, and a
+        serve statistic built off the stream was missing every match's last
+        point. On a COMPLETED match served on the `live` basis the page now
+        closes with ONE terminal row: `seq` = last + 1, `number` 0,
+        `sets`/`games` the final score, `score` `{"p1":"0","p2":"0"}`,
+        `tiebreak` false, `server` null (nobody serves next), `winner` the
+        match winner, `ts` the instant the final score was observed. It is
+        built at read time from the stream's last row and the observed final
+        score, and only when the two are one point apart — the winner held
+        game point and the final is the decided score; nothing is fabricated
+        otherwise. `serve`, `outcome` and `tagged_at` on that row are null:
+        no source's tag for a match's last point is stored yet. The response
+        field `ends_at_final` says whether the sequence served ends on the
+        match-closing point: `false` on a completed match whose stream stops
+        short of it — a retirement or walkover (no closing point was
+        played), a capture that stopped two or more points short, or a
+        closer that cannot be stated as one point (from deuce, or from a
+        match tiebreak). Always `false` on a live match. On the
+        `reconstruction` basis it is judged from the projected sequence's
+        last frame (a complete recorded sequence of a retired match ends at
+        the retirement, so it reads `false` there). WebSocket and push
+        frames are unchanged.
+
+
+        REVISIONS: `changed_since` (added 2026-09-20). `after_seq` is a
+        cursor by `seq`, so it can never return a row you already hold — and
+        a `serve`/`outcome` tag that lands late lands on exactly such a row.
+        Every row now carries `tagged_at`, the UTC instant its tags landed
+        (null while none has). Pass `changed_since=<ISO-8601 instant>` (e.g.
+        `2026-09-20T00:35:18Z`; `Z` or an offset, a naive value is read as
+        UTC, a date alone is refused) to get only the rows whose `ts` OR
+        `tagged_at` is later than that instant, in `seq` order, paged like
+        any other read and composable with `after_seq`. The post-match
+        recipe: read the match, keep the instant, re-read with
+        `changed_since=<that instant>` and replace the rows you hold by
+        `seq` — no socket, no full re-fetch. Anything that is not an
+        ISO-8601 timestamp is a 400 `bad_changed_since`. On the
+        `reconstruction` basis no row carries a clock or a tag, so a
+        `changed_since` read of it is an empty page: that sequence is final
+        at first read.
       operationId: getMatchPoints
       parameters:
         - $ref: "#/components/parameters/matchId"
@@ -827,6 +872,19 @@ paths:
             your WS stream delivered) to continue; 0 or absent reads from the
             start of the match. A non-integer or negative value is a 400
             `bad_after_seq`.
+        - name: changed_since
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: >-
+            Added 2026-09-20. Return only rows whose `ts` OR `tagged_at` is
+            later than this instant — the revision filter for a reader
+            without a socket, composable with `after_seq`. ISO-8601 with a
+            `Z` or an offset (e.g. `2026-09-20T00:35:18Z`); a naive value is
+            read as UTC; a date alone is not an instant and is refused.
+            Anything that is not an ISO-8601 timestamp is a 400
+            `bad_changed_since`. An empty page on the `reconstruction`
+            basis, whose rows carry neither a clock nor a tag.
       responses:
         "200":
           description: The point events page, seq order
@@ -2798,7 +2856,8 @@ components:
           description: >-
             Stable machine-readable code, e.g. bad_date, bad_coverage,
             bad_sequence, bad_points, bad_points_complete, bad_combination,
-            points_read_disabled, bad_after_seq, points_disabled, bad_period,
+            points_read_disabled, bad_after_seq, bad_changed_since,
+            points_disabled, bad_period,
             bad_year, bad_format, bad_tour, bad_country, ambiguous_name,
             not_charted, not_found, no_analysis, no_market, upgrade_required,
             rate_limited, abuse_throttled.
@@ -5199,7 +5258,9 @@ components:
           description: >-
             Capture time (UTC) — when our pipeline committed this state. Null
             on every frame of a `reconstruction`-basis page — the recorded
-            sequence carries no per-point clock and none is fabricated.
+            sequence carries no per-point clock and none is fabricated. On
+            the match-closing row of a completed match it is the instant the
+            final score was observed.
         serve:
           type: [integer, "null"]
           enum: [1, 2, null]
@@ -5225,6 +5286,16 @@ components:
             the tour's console reports the match — read the page's
             `enrichment` per match. Grand Slams and UTR: none. Null = not
             stated.
+        tagged_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            Added 2026-09-20. When `serve`/`outcome` landed on this row
+            (UTC); null while no tag has — on every `reconstruction`-basis
+            frame, on the match-closing row, and on any row no source
+            tagged. Tags land a few seconds after the row itself, so a row's
+            `tagged_at` is later than its `ts`; `changed_since` selects on
+            either.
     PointUpdate:
       type: object
       description: >-
@@ -5299,6 +5370,20 @@ components:
             `seq` contiguous 1..N, `ts` null on every frame. Completeness
             beats the partial live capture wholesale; the two bases are never
             interleaved.
+        ends_at_final:
+          type: boolean
+          description: >-
+            Added 2026-09-20. Whether the sequence served ends on the
+            match-closing point — the state after the match-winning point:
+            `number` 0, score 0-0, `server` null, `winner` the match winner.
+            On a completed match served on the `live` basis that row is
+            appended at read time from the stored stream's last row and the
+            observed final score, and only when the two are one point apart;
+            false when the match is completed but the stream stops short of
+            it (a retirement or walkover, a truncated capture, or a closer
+            that cannot be stated as one point), and always false on a live
+            match. On the `reconstruction` basis it is judged from the last
+            projected frame.
     PointFrame:
       type: object
       description: >-
