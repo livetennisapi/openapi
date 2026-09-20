@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.26",
+  "version": "1.13.27",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -4879,8 +4879,43 @@
    },
    "HistoryTapeRow": {
     "type": "object",
-    "description": "One row of the score sequence. Rows we watched live carry a real `timestamp`. Rows expanded after the fact from a finished-match point-by-point record carry a null `timestamp` AND null model fields, because neither a wall clock nor a model output ever existed for them — nothing is synthesised. A null `timestamp` is the reliable row-level marker of a reconstructed row; the model fields alone are not, since they are stamped best-effort and an observed row may lack them. `meta.point_source` / `meta.coverage` say which kind of tape you are holding.",
+    "description": "One row of the score sequence. Rows we watched live carry a real `timestamp`. Rows expanded after the fact from a finished-match point-by-point record carry a null `timestamp` AND null model fields, because neither a wall clock nor a model output ever existed for them — nothing is synthesised. `origin` (since 2026-09-20) says explicitly which kind each row is, read from the row's stored provenance — never inferred from its clock; a null `timestamp` remains true of every reconstructed row. The model fields alone are not a marker, since they are stamped best-effort and an observed row may lack them. `meta.point_source` / `meta.coverage` say which kind of tape you are holding. `origin`, `serve` and `outcome` are present on `GET /history/matches/{matchId}` rows; the pre-2023 ArchiveTape (every row reconstructed) does not carry them.",
     "properties": {
+     "origin": {
+      "type": "string",
+      "enum": [
+       "observed",
+       "reconstructed"
+      ],
+      "description": "`observed` — a row our own pipeline committed while the point was being played; `reconstructed` — a row expanded after the fact from a finished-match point-by-point record (null timestamp, null model fields). From the stored provenance, never inferred from a null timestamp. Added 2026-09-20."
+     },
+     "serve": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "enum": [
+       1,
+       2,
+       null
+      ],
+      "description": "The serve the point was played on (1 first, 2 second), joined from this match's per-point stream by EXACT score state — set count, every set's games, in-game points and tiebreak flag all equal. Observed rows only: null on every reconstructed row, on a row no stream point matches, and on a state the stream asserts more than once (a deuce cycle — ambiguous, so nothing is placed). Never inferred from the score. Added 2026-09-20."
+     },
+     "outcome": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "enum": [
+       "ace",
+       "double_fault",
+       "winner",
+       "forced_error",
+       "unforced_error",
+       null
+      ],
+      "description": "How the point ended, as an outside source states it — same join rule and same nulls as `serve`. `meta.enrichment` says what landed on this tape. Added 2026-09-20."
+     },
      "sets": {
       "type": "array",
       "items": {
@@ -5061,6 +5096,58 @@
          ]
         }
        },
+       "reconstructed_at": {
+        "type": [
+         "string",
+         "null"
+        ],
+        "format": "date-time",
+        "description": "When the newest RECONSTRUCTED row in this response was written (UTC) — when the reconstruction you are holding landed. Null when no reconstructed row is served. Measured on the rows returned, after any sequence=clean collapse. Added 2026-09-20."
+       },
+       "observed_span": {
+        "type": [
+         "object",
+         "null"
+        ],
+        "description": "The `timestamp` of the first and last OBSERVED rows in this response, in served order. Null when no observed row is served. Added 2026-09-20.",
+        "properties": {
+         "first": {
+          "type": [
+           "string",
+           "null"
+          ],
+          "format": "date-time"
+         },
+         "last": {
+          "type": [
+           "string",
+           "null"
+          ],
+          "format": "date-time"
+         }
+        }
+       },
+       "enrichment": {
+        "type": "object",
+        "description": "What serve/outcome tags actually landed on the rows of THIS response — the per-point stream's vocabulary. `none`/`none` on a wholly reconstructed tape. Added 2026-09-20.",
+        "properties": {
+         "serve": {
+          "type": "string",
+          "enum": [
+           "stated",
+           "none"
+          ]
+         },
+         "outcome": {
+          "type": "string",
+          "enum": [
+           "full",
+           "ace_double_fault",
+           "none"
+          ]
+         }
+        }
+       },
        "generated_at": {
         "type": "string",
         "format": "date-time"
@@ -5122,7 +5209,7 @@
        "boolean",
        "null"
       ],
-      "description": "`?points=complete` responses only. The nightly ledger's verdict on whether a point-complete reconstruction exists for this match: true/false when measured, null when not yet measured — never guessed."
+      "description": "`?points=complete` responses only. Whether a point-complete reconstruction exists for this match — never guessed. Nightly, refreshed on read when absent: the nightly ledger's verdict when it has one; when the ledger has no entry yet (a reconstruction that landed after the last nightly run) and this read served a reconstruction, it is the live verdict just measured on it (`complete`); null only when there is no ledger entry and nothing to measure. Added 2026-09-20."
      }
     }
    },
