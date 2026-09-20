@@ -1567,11 +1567,14 @@ paths:
           description: >-
             Look a person up BY the corpus person id — the value archive match
             rows publish as `winner.player_id` / `loser.player_id`. This is the
-            only endpoint that accepts it: corpus ids and roster ids are
-            disjoint id spaces, so the same value on `/players/{playerId}`
-            returns 404 (that 404 now points here). Returns every person
-            wearing the id — the tours number independently and some ids are
-            live in both — so add `tour` to narrow it to exactly one.
+            only place that reads the PERSON by that id; the one other surface
+            taking it, `/rankings?archive_player=`, is ULTRA, requires
+            `system=elo`, and answers with ratings rather than a bio. Corpus
+            ids and roster ids are disjoint id spaces, so the same value on
+            `/players/{playerId}` returns 404 (that 404 now points here).
+            Returns every person wearing the id — the tours number
+            independently and some ids are live in both — so add `tour` to
+            narrow it to exactly one, the same rule `archive_player=` applies.
         - name: player_id
           in: query
           schema: { type: integer }
