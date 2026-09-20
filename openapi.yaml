@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.23"
+  version: "1.13.24"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -292,16 +292,56 @@ paths:
         `/matches/{matchId}/statistics` (ULTRA); they are deliberately not on
         this object, because they can be further behind the match than the
         score and must carry their own `as_of`.
+        ARCHIVED FINALS (since 2026-09-20). The live-score rows behind this
+        read are retired by a 90-day retention sweep, and a match recovered
+        from an official day list may never have had one. When there is no
+        live row at all, a SETTLED match — `outcome` non-null on the match
+        object: completed, retired, walkover, default, abandoned, unresolved —
+        is answered from its archived final: the same read
+        `GET /matches?status=completed` already embeds, through the same
+        serializer, so the listing and this endpoint can never disagree about
+        whether a score exists. A live tape always outranks the archive — the
+        fallback is reached only when no publishable live row exists, so a
+        live match reads exactly what it did before. An archived final carries
+        `age_seconds: null`, `observed_age_seconds: null`, `sources_count:
+        null` and `accepted_at: null` — no clock is claimed for a state nobody
+        watched — and `timestamp` is null where the archived row has none
+        (a reconstructed final). The Score object carries no data-source
+        label; whether that final was observed or reconstructed is what
+        `GET /history/matches/{matchId}` reports once, in `meta.point_source`.
+        404 is kept for: an upcoming match with no row (nothing to serve
+        yet), a cancelled match that was never played (nothing settled), and a
+        settled match with nothing recorded anywhere — the fallback serves a
+        final that exists, it never invents one. Before 2026-09-20 every
+        settled match older than the retention window answered 404 here
+        (13,437 completed matches from the previous 180 days, 157,170 all
+        time, measured at the change) while the completed listing served its
+        score.
       operationId: getMatchScore
       parameters: [ { $ref: "#/components/parameters/matchId" } ]
       responses:
         "200":
-          description: Current score (ULTRA adds win_probability_p1 + danger)
+          description: >-
+            Current score (ULTRA adds win_probability_p1 + danger). On a settled
+            match with no live row, the archived final (since 2026-09-20) —
+            `age_seconds`, `observed_age_seconds`, `sources_count` and
+            `accepted_at` null.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Score" }
         "401": { $ref: "#/components/responses/Unauthorized" }
-        "404": { $ref: "#/components/responses/NotFound" }
+        "404":
+          description: >-
+            No such match; an upcoming match with no score yet; a cancelled
+            match that was never played; or a settled match with nothing
+            recorded anywhere — no live row and no archived final. Since
+            2026-09-20 a settled match whose live rows were retired by the
+            90-day sweep is NOT a 404: it answers 200 with its archived final
+            (`age_seconds: null`), the same score `GET /matches?status=completed`
+            embeds for it.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "410": { $ref: "#/components/responses/MatchGone" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /matches/{matchId}/events:
@@ -2989,7 +3029,10 @@ components:
           description: >-
             Seconds since the score CONTENT last changed (not since we last polled) —
             it keeps rising between points. Null = change-clock unknown for this row,
-            never "fresh".
+            never "fresh". Always null on the archived final that
+            `/matches/{matchId}/score` serves for a settled match whose live rows
+            were retired (since 2026-09-20): no clock is claimed for a state nobody
+            watched.
         stale:
           type: boolean
           description: >-
