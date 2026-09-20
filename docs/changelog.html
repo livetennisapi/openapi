@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.29, last change 2026-09-20.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.30, last change 2026-09-20.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.29</strong>, last change <time datetime="2026-09-20">2026-09-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.30</strong>, last change <time datetime="2026-09-20">2026-09-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.30"><h2>1.13.30 <time datetime="2026-09-20">2026-09-20</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>The ATP per-point outcome row said &quot;full&quot; as a projection from the feed&#x27;s content, not a measurement.</strong> In the 30 days since the tour&#x27;s own per-point console went live (2026-09-12), no ATP main-tour event was actually played — the only tour tennis in that window was a Grand Slam and Davis Cup, neither of which is on that feed — so every ATP main-tour match carried no outcome tags at all, while the docs asserted <code>full</code> (ace, double fault, winner, forced error, unforced error) unconditionally. The row now names the tours the feed covers (ATP 250 / 500 / 1000), states plainly that Grand Slams and Davis Cup are not on it and read null throughout (check <code>enrichment</code> per match), and gives the first date the claim was actually measured against a played tour event: the week of 2026-09-22.</li>
+</ul></article>
 <article id="v1.13.29"><h2>1.13.29 <time datetime="2026-09-20">2026-09-20</time></h2>
 <h3>Changed</h3>
 <ul>

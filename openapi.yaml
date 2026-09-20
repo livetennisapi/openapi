@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.29"
+  version: "1.13.30"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -5214,10 +5214,16 @@ components:
           enum: [ace, double_fault, winner, forced_error, unforced_error, null]
           description: >-
             Added 2026-09-12. How the point ended, as an outside source states
-            it (ATP main tour and Challenger: all five; the ITF World Tennis
-            Tour: ace and double fault; WTA 1000/500/250/125: ace and double
-            fault where the tour's console reports the match — read the page's
-            `enrichment` per match; Grand Slams and UTR: none). Null = not
+            it. ATP 250 / 500 / 1000: serve stated, outcome full (ace, double
+            fault, winner, forced error, unforced error) from the tour's own
+            per-point console. Grand Slams and Davis Cup are not on that feed
+            and read null throughout; read `enrichment` per match. First
+            measured on tour events from the week of 2026-09-22 — before that,
+            no tour event had been played since the source went live on
+            2026-09-12. Challenger: all five. The ITF World Tennis Tour: ace
+            and double fault. WTA 1000/500/250/125: ace and double fault where
+            the tour's console reports the match — read the page's
+            `enrichment` per match. Grand Slams and UTR: none. Null = not
             stated.
     PointUpdate:
       type: object

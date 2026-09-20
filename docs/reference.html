@@ -157,7 +157,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.13.29 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.13.30 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -1846,7 +1846,7 @@ A <code>_of</code> suffix is the denominator of its base field and a <code>_pct<
 <tr><td><code>games</code></td><td>array of array of integer</td><td><code>[games_p1, games_p2]</code>; each a per-set list, frozen at the pre-breaker score during a tiebreak.</td></tr>
 <tr><td><code>ts</code></td><td>string or null</td><td>Capture time (UTC) — when our pipeline committed this state. Null on every frame of a <code>reconstruction</code>-basis page — the recorded sequence carries no per-point clock and none is fabricated.</td></tr>
 <tr><td><code>serve</code></td><td>integer or null (1, 2, null)</td><td>Added 2026-09-12. The serve the point was played on (1 first, 2 second) as an outside source states it, joined onto the row by exact state. Null = not stated for this point; never inferred. Lands a few seconds after the point&#x27;s own frame (see the <code>point_update</code> frame).</td></tr>
-<tr><td><code>outcome</code></td><td>string or null (ace, double_fault, winner, forced_error, unforced_error, null)</td><td>Added 2026-09-12. How the point ended, as an outside source states it (ATP main tour and Challenger: all five; the ITF World Tennis Tour: ace and double fault; WTA 1000/500/250/125: ace and double fault where the tour&#x27;s console reports the match — read the page&#x27;s <code>enrichment</code> per match; Grand Slams and UTR: none). Null = not stated.</td></tr></tbody></table></div>
+<tr><td><code>outcome</code></td><td>string or null (ace, double_fault, winner, forced_error, unforced_error, null)</td><td>Added 2026-09-12. How the point ended, as an outside source states it. ATP 250 / 500 / 1000: serve stated, outcome full (ace, double fault, winner, forced error, unforced error) from the tour&#x27;s own per-point console. Grand Slams and Davis Cup are not on that feed and read null throughout; read <code>enrichment</code> per match. First measured on tour events from the week of 2026-09-22 — before that, no tour event had been played since the source went live on 2026-09-12. Challenger: all five. The ITF World Tennis Tour: ace and double fault. WTA 1000/500/250/125: ace and double fault where the tour&#x27;s console reports the match — read the page&#x27;s <code>enrichment</code> per match. Grand Slams and UTR: none. Null = not stated.</td></tr></tbody></table></div>
 </section>
 <section id="schema-pointupdate">
 <h3>PointUpdate</h3>
