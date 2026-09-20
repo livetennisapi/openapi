@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.21, last change 2026-09-20.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.22, last change 2026-09-20.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,18 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.21</strong>, last change <time datetime="2026-09-20">2026-09-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.22</strong>, last change <time datetime="2026-09-20">2026-09-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.22"><h2>1.13.22 <time datetime="2026-09-20">2026-09-20</time></h2>
+<h3>Added</h3>
+<ul>
+<li><strong><code>GET /history/archive/players</code> now takes <code>?id=</code> (alias <code>?player_id=</code>), so the corpus person id we publish can finally be looked up.</strong> Archive match rows have published that id as <code>winner.player_id</code> / <code>loser.player_id</code> since 2026-08-03, and this endpoint has published it as <code>id</code> and described it in those words — but nothing in the API accepted the value. A reader holding a corpus id could only go back to the NAME. It is a filter on the list rather than a <code>/history/archive/players/{id}</code> detail route on purpose: the natural key is <code>(tour, source_pid)</code>, the two tours number independently, and 14,627 corpus person ids are live in BOTH (measured 2026-09-20) — a detail route would have to pick a tour and would return the wrong human for those ids without saying so. The list returns every person wearing the id; add <code>tour</code> to narrow it to exactly one. Sending <code>id</code> and <code>player_id</code> with different values is a <code>400</code>.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>A corpus person id sent to <code>GET /players/{playerId}</code> returned a bare <code>404</code> that explained nothing.</strong> The roster (<code>/players</code>, ids 1-37033) and the results-archive person registry (100001-270580) are separate, deliberately disjoint id spaces - 0 of 137,483 corpus ids resolve on <code>/players/{playerId}</code> - and the only id-shaped player lookup in the API was the roster one. The <code>404</code> now carries <code>detail</code> and a <code>see</code> pointer at <code>/history/archive/players?id=...</code> when the id resolves in the archive registry; an id from neither space keeps the plain body. The same signpost is on <code>/players/{playerId}/stoppages</code> and <code>/players/{playerId}/injuries</code>. The status is deliberately still <code>404</code> and not <code>410</code>: <code>410</code> asserts the id once existed HERE, and it never did. The person is never named in the <code>404</code> - the archive is History-gated and <code>/players/{playerId}</code> is not.</li>
+<li><strong><code>GET /players/{playerId}</code> was missing its <code>410</code> in this specification.</strong> The route has answered <code>410 PlayerMerged</code> with a forwarding address for a merged or retired player id for as long as its two stoppage aliases have, and both aliases documented it while the main detail endpoint did not. Now documented, along with a <code>PlayerNotFound</code> schema that states exactly when <code>detail</code> and <code>see</code> are present.</li>
+</ul></article>
 <article id="v1.13.21"><h2>1.13.21 <time datetime="2026-09-20">2026-09-20</time></h2>
 <h3>Fixed</h3>
 <ul>

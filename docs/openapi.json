@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.21",
+  "version": "1.13.22",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -447,7 +447,14 @@
       "$ref": "#/components/responses/UpgradeRequired"
      },
      "404": {
-      "$ref": "#/components/responses/NotFound"
+      "description": "No roster player holds this id. Carries the archive signpost (`detail` + `see`) when the id is a corpus person id.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlayerNotFound"
+        }
+       }
+      }
      },
      "410": {
       "$ref": "#/components/responses/PlayerGone"
@@ -540,7 +547,14 @@
       "$ref": "#/components/responses/UpgradeRequired"
      },
      "404": {
-      "$ref": "#/components/responses/NotFound"
+      "description": "No roster player holds this id. Carries the archive signpost (`detail` + `see`) when the id is a corpus person id.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlayerNotFound"
+        }
+       }
+      }
      },
      "410": {
       "$ref": "#/components/responses/PlayerGone"
@@ -798,6 +812,7 @@
   "/players/{playerId}": {
    "get": {
     "summary": "One player's bio + ranking + cached stats (FREE)",
+    "description": "`playerId` is a ROSTER id — the live player registry, the id space `/players`, `/matches` and `/rankings` all speak.\nIt is NOT the archive corpus person id. The results archive (1968–2022) keeps its own person registry, and archive match rows publish those ids as `winner.player_id` / `loser.player_id`. The two spaces are disjoint: no corpus id resolves here, and since 2026-09-20 a 404 for one says so and points at `/history/archive/players?id={playerId}`, which is where that id is read. A 404 with no `see` field is simply an id we do not hold.",
     "operationId": "getPlayer",
     "parameters": [
      {
@@ -824,7 +839,17 @@
       "$ref": "#/components/responses/Unauthorized"
      },
      "404": {
-      "$ref": "#/components/responses/NotFound"
+      "description": "No roster player holds this id. When the id IS a corpus person id the body adds `detail` and `see` (the archive lookup); otherwise it is the plain `Error` body.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlayerNotFound"
+        }
+       }
+      }
+     },
+     "410": {
+      "$ref": "#/components/responses/PlayerGone"
      },
      "429": {
       "$ref": "#/components/responses/RateLimited"
@@ -1681,6 +1706,22 @@
     "description": "People of the results archive (1968–2022), in their own id space — `id` is the corpus person id that archive match rows carry as `winner.player_id` / `loser.player_id`, scoped per tour; never a roster id. Career-high rank and the earliest week it was reached are computed offline from the corpus's own weekly ranking tables. Null fields are the era's silence, never guessed. Requires BASIC, or any Historical Data API plan.",
     "operationId": "listArchivePlayers",
     "parameters": [
+     {
+      "name": "id",
+      "in": "query",
+      "schema": {
+       "type": "integer"
+      },
+      "description": "Look a person up BY the corpus person id — the value archive match rows publish as `winner.player_id` / `loser.player_id`. This is the only endpoint that accepts it: corpus ids and roster ids are disjoint id spaces, so the same value on `/players/{playerId}` returns 404 (that 404 now points here). Returns every person wearing the id — the tours number independently and some ids are live in both — so add `tour` to narrow it to exactly one."
+     },
+     {
+      "name": "player_id",
+      "in": "query",
+      "schema": {
+       "type": "integer"
+      },
+      "description": "Alias of `id`, under the name the same value carries on an archive match row. Sending both with different values is a 400."
+     },
      {
       "name": "name",
       "in": "query",
@@ -3086,6 +3127,29 @@
    }
   },
   "schemas": {
+   "PlayerNotFound": {
+    "type": "object",
+    "description": "The 404 body for /players/{playerId} and its two stoppage aliases. `detail` and `see` appear ONLY when the requested id resolves in the results-archive person registry — the signpost across the two id spaces. They are absent for an id we simply do not hold. The person is never named here: the archive is History-gated and this route is not.",
+    "properties": {
+     "error": {
+      "type": "string",
+      "enum": [
+       "not_found"
+      ]
+     },
+     "detail": {
+      "type": "string",
+      "description": "Present only when the id is a corpus person id."
+     },
+     "see": {
+      "type": "string",
+      "description": "Present only when the id is a corpus person id — the archive lookup that reads it, e.g. `/api/public/v1/history/archive/players?id=104925`."
+     }
+    },
+    "required": [
+     "error"
+    ]
+   },
    "MatchMerged": {
     "type": "object",
     "description": "The 410 GONE body for a match id that was merged into another match record. Distinct from `Error` because it carries a forwarding address.",
