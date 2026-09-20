@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.20",
+  "version": "1.13.21",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -60,7 +60,7 @@
   "/matches": {
    "get": {
     "summary": "List matches by lifecycle status (FREE)",
-    "description": "`status=live` and `status=upcoming` are the FREE current-state picture. `status=completed` pages historical results and is part of the paid History product — it requires BASIC (the same rule as `/history/matches`) and returns `403 upgrade_required` on a FREE key. The `player`, `country`, `from`/`to`, `tour` and `draw` filters are optional, AND-composed, applied inside the query (before pagination), and work on every status — omitting them returns exactly what the endpoint returned before they existed.",
+    "description": "`status=live` and `status=upcoming` are the FREE current-state picture. `status=completed` pages historical results and is part of the paid History product — it requires BASIC (the same rule as `/history/matches`) and returns `403 upgrade_required` on a FREE key. The `player`, `country`, `from`/`to`, `tour`, `draw`, `has_analysis` and `has_market` filters are optional, AND-composed, applied inside the query (before pagination), and work on every status — omitting them returns exactly what the endpoint returned before they existed. `has_analysis` and `has_market` are the two availability flags every row already carries: filter the slate with them and call `/matches/{matchId}/analysis` and `/matches/{matchId}/prices` only for the ids that have something, rather than probing per match for a 404.",
     "operationId": "listMatches",
     "parameters": [
      {
@@ -92,6 +92,12 @@
      },
      {
       "$ref": "#/components/parameters/tournamentId"
+     },
+     {
+      "$ref": "#/components/parameters/hasAnalysis"
+     },
+     {
+      "$ref": "#/components/parameters/hasMarket"
      },
      {
       "$ref": "#/components/parameters/playedFrom"
@@ -2976,6 +2982,15 @@
      "type": "string"
     },
     "description": "Echo back `meta.next_cursor` to fetch the next page of a change feed. Opaque — do not parse it, its contents will change. Supplies both the floor and the tie-break position, so it replaces `updated_since` on follow-up pages rather than accompanying it."
+   },
+   "hasAnalysis": {
+    "name": "has_analysis",
+    "in": "query",
+    "required": false,
+    "schema": {
+     "type": "boolean"
+    },
+    "description": "Return only matches that DO (`true`) or do NOT (`false`) have model analysis, matching the `has_analysis` flag each row carries (filter added 2026-09-14, documented here 2026-09-20). Omit for both. Anything other than true/false is a 400 `bad_has_analysis`, never a silently ignored filter. These are the matches `/matches/{matchId}/analysis` can serve; every other id answers 404 `no_analysis`. The misses are structural rather than transient — analysis is produced only for a match carrying a mapped market — so a caller polling the unanalysed half is asking a question whose answer can never become yes. Filter the slate with this instead."
    },
    "hasMarket": {
     "name": "has_market",

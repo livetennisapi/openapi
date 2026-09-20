@@ -5,6 +5,12 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.21] - 2026-09-20
+### Fixed
+- **`GET /matches` accepted `?has_market=` and silently ignored it, and `status=cancelled` ignored `?has_analysis=` as well.** The filter was implemented in the shared query builder on 2026-09-15 and exposed on `/history/matches` the same day, but it was never wired to `/matches`: every row published `has_market`, the query string was accepted, and the unfiltered page came back under a `200`. Measured on production before the fix — `status=live` returned the same 14 rows (2 with a market) for `has_market=true`, `has_market=false` and no filter at all; `status=completed` the same 100 rows (38 with a market); `/history/matches` was correct throughout (40/40 and 0/40). Five of the eight status x filter combinations returned a wrong answer under a success code. Both filters now apply on every status, and an unparseable value is a `400 bad_has_market` / `bad_has_analysis` as documented.
+### Added
+- `has_analysis` and `has_market` are now DOCUMENTED as query parameters on `GET /matches`. `has_analysis` has worked on `live`, `upcoming` and `completed` since 2026-09-14 and `has_market` works everywhere from today, but neither appeared in this specification, so the only filter a reader could find was `has_market` on `/history/matches`. The prose telling callers to "filter the slate first" was therefore advice with no documented instrument behind it.
+
 ## [1.13.20] - 2026-09-19
 ### Fixed
 - **The two win-probability regime boundaries published in 1.13.19 were three hours late, and are corrected here: 2026-08-18T08:29:28Z and 2026-09-16T07:59:54Z.** Both switch instants were read off `config.updated_at`, a column this application stores in **naive local wall time (UTC+3)**, and were published as if they were UTC. Verified six independent ways on 2026-09-19: six config rows whose own value is an epoch each read exactly +3 h against their `updated_at` (e.g. `monitoring.worker_heartbeat_ts` = 2026-09-19T20:22:46.465Z stored as `23:22:46.467`). The corrected instants are the config switches themselves — `win_probability.match_tiebreak_detection_enabled` at 2026-08-18 08:29:28.93Z and `win_probability.itf_pricing_draw_rule_enabled` at 2026-09-16 07:59:54.76Z — which is the earliest instant from which a state can carry the new rule, and therefore the safe place to cut.
