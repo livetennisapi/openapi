@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.31"
+  version: "1.13.32"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -830,13 +830,20 @@ paths:
         score, and only when the two are one point apart — the winner held
         game point and the final is the decided score; nothing is fabricated
         otherwise. `serve`, `outcome` and `tagged_at` on that row are null:
-        no source's tag for a match's last point is stored yet. The response
-        field `ends_at_final` says whether the sequence served ends on the
-        match-closing point: `false` on a completed match whose stream stops
-        short of it — a retirement or walkover (no closing point was
-        played), a capture that stopped two or more points short, or a
-        closer that cannot be stated as one point (from deuce, or from a
-        match tiebreak). Always `false` on a live match. On the
+        no source's tag for a match's last point is stored yet. When the
+        match ends in a tiebreak (added 2026-09-21) the stream's last row is
+        the decisive tiebreak score itself (7-3, 8-6) and the closing row is
+        the set roll-up after it: the next game number, `number` 0,
+        `tiebreak` false, `sets` incremented for the tiebreak winner, the set
+        banked 7-6 in `games`, `score` 0-0, `server` null, the same `winner`
+        — the same row the stream stores after every other set-ending
+        tiebreak. The response field `ends_at_final` says whether the
+        sequence served ends on the match-closing point: `false` on a
+        completed match whose stream stops short of it — a retirement or
+        walkover (no closing point was played), a capture that stopped two
+        or more points short, or a closer that cannot be stated as one point
+        (from deuce, or from a 10-point match tiebreak). Always `false` on a
+        live match. On the
         `reconstruction` basis it is judged from the projected sequence's
         last frame (a complete recorded sequence of a retired match ends at
         the retirement, so it reads `false` there). WebSocket and push
@@ -5378,12 +5385,15 @@ components:
             `number` 0, score 0-0, `server` null, `winner` the match winner.
             On a completed match served on the `live` basis that row is
             appended at read time from the stored stream's last row and the
-            observed final score, and only when the two are one point apart;
-            false when the match is completed but the stream stops short of
-            it (a retirement or walkover, a truncated capture, or a closer
-            that cannot be stated as one point), and always false on a live
-            match. On the `reconstruction` basis it is judged from the last
-            projected frame.
+            observed final score, and only when the two are one point apart
+            (when the match ends in a tiebreak, the set roll-up after the
+            decisive tiebreak row: `tiebreak` false, the set banked 7-6, the
+            same `winner`); false when the match is completed but the stream
+            stops short of it (a retirement or walkover, a truncated capture,
+            or a closer that cannot be stated as one point, such as a
+            10-point match tiebreak), and always false on a live match. On
+            the `reconstruction` basis it is judged from the last projected
+            frame.
     PointFrame:
       type: object
       description: >-
