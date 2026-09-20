@@ -1547,7 +1547,8 @@ across a <code>?tour=</code> group.</p>
 <tr><td><code>completeness</code></td><td>number or null</td><td>Legal single-point transitions over a LOWER-BOUND expected point count derived from the final scoreline. 1.0 for any complete tape, low for a sampled one. Descriptive only — the denominator is a floor, not the true point count — and null when the final scoreline is unreadable.</td></tr>
 <tr><td><code>rows</code></td><td>integer</td><td>Rows measured — always equals <code>meta.rows</code>.</td></tr>
 <tr><td><code>transitions_legal</code></td><td>integer</td><td>Transitions attributable to exactly one side winning one point.</td></tr>
-<tr><td><code>transitions_total</code></td><td>integer</td><td>All row-to-row transitions (rows − 1).</td></tr>
+<tr><td><code>transitions_total</code></td><td>integer</td><td>All row-to-row transitions, excluding re-sent rows (rows − 1 − <code>resent_rows</code>).</td></tr>
+<tr><td><code>resent_rows</code></td><td>integer</td><td>Rows identical to the row before them — the same state re-sent by a source on its timer, which the raw tape carries by design. No point separates them, so they are excluded from the transition counts (<code>transitions_total</code> = <code>rows</code> − 1 − <code>resent_rows</code>) rather than counted as non-point steps. 0 on a <code>clean</code> or <code>recon</code> basis: the collapse removes them, and in a reconstruction one row IS one point so a repeat is a vendor tear and is never dropped. Added 2026-09-20.</td></tr>
 <tr><td><code>server_rows</code></td><td>integer</td><td>Rows carrying a server.</td></tr>
 <tr><td><code>starts_at_love</code></td><td>boolean</td><td>The first row is the 0-0 opening state.</td></tr>
 <tr><td><code>ends_at_final</code></td><td>boolean</td><td>The last row is a complete, legal final scoreline.</td></tr>

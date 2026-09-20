@@ -5181,7 +5181,11 @@
      },
      "transitions_total": {
       "type": "integer",
-      "description": "All row-to-row transitions (rows − 1)."
+      "description": "All row-to-row transitions, excluding re-sent rows (rows − 1 − `resent_rows`)."
+     },
+     "resent_rows": {
+      "type": "integer",
+      "description": "Rows identical to the row before them — the same state re-sent by a source on its timer, which the raw tape carries by design. No point separates them, so they are excluded from the transition counts (`transitions_total` = `rows` − 1 − `resent_rows`) rather than counted as non-point steps. 0 on a `clean` or `recon` basis: the collapse removes them, and in a reconstruction one row IS one point so a repeat is a vendor tear and is never dropped. Added 2026-09-20."
      },
      "server_rows": {
       "type": "integer",
@@ -5411,6 +5415,32 @@
            "null"
           ],
           "description": "Measured point-completeness, best basis: true when the served tape OR an on-disk reconstruction of the match measured point-complete (fetch the latter with `?points=complete` on the per-match tape); null when the match has not been measured yet — never a guess. Read from a per-match ledger reconverged nightly. Present where enabled."
+         },
+         "points_complete_default": {
+          "type": [
+           "boolean",
+           "null"
+          ],
+          "description": "WHICH measurement produced `points_complete` — this one is the served tape, measured on `points_basis`. Null when that basis was not measured. Added 2026-09-20 after a consumer filtered on `points_complete=true`, fetched a match and read `meta.points.complete: false`: both answers were honest about their own sequence, and nothing in the payload said which sequence each had judged. Present where enabled."
+         },
+         "points_complete_recon": {
+          "type": [
+           "boolean",
+           "null"
+          ],
+          "description": "The other half of `points_complete`: the on-disk reconstruction, which you fetch with `?points=complete` on the per-match tape. Null when no reconstruction existed when the ledger last ran. A complete reconstruction is a different object from a complete observed tape — every row carries a null `timestamp` and null model fields, because neither ever existed for it. Present where enabled."
+         },
+         "points_basis": {
+          "type": [
+           "string",
+           "null"
+          ],
+          "enum": [
+           "clean",
+           "raw",
+           null
+          ],
+          "description": "Which sequence `points_complete_default` judged — `clean` (the collapsed one row per distinct state, obtainable with `?sequence=clean`) for an observed tape, `raw` when the default read already serves a reconstruction. Null when not measured. Present where enabled."
          },
          "completeness": {
           "type": [
