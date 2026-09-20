@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.28"
+  version: "1.13.29"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -4503,20 +4503,30 @@ components:
                     served tape OR an on-disk reconstruction of the match
                     measured point-complete (fetch the latter with
                     `?points=complete` on the per-match tape); null when the
-                    match has not been measured yet — never a guess. Read
-                    from a per-match ledger reconverged nightly. Present
-                    where enabled.
+                    match has not been measured yet — never a guess. Since
+                    2026-09-20 the served-tape leg judges the same raw
+                    sequence (provable re-sends dropped) that the per-match
+                    read serves and measures in `meta.points`, so the two
+                    agree by construction; a row scored before the switch may
+                    still disagree until the nightly re-score reaches it
+                    (see `points_basis`). Read from a per-match ledger
+                    reconverged nightly. Present where enabled.
                 points_complete_default:
                   type: [boolean, "null"]
                   description: >-
                     WHICH measurement produced `points_complete` — this one
-                    is the served tape, measured on `points_basis`. Null when
-                    that basis was not measured. Added 2026-09-20 after a
-                    consumer filtered on `points_complete=true`, fetched a
-                    match and read `meta.points.complete: false`: both
-                    answers were honest about their own sequence, and
-                    nothing in the payload said which sequence each had
-                    judged. Present where enabled.
+                    is the served tape, measured on `points_basis`. Since
+                    2026-09-20 that basis is the same raw sequence the
+                    per-match read serves (re-sends dropped), so this field
+                    and that read's `meta.points.complete` agree by
+                    construction instead of disagreeing on a collapse the
+                    read never served. Null when that basis was not
+                    measured. Added 2026-09-20 after a consumer filtered on
+                    `points_complete=true`, fetched a match and read
+                    `meta.points.complete: false`: both answers were honest
+                    about their own sequence, and nothing in the payload
+                    said which sequence each had judged. Present where
+                    enabled.
                 points_complete_recon:
                   type: [boolean, "null"]
                   description: >-
@@ -4532,12 +4542,16 @@ components:
                   type: [string, "null"]
                   enum: [clean, raw, null]
                   description: >-
-                    Which sequence `points_complete_default` judged —
-                    `clean` (the collapsed one row per distinct state,
-                    obtainable with `?sequence=clean`) for an observed tape,
-                    `raw` when the default read already serves a
-                    reconstruction. Null when not measured. Present where
-                    enabled.
+                    Which sequence `points_complete_default` judged — `raw`,
+                    the same sequence the per-match read serves (provable
+                    re-sends dropped, exactly as that read's `meta.points`
+                    judges it), for an observed tape and a served
+                    reconstruction alike. `clean` — the collapsed one row
+                    per distinct state, still obtainable with
+                    `?sequence=clean` as a request option — appears only on
+                    a row scored before 2026-09-20 that the nightly
+                    re-score has not yet reached. Null when not measured.
+                    Present where enabled.
                 completeness:
                   type: [number, "null"]
                   description: >-
@@ -4557,10 +4571,14 @@ components:
                   type: [string, "null"]
                   format: date-time
                   description: >-
-                    When the ledger last measured this match (UTC). Every
-                    field in this block is a nightly-reconverged cache; this
-                    is the as-of to quote with any of them. Null when the
-                    match has not been measured. Present where enabled.
+                    When the ledger last measured this match, UTC with a
+                    trailing `Z` — the same projection every other clock in
+                    this payload uses, so it can be diffed against
+                    `meta.generated_at` or a row's `timestamp` without
+                    normalising it by hand first. Every field in this block
+                    is a nightly-reconverged cache; this is the as-of to
+                    quote with any of them. Null when the match has not been
+                    measured. Present where enabled.
     Usage:
       type: object
       properties:
