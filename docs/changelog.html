@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.33, last change 2026-09-21.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.34, last change 2026-09-21.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.33</strong>, last change <time datetime="2026-09-21">2026-09-21</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.34</strong>, last change <time datetime="2026-09-21">2026-09-21</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.34"><h2>1.13.34 <time datetime="2026-09-21">2026-09-21</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>The reference said Davis Cup and the Grand Slams &quot;read null throughout&quot; for the per-point tags; <code>serve</code> is in fact stated on the top Davis Cup tiers.</strong> <code>serve</code> and <code>outcome</code> are joined from *different* outside sources, and the old sentence excluded both on the strength of one of them: the tour&#x27;s own per-point console does not carry team ties or Slams, so <code>outcome</code> is genuinely <code>null</code> there — but the source that states the serve number does carry them. Measured over completed matches with a per-point stream since 2026-09-12: Davis Cup World Group states <code>serve</code> on 22 of 22 matches and World Group I on 41 of 42, while World Group II states it on 0 of 38; <code>outcome</code> is null on all of them, on every one of the 14,132 rows. The machine-readable authority was right throughout and is unchanged — a World Group I match answers <code>enrichment: {&quot;serve&quot;: &quot;stated&quot;, &quot;outcome&quot;: &quot;none&quot;}</code> and a World Group II match answers <code>{&quot;serve&quot;: &quot;none&quot;, &quot;outcome&quot;: &quot;none&quot;}</code> — so this corrects the prose to match what the API already returns, in the direction of more coverage, not less. The <code>serve</code> description now names the Davis Cup tiers in its coverage list with the measurement; the <code>outcome</code> description now separates the two sources instead of excluding a competition from both. No field, endpoint or behaviour change.</li>
+</ul></article>
 <article id="v1.13.33"><h2>1.13.33 <time datetime="2026-09-21">2026-09-21</time></h2>
 <h3>Changed</h3>
 <ul>

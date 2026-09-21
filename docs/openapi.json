@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.33",
+  "version": "1.13.34",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -6711,7 +6711,7 @@
        2,
        null
       ],
-      "description": "Added 2026-09-12. The serve the point was played on (1 first, 2 second) as an outside source states it, joined onto the row by exact state. Null = not stated for this point; never inferred. Lands a few seconds after the point's own frame (see the `point_update` frame). Stated on the ATP main tour, ATP Challenger, WTA 1000/500/250/125 and UTR; not stated on the ITF World Tennis Tour, nor in any doubles draw. Qualifying draws are covered like their own main draw, not excluded: measured over completed matches carrying a per-point stream since 2026-09-12, WTA qualifying stated it on 48 of 48, Challenger (men) qualifying on 153 of 155 and Challenger (women) on 49 of 51. Read `enrichment` per match — none of this is a promise about a match not yet played."
+      "description": "Added 2026-09-12. The serve the point was played on (1 first, 2 second) as an outside source states it, joined onto the row by exact state. Null = not stated for this point; never inferred. Lands a few seconds after the point's own frame (see the `point_update` frame). Stated on the ATP main tour, ATP Challenger, WTA 1000/500/250/125, UTR and the top Davis Cup tiers; not stated on the ITF World Tennis Tour, nor in any doubles draw. Team ties: measured over completed matches with a per-point stream since 2026-09-12, Davis Cup World Group stated it on 22 of 22 and World Group I on 41 of 42, while World Group II stated it on 0 of 38. Qualifying draws are covered like their own main draw, not excluded: measured over completed matches carrying a per-point stream since 2026-09-12, WTA qualifying stated it on 48 of 48, Challenger (men) qualifying on 153 of 155 and Challenger (women) on 49 of 51. Read `enrichment` per match — none of this is a promise about a match not yet played."
      },
      "outcome": {
       "type": [
@@ -6726,7 +6726,7 @@
        "unforced_error",
        null
       ],
-      "description": "Added 2026-09-12. How the point ended, as an outside source states it. ATP 250 / 500 / 1000: serve stated, outcome full (ace, double fault, winner, forced error, unforced error) from the tour's own per-point console. Grand Slams and Davis Cup are not on that feed and read null throughout; read `enrichment` per match. First measured on tour events from the week of 2026-09-22 — before that, no tour event had been played since the source went live on 2026-09-12. Challenger: all five. The ITF World Tennis Tour: ace and double fault. WTA 1000/500/250/125: ace and double fault where the tour's console reports the match — read the page's `enrichment` per match. Grand Slams and UTR: none. Doubles draws: none. Qualifying draws follow their own tour, with one gap: ITF qualifying states aces and double faults (95 of 107 men's and 62 of 74 women's completed matches with a stream since 2026-09-12), while Challenger (men) qualifying states no outcome at all. Null = not stated."
+      "description": "Added 2026-09-12. How the point ended, as an outside source states it. ATP 250 / 500 / 1000: serve stated, outcome full (ace, double fault, winner, forced error, unforced error) from the tour's own per-point console. Grand Slams and Davis Cup are not on that console, so `outcome` reads null there — but `serve` comes from a different source and IS stated on them, so those matches are not blanket-null; read `enrichment` per match. First measured on tour events from the week of 2026-09-22 — before that, no tour event had been played since the source went live on 2026-09-12. Challenger: all five. The ITF World Tennis Tour: ace and double fault. WTA 1000/500/250/125: ace and double fault where the tour's console reports the match — read the page's `enrichment` per match. Grand Slams and UTR: none. Doubles draws: none. Qualifying draws follow their own tour, with one gap: ITF qualifying states aces and double faults (95 of 107 men's and 62 of 74 women's completed matches with a stream since 2026-09-12), while Challenger (men) qualifying states no outcome at all. Null = not stated."
      },
      "tagged_at": {
       "type": [
