@@ -5,6 +5,10 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.36] - 2026-09-21
+### Changed
+- **`GET /charting/players` states a sample of 11,803 charted matches, not 11,646.** The charted corpus was refreshed on 2026-09-19 and 184 matches — 133 of them played after 2026-05-24, including the US Open women's draw to the quarter-finals — were loaded into the product on 2026-09-21. `matches_charted` on every response has always been the true per-player denominator and was never affected; the curated-coverage note beside it was quoting an older total and understating the sample. `GET /rally/matches` grew in the same load: 11,822 charted matches and 1,875,132 shot-by-shot points, with the newest women's chart now 2026-09-09. The men's corpus is unchanged because nothing has been charted upstream since 2026-05-21. No field changed shape.
+
 ## [1.13.35] - 2026-09-21
 ### Added
 - **`meta.points.games_short` on `GET /history/matches/{matchId}` counts the completed games the tape holds too few points for.** Raised by a prospect evaluating per-point histories. A game the tape skips whole is a legal `0-0 → 0-0` boundary with the games counter up by one, and the transition test alone cannot see it — so a tape could read `complete: true` with a whole game missing. The measurement now walks the sequence by game boundary and compares what is held for each completed game with the fewest points that game can have contained given the last state it shows (from 0-0 at least 4; from 15-30 at least 5; from 40-40 at least 8; a tiebreak at least 7) — a lower bound, never an estimate. A game the tape skips whole counts; so does a game that ended with no further rows after its last stored point. `> 0` forces `complete` to `false`; nothing is inferred or repaired, and the game's boundary rows are still served exactly as stored. `null` = nothing measured (an empty sequence).

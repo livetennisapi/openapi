@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.35"
+  version: "1.13.36"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2287,7 +2287,7 @@ paths:
         key; a fragment matching more than one charted person is refused with
         the candidate list, and `gender=men|women` disambiguates. Every field
         is a raw SUM over the player's Total rows and `matches_charted` states
-        the sample. COVERAGE IS CURATED — 11,646 charted matches across both
+        the sample. COVERAGE IS CURATED — 11,803 charted matches across both
         tours back to the 1960s, concentrated on the majors, NOT full-slate
         coverage.
       operationId: getChartingPlayer

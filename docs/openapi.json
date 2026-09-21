@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.35",
+  "version": "1.13.36",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -2550,7 +2550,7 @@
   "/charting/players": {
    "get": {
     "summary": "Career shot-level charting aggregate for one player (ULTRA)",
-    "description": "The deepest serve/return profile we hold, from the Match Charting Project: serve placement (deuce/ad × wide/body/T), return depth and outcomes, net and serve-and-volley conversion, clutch break/game/set-point serving and returning, winners and unforced errors by wing, and rally-length and shot-direction tendencies — summed over the player's charted matches. `name` (min 3 chars) is the key; a fragment matching more than one charted person is refused with the candidate list, and `gender=men|women` disambiguates. Every field is a raw SUM over the player's Total rows and `matches_charted` states the sample. COVERAGE IS CURATED — 11,646 charted matches across both tours back to the 1960s, concentrated on the majors, NOT full-slate coverage.",
+    "description": "The deepest serve/return profile we hold, from the Match Charting Project: serve placement (deuce/ad × wide/body/T), return depth and outcomes, net and serve-and-volley conversion, clutch break/game/set-point serving and returning, winners and unforced errors by wing, and rally-length and shot-direction tendencies — summed over the player's charted matches. `name` (min 3 chars) is the key; a fragment matching more than one charted person is refused with the candidate list, and `gender=men|women` disambiguates. Every field is a raw SUM over the player's Total rows and `matches_charted` states the sample. COVERAGE IS CURATED — 11,803 charted matches across both tours back to the 1960s, concentrated on the majors, NOT full-slate coverage.",
     "operationId": "getChartingPlayer",
     "parameters": [
      {
