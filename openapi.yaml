@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.34"
+  version: "1.13.35"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -795,25 +795,37 @@ paths:
         while the surface is switched off server-side.
 
 
-        COMPLETED MATCHES: live capture is inherently partial — the stream
-        serves what arrived while the match ran, and the match-closing point
-        never streams live. Where a measured-complete recorded point sequence
-        of the finished match exists, this endpoint serves THAT instead — the
-        complete sequence projected into the same point-frame shape, love-love
-        opener through the match-closing point, `seq` contiguous 1..N. The
-        response field `basis` says which base served the page: `live` (the
-        persisted live stream rows — every live match, and any completed match
-        without a measured-complete recorded sequence) or `reconstruction`
-        (the projected complete sequence; `quality` is `clean`, every
-        transition measured legal). Completeness beats the partial live
-        capture wholesale — the two sequences are never interleaved (they
-        share no key, so any merge would fabricate an order). On projected
-        frames `ts` is null on every row: the recorded sequence carries no
-        per-point clock and we fabricate none. `after_seq` pagination and
-        `seq` dedup work identically on either basis, but the two bases are
-        different sequences: after a match completes and flips to
-        `reconstruction`, re-read from `after_seq=0` rather than resuming a
-        live cursor into it.
+        COMPLETED MATCHES: the stored live stream is served on a completed
+        match too, whenever it is itself measured complete (the match-closing
+        point included) or carries `serve`/`outcome` tags and is legal end to
+        end (every transition one attributable point, judged in playing
+        order). A projection never carries a clock or a tag, so a complete
+        tagged stream is strictly more information than any reconstruction
+        of the same match. Only when the stream falls short — no rows at all,
+        incomplete and untagged, or a transition nobody can attribute — and a
+        measured-complete recorded point sequence of the finished match
+        exists does this endpoint serve THAT instead: the complete sequence
+        projected into the same point-frame shape, love-love opener through
+        the match-closing point, `seq` contiguous 1..N. The response field
+        `basis` says which base served the page: `live` (the persisted live
+        stream rows) or `reconstruction` (the projected complete sequence;
+        `quality` is `clean`, every transition measured legal), and on
+        `reconstruction` `basis_reason` says why the stream was not served:
+        `stream_absent` (no stored stream rows), `stream_incomplete` (the
+        stream is legal but does not measure complete — it joined mid-match
+        or stopped short — and carries no tags) or `stream_illegal` (at least
+        one transition is not attributable to one point: a gap or a torn
+        row). When the reconstruction serves it serves wholesale — the two
+        sequences are never interleaved (they share no key, so any merge
+        would fabricate an order). On projected frames `ts` is null on every
+        row: the recorded sequence carries no per-point clock and we
+        fabricate none. `after_seq` pagination and `seq` dedup work
+        identically on either basis, but the two bases are different
+        sequences: if a completed match reads `reconstruction`, re-read from
+        `after_seq=0` rather than resuming a live cursor into it. Precedence
+        fixed 2026-09-21: until then a measured-complete recorded sequence
+        displaced the stream unconditionally, so a completed match could lose
+        its tags the moment a reconstruction landed.
 
 
         THE MATCH-CLOSING POINT (added 2026-09-20). Every row is the state
@@ -4033,12 +4045,16 @@ components:
           - null
           description: >-
             The serve the point was played on (1 first, 2 second), joined from
-            this match's per-point stream by EXACT score state — set count,
-            every set's games, in-game points and tiebreak flag all equal.
-            Observed rows only: null on every reconstructed row, on a row no
-            stream point matches, and on a state the stream asserts more than
-            once (a deuce cycle — ambiguous, so nothing is placed). Never
-            inferred from the score. Added 2026-09-20.
+            this match's per-point stream: paired by EXACT score state — set
+            count, every set's games, in-game points and tiebreak flag all
+            equal — and, where a state recurs (a deuce cycle), by nearest
+            clock within 90 seconds (the tape row's observed clock against
+            the stream point's), each stream point used at most once;
+            otherwise null. Observed rows only: null on every reconstructed
+            row, on a row no stream point matches, and on a recurring state
+            with no clock within the window or two at the same distance.
+            Never inferred from the score or the pattern of play. Added
+            2026-09-20; clock pairing 2026-09-21.
         outcome:
           type:
           - string
@@ -4281,11 +4297,18 @@ components:
         complete:
           type: boolean
           description: >-
-            The contract bit: the sequence opens at 0-0, EVERY transition is a
-            legal single-point step, it carries at least as many point
-            transitions as the final scoreline implies the match contained,
-            it reaches a finished legal final scoreline (or the match ended
-            early — retirement/walkover), and it is not known-truncated.
+            The contract bit: a statement that the served sequence holds AT
+            LEAST EVERY POINT THE SCORE REQUIRES — not merely that consecutive
+            rows are consistent with each other. True only when the sequence
+            opens at 0-0, EVERY transition is a legal single-point step, it
+            carries at least as many point transitions as the final scoreline
+            implies the match contained, EVERY completed game holds at least
+            as many point transitions as that game must have contained
+            (`games_short` is 0 — a whole game the tape skips is a legal
+            0-0 → 0-0 boundary the transition test alone cannot see, added
+            2026-09-21), it reaches a finished legal final scoreline at love
+            (or the match ended early — retirement/walkover), it is not
+            known-truncated, and no game was withheld (`games_withheld`).
         completeness:
           type: [number, "null"]
           description: >-
@@ -4323,7 +4346,12 @@ components:
           description: The first row is the 0-0 opening state.
         ends_at_final:
           type: boolean
-          description: The last row is a complete, legal final scoreline.
+          description: >-
+            The last row is a complete, legal final scoreline AND shows no
+            game in progress: points at love or null, not a tiebreak in
+            progress. A row carrying a finished spine with a game still
+            underway (e.g. [[6,6],[3,4]] at 15-0) reads false (since
+            2026-09-21; before that the spine alone decided).
         basis:
           type: string
           enum: [raw, clean, recon]
@@ -4342,6 +4370,22 @@ components:
             reconstruction, it is the live verdict just measured on it
             (`complete`); null only when there is no ledger entry and nothing
             to measure. Added 2026-09-20.
+        games_short:
+          type: [integer, "null"]
+          description: >-
+            A completed game for which the tape holds fewer point transitions
+            than that game must have contained; `> 0` forces `complete` to
+            `false`; nothing is inferred or repaired. Counted by walking the
+            sequence by game boundary and comparing what is held for each
+            completed game with the FEWEST points that game can have
+            contained given the last state it shows (from 0-0 at least 4;
+            from 15-30 at least 5; from 40-40 at least 8; a tiebreak at least
+            7) — a lower bound, never an estimate. A game the tape skips
+            whole (0-0 → 0-0 with the games counter up by one) counts; so
+            does a game that ended with no further rows after its last stored
+            point. The game's boundary rows are still served exactly as
+            stored. `null` = nothing measured (an empty sequence). Added
+            2026-09-21.
         games_withheld:
           type: [integer, "null"]
           description: >-
@@ -5274,7 +5318,11 @@ components:
           description: >-
             Added 2026-09-12. The serve the point was played on (1 first, 2
             second) as an outside source states it, joined onto the row by
-            exact state. Null = not stated for this point; never inferred.
+            exact state. Null = not stated for this point; never inferred. A
+            source point whose serve number and outcome contradict each other
+            (a double fault stated on a first serve) is served untagged —
+            `serve` and `outcome` both null — rather than tagged wrongly;
+            nothing is corrected to a second serve (since 2026-09-21).
             Lands a few seconds after the point's own frame (see the
             `point_update` frame). Stated on the ATP main tour, ATP Challenger,
             WTA 1000/500/250/125, UTR and the top Davis Cup tiers; not stated
@@ -5308,7 +5356,10 @@ components:
             qualifying states aces and double faults (95 of 107 men's and 62 of
             74 women's completed matches with a stream since 2026-09-12), while
             Challenger (men) qualifying states no outcome at all. Null = not
-            stated.
+            stated. A source point whose serve number and outcome contradict
+            each other (a double fault stated on a first serve) is served
+            untagged — `serve` and `outcome` both null — rather than tagged
+            wrongly (since 2026-09-21).
         tagged_at:
           type: [string, "null"]
           format: date-time
@@ -5386,13 +5437,26 @@ components:
           enum: [live, reconstruction]
           description: >-
             Which base served this page. `live` = the persisted live stream
-            rows (every live match, and any completed match without a
-            measured-complete recorded sequence); `reconstruction` = the
+            rows, served whenever the stream is complete, or tagged and legal
+            end to end (a projection carries no clock and no tag, so the
+            stream is strictly more information); `reconstruction` = the
             complete recorded point sequence of a finished match, projected
-            into point frames at read time — includes the match-closing point,
-            `seq` contiguous 1..N, `ts` null on every frame. Completeness
-            beats the partial live capture wholesale; the two bases are never
-            interleaved.
+            into point frames at read time, served only when the stream falls
+            short (see `basis_reason`) — includes the match-closing point,
+            `seq` contiguous 1..N, `ts` null on every frame. The two bases
+            are never interleaved.
+        basis_reason:
+          type: string
+          enum: [stream_absent, stream_incomplete, stream_illegal]
+          description: >-
+            Added 2026-09-21. Present on the `reconstruction` basis only — why
+            the stored live stream was not served. `stream_absent` = no
+            stream rows; `stream_incomplete` = the stream is legal but does
+            not measure complete (joined mid-match or stopped short) and
+            carries no tags; `stream_illegal` = at least one transition is
+            not attributable to one point (a gap or a torn row). A stream
+            that is complete, or tagged and legal end to end, is always
+            served (basis `live`) and this key is absent.
         ends_at_final:
           type: boolean
           description: >-
