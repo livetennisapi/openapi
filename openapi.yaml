@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.36"
+  version: "1.13.37"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -3433,16 +3433,52 @@ components:
             the match and its `tournament`, and the two agree.
         indoor: { type: boolean }
         format: { type: [string, "null"], enum: [BO3, BO5, null] }
-        round: { type: [string, "null"] }
+        round:
+          type: [string, "null"]
+          description: >-
+            The feed's own free-text round label, verbatim. It is the round
+            WITHIN the draw this match belongs to, and the draw is named by
+            `is_qualifying` — NOT by this string. A qualifying draw has its
+            own semi-final and its own final, so `"Buenos Aires 3 -
+            Semi-finals"` with `is_qualifying: true` is the semi-final of the
+            QUALIFYING draw, not of the tournament. Read the two fields
+            together or not at all. The label also embeds the tournament name
+            for most feeds — parse the suffix after the last `" - "`, or
+            better, use `round_code`.
         round_code:
           type: [string, "null"]
           enum: [F, SF, QF, R16, R32, R64, R128, RR, BR, Q, Q1, Q2, Q3, Q4, ER, null]
           description: >-
             The round in the archive's controlled vocabulary, normalized from
             the free-text label above (`Q` = qualifying round the feed does
-            not number). This is the field to branch on; it matches
-            `/history/archive/matches?round=` exactly. Null when the label is
-            unrecognised — never guessed.
+            not number). It matches `/history/archive/matches?round=` exactly.
+            Null when the label is unrecognised — never guessed.
+
+            IT IS DRAW-RELATIVE AND CANNOT, BY ITSELF, TELL YOU WHETHER A
+            MATCH IS QUALIFYING. A qualifying semi-final carries `SF`, the
+            same as a main-draw semi-final; only `Q`/`Q1`..`Q4` appear when
+            the feed itself names the round as qualifying, which most feeds
+            do not. To branch on main draw vs qualifying, use `round_code`
+            AND `is_qualifying` together.
+        is_qualifying:
+          type: [boolean, "null"]
+          description: >-
+            Whether this match belongs to the QUALIFYING draw, as the source
+            states it — never inferred from the round label or the tournament
+            name. This is the only field that separates a qualifying draw
+            from the main draw, and it is load-bearing because the two are
+            routinely carried under ONE tournament name with ONE round
+            vocabulary: a tournament will publish a dozen `Semi-finals` and
+            several `Final` that are all qualifying, a week before the main
+            draw begins. Neither `tournament`, `tournament_id` nor
+            `round_code` can tell them apart.
+
+            THREE-VALUED, and `null` is NOT `false`. `true`/`false` are the
+            source's own assertion; `null` means no source has ever stated
+            it — every row written before the field existed, and rows whose
+            only feed carries no equivalent field. Treat `null` as unknown
+            and filter accordingly, exactly as with every other nullable
+            field on this object.
         status:
           type: string
           enum: [upcoming, live, completed, cancelled]

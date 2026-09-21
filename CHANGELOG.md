@@ -5,6 +5,13 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.37] - 2026-09-21
+### Added
+- **`is_qualifying` is documented on the match object.** The field has been served on `GET /matches`, `GET /matches/{matchId}` and `GET /history/matches` for some time and was absent from this reference entirely, which left the one field that separates a qualifying draw from the main draw invisible to anyone reading the docs. Three-valued: `true`/`false` are the source's own assertion, `null` means no source has ever stated it, and `null` is not `false`.
+
+### Changed
+- **`round` and `round_code` now state that they are DRAW-RELATIVE.** Both describe the round *within* the draw the match belongs to, and the draw is named by `is_qualifying` — not by the round. A qualifying semi-final carries `round: "... - Semi-finals"` and `round_code: SF`, exactly as a main-draw semi-final does; `Q`/`Q1`..`Q4` appear only where the feed itself names the round as qualifying, which most feeds do not. `round_code` previously said "this is the field to branch on" without that limit, and two customers independently read a qualifying match as a main-draw one and reported it as a data fault. The data was correct in every case; the documentation was not. No field changed shape or value.
+
 ## [1.13.36] - 2026-09-21
 ### Changed
 - **`GET /charting/players` states a sample of 11,803 charted matches, not 11,646.** The charted corpus was refreshed on 2026-09-19 and 184 matches — 133 of them played after 2026-05-24, including the US Open women's draw to the quarter-finals — were loaded into the product on 2026-09-21. `matches_charted` on every response has always been the true per-player denominator and was never affected; the curated-coverage note beside it was quoting an older total and understating the sample. `GET /rally/matches` grew in the same load: 11,822 charted matches and 1,875,132 shot-by-shot points, with the newest women's chart now 2026-09-09. The men's corpus is unchanged because nothing has been charted upstream since 2026-05-21. No field changed shape.
