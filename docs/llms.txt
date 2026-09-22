@@ -98,7 +98,7 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - GET /players/{playerId} — One player's bio + ranking + cached stats (FREE)
 - GET /tournaments — Tournament catalogue — the id space `Match.tournament_id` joins (FREE)
 - GET /tournaments/{tournamentId} — One tournament by its stable id (FREE)
-- GET /markets — Match-winner market(s) for a match (PRO)
+- GET /markets — The match's match-winner market (PRO)
 - GET /markets/{matchId}/prices — Market + recent price ticks per side, newest first (PRO)
 - GET /matches/{matchId}/prices — Bare price ticks of the mapped match-winner market, newest first (PRO)
 - GET /history/matches/{matchId}/prices — Per-point price history — the match-winner quote in force at every played point (PRO)

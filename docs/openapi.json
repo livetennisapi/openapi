@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.37",
+  "version": "1.13.38",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -975,7 +975,8 @@
   },
   "/markets": {
    "get": {
-    "summary": "Match-winner market(s) for a match (PRO)",
+    "summary": "The match's match-winner market (PRO)",
+    "description": "The match-winner market mapped to this match — `data` holds at most one object, and `meta.count` is 0 when nothing is mapped.\n\nMATCH-WINNER ONLY. No handicaps or game spreads, no totals, no set-winner books, and no per-game or per-set derivative of any kind. A quote here is the probability that a player WINS THE MATCH. Venues do list tennis derivatives beside the match-winner book — game spreads such as \"A (-3.5) vs B (+3.5)\" among them — and this API deliberately publishes none of them: a derivative is refused at the mapping step so it can never be served as, or beside, a match-winner price (2026-09-22).",
     "operationId": "listMarkets",
     "parameters": [
      {

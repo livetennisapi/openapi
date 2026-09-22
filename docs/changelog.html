@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.37, last change 2026-09-21.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.38, last change 2026-09-22.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -17,7 +17,7 @@
 "headline":"Live Tennis API — Changelog",
 "description":"Every change to the Live Tennis API specification, dated and versioned.",
 "url":"https://docs.livetennisapi.com/changelog.html",
-"dateModified":"2026-09-21",
+"dateModified":"2026-09-22",
 "inLanguage":"en",
 "isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
 "publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.37</strong>, last change <time datetime="2026-09-21">2026-09-21</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.38</strong>, last change <time datetime="2026-09-22">2026-09-22</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.38"><h2>1.13.38 <time datetime="2026-09-22">2026-09-22</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><strong><code>GET /markets</code> states that the scope is MATCH-WINNER ONLY, and returns at most one market.</strong> A prospect asked whether the odds endpoints carry game spreads / handicaps (<code>A -3.5 @ 1.90</code>) in addition to match-winner prices. Every description in this reference already said &quot;match-winner market&quot;, but nowhere said what that EXCLUDES, and the endpoint&#x27;s own summary said &quot;market(s)&quot;. Both are now explicit: no handicaps or game spreads, no totals, no set-winner books, no per-game or per-set derivative; <code>data</code> holds at most one object and <code>meta.count</code> is 0 when nothing is mapped. Venues do list tennis derivatives beside the match-winner book and this API publishes none of them — a derivative is refused at the mapping step. No field changed shape or value.</li>
+</ul></article>
 <article id="v1.13.37"><h2>1.13.37 <time datetime="2026-09-21">2026-09-21</time></h2>
 <h3>Added</h3>
 <ul>

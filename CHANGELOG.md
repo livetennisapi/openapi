@@ -5,6 +5,10 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.38] - 2026-09-22
+### Changed
+- **`GET /markets` states that the scope is MATCH-WINNER ONLY, and returns at most one market.** A prospect asked whether the odds endpoints carry game spreads / handicaps (`A -3.5 @ 1.90`) in addition to match-winner prices. Every description in this reference already said "match-winner market", but nowhere said what that EXCLUDES, and the endpoint's own summary said "market(s)". Both are now explicit: no handicaps or game spreads, no totals, no set-winner books, no per-game or per-set derivative; `data` holds at most one object and `meta.count` is 0 when nothing is mapped. Venues do list tennis derivatives beside the match-winner book and this API publishes none of them — a derivative is refused at the mapping step. No field changed shape or value.
+
 ## [1.13.37] - 2026-09-21
 ### Added
 - **`is_qualifying` is documented on the match object.** The field has been served on `GET /matches`, `GET /matches/{matchId}` and `GET /history/matches` for some time and was absent from this reference entirely, which left the one field that separates a qualifying draw from the main draw invisible to anyone reading the docs. Three-valued: `true`/`false` are the source's own assertion, `null` means no source has ever stated it, and `null` is not `false`.
