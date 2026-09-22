@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.39"
+  version: "1.13.40"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -238,6 +238,7 @@ paths:
         - $ref: "#/components/parameters/player"
         - $ref: "#/components/parameters/country"
         - $ref: "#/components/parameters/tournamentId"
+        - $ref: "#/components/parameters/tier"
         - $ref: "#/components/parameters/hasAnalysis"
         - $ref: "#/components/parameters/hasMarket"
         - $ref: "#/components/parameters/playedFrom"
@@ -585,7 +586,12 @@ paths:
         from the one stamp per kind the match row kept before the ledger existed (last
         promotion to live from 2026-09-05, completion instant from 2026-08-21, last
         reopen, last event_status change) — one row per stamp, overwritten intermediate
-        transitions are not recovered. History capability (BASIC and the Historical
+        transitions are not recovered. A correction to a PUBLISHED result — `status`,
+        `event_status`, winner or the final score changing after the match was first
+        published as completed — is a new row with `basis: restatement` (from
+        2026-09-22), never a silent edit; `result_restated_at` / `result_version` on
+        the match summarise them and `GET /history/matches?restated_since=` finds them.
+        History capability (BASIC and the Historical
         Data plans), like the tape.
       operationId: getMatchStatusHistory
       parameters:
@@ -986,7 +992,10 @@ paths:
         across seasons. `city`/`country` come from a curated table and
         `category` only where our catalogues agree unambiguously on an
         exact-name join — each is null otherwise, never derived from the
-        tournament name.
+        tournament name. Each row also carries the CURRENT season's `tier` /
+        `tier_source` (added 2026-09-22) — the level in a closed vocabulary
+        (`atp_500`, `challenger_125`, `wta_125`, `itf_w35` … | null); the
+        tier is per season, so a match carries its own.
       operationId: listTournaments
       parameters:
         - name: search
@@ -1296,7 +1305,11 @@ paths:
         filtered page is routinely shorter than `limit` (and may be empty)
         while later pages still hold matching matches — a short filtered page
         is not an end-of-data signal; `?points_complete=` filters the same
-        way.
+        way. `?tier=` (added 2026-09-22) selects by the level the tournament
+        was played at in the match's season, and `?restated_since=` (added
+        2026-09-22) keeps only the matches whose published result was
+        corrected after an instant — the poll to run after each settlement
+        pass.
       operationId: listCompletedMatches
       parameters:
         - $ref: '#/components/parameters/hasMarket'
@@ -1309,6 +1322,7 @@ paths:
         - $ref: "#/components/parameters/player"
         - $ref: "#/components/parameters/country"
         - $ref: "#/components/parameters/tournamentId"
+        - $ref: "#/components/parameters/tier"
         - name: coverage
           in: query
           required: false
@@ -1329,6 +1343,24 @@ paths:
             matches NEITHER value; anything but true/false is a 400
             `bad_points_complete`. Applied AFTER the page is cut, exactly like
             `?coverage=`.
+        - name: restated_since
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: >-
+            Keep only matches whose published result was CORRECTED after this
+            instant (added 2026-09-22) — a `restatement` row on their status
+            history later than it. The poll to run after recording results:
+            anything it returns has a `result_restated_at` past your cursor
+            and a `result_version` above the one you hold, and its status
+            history says what changed. An ISO-8601 instant with a `Z` or an
+            offset (a naive value is read as UTC); a bare date is a 400
+            `bad_restated_since` — a day is not an instant, exactly as for
+            `changed_since`. Composes with every other filter here. A match
+            whose correction was a reopen is `live` again and reappears here
+            once re-completed, with a further `restatement` row. Rows with
+            this basis exist from 2026-09-22; earlier corrections were not
+            signalled and nothing is reconstructed for them.
       responses:
         "200":
           description: Completed matches (`winner` = 1|2|null, from final sets), each with its tape coverage
@@ -1429,7 +1461,11 @@ paths:
             carried a later clock. Within a game, deuce states legitimately
             cycle (40-40 ↔ AD) and rank equally, so consecutive clean rows
             are not guaranteed point-monotonic there; `point_winner` is only
-            set where the transition is a single attributable point. An
+            set where the transition is a single attributable point. `winner`
+            (since 2026-09-22) rides every row of EITHER sequence with the
+            same verdict: on the raw sequence it is judged against the
+            previous raw row, so a re-send reads null there and collapses away
+            here. An
             unknown value is a 400 `bad_sequence`.
         - name: points
           in: query
@@ -1440,7 +1476,8 @@ paths:
             committed, a SAMPLED record of the match. `complete` is the
             explicit opt-out of that precedence for consumers who want every
             point: where a whole-match reconstruction exists it is served
-            WHOLE, in its own point order, with `point_winner` on every row
+            WHOLE, in its own point order, with `point_winner` (and `winner`,
+            the same verdict) on every row
             and null timestamps/model fields per the reconstruction contract.
             Where none exists, the response is exactly the default read plus
             `meta.points` (whose `available_complete` tells the cases apart) —
@@ -2677,6 +2714,25 @@ components:
         catalogue) never match this filter; a date-window listing without it
         still returns them. Unknown-but-numeric ids return an empty list, not
         an error; a non-numeric value is a 400 `bad_tournament_id`.
+    tier:
+      name: tier
+      in: query
+      required: false
+      schema: { type: string }
+      description: >-
+        Tier filter (added 2026-09-22): comma-separated exact values from the
+        closed tier vocabulary (`?tier=wta_125`,
+        `?tier=itf_w35,itf_w50,itf_w75`,
+        `?tier=challenger_75,challenger_100`). Selects matches whose `tier`
+        field carries one of the values — the level the tournament was played
+        at in the MATCH'S season, read from the same per-season table, so
+        filter and field cannot disagree. A match whose `tier` is null matches
+        no value. Composes with every other filter
+        (`?tour=challenger&gender=women&tier=wta_125` and `?tier=wta_125`
+        select the same rows; `?tier=challenger_125&draw=doubles` is a slice
+        `tour=` alone cannot make). Available on `/matches` (every status) and
+        `/history/matches`. Unknown value → 400 `bad_tier` with the offending
+        values in `bad` and the full vocabulary in `allowed`.
     updatedSince:
       name: updated_since
       in: query
@@ -2889,8 +2945,8 @@ components:
             Stable machine-readable code, e.g. bad_date, bad_coverage,
             bad_sequence, bad_points, bad_points_complete, bad_combination,
             points_read_disabled, bad_after_seq, bad_changed_since,
-            points_disabled, bad_period,
-            bad_year, bad_format, bad_tour, bad_country, ambiguous_name,
+            bad_restated_since, points_disabled, bad_period,
+            bad_year, bad_format, bad_tour, bad_tier, bad_country, ambiguous_name,
             not_charted, not_found, no_analysis, no_market, upgrade_required,
             rate_limited, abuse_throttled.
         detail:
@@ -3426,6 +3482,93 @@ components:
             feed has its id re-pointed to the main-draw tournament when
             detected, so the id can change once, early, in that direction
             only.)
+        tier:
+          type: [string, "null"]
+          enum:
+            - grand_slam
+            - atp_finals
+            - atp_1000
+            - atp_500
+            - atp_250
+            - next_gen_finals
+            - united_cup
+            - davis_cup
+            - olympics
+            - laver_cup
+            - wta_finals
+            - wta_elite_trophy
+            - wta_1000
+            - wta_500
+            - wta_250
+            - wta_125
+            - bjk_cup
+            - challenger_175
+            - challenger_125
+            - challenger_100
+            - challenger_75
+            - challenger_50
+            - itf_m15
+            - itf_m25
+            - itf_w15
+            - itf_w25
+            - itf_w35
+            - itf_w40
+            - itf_w50
+            - itf_w60
+            - itf_w75
+            - itf_w80
+            - itf_w100
+            - juniors
+            - utr
+            - exhibition
+            - null
+          description: >-
+            The level the tournament was played at IN THIS MATCH'S SEASON
+            (added 2026-09-22) — the official category as the tour publishes
+            it, in a closed vocabulary: `grand_slam`; the ATP levels
+            (`atp_finals`, `atp_1000`, `atp_500`, `atp_250`,
+            `next_gen_finals`); the WTA levels (`wta_finals`,
+            `wta_elite_trophy` — last held 2023 — `wta_1000`, `wta_500`,
+            `wta_250`, `wta_125`); the ATP Challenger levels (`challenger_175`
+            … `challenger_50`); the ITF World Tennis Tour categories
+            (`itf_m15`, `itf_m25`, `itf_w15` … `itf_w100` — the 2023 women's
+            categories `itf_w25`/`itf_w40`/`itf_w60`/`itf_w80` are kept as
+            printed that season, not mapped onto the 2024 ladder, because the
+            level a match was played at is a fact about that season); the
+            team events (`united_cup`, `davis_cup` and `bjk_cup` in every
+            group and stage, `laver_cup`, `olympics`); `juniors`; `utr`; and
+            `exhibition` (no ranking points — Hopman Cup class). Same
+            vocabulary as the `?tier=` filter, read from the same per-season
+            table, so filter and field cannot disagree. Resolved by the
+            MATCH'S season (the calendar year of `scheduled_time`), never
+            copied from the tournament row: a tournament keeps one
+            `tournament_id` across seasons while its level moves — Dallas was
+            `atp_250` in 2023 and 2024 and `atp_500` from 2025, so a 2024
+            Dallas match reads `atp_250` and a 2025 one `atp_500` under the
+            same id. Coverage of the 2023–2026 seasons was verified event by
+            event against the official calendars (99.1% of tournament-seasons
+            resolved; the rest are deliberately null — the Asian Games tennis
+            event, which no tour lists). A new event may read null for a
+            short while after its first match until its tier is resolved.
+            Null when nothing we hold names the level — never guessed; null
+            is "we do not know", never a level. `category` on `/tournaments`
+            is unchanged and remains the coarse class (`challenger`, `itf`,
+            `atp_250` …); read this field for the level.
+        tier_source:
+          type: [string, "null"]
+          enum: [calendar, name, wikipedia, resolver, null]
+          description: >-
+            How `tier` was established (added 2026-09-22): `calendar` = the
+            official per-season tour calendar named the level (ATP tour and
+            Challenger calendars, the WTA tournament list); `name` = an
+            unambiguous name rule (the ITF category is in the event's official
+            name — `M25 …`, `W35 …` — team and UTR events are named as such,
+            and the Slam junior draws and exhibitions are their own event
+            type); `wikipedia` = the season's schedule page, used only where
+            the official calendar could not state the level for that season
+            (Eastbourne 2023–2025); `resolver` = resolved after the seed
+            dataset, by the same rules, from the event's name, tour and dates
+            in that season. Null exactly when `tier` is null.
         surface:
           type: [string, "null"]
           enum: [hard, clay, grass, null]
@@ -3585,6 +3728,27 @@ components:
             early has it before. Null for matches that went live before
             2026-09-05 (when the stamp began) or were never observed live;
             re-stamped if a match is demoted and promoted again.
+        result_restated_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            When the published result of this match was LAST corrected (UTC),
+            added 2026-09-22 — the instant of the newest `restatement` row on
+            `GET /matches/{matchId}/status-history`. A correction is any
+            change to `status`, `event_status`, `winner` or the final score
+            (sets, games) after the match was first published as completed
+            (or as a cancelled walkover with a winner). Null when the result
+            stands as first published. Present on every match surface. Poll
+            `GET /history/matches?restated_since=` to find corrections.
+        result_version:
+          type: integer
+          description: >-
+            `1` plus the number of corrections to the published result (added
+            2026-09-22). `1` = the result stands as first published; each
+            `restatement` row on the status history adds one. Record it with
+            the result you settle on and compare on re-read — a higher number
+            means the result you hold was superseded, and the status history
+            says what changed.
         players:
           type: object
           properties:
@@ -3984,13 +4148,28 @@ components:
           description: Derived from the after-state by the Match.outcome definition.
         basis:
           type: string
-          enum: [observed, backfill]
+          enum: [observed, backfill, restatement]
           description: >-
-            observed = written at the instant of the change (from 2026-09-11T22:45:48Z);
+            How the row was made. observed = written at the instant of the change (from
+            2026-09-11T22:45:48Z);
             backfill = reconstructed on 2026-09-12 from the one stamp per kind the match
             row kept before the ledger existed (last promotion to live from 2026-09-05,
             completion instant from 2026-08-21, last reopen, last event_status change).
             One row per stamp; overwritten intermediate transitions are not recovered.
+            restatement (added 2026-09-22) = a CORRECTION to a result that had already
+            been published — the match's `status`, `event_status`, winner or final score
+            (sets, games) changed after it was first published as completed (or as a
+            cancelled walkover with a winner). A correction is always a new row, never an
+            edit, written at the instant we made the change; `status` / `event_status`
+            carry before and after as usual (the same value twice when only the winner or
+            the score moved) and its `score` is the result AFTER the correction (null when
+            the match holds no score row, as on a walkover). Every path that can change a
+            result writes one — a source's late final, a second authority's correction, an
+            operator's repair, a completion reopened and re-closed — because it is enforced
+            where the result is written. A re-assertion of the same result, or a change to
+            points alone, is not a correction and writes nothing. `result_restated_at` and
+            `result_version` on the Match summarise these rows. Rows with this basis exist
+            from 2026-09-22; earlier corrections were not signalled.
         score:
           type: [object, "null"]
           description: The newest score row at that instant (sets, games, points, server); null when none existed.
@@ -4073,7 +4252,12 @@ components:
         `meta.point_source` / `meta.coverage` say which kind of tape you are
         holding. `origin`, `serve` and `outcome` are present on
         `GET /history/matches/{matchId}` rows; the pre-2023 ArchiveTape (every
-        row reconstructed) does not carry them. Reconstructed rows are never
+        row reconstructed) does not carry them. `winner` (since 2026-09-22) is
+        present on EVERY row of every sequence, on both — who won the point
+        that produced the row, judged from the score step and from nothing
+        else; `server`, `serve` and `winner` together are the three per-point
+        facts a model needs, and the third was only implicit in the score
+        step before. Reconstructed rows are never
         repaired or reordered: a game whose vendor point record is internally
         inconsistent is withheld whole, not fitted or patched into a legal
         sequence — see `meta.points.games_withheld` (added 2026-09-20).
@@ -4164,11 +4348,35 @@ components:
             2026-09-16T07:59:54Z.
         danger: { type: [number, "null"] }
         timestamp: { type: [string, "null"], format: date-time }
+        winner:
+          type: [integer, "null"]
+          enum: [1, 2, null]
+          description: >-
+            Who won the point that produced this row — `1` | `2`, judged from
+            the score step between this row and the previous served row (the
+            previous raw row on the raw sequence, the previous clean row under
+            `?sequence=clean`), by the same rule the completeness ledger
+            counts a legal transition with — and from nothing else: never the
+            serve, the server, the outcome tag or the pattern of play. Null on
+            the first row and wherever the step is not one attributable
+            point: a re-sent row (an identical state — null on raw, collapsed
+            away on clean), a set opener (same games totals, the arrays
+            extended by `[0,0]`), a backward correction, a multi-game jump. A
+            step whose games total rises by exactly one attributes to the
+            side whose count rose (the game point was theirs) whatever
+            in-game points the step skipped — a missed poll, or a game the
+            strict expander withheld whole; `meta.points.games_withheld` says
+            when the latter happened. Present on every row of every sequence,
+            observed and reconstructed, and on the pre-2023 ArchiveTape; equal
+            to `point_winner` wherever that older key is present. Derived once
+            per response, never stored. Added 2026-09-22.
         point_winner:
           type: [integer, "null"]
           enum: [1, 2, null]
           description: >-
-            Who won the point this row records — PRESENT ONLY on
+            The same verdict as `winner` under the older key, kept unchanged
+            for existing readers. Who won the point this row records —
+            PRESENT ONLY on
             `?sequence=clean` and `?points=complete` rows, and only where the
             transition from the previous row of the served sequence is a
             single attributable point; null on gaps, torn rows and the first
@@ -4176,7 +4384,8 @@ components:
             non-monotonic: consecutive raw rows are corrections, not points —
             a `points=complete` read is the exception, because there the
             served order IS point order). Derived at read time, never stored
-            or guessed.
+            or guessed. Since 2026-09-22 `winner` carries the same verdict on
+            every row of every sequence.
     HistoryTape:
       type: object
       properties:
@@ -4464,7 +4673,23 @@ components:
         `kind=tape` the JSONL file holds ONE LINE PER MATCH (a whole
         HistoryTape object per line, coverage meta included), not one line
         per point; the CSV is flattened to one row per point and carries no
-        coverage columns. A month may also list the complete-basis ADDENDUM
+        coverage columns. Under `schema_version` 2 (since 2026-09-22) each
+        JSONL line is exactly what `GET /history/matches/{matchId}` returns
+        for that match on its default basis, produced by the same code: the
+        same tape rows with the same fields as the per-match tape (`origin`,
+        `serve`, `outcome`, `winner` beside the score columns) and the same
+        `meta` (`coverage`, `point_source`, `enrichment`, `reconstructed_at`,
+        `observed_span`, `tiebreaks_source`, and `meta.points` whenever the
+        endpoint serves it), so a model that initialises its serve states
+        from `server` / `serve` / `winner` reads them from the bulk file just
+        as it would from the endpoint. The CSV column order is stable and
+        grows only at the end: `match_id`, `row`, `timestamp`, `sets_p1`,
+        `sets_p2`, `games_p1`, `games_p2`, `points_p1`, `points_p2`,
+        `server`, `is_tiebreak`, `win_probability_p1`, `danger` — the
+        columns every month has ever carried — then, since schema version 2,
+        `origin`, `serve`, `outcome`, `winner`, with the same values and
+        vocabularies as the JSONL row (a null is an empty cell); read the
+        header, not positions, for anything past `danger`. A month may also list the complete-basis ADDENDUM
         files (tennis_history_points_complete_<period>.jsonl.gz / .csv.gz,
         gzipped and marked by `compression`, added 2026-08-18). The two
         bases, plainly: the BASE files carry every match's DEFAULT read —
@@ -4527,6 +4752,27 @@ components:
                   points_complete addendum ship gzipped). `bytes` and `sha256`
                   cover the COMPRESSED bytes — exactly what you download.
         built_at: { type: [string, "null"], format: date-time }
+        schema_version:
+          type: [integer, "null"]
+          enum: [1, 2, null]
+          description: >-
+            Which shape this month's files carry (added 2026-09-22), so you
+            can tell without opening them. `2` = a package row is the API
+            tape row (`origin`, `serve`, `outcome`, `winner`, and the full
+            `meta`), and the CSV carries the trailing columns. `1` = the
+            shape every month built before 22 September 2026 carries: tape
+            rows hold the score columns only (no `origin`, `serve`, `outcome`
+            or `winner`; no `meta.enrichment`, `reconstructed_at` or
+            `observed_span`), and the CSV ends at `danger`. Months built
+            before 22 September 2026 keep this shape UNTIL THEY ARE REBUILT;
+            the rebuild runs newest month first, then backwards, and a
+            month's `schema_version` flips to `2` (and its `built_at` and
+            `sha256` values move) when its turn comes. Check the manifest
+            rather than assuming a month is one or the other: a consumer that
+            needs the enriched fields should require `schema_version >= 2`
+            and, for a month still at `1`, read the per-match endpoint for
+            the matches it needs. `null` = not versioned: the non-tape kinds
+            (`rankings`, `elo`, …).
         kind:
           type: string
           enum: [tape, rankings, rally, archive, elo, archive_tape]
@@ -5388,7 +5634,14 @@ components:
             carrying a per-point stream since 2026-09-12, WTA qualifying stated
             it on 48 of 48, Challenger (men) qualifying on 153 of 155 and
             Challenger (women) on 49 of 51. Read `enrichment` per match — none
-            of this is a promise about a match not yet played.
+            of this is a promise about a match not yet played. Since
+            2026-09-22, on the tours whose own point-by-point console we read
+            (ATP 250/500/1000, ATP Challenger, WTA 1000/500/250/125), a
+            COMPLETED match is re-joined after the match against the console's
+            complete sequence by the same exact-state rule, so a completed
+            match's serve/outcome coverage exceeds what was captured live —
+            the tags arrive as `point_update` frames and `tagged_at`
+            revisions like any other.
         outcome:
           type: [string, "null"]
           enum: [ace, double_fault, winner, forced_error, unforced_error, null]
@@ -5413,7 +5666,13 @@ components:
             stated. A source point whose serve number and outcome contradict
             each other (a double fault stated on a first serve) is served
             untagged — `serve` and `outcome` both null — rather than tagged
-            wrongly (since 2026-09-21).
+            wrongly (since 2026-09-21). Since 2026-09-22, on the tours whose
+            own point-by-point console we read (ATP 250/500/1000, ATP
+            Challenger, WTA 1000/500/250/125), a COMPLETED match is re-joined
+            after the match against the console's complete sequence by the
+            same exact-state rule, so a completed match's coverage exceeds
+            what was captured live — collect the late tags with
+            `?changed_since=` or the `point_update` frame.
         tagged_at:
           type: [string, "null"]
           format: date-time
@@ -5599,6 +5858,77 @@ components:
           description: >-
             Tournament category where our catalogues agree unambiguously on an
             exact-name join — null otherwise, never derived from the name.
+            Unchanged by `tier` (2026-09-22) and remains the coarse class;
+            read `tier` for the level.
+        tier:
+          type: [string, "null"]
+          enum:
+            - grand_slam
+            - atp_finals
+            - atp_1000
+            - atp_500
+            - atp_250
+            - next_gen_finals
+            - united_cup
+            - davis_cup
+            - olympics
+            - laver_cup
+            - wta_finals
+            - wta_elite_trophy
+            - wta_1000
+            - wta_500
+            - wta_250
+            - wta_125
+            - bjk_cup
+            - challenger_175
+            - challenger_125
+            - challenger_100
+            - challenger_75
+            - challenger_50
+            - itf_m15
+            - itf_m25
+            - itf_w15
+            - itf_w25
+            - itf_w35
+            - itf_w40
+            - itf_w50
+            - itf_w60
+            - itf_w75
+            - itf_w80
+            - itf_w100
+            - juniors
+            - utr
+            - exhibition
+            - null
+          description: >-
+            The level this tournament is played at in the CURRENT season
+            (added 2026-09-22) — the same closed vocabulary as `tier` on a
+            match (`grand_slam`, `atp_1000` … `atp_250`, `wta_1000` …
+            `wta_125`, `challenger_175` … `challenger_50`, `itf_m15` /
+            `itf_m25`, `itf_w15` … `itf_w100`, the team events, `juniors`,
+            `utr`, `exhibition`). A catalogue row has no season of its own; a
+            match does: the tier is PER SEASON and it moves under one id —
+            Dallas was `atp_250` in 2023 and 2024 and `atp_500` from 2025;
+            Estoril `atp_250`, then `challenger_175` in 2025, then `atp_250`
+            again in 2026; Eastbourne `wta_500` through 2024 and `wta_250`
+            from 2025 — so read the tier off each MATCH for its season, never
+            copy this value onto a match. Null when this season's calendar
+            does not list the event — never guessed.
+        tier_source:
+          type: [string, "null"]
+          enum: [calendar, name, wikipedia, resolver, null]
+          description: >-
+            How `tier` was established (added 2026-09-22): `calendar` = the
+            official per-season tour calendar named the level (ATP tour and
+            Challenger calendars, the WTA tournament list); `name` = an
+            unambiguous name rule (the ITF category is in the event's official
+            name — `M25 …`, `W35 …` — team and UTR events are named as such,
+            and the Slam junior draws and exhibitions are their own event
+            type); `wikipedia` = the season's schedule page, used only where
+            the official calendar could not state the level for that season
+            (Eastbourne 2023–2025); `resolver` = resolved after the seed
+            dataset, by the same rules, from the event's name, tour and dates
+            in that season. Null exactly when `tier` is null.
     ArchiveMatch:
       type: object
       description: >-
@@ -5781,9 +6111,10 @@ components:
           type: array
           description: The score sequence in seq order, WINNER-FIRST (`sets[0]` /
             `games[0]` / `points[0]` are the winner's, and a `server` of 1 means the winner
-            was serving) — see HistoryTapeRow. `point_winner` is present and is null
-            on every row of a per-GAME tape, where consecutive rows differ by a whole
-            game and no single point is attributable.
+            was serving) — see HistoryTapeRow. `point_winner` and `winner` (since
+            2026-09-22) are present; on a per-GAME tape, where consecutive rows differ
+            by a whole game, each reads the side whose game count rose (the game point
+            was theirs) and says nothing about the other points of that game.
           items:
             $ref: '#/components/schemas/HistoryTapeRow'
         tiebreaks:
@@ -5861,7 +6192,9 @@ components:
                 game — 99.4% of the corpus (97,293 matches). `game` = one row per
                 game, with points expanded only inside tiebreaks — 556 matches, 555
                 of them in 2013 and one in 2014; every season from 2015 on is 100%
-                point-granular. `point_winner` is null throughout a per-game tape.
+                point-granular. `point_winner` / `winner` on a per-game tape read the
+                side whose game count rose on each row, and nothing about the game's
+                other points.
                 Orthogonal to `coverage` as an axis, though a `game` tape is always
                 labelled `reconstructed_partial`.
             point_source:
