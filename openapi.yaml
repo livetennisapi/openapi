@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.38"
+  version: "1.13.39"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -3477,8 +3477,13 @@ components:
           type: [boolean, "null"]
           description: >-
             Whether this match belongs to the QUALIFYING draw, as the source
-            states it — never inferred from the round label or the tournament
-            name. This is the only field that separates a qualifying draw
+            states it — never GUESSED from main-draw round vocabulary or from
+            the tournament name. (A round the feed itself spells
+            `Qualification Round 1` is the source stating it, and reads
+            `true`: a `false` beside such a round is a payload contradicting
+            itself, not a main-draw assertion. `Semi-finals` and `Final` are
+            main-draw vocabulary and are never read that way.)
+            This is the only field that separates a qualifying draw
             from the main draw, and it is load-bearing because the two are
             routinely carried under ONE tournament name with ONE round
             vocabulary: a tournament will publish a dozen `Semi-finals` and

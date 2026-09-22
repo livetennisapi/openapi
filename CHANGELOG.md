@@ -5,6 +5,10 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.39] - 2026-09-22
+### Changed
+- **`is_qualifying` states the one case where a round label DOES decide the draw.** The field said it is "never inferred from the round label", which is the right instinct and slightly too strong: main-draw vocabulary (`Semi-finals`, `Final`) is indeed never read that way, but a round the feed itself spells `Qualification Round 1` is the source STATING the draw, and it reads `true` — a `false` beside such a round is a payload contradicting itself rather than asserting main draw. Three matches (Chengdu, 22 Sep) were briefly served `is_qualifying: false` with `round_code: "Q1"` beside them and were repaired the same morning. Readers segregating a corpus by draw need to know which way that conflict resolves. No field changed shape or type.
+
 ## [1.13.38] - 2026-09-22
 ### Changed
 - **`GET /markets` states that the scope is MATCH-WINNER ONLY, and returns at most one market.** A prospect asked whether the odds endpoints carry game spreads / handicaps (`A -3.5 @ 1.90`) in addition to match-winner prices. Every description in this reference already said "match-winner market", but nowhere said what that EXCLUDES, and the endpoint's own summary said "market(s)". Both are now explicit: no handicaps or game spreads, no totals, no set-winner books, no per-game or per-set derivative; `data` holds at most one object and `meta.count` is 0 when nothing is mapped. Venues do list tennis derivatives beside the match-winner book and this API publishes none of them — a derivative is refused at the mapping step. No field changed shape or value.

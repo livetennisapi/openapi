@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.38, last change 2026-09-22.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.39, last change 2026-09-22.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.38</strong>, last change <time datetime="2026-09-22">2026-09-22</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.39</strong>, last change <time datetime="2026-09-22">2026-09-22</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.39"><h2>1.13.39 <time datetime="2026-09-22">2026-09-22</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><strong><code>is_qualifying</code> states the one case where a round label DOES decide the draw.</strong> The field said it is &quot;never inferred from the round label&quot;, which is the right instinct and slightly too strong: main-draw vocabulary (<code>Semi-finals</code>, <code>Final</code>) is indeed never read that way, but a round the feed itself spells <code>Qualification Round 1</code> is the source STATING the draw, and it reads <code>true</code> — a <code>false</code> beside such a round is a payload contradicting itself rather than asserting main draw. Three matches (Chengdu, 22 Sep) were briefly served <code>is_qualifying: false</code> with <code>round_code: &quot;Q1&quot;</code> beside them and were repaired the same morning. Readers segregating a corpus by draw need to know which way that conflict resolves. No field changed shape or type.</li>
+</ul></article>
 <article id="v1.13.38"><h2>1.13.38 <time datetime="2026-09-22">2026-09-22</time></h2>
 <h3>Changed</h3>
 <ul>
