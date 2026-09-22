@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.40"
+  version: "1.13.41"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -5630,10 +5630,12 @@ components:
             measured over completed matches with a per-point stream since
             2026-09-12, Davis Cup World Group stated it on 22 of 22 and World
             Group I on 41 of 42, while World Group II stated it on 0 of 38. Qualifying draws are covered like
-            their own main draw, not excluded: measured over completed matches
-            carrying a per-point stream since 2026-09-12, WTA qualifying stated
-            it on 48 of 48, Challenger (men) qualifying on 153 of 155 and
-            Challenger (women) on 49 of 51. Read `enrichment` per match — none
+            their own main draw, not excluded: re-measured 2026-09-22 over
+            completed matches carrying a per-point stream since 2026-09-12,
+            WTA qualifying stated it on 48 of 48, ATP Challenger qualifying
+            (`tier: challenger_*`) on 195 of 197 and WTA 125 qualifying
+            (`tier: wta_125`, also carried under `tour: challenger`) on 61 of
+            63. Read `enrichment` per match — none
             of this is a promise about a match not yet played. Since
             2026-09-22, on the tours whose own point-by-point console we read
             (ATP 250/500/1000, ATP Challenger, WTA 1000/500/250/125), a
@@ -5655,14 +5657,24 @@ components:
             blanket-null; read `enrichment` per match. First
             measured on tour events from the week of 2026-09-22 — before that,
             no tour event had been played since the source went live on
-            2026-09-12. Challenger: all five. The ITF World Tennis Tour: ace
-            and double fault. WTA 1000/500/250/125: ace and double fault where
-            the tour's console reports the match — read the page's
-            `enrichment` per match. Grand Slams and UTR: none. Doubles draws:
-            none. Qualifying draws follow their own tour, with one gap: ITF
-            qualifying states aces and double faults (95 of 107 men's and 62 of
-            74 women's completed matches with a stream since 2026-09-12), while
-            Challenger (men) qualifying states no outcome at all. Null = not
+            2026-09-12. ATP Challenger — `tour: challenger` with a
+            `challenger_*` tier — states all five. `tour: challenger` also
+            carries the WTA 125 events (`tier: wta_125`), and those state ace
+            and double fault only, so read `tier` rather than `tour` to tell
+            the two apart. The ITF World Tennis Tour: ace and double fault.
+            WTA 1000/500/250/125: ace and double fault where the tour's
+            console reports the match — read the page's `enrichment` per
+            match. Grand Slams and UTR: none. Doubles draws: none. Qualifying
+            draws mostly follow their own tour, and the one real gap is on the
+            WTA main tour, not on Challenger: measured 2026-09-22 over
+            completed matches carrying a per-point stream since 2026-09-12,
+            ATP qualifying states outcome on 16 of 16 and ATP Challenger
+            qualifying on 191 of 197, both the full five; ITF qualifying
+            states aces and double faults on 189 of 209 men's and 143 of 168
+            women's, and WTA 125 qualifying on 24 of 63 — while WTA main-tour
+            qualifying states it on 3 of 48, against 82 of 88 in the same
+            events' main draws. Read `enrichment` per match rather than
+            inferring a draw's coverage from its tour. Null = not
             stated. A source point whose serve number and outcome contradict
             each other (a double fault stated on a first serve) is served
             untagged — `serve` and `outcome` both null — rather than tagged

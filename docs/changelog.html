@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.40, last change 2026-09-22.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.41, last change 2026-09-22.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,16 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.40</strong>, last change <time datetime="2026-09-22">2026-09-22</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.41</strong>, last change <time datetime="2026-09-22">2026-09-22</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.41"><h2>1.13.41 <time datetime="2026-09-22">2026-09-22</time></h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>The <code>outcome</code> description named the wrong tour as the qualifying gap, and it was wrong in both directions.</strong> It read &quot;Qualifying draws follow their own tour, with one gap: ... Challenger (men) qualifying states no outcome at all.&quot; Measured 2026-09-22 over completed matches carrying a per-point stream since 2026-09-12, <strong>ATP Challenger qualifying states <code>outcome</code> on 191 of 197 matches, with the full five-value vocabulary</strong> (6,881 unforced errors, 4,275 winners, 4,267 forced errors, 1,026 aces, 774 double faults) — a reader who segregated a corpus on that sentence discarded the single richest qualifying population in the product. The gap is on the <strong>WTA main tour</strong>, which the old sentence implicitly cleared: WTA qualifying states <code>outcome</code> on <strong>3 of 48</strong>, against 82 of 88 in the same events&#x27; main draws. ITF qualifying is unchanged in direction (189 of 209 men&#x27;s, 143 of 168 women&#x27;s) and WTA 125 qualifying is partial (24 of 63). <code>enrichment</code> per match was correct on every one of these matches throughout — only the prose was wrong, and the prose is what a corpus is planned from.</li>
+<li><strong><code>tour: challenger</code> pools two populations with different <code>outcome</code> coverage, and the reference described only one of them.</strong> It read &quot;Challenger: all five&quot;. That is true of ATP Challenger (<code>tier: challenger_50</code> … <code>challenger_175</code>): 252 of 255 completed main-draw matches with a stream carry the full five. It is not true of the WTA 125 events, which are also served as <code>tour: challenger</code> (<code>tier: wta_125</code>) and state <strong>ace and double fault only</strong> — 137 of 141 main-draw matches carry <code>outcome</code>, none of them a winner, forced error or unforced error. Read <code>tier</code>, not <code>tour</code>, to tell the two apart. Both descriptions now say so.</li>
+<li><strong>The <code>serve</code> qualifying denominators are re-measured</strong> (WTA qualifying 48 of 48, ATP Challenger qualifying 195 of 197, WTA 125 qualifying 61 of 63) and name the populations by <code>tier</code> rather than by &quot;Challenger (men)&quot; / &quot;Challenger (women)&quot;, which the served fields do not distinguish.</li>
+</ul>
+<p>No field, endpoint or behaviour changed; every correction is to a description.</p></article>
 <article id="v1.13.40"><h2>1.13.40 <time datetime="2026-09-22">2026-09-22</time></h2>
 <h3>Added</h3>
 <ul>
