@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.43, last change 2026-09-23.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.44, last change 2026-09-23.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,12 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.43</strong>, last change <time datetime="2026-09-23">2026-09-23</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.44</strong>, last change <time datetime="2026-09-23">2026-09-23</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.44"><h2>1.13.44 <time datetime="2026-09-23">2026-09-23</time></h2>
+<ul>
+<li><strong><code>GET /matches/{matchId}/points</code>: the row that closes a tiebreak set now carries <code>tiebreak_final</code>, and the reference did not say so.</strong> Raised by a Pro customer running trading bots, who reported that the tape stops one point short of every tiebreak and that a field filling once a day was no use to a decision taken while the match is live. A tiebreak&#x27;s last point is carried, like every set-winning point, by the set roll-up row (<code>tiebreak</code> false, the set banked 7-6, <code>score</code> 0-0), and that row never stated the breaker&#x27;s score at closure. It now carries <code>tiebreak_final: [p1, p2]</code> in our player order, e.g. <code>[7, 5]</code>. Exact when the previous row is the decided score or one point from it, so it is derived from the stream itself and is present as soon as the set closes; otherwise taken from the match&#x27;s recorded tiebreak finals, the same finals <code>GET /history/matches/{matchId}</code> publishes as <code>tiebreaks</code>; <code>null</code> when neither can state it, never guessed. Absent on every other row, including the breaker rows. A page that *starts* on a roll-up row has no previous row to read and uses the recorded finals alone. Measured at the endpoint over the 30 hours to 2026-09-23 20:30Z: 60 completed matches held 67 tiebreak sets and 36 of them served a closing score, only 7 of those matches having a recorded final at the time. Documentation of an already-served field; no behaviour changed by this release.</li>
+</ul></article>
 <article id="v1.13.43"><h2>1.13.43 <time datetime="2026-09-23">2026-09-23</time></h2>
 <h3>Fixed</h3>
 <ul>

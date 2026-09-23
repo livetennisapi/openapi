@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.43"
+  version: "1.13.44"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -5725,6 +5725,28 @@ components:
             tagged. Tags land a few seconds after the row itself, so a row's
             `tagged_at` is later than its `ts`; `changed_since` selects on
             either.
+        tiebreak_final:
+          type: [array, "null"]
+          items:
+            type: integer
+          minItems: 2
+          maxItems: 2
+          description: >-
+            Added 2026-09-23. The breaker's closing score, in our player
+            order, e.g. `[7, 5]`. Present ONLY on the row that closes a
+            tiebreak set — the set roll-up (`tiebreak` false, the set banked
+            7-6, `score` 0-0), which is the row carrying the breaker's
+            winning point, every row being the state after a point. Absent
+            on every other row, including the breaker rows themselves.
+            Exact when the previous row is the decided score or one point
+            from it (6-5 for the set's winner gives `[7, 5]`); otherwise
+            taken from the match's recorded tiebreak finals, the same finals
+            `GET /history/matches/{matchId}` publishes as `tiebreaks`; null
+            when neither can state it. Never guessed. A page that *starts*
+            on a roll-up row (an `after_seq` landing exactly there) has no
+            previous row to read and uses the recorded finals alone. The
+            deciding set of a match-tiebreak format is judged under the
+            10-point rule.
     PointUpdate:
       type: object
       description: >-
