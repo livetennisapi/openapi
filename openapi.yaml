@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.42"
+  version: "1.13.43"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -21,8 +21,12 @@ info:
     `FREE` — self-serve, no card (https://livetennisapi.com/subscribe/free).
     Live and upcoming matches, current scores, players, fixtures, the
     tournament catalogue (`/tournaments`), and your own usage stats.
-    30 requests/minute, 100/day. No historical results, no market prices,
-    no model fields, no WebSocket.
+    30 requests/minute, 100/day. No market prices, no model fields, no
+    WebSocket. Historical results are not part of the tier, but a FREE key
+    may spend 20 calls per calendar month on the history endpoints as a
+    taste of the product — served exactly like an entitled call. Past that
+    they answer `403 upgrade_required` carrying
+    `free_history_taste: "used"`.
 
     `BASIC` — adds historical data: the completed-match listing
     (`/history/matches`, and `status=completed` on `/matches`), the
@@ -209,7 +213,9 @@ paths:
         `status=live` and `status=upcoming` are the FREE current-state picture.
         `status=completed` pages historical results and is part of the paid
         History product — it requires BASIC (the same rule as
-        `/history/matches`) and returns `403 upgrade_required` on a FREE key.
+        `/history/matches`). A FREE key may spend its 20 free history calls
+        per calendar month here; past that the answer is
+        `403 upgrade_required` carrying `free_history_taste: "used"`.
         The `player`, `country`, `from`/`to`, `tour`, `draw`, `has_analysis`
         and `has_market` filters are optional, AND-composed, applied inside the
         query (before pagination), and work on every status — omitting them
@@ -225,7 +231,8 @@ paths:
           description: >-
             `live` (default) and `upcoming` are the FREE current-state picture.
             `completed` and `cancelled` are terminal LISTINGS, part of the
-            history product (BASIC, or any History plan on a free key).
+            history product (BASIC, or any History plan on a free key; a
+            FREE key's 20 free history calls each month are served here too).
             `cancelled` covers feed-cancelled, walkover-with-no-stated-winner
             and postponed-never-played matches; a walkover that named its
             winner is `completed`. `cancelled` pages with `limit`/`offset`
@@ -1294,6 +1301,9 @@ paths:
       description: >-
         Requires BASIC on the live API, or any Historical Data API plan
         (Starter and up — see https://livetennisapi.com/historical-tennis-data-api).
+        A FREE key may spend its 20 free history calls per calendar month here;
+        past that the answer is `403 upgrade_required` carrying
+        `free_history_taste: "used"`.
         All tours, January 2023 → now (deeper results live in the results
         archive, 1968–2022, at `/history/archive/matches`). Filter to a date
         range with `from`/`to`, and by `tour`, `draw` (singles/doubles),
@@ -1383,6 +1393,9 @@ paths:
       description: >-
         Requires BASIC on the live API, or any Historical Data API plan
         (Starter and up — see https://livetennisapi.com/historical-tennis-data-api).
+        A FREE key may spend its 20 free history calls per calendar month here;
+        past that the answer is `403 upgrade_required` carrying
+        `free_history_taste: "used"`.
         The numbers to read BEFORE choosing what to backtest, in one call
         instead of paging the archive. A PREBUILT snapshot rebuilt nightly
         right after the completeness ledger reconverges — never computed at

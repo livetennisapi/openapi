@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.42, last change 2026-09-23.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.43, last change 2026-09-23.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,14 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.42</strong>, last change <time datetime="2026-09-23">2026-09-23</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.43</strong>, last change <time datetime="2026-09-23">2026-09-23</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.43"><h2>1.13.43 <time datetime="2026-09-23">2026-09-23</time></h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>The reference said a FREE key is refused the history endpoints outright. It is not, and has not been since 2026-08-07: a FREE key is served 20 history calls per calendar month.</strong> Three separate statements carried the wrong rule — the FREE tier summary (&quot;No historical results&quot;), the <code>/matches</code> description (&quot;requires BASIC ... and returns <code>403 upgrade_required</code> on a FREE key&quot;), and the <code>status</code> parameter. Measured on the live API 2026-09-23 with a fresh FREE key: <code>GET /history/matches</code> answered <code>200</code> and kept answering until the monthly allowance was spent, after which it answered <code>403 upgrade_required</code> carrying <code>free_history_taste: &quot;used&quot;</code> and the detail &quot;your 20 free history calls this month are used&quot;. A reader planning against the old text would have concluded the endpoints were closed to them and either bought a tier they did not yet need or abandoned the evaluation; a reader who tried anyway got a <code>200</code> the reference said was impossible and could not tell an allowance from a private grant. <code>/history/matches</code>, <code>/history/coverage</code>, <code>status=completed</code> on <code>/matches</code> and the FREE tier summary now all state the allowance and the refusal that follows it.</li>
+</ul>
+<p>No field, endpoint or behaviour changed; every correction is to a description.</p></article>
 <article id="v1.13.42"><h2>1.13.42 <time datetime="2026-09-23">2026-09-23</time></h2>
 <h3>Fixed</h3>
 <ul>
