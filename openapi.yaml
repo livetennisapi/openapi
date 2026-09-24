@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.44"
+  version: "1.13.45"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -320,7 +320,16 @@ paths:
         404 is kept for: an upcoming match with no row (nothing to serve
         yet), a cancelled match that was never played (nothing settled), and a
         settled match with nothing recorded anywhere — the fallback serves a
-        final that exists, it never invents one. Before 2026-09-20 every
+        final that exists, it never invents one.
+        WITHDRAWN STATES (since 2026-09-23). When the legality gate behind this
+        read refuses a state a stream has already published, the `verdict`
+        object on the score says so: `kind`, `superseded_sequence`, `reason`
+        and `safe_to_resume`. It is null on an ordinary read. The push feed,
+        the WebSocket and webhooks carry the same judgement as a
+        `score_withdrawn` frame naming the same sequence, so a stream consumer
+        learns a state was taken back without polling. `GET /history/incidents`
+        is the published register of data-quality incidents.
+        Before 2026-09-20 every
         settled match older than the retention window answered 404 here
         (13,437 completed matches from the previous 180 days, 157,170 all
         time, measured at the change) while the completed listing served its
@@ -1514,6 +1523,96 @@ paths:
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
         "410": { $ref: "#/components/responses/MatchGone" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/incidents:
+    get:
+      summary: Published data-quality incidents (BASIC)
+      description: >-
+        Every data-quality incident we have published, oldest window first.
+        This is the register to reconcile against when a published value
+        changed after you read it: each record states the window it applies
+        to, the rule before and after, what the defect was, which surfaces it
+        touched, how to tell an affected row from a clean one, and whether
+        corrections and a per-match list are available.
+        Nothing here is inferred at read time. The register is part of a
+        release, so a record appears only when we have decided what it says,
+        and it does not change between releases.
+      operationId: listHistoryIncidents
+      responses:
+        "200":
+          description: The incident register.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/Incident" }
+                  meta:
+                    type: object
+                    properties:
+                      count: { type: integer }
+                      kinds:
+                        type: array
+                        items: { type: string }
+                      generated_at: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /history/incidents/{incidentId}/matches:
+    get:
+      summary: The matches one incident affected, as JSONL or CSV (BASIC)
+      description: >-
+        One row per affected match, streamed as JSONL by default or CSV with
+        `?format=csv`. Columns are `incident_id`, `match_id`, `tournament`,
+        `tour`, `round`, `draw_stage`, `scheduled_time`, `affected_field`,
+        `served` and `expected`. `served` and `expected` carry that incident's
+        own vocabulary: for the deciding-set rule `match_tiebreak` against
+        `full_set`, for the price side `side_reversed` against `side_players`,
+        and for a field repair the before and after values.
+        Rows are derived from stored data by the same code every consumer of
+        that field uses. A match whose derivation would be a guess is left
+        out, and the incident's `matches.note` says which those are, so this
+        export is exact rather than complete.
+      operationId: listIncidentMatches
+      parameters:
+        - name: incidentId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: format
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [jsonl, csv]
+            default: jsonl
+      responses:
+        "200":
+          description: >-
+            One row per affected match, as a file attachment.
+          content:
+            application/x-ndjson:
+              schema: { type: string }
+            text/csv:
+              schema: { type: string }
+        "400":
+          description: "`bad_format` — `format` was neither `jsonl` nor `csv`."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404":
+          description: >-
+            `not_found` for an unknown incident id. `not_derivable` for an
+            incident with no exact per-match derivation, carrying that
+            incident's `window_utc`, `affected_surfaces` and the note saying
+            why.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /history/archive/matches:
     get:
@@ -3232,6 +3331,101 @@ components:
           description: >-
             Present only when something is withheld — plain-language reason, e.g. a
             null `games` array.
+        verdict:
+          type:
+          - object
+          - 'null'
+          description: >-
+            Why this read is not the newest state we judged (since 2026-09-23).
+            Null on an ordinary read. Otherwise the legality gate refused a state
+            a stream had already published, and this says which and why.
+            `superseded_sequence` is the `sequence` of the refused state, the
+            value a stream consumer holds. `reason` is the gate's slug. `kind` is
+            `withdrawn` (discard the refused state and resume from the served
+            one), `deferred` (it may be early and is pending the next accept) or
+            `withheld` (nothing publishable, `games` is null). `safe_to_resume`
+            is true exactly when `kind` is `withdrawn`. The push feed, the
+            WebSocket and webhooks announce the same judgement as a
+            `score_withdrawn` frame naming the same sequence, so a stream
+            consumer never has to poll to learn a state was taken back.
+          properties:
+            kind:
+              type: string
+              enum:
+              - withdrawn
+              - deferred
+              - withheld
+            superseded_sequence:
+              type:
+              - integer
+              - 'null'
+            reason:
+              type: string
+            safe_to_resume:
+              type: boolean
+    Incident:
+      type: object
+      description: >-
+        One published data-quality incident. Every field is written as part of
+        a release, so the record does not change between releases.
+      properties:
+        id:
+          type: string
+          description: Stable slug, e.g. `deciding-set-level-rule-2026-08-18`.
+        kind:
+          type: string
+          description: >-
+            The incident's family. Current values are `pricing_rule`,
+            `version_stamp`, `field_orientation` and `field_repair`. The live
+            list is in `meta.kinds`.
+        title:
+          type: string
+        window_utc:
+          type: object
+          description: >-
+            When the incident applies. Every instant is UTC, and `basis` says
+            what the window was read from.
+          properties:
+            start: { type: string, format: date-time }
+            end:
+              type:
+              - string
+              - 'null'
+              format: date-time
+            basis: { type: string }
+        rule_before:
+          type: string
+        rule_after:
+          type: string
+        defect:
+          type: string
+          description: What was wrong, with the measurement behind it.
+        affected_surfaces:
+          type: array
+          description: The endpoints and fields the incident reached.
+          items: { type: string }
+        how_to_tell:
+          type: string
+          description: >-
+            How to separate an affected row from a clean one, in your own copy
+            of the data.
+        corrections:
+          type: object
+          description: >-
+            Whether the published values were restated. When `available` is
+            false, `detail` says what to do instead.
+          properties:
+            available: { type: boolean }
+            detail: { type: string }
+        matches:
+          type: object
+          description: >-
+            Whether a per-match list can be derived exactly. `note` names the
+            rows that cannot, and `url` is the export when `derivable` is true.
+          properties:
+            derivable: { type: boolean }
+            note: { type: string }
+            url: { type: string }
     PlayerStoppage:
       description: >-
         One row of GET /players/{playerId}/stoppages — an in-match stoppage on one of the

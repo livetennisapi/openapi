@@ -105,6 +105,8 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - GET /history/matches — Completed matches, newest first, with derived winner and tape coverage (BASIC)
 - GET /history/coverage — Measured completeness rollup per tour × draw bucket (BASIC)
 - GET /history/matches/{matchId} — Per-match tape — point-by-point score + per-point model probabilities (BASIC)
+- GET /history/incidents — Published data-quality incidents (BASIC)
+- GET /history/incidents/{incidentId}/matches — The matches one incident affected, as JSONL or CSV (BASIC)
 - GET /history/archive/matches — Results archive (1968–2022) — deep historical results (BASIC)
 - GET /history/archive/matches/{archiveId} — One archive result, with serve statistics where recorded (BASIC)
 - GET /history/archive/matches/{archiveId}/tape — Reconstructed 2013–2022 point-by-point tape for one archive result (ULTRA, or any History plan)
