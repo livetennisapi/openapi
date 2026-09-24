@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.48"
+  version: "1.13.49"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1020,6 +1020,25 @@ paths:
           description: Case-insensitive substring match on the tournament name.
         - $ref: "#/components/parameters/tour"
         - $ref: "#/components/parameters/draw"
+        - name: tier
+          in: query
+          required: false
+          schema: { type: string }
+          description: >-
+            Tier filter (added 2026-09-24): comma-separated exact values from the
+            same closed tier vocabulary as `Match.tier` (`?tier=atp_500`,
+            `?tier=atp_500,challenger_100`). Selects tournaments whose own `tier`
+            field carries one of the values, which on this resource is the
+            **current season's** level, because a catalogue row has no season of
+            its own. That is the one difference from `?tier=` on `/matches` and
+            `/history/matches`, where the value is the level in each MATCH'S
+            season (a tournament keeps one `tournament_id` while its level
+            moves). Filter and field always read the same season on the same
+            resource, so they cannot disagree. A tournament with no row for the
+            current season matches no value: null means the level is unknown,
+            not absent. Composes with `?tour=`, `?draw=` and `?search=`. Unknown
+            value → 400 `bad_tier` with the offending values in `bad` and the
+            full vocabulary in `allowed`.
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -2843,7 +2862,9 @@ components:
         (`?tour=challenger&gender=women&tier=wta_125` and `?tier=wta_125`
         select the same rows; `?tier=challenger_125&draw=doubles` is a slice
         `tour=` alone cannot make). Available on `/matches` (every status) and
-        `/history/matches`. Unknown value → 400 `bad_tier` with the offending
+        `/history/matches`. `/tournaments` takes `?tier=` as well, reading the
+        CURRENT season rather than a match's, and states that difference on its
+        own parameter. Unknown value → 400 `bad_tier` with the offending
         values in `bad` and the full vocabulary in `allowed`.
     updatedSince:
       name: updated_since

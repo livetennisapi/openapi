@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.48, last change 2026-09-24.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.49, last change 2026-09-24.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.48</strong>, last change <time datetime="2026-09-24">2026-09-24</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.49</strong>, last change <time datetime="2026-09-24">2026-09-24</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.49"><h2>1.13.49 <time datetime="2026-09-24">2026-09-24</time></h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong>The tournament catalogue takes <code>?tier=</code>, which it had been accepting and ignoring.</strong> <code>GET /tournaments</code> publishes each row&#x27;s <code>tier</code> and <code>tier_source</code>, and the two match listings have filtered on the same vocabulary since 1.13.28. The catalogue did not: <code>?tier=atp_500</code>, <code>?tier=laver_cup</code> and an outright invalid value each returned the entire 10,302-row catalogue under a 200, byte-identical to no filter at all, because the level was attached to a page after it had already been selected. It now selects. The one difference from the match listings is the season, and it is stated on the parameter: a catalogue row has no season of its own, so <code>?tier=</code> here reads the CURRENT season, the same season the row&#x27;s own <code>tier</code> field reports, while on <code>/matches</code> and <code>/history/matches</code> it reads each match&#x27;s own season. A tournament with no row for the current season matches no value. An invalid value is now a 400 <code>bad_tier</code> carrying the vocabulary, as it always was elsewhere.</li>
+</ul></article>
 <article id="v1.13.48"><h2>1.13.48 <time datetime="2026-09-24">2026-09-24</time></h2>
 <h3>Fixed</h3>
 <ul>
