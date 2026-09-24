@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.47",
+  "version": "1.13.48",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -5335,6 +5335,20 @@
      "is_tiebreak": {
       "type": "boolean"
      },
+     "tiebreak_final": {
+      "type": [
+       "array",
+       "null"
+      ],
+      "description": "Added 2026-09-24. The breaker's closing score in our player order, e.g. `[2, 7]`, on the row that CLOSES a tiebreak set. Absent on every other row, including the breaker rows themselves, which stay exactly as they were observed. Same value, from the same resolver, as this set's entry in the response's `tiebreaks` array, so the two never disagree. The row that closes a set carries the decided games before the set counter catches up, and since 2026-09-24 the games on the row decide it, so the field does not depend on which row the counter moves on. Before that a set whose counter lagged by a row was never stamped and stayed empty on every later read, while `tiebreaks` stated the final.",
+      "items": {
+       "type": "integer"
+      },
+      "example": [
+       2,
+       7
+      ]
+     },
      "win_probability_p1": {
       "type": [
        "number",
@@ -7149,7 +7163,7 @@
       },
       "minItems": 2,
       "maxItems": 2,
-      "description": "Added 2026-09-23. The breaker's closing score, in our player order, e.g. `[7, 5]`. Present ONLY on the row that closes a tiebreak set — the set roll-up (`tiebreak` false, the set banked 7-6, `score` 0-0), which is the row carrying the breaker's winning point, every row being the state after a point. Absent on every other row, including the breaker rows themselves. Exact when the previous row is the decided score or one point from it (6-5 for the set's winner gives `[7, 5]`); otherwise taken from the match's recorded tiebreak finals, the same finals `GET /history/matches/{matchId}` publishes as `tiebreaks`; null when neither can state it. Never guessed. A page that *starts* on a roll-up row (an `after_seq` landing exactly there) has no previous row to read and uses the recorded finals alone. The deciding set of a match-tiebreak format is judged under the 10-point rule."
+      "description": "Added 2026-09-23. The breaker's closing score, in our player order, e.g. `[7, 5]`. Present ONLY on the row that closes a tiebreak set — the set roll-up (`tiebreak` false, the set banked 7-6, `score` 0-0), which is the row carrying the breaker's winning point, every row being the state after a point. Absent on every other row, including the breaker rows themselves. Exact when the previous row is the decided score or one point from it (6-5 for the set's winner gives `[7, 5]`); otherwise taken from the match's recorded tiebreak finals, the same finals `GET /history/matches/{matchId}` publishes as `tiebreaks`; null when neither can state it. Never guessed. A page that *starts* on a roll-up row (an `after_seq` landing exactly there) reads the one row before your page, so the value does not depend on where the page was cut (since 2026-09-24; before that such a page used the recorded finals alone, and so read null on a set that closed while the match was still live). The deciding set of a match-tiebreak format is judged under the 10-point rule."
      }
     }
    },
