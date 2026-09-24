@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.45, last change 2026-09-24.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.46, last change 2026-09-24.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,14 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.45</strong>, last change <time datetime="2026-09-24">2026-09-24</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.46</strong>, last change <time datetime="2026-09-24">2026-09-24</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.46"><h2>1.13.46 <time datetime="2026-09-24">2026-09-24</time></h2>
+<h3>Added</h3>
+<ul>
+<li><strong><code>corroborated</code> and <code>corroborated_age_seconds</code> on the Score: has an independent source vouched for THIS EXACT state?</strong> Raised by a customer who acted on a completed set that was taken back seconds later. <code>corroborated</code> is <code>true</code> when a source other than the one that wrote the state has since presented us the same state, <code>false</code> when none has — including a brand-new state nobody has had a chance to agree with yet — and <code>null</code> on the archive fallback of a retention-trimmed completed match, where <code>age_seconds</code> and <code>sources_count</code> are null too. <code>corroborated_age_seconds</code> is the seconds since that vouch, null when there is none. <strong>This is the field to gate a set-end on.</strong> <code>sources_count</code> and <code>changing_sources_count</code> are window measures over the match and say nothing about the state in front of you, so a set completion that only one source has announced can sit beside a perfectly healthy count — and a set-end is the one state whose correction changes a result rather than a number. It is evidence, not proof: a vouched state can still be corrected, so compare <code>corroborated_age_seconds</code> with <code>age_seconds</code> and treat a vouch younger than the state it vouches for as the weaker signal it is. When a state is taken back the <code>sequence</code> goes down and <code>verdict</code> says so. Present wherever <code>sources_count</code> is; a yes/no, never a name.</li>
+<li><strong><code>changing_sources_count</code> on the Score is documented.</strong> Live since 2026-09-24 and absent from this reference. How many distinct sources CHANGED the score in the last 300 seconds, counted on the content clock alone, so a source re-asserting an unchanged state is not counted — the difference from <code>sources_count</code>, which a feed stuck re-sending its last state holds at 1 for as long as the echo lasts while this reads 0. The window is wider on purpose: a point lands every 30-60 s and a changeover is about 90 s. A cross-confirmation is agreement, not a change, so this can read below <code>sources_count</code> and never above it.</li>
+</ul></article>
 <article id="v1.13.45"><h2>1.13.45 <time datetime="2026-09-24">2026-09-24</time></h2>
 <h3>Added</h3>
 <ul>
