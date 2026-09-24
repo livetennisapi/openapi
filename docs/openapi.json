@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.46",
+  "version": "1.13.47",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -3551,7 +3551,7 @@
        "integer",
        "null"
       ],
-      "description": "Per-match accept counter for this state: 1, 2, 3, … in the order we accepted states for THIS match, gapless within a match — higher is later, equal is the same state re-served, and a gap between two reads is exactly that many missed updates. On /matches/{matchId}/score it moves BACKWARDS in two cases only: we withdrew a state we cannot stand behind and re-served the last good one, or the read deferred to a strictly higher-trust source's fresh state (about 1% of live reads, measured 2026-09-15). On the push feed and the native WebSocket it only ever rises. Null on states that predate the counter — never fabricated. Present on live score reads; absent on history-tape rows, which are already served in order."
+      "description": "Per-match accept counter for this state: 1, 2, 3, … in the order we accepted states for THIS match, gapless within a match — higher is later, equal is the same state re-served, and a gap between two reads is exactly that many missed updates. On /matches/{matchId}/score it moves BACKWARDS in two cases only: we withdrew a state we cannot stand behind and re-served the last good one, or the read deferred to a strictly higher-trust source's fresh state (about 1% of live reads, measured 2026-09-15). On the push feed and the native WebSocket it only ever rises. Null on states that predate the counter — never fabricated. Present on live score reads; absent on history-tape rows, which are already served in order. Since 2026-09-24 a set completion that does not end the match is assigned a sequence only once confirmed — the same source keeps presenting the completed set for 10 s or more, a source at least as trusted presents it, or the same source shows play continuing inside the new set. A live scoring display can render the set-ending frame ON set point, before the point is decided, and step back when it is not won; the unconfirmed frame is now never stored, so no sequence ever carries it and nothing is published as provisional. Until a frame is confirmed every surface keeps serving the set-point state; one nobody confirms within 120 s is discarded. A set completion that ENDS the match is exempt — it follows the completion rules instead. Measured over the 30 days to 2026-09-24 this adds a median 10 s between the point and the published set-end, and on a feed that does not re-present states the set-end lands with the first point of the next set (90th percentile 133 s). It does not cover a set genuinely won and then corrected on court, which can still be published and rewound."
      },
      "age_seconds": {
       "type": [

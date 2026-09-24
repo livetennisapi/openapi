@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.46, last change 2026-09-24.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.47, last change 2026-09-24.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.46</strong>, last change <time datetime="2026-09-24">2026-09-24</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.47</strong>, last change <time datetime="2026-09-24">2026-09-24</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.47"><h2>1.13.47 <time datetime="2026-09-24">2026-09-24</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>A set completion that does not end the match is assigned a <code>sequence</code> only once confirmed.</strong> Live since 2026-09-24 and stated here for the first time. A live scoring display can render the set-ending frame ON set point, before the point is decided, and step back when the point is not won; a customer measured exactly that twice. A rise in <code>sets</code> that does not end the match, arriving while the state we hold is set point for the side that would gain the set, is now held until the same source keeps presenting it for 10 s or more, a source at least as trusted presents it, or the same source shows play continuing inside the new set. The unconfirmed frame is never stored, so no <code>sequence</code> ever carries it and nothing is published as provisional — a <code>sequence</code> that carries a set completion is one that met the rule. Until then <code>GET /matches/{matchId}/score</code>, the push feed and the WebSocket all keep serving the set-point state; a frame nobody confirms within 120 s is discarded. A set completion that <strong>ends</strong> the match is exempt and follows the completion rules instead. Measured over the 30 days to 2026-09-24: a median 10 s added between the point and the published set-end, and on a feed that does not re-present states the set-end lands with the first point of the next set (90th percentile 133 s). It does not cover a set genuinely won and then corrected on court, which can still be published and rewound — read <code>corroborated</code> beside it, and <code>verdict</code> says so when a state is taken back.</li>
+</ul></article>
 <article id="v1.13.46"><h2>1.13.46 <time datetime="2026-09-24">2026-09-24</time></h2>
 <h3>Added</h3>
 <ul>
