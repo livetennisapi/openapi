@@ -91,6 +91,7 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - GET /players/{playerId}/stoppages — One player's in-match stoppages and did-not-finish outcomes, newest first over a window (PRO)
 - GET /players/{playerId}/injuries — Alias of /players/{playerId}/stoppages — the identical response (PRO)
 - GET /matches/{matchId}/status-history — The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)
+- GET /matches/{matchId}/withdrawals — The durable record of every score state we withdrew on this match (ULTRA)
 - GET /matches/{matchId}/analysis — Model analysis for a match (ULTRA)
 - GET /matches/{matchId}/statistics — In-play statistics — aces, double faults, serve split, hold/break %, break points, service & return points (ULTRA)
 - GET /matches/{matchId}/points — Live per-point events in seq order — the REST catch-up for the WebSocket point stream (ULTRA)

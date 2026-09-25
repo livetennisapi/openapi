@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.49"
+  version: "1.13.50"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -251,6 +251,7 @@ paths:
         - $ref: "#/components/parameters/playedFrom"
         - $ref: "#/components/parameters/playedTo"
         - $ref: "#/components/parameters/updatedSince"
+        - $ref: "#/components/parameters/withdrawnSince"
         - $ref: "#/components/parameters/cursor"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
@@ -329,13 +330,22 @@ paths:
         `score_withdrawn` frame naming the same sequence, so a stream consumer
         learns a state was taken back without polling. `GET /history/incidents`
         is the published register of data-quality incidents.
+        THE RECOVERY PATH (since 2026-09-25). A consumer that missed the frame
+        cannot get the live `verdict` back, because it is recomputed over the
+        newest state and returns null as soon as the next state is accepted.
+        Every withdrawal is now recorded durably when the judgement is made:
+        pass `?sequence=N` here to have `verdict` answer for the sequence you
+        hold, and read `GET /matches/{matchId}/withdrawals` for the whole
+        record on a match, including the frame exactly as the feed sent it.
         Before 2026-09-20 every
         settled match older than the retention window answered 404 here
         (13,437 completed matches from the previous 180 days, 157,170 all
         time, measured at the change) while the completed listing served its
         score.
       operationId: getMatchScore
-      parameters: [ { $ref: "#/components/parameters/matchId" } ]
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+        - $ref: "#/components/parameters/sequence"
       responses:
         "200":
           description: >-
@@ -626,6 +636,48 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/StatusChange" }
                   meta: { $ref: "#/components/schemas/ListMeta" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/MatchGone" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /matches/{matchId}/withdrawals:
+    get:
+      summary: The durable record of every score state we withdrew on this match (ULTRA)
+      description: >-
+        Added 2026-09-25. One row per refused `sequence`, oldest first, each
+        carrying the `score_withdrawn` frame exactly as the push feed sent it.
+
+
+        This is the RECOVERY PATH for a missed frame. The `verdict` object on
+        `GET /matches/{matchId}/score` is recomputed on every read over the
+        newest state, so it returns null again as soon as the next state is
+        accepted, which in a live match is seconds. The record here is written
+        when the judgement is made, before the frame is delivered, so a
+        consumer that was disconnected can still learn that a sequence it holds
+        was taken back. `GET /matches?withdrawn_since=` says which matches to
+        ask about; `?sequence=N` on the score read answers for one sequence
+        without fetching the list.
+
+
+        ULTRA, the tier that receives the frame on the push feed and the native
+        WebSocket. An empty `data` is the ordinary answer and means nothing was
+        withdrawn on that match. Records are kept 90 days from the withdrawal.
+      operationId: getMatchWithdrawals
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+      responses:
+        "200":
+          description: Withdrawals on this match, oldest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  match_id: { type: integer }
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/ScoreWithdrawal" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
@@ -2866,6 +2918,43 @@ components:
         CURRENT season rather than a match's, and states that difference on its
         own parameter. Unknown value → 400 `bad_tier` with the offending
         values in `bad` and the full vocabulary in `allowed`.
+    withdrawnSince:
+      name: withdrawn_since
+      in: query
+      required: false
+      schema:
+        type: string
+      description: >-
+        ULTRA. A DIFFERENT LISTING, not a filter on the match page: the match
+        ids with a WITHDRAWN score state at or after this instant, newest
+        first, one row per match as `{ match_id, withdrawals,
+        last_withdrawn_at }` with an exact `meta.total` and `limit` / `offset`
+        paging. A UTC date (YYYY-MM-DD) or an ISO-8601 UTC datetime. This is
+        how a stream consumer that was disconnected finds which matches to ask
+        `GET /matches/{matchId}/withdrawals` about. It takes no other
+        parameter beside `limit` and `offset` — `status`, `updated_since`, the
+        date range and every match filter are `400 bad_withdrawn_since`, as is
+        an unparseable instant. Records are kept 90 days from the withdrawal.
+    sequence:
+      name: sequence
+      in: query
+      required: false
+      schema:
+        type: integer
+      description: >-
+        The `sequence` YOU HOLD for this match, from the push feed, the
+        WebSocket or an earlier read. `verdict` is recomputed on every read
+        over the newest state, so on its own it says nothing about a sequence
+        that was withdrawn before the next state landed. With `?sequence=N`,
+        and only when the read carries no verdict of its own, `verdict`
+        answers for N from the durable withdrawal record: `kind: withdrawn`
+        with the recorded reason when we discarded that state, null when we
+        never did. Only a discarded record is re-asserted this way; a
+        `deferred` state may since have been corroborated and a `withheld`
+        read described that moment's scan, so neither is. A verdict the read
+        produces itself always wins, because it describes the state being
+        served. Every other field still describes the served state. A
+        non-integer is `400 bad_sequence`, never accepted and ignored.
     updatedSince:
       name: updated_since
       in: query
@@ -3435,7 +3524,14 @@ components:
             is true exactly when `kind` is `withdrawn`. The push feed, the
             WebSocket and webhooks announce the same judgement as a
             `score_withdrawn` frame naming the same sequence, so a stream
-            consumer never has to poll to learn a state was taken back.
+            consumer never has to poll to learn a state was taken back. That
+            frame carries `type`, `match_id`, `kind`, `superseded_sequence`,
+            `reason`, `safe_to_resume`, `ts` and `published_at`, and no
+            replacement score: resume from the next `score` frame or from a
+            fresh read. Since 2026-09-25 this field also answers for a
+            sequence you name with `?sequence=N`, from the durable record
+            served by `GET /matches/{matchId}/withdrawals` — which is how a
+            consumer that missed the frame recovers it.
           properties:
             kind:
               type: string
@@ -4423,6 +4519,59 @@ components:
         duration_seconds:
           type: [integer, "null"]
           description: end rows only.
+    ScoreWithdrawal:
+      type: object
+      description: >-
+        One withdrawn score state on a match (added 2026-09-25), from the
+        durable record behind `GET /matches/{matchId}/withdrawals`.
+      properties:
+        sequence:
+          type: integer
+          description: >-
+            The refused state's `sequence` — the value you hold from the feed,
+            and the frame's `superseded_sequence`.
+        kind:
+          type: string
+          enum:
+          - withdrawn
+          - deferred
+          - withheld
+          description: The frame's `kind`. Only `withdrawn` means discard and resume.
+        reason:
+          type: string
+          description: The legality gate's slug, the same value the frame carries.
+        published_at:
+          type:
+          - string
+          - 'null'
+          format: date-time
+          description: >-
+            When the refused state's OWN `score` frame was handed to the push
+            feed. Null when that state never went out on the feed — the
+            judgement was still made and the REST read served it.
+        withdrawn_at:
+          type: string
+          format: date-time
+          description: When the judgement was made. The frame's `ts`.
+        replaced_by_sequence:
+          type:
+          - integer
+          - 'null'
+          description: >-
+            The `sequence` of the state served in the refused one's place, the
+            newest legal state at that moment. Null on `withheld`, where
+            nothing within the scan was publishable. It is on the record and
+            NOT on the frame.
+        frame:
+          type: object
+          description: >-
+            The `score_withdrawn` frame exactly as the push feed, the native
+            WebSocket and webhooks sent it, stamped once so the stored copy is
+            the wire copy. Its keys are `type`, `match_id`, `kind`,
+            `superseded_sequence`, `reason`, `safe_to_resume`, `ts` and
+            `published_at`. It carries NO replacement score and no new
+            sequence: the state to resume from is the one on the next `score`
+            frame, or on a fresh `GET /matches/{matchId}/score`.
     StatusChange:
       type: object
       description: One row of the per-match status ledger (added 2026-09-12).
