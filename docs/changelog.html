@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.51, last change 2026-09-25.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.52, last change 2026-09-25.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,19 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.51</strong>, last change <time datetime="2026-09-25">2026-09-25</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.52</strong>, last change <time datetime="2026-09-25">2026-09-25</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.52"><h2>1.13.52 <time datetime="2026-09-25">2026-09-25</time></h2>
+<h3>Added</h3>
+<ul>
+<li><strong>The tape&#x27;s two accept clocks are published.</strong> <code>HistoryTapeRow.accepted_at</code> and <code>HistoryTapeRow.received_at</code> have ridden every observed row of <code>GET /history/matches/{matchId}</code> since 2026-09-24 and were documented nowhere, so a customer doing timing research on a tape had no published field to read. <code>accepted_at</code> is the instant our arbiter accepted the state, stamped once and never refreshed, which is the clock to difference against: <code>timestamp</code> starts equal to it and is then refreshed while the owning source keeps re-asserting the unchanged state, so on most raw rows <code>timestamp</code> is a later re-assertion instant (on match 189679, 164 of its 171 observed rows carry a <code>timestamp</code> more than a second after <code>accepted_at</code>). <code>received_at</code> is the instant the state reached our edge before arbitration, so <code>accepted_at</code> minus <code>received_at</code> is our own arbitration step. Neither figure is a claim about upstream speed and neither is the court&#x27;s clock. Both are null on every reconstructed row, which never had a clock.</li>
+<li><strong>The arrival clock&#x27;s start date, which is the part that bites.</strong> <code>received_at</code> is stamped only as a state arrives, so it can never be filled in afterwards. The earliest one we hold is <code>2026-09-24T02:00:26Z</code>; on every observed row accepted before that instant it is null while <code>timestamp</code> and <code>accepted_at</code> are populated. A study that spans the boundary has to read <code>accepted_at</code>, which rides the whole observed corpus. Measured on match 189679 (12 September) after a Basic customer reported it: 171 observed rows, <code>accepted_at</code> on all 171, <code>received_at</code> on none.</li>
+<li><strong>What <code>server</code> guarantees on a tiebreak row, and what it does not.</strong> Tiebreak rows are never settled on either sequence. The server genuinely changes during a breaker, so there is no constant to take a majority of, and the field is the source&#x27;s own assertion carried through. Where a breaker&#x27;s rows skip points the rotation cannot be reconstructed from what is served: you have the server of a state, not of a numbered point, and <code>meta.points.transitions_legal</code> against <code>transitions_total</code> tells you whether that happened. On the set roll-up row carrying <code>tiebreak_final</code>, <code>server</code> is the value of that committed set-end state and is NOT a preserved copy of the final breaker point&#x27;s server. Reported by a Basic customer who could not reconcile 21 tiebreak transitions against the standard rotation and was right not to.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong><code>Score.accepted_at</code> said &quot;absent on history-tape rows&quot;.</strong> It has been present on them since 2026-09-24, so the description had been wrong for a day, on the one field a timing study is told to use. Corrected, and the tape row now documents its own copy.</li>
+</ul></article>
 <article id="v1.13.51"><h2>1.13.51 <time datetime="2026-09-25">2026-09-25</time></h2>
 <h3>Added</h3>
 <ul>

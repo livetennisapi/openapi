@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.51"
+  version: "1.13.52"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -3413,8 +3413,11 @@ components:
             Since 2026-09-15. The instant we accepted this state (UTC): stamped
             once at insert, never refreshed by a re-assertion — the clock to
             difference a latency study against. Present on live score reads and
-            push frames; absent on history-tape rows; null on the archive
-            fallback of a retention-trimmed completed match.
+            push frames, and since 2026-09-24 on history-tape rows too (this
+            description said "absent on history-tape rows" until 2026-09-25,
+            which had been wrong since the tape started carrying it — see
+            `HistoryTapeRow.accepted_at`). Null on the archive fallback of a
+            retention-trimmed completed match.
         sequence:
           type:
           - integer
@@ -4819,6 +4822,20 @@ components:
             disagreements; a tie settles nothing). The raw sequence carries
             every row exactly as committed, so a transient wrong-server read
             can appear there and be corrected by a later row.
+            TIEBREAK ROWS ARE NEVER SETTLED, on either sequence: the server
+            genuinely changes during a breaker, so there is no constant to take
+            a majority of, and the field is the source's own assertion carried
+            through. Two consequences, both reported by a Basic customer on
+            2026-09-25 and confirmed in the code. The rotation cannot be
+            reconstructed from the rows served wherever the tape is sampled —
+            a breaker whose rows skip points gives you the server of a state,
+            not of a numbered point, and `meta.points.transitions_legal`
+            against `transitions_total` tells you whether that happened. And
+            on the set roll-up row that carries `tiebreak_final`, `server` is
+            the value of that committed set-end state: it is NOT a preserved
+            copy of the final breaker point's server, and we make no claim
+            that it is. Withhold server-dependent tiebreak analysis unless the
+            encoding reconciles on the match in front of you.
         is_tiebreak: { type: boolean }
         tiebreak_final:
           type:
@@ -4850,6 +4867,38 @@ components:
             2026-09-16T07:59:54Z.
         danger: { type: [number, "null"] }
         timestamp: { type: [string, "null"], format: date-time }
+        accepted_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            On tape rows since 2026-09-24. The instant our arbiter accepted
+            this state (UTC), stamped once at insert and never refreshed by a
+            re-assertion. This is the clock to difference a timing study
+            against: `timestamp` starts equal to it and is then refreshed while
+            the owning source keeps re-asserting the unchanged state, so on
+            most raw rows `timestamp` is a later re-assertion instant (measured
+            on match 189679: 164 of its 171 observed rows carry a `timestamp`
+            more than a second after `accepted_at`). Null on every
+            reconstructed row, which never had a clock. It rides the whole
+            observed corpus, so a study that spans 2026-09-24 must use this one
+            and not `received_at`.
+        received_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            On tape rows since 2026-09-24. The instant this state reached our
+            edge, before the arbiter ran, stamped once. `accepted_at` minus
+            `received_at` is our own arbitration step; neither figure is a
+            claim about how fast anything upstream is, and neither is the
+            court's clock. THIS CLOCK HAS A START DATE AND THE OTHER TWO DO
+            NOT. It is stamped only as a state arrives, so it can never be
+            filled in afterwards: the earliest one we hold is
+            `2026-09-24T02:00:26Z`, and on every observed row accepted before
+            that instant it is null while `timestamp` and `accepted_at` are
+            populated. Measured on match 189679 (12 September) after a Basic
+            customer reported it on 2026-09-25: 171 observed rows,
+            `accepted_at` on all 171, `received_at` on none. Null on every
+            reconstructed row.
         winner:
           type: [integer, "null"]
           enum: [1, 2, null]
