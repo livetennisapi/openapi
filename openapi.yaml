@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.50"
+  version: "1.13.51"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2737,6 +2737,46 @@ paths:
         and signal frames are events, not states — a missed point does NOT
         self-correct on the next frame; recover it via
         `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`.
+
+
+        WITHDRAWN STATES, AND HOW TO GET ONE BACK. This feed publishes every
+        state we accept and runs no trust deference, while
+        `GET /matches/{matchId}/score` runs the legality gate and can serve an
+        older state than the newest row. So a state you receive here can later
+        be one we do not stand behind, and when that happens a
+        `score_withdrawn` frame follows the state's own `score` frame on the
+        same channel. Eight keys, and no replacement score:
+
+
+        ```json
+        { "type": "score_withdrawn", "match_id": 4711, "kind": "withdrawn",
+          "superseded_sequence": 118, "reason": "illegal_completed_set",
+          "safe_to_resume": true, "ts": "2026-09-25T10:00:03.108Z",
+          "published_at": "2026-09-25T10:00:03.115Z" }
+        ```
+
+
+        `superseded_sequence` is the `sequence` you hold and are to discard.
+        The state to resume from is the one on the next `score` frame, or on a
+        fresh `GET /matches/{matchId}/score`. `kind` is `withdrawn` (discard),
+        `deferred` (the refused state may be early and is pending the next
+        accept, so hold it) or `withheld` (nothing publishable, `games` is
+        null). `ts` is when the judgement was made, `published_at` when this
+        feed was handed the frame. A given (match, `sequence`) is withdrawn at
+        most once per publishing process and there is no replay.
+
+
+        A consumer that was disconnected recovers the judgement from the
+        durable record, added 2026-09-25:
+        `GET /matches?withdrawn_since=<instant>` for the matches that had one,
+        `GET /matches/{matchId}/withdrawals` for the whole record on a match
+        (each row carrying the frame exactly as it went out, and the
+        `sequence` served in the refused state's place), and
+        `GET /matches/{matchId}/score?sequence=N` to ask about the one
+        sequence you hold. Records are kept 90 days. The live `verdict` on the
+        score read is the same judgement on demand, but it is recomputed over
+        the newest state, so it stops answering for N as soon as the next
+        state is accepted. The record does not.
       operationId: createWsToken
       responses:
         "200":

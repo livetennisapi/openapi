@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.50, last change 2026-09-25.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.51, last change 2026-09-25.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.50</strong>, last change <time datetime="2026-09-25">2026-09-25</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.51</strong>, last change <time datetime="2026-09-25">2026-09-25</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.51"><h2>1.13.51 <time datetime="2026-09-25">2026-09-25</time></h2>
+<h3>Added</h3>
+<ul>
+<li><strong>The <code>score_withdrawn</code> frame is documented on the push feed page, where a streaming consumer looks for it.</strong> 1.13.50 put the record and the frame&#x27;s fields on the score read and in the schema list, and the frame is a STREAM artifact: it arrives on the same channel as the <code>score</code> frame it retracts. <code>GET /ws-token</code> now carries the frame itself, the reason it exists (the feed publishes every accepted state and runs no trust deference, while the score read runs the legality gate and can serve an older state), what each <code>kind</code> asks you to do, and the three reads that recover a judgement you were offline for. No spec surface changed.</li>
+</ul></article>
 <article id="v1.13.50"><h2>1.13.50 <time datetime="2026-09-25">2026-09-25</time></h2>
 <h3>Added</h3>
 <ul>
