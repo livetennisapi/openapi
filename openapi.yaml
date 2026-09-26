@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.52"
+  version: "1.13.53"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -3432,8 +3432,14 @@ components:
             strictly higher-trust source's fresh state (about 1% of live reads,
             measured 2026-09-15). On the push feed and the native WebSocket it only
             ever rises. Null on states that predate the counter — never fabricated.
-            Present on live score reads; absent on history-tape rows, which are
-            already served in order. Since 2026-09-24 a set completion that
+            Present on live score reads AND, since 2026-09-26, on history-tape
+            rows too — see `HistoryTapeRow.sequence`. This description said
+            "absent on history-tape rows, which are already served in order"
+            until then, and the reasoning was the gap: being served in order
+            does not let you resolve the `replaced_by_sequence` that
+            `GET /matches/{matchId}/withdrawals` hands you, which is a pointer
+            AT a counter and not a position in a list. Since 2026-09-24 a set
+            completion that
             does not end the match is assigned a sequence only once confirmed
             — the same source keeps presenting the completed set for 10 s or
             more, a source at least as trusted presents it, or the same source
@@ -4899,6 +4905,29 @@ components:
             customer reported it on 2026-09-25: 171 observed rows,
             `accepted_at` on all 171, `received_at` on none. Null on every
             reconstructed row.
+        sequence:
+          type: [integer, "null"]
+          description: >-
+            On tape rows since 2026-09-26. This state's per-match ACCEPT
+            COUNTER — the same number `GET /matches/{matchId}/withdrawals`
+            publishes as `sequence` and `replaced_by_sequence`, and the same
+            counter as `Score.sequence` on a live read. It is what makes the
+            withdrawal ledger's pointer resolvable: told "sequence 104 was
+            withdrawn, resume from 103", you can now find 103 on the tape, and
+            because a withdrawn state never enters the record at all the
+            withdrawal shows up here as a GAP in the run of counters. Before
+            this the tape published no such number, so the pointer named a row
+            nothing identified — reported by an Ultra customer who wrote that
+            "the history rows lack sequence IDs, so these responses alone
+            cannot reconstruct exactly what a live client received".
+            NULL, NEVER FABRICATED, IN TWO CASES, and both are honest gaps
+            rather than errors: a row archived before 2026-09-26, because the
+            archive did not keep the counter and it died with the live row at
+            retention, and the pre-2023 archive tape, which has no such
+            counter because no live accept ever happened. Unlike the two
+            clocks it is NOT null on a reconstructed row: a counter is a fact
+            about our own accept order, so wherever one is present a live
+            reader really did receive that state at that position.
         winner:
           type: [integer, "null"]
           enum: [1, 2, null]
