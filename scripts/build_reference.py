@@ -1357,6 +1357,23 @@ TOPICS: list[dict[str, Any]] = [
         "paths": lambda p: p.startswith(("/rally", "/charting")) or p.endswith("/rally"),
     },
     {
+        "slug": "broadcast-graphics",
+        "title": "Tennis scores for on-air graphics",
+        "question": "How do you put live tennis scores into a broadcast graphics template?",
+        "lede": (
+            "<code>GET /broadcast/match/{matchId}</code> returns ONE flat object for one match and "
+            "<code>GET /broadcast/live</code> the same object for every live match in a single call. "
+            "Both are ULTRA. A graphics template binds each field to a fixed path, so three things are "
+            "contractual: the object is flat, every key is present on every read (<code>null</code>, "
+            "never missing), and the score is already in display form — <code>p1_points</code> reads "
+            "<code>\"40\"</code> or <code>\"AD\"</code> and <code>set_line</code> is one string. "
+            "Built for 1 Hz: every response carries a strong <code>ETag</code>, so "
+            "<code>If-None-Match</code> makes an unchanged state a 304 with no body. Detect a new state "
+            "on <code>sequence</code>, never on <code>served_at</code>, which changes on every read."
+        ),
+        "paths": lambda p: p.startswith("/broadcast"),
+    },
+    {
         "slug": "push-feed-and-webhooks",
         "title": "Tennis WebSocket feed and webhooks",
         "question": "How do you receive tennis data as it happens instead of polling?",

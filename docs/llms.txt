@@ -23,6 +23,7 @@ endpoints, generated from the same spec as the reference:
 - Which endpoints return point-by-point tennis data, and how complete is it? https://docs.livetennisapi.com/point-by-point-history.html
 - How far back does the historical tennis data go, and what is in it? https://docs.livetennisapi.com/historical-results-archive.html
 - Is there tennis data below the point — shot by shot? https://docs.livetennisapi.com/shot-level-rally-data.html
+- How do you put live tennis scores into a broadcast graphics template? https://docs.livetennisapi.com/broadcast-graphics.html
 - How do you receive tennis data as it happens instead of polling? https://docs.livetennisapi.com/push-feed-and-webhooks.html
 - How do you authenticate, and how do you see what quota is left? https://docs.livetennisapi.com/auth-quota-and-health.html
 
@@ -127,6 +128,8 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - POST /webhooks — Register an outbound webhook (ULTRA, direct keys only)
 - GET /webhooks — List your webhooks (ULTRA, direct keys only; never includes the secret)
 - DELETE /webhooks/{webhookId} — Remove one of your webhooks (ULTRA, direct keys only)
+- GET /broadcast/match/{matchId} — One flat object for on-air graphics (ULTRA)
+- GET /broadcast/live — The broadcast object for every live match (ULTRA)
 - GET /ws-token — Mint a connection token for the high-fan-out push feed (ULTRA)
 
 ## FAQ

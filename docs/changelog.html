@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.53, last change 2026-09-26.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.54, last change 2026-09-28.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -17,7 +17,7 @@
 "headline":"Live Tennis API — Changelog",
 "description":"Every change to the Live Tennis API specification, dated and versioned.",
 "url":"https://docs.livetennisapi.com/changelog.html",
-"dateModified":"2026-09-26",
+"dateModified":"2026-09-28",
 "inLanguage":"en",
 "isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
 "publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
@@ -152,13 +152,19 @@
 </head>
 <body class="docs-page docs-changelog">
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html" aria-current="page">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html" aria-current="page">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a></nav></details>
+<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html" aria-current="page">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html" aria-current="page">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a></nav></details>
 <main class="wrap" id="main">
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.53</strong>, last change <time datetime="2026-09-26">2026-09-26</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.54</strong>, last change <time datetime="2026-09-28">2026-09-28</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.54"><h2>1.13.54 <time datetime="2026-09-28">2026-09-28</time></h2>
+<h3>Added</h3>
+<ul>
+<li><strong>The two broadcast surfaces, live since 2026-09-24 and documented nowhere a customer could read.</strong> <code>GET /broadcast/match/{matchId}</code> and <code>GET /broadcast/live</code> have served every ULTRA key for four days and appeared in no published reference: the write-up went into the tennis repository, which nothing serves. Both are now specified, with the 54-field <code>BroadcastObject</code> schema in the same order the API returns it, verified field by field against a live response rather than transcribed from the source. The object exists because a graphics template binds each field to a fixed path, so three properties are contractual rather than incidental and are documented as such: it is FLAT, every key is PRESENT on every read (<code>null</code>, never missing — a missing key breaks a binding), and the score is already in DISPLAY form (<code>p1_points</code> reads <code>&quot;40&quot;</code> or <code>&quot;AD&quot;</code>, <code>set_line</code> is one string, each set has its own column). It is a projection of what the API already publishes plus the break-, set- and match-point flags the scoring pipeline derives; nothing in it is a new fact and nothing is guessed.</li>
+<li><strong>The 1 Hz polling contract, which is the part a live scoreboard gets wrong.</strong> Every response carries a strong <code>ETag</code> and <code>Cache-Control: no-cache, max-age=1</code>, so <code>If-None-Match</code> turns an unchanged state into a 304 with no body; ULTRA&#x27;s 600-a-minute burst window means ten single-match pollers at 1 Hz fit on one key, and <code>/broadcast/live</code> stays one request however many matches are live. A new state is detected on <code>sequence</code>, never on <code>served_at</code>, which changes on every read — stated on both routes because polling on <code>served_at</code> is the mistake that looks like it works.</li>
+</ul></article>
 <article id="v1.13.53"><h2>1.13.53 <time datetime="2026-09-26">2026-09-26</time></h2>
 <h3>Added</h3>
 <ul>

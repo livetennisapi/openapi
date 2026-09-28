@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.53"
+  version: "1.13.54"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -2691,6 +2691,92 @@ paths:
         "403": { $ref: "#/components/responses/UpgradeRequired" }
         "404": { $ref: "#/components/responses/NotFound" }
         "429": { $ref: "#/components/responses/RateLimited" }
+  /broadcast/match/{matchId}:
+    get:
+      summary: One flat object for on-air graphics (ULTRA)
+      description: >-
+        Added 2026-09-24, from a broadcaster's request. ONE flat JSON object
+        for one match, built so a graphics template can bind each field to a
+        fixed path.
+
+
+        Three properties make it different from `GET /matches/{matchId}`, and
+        each exists because a graphics pipeline breaks without it. The object
+        is FLAT — no nested score object, no arrays of arrays. Every key is
+        PRESENT on every read: a value we do not hold is `null`, never
+        missing, because a missing key breaks a template binding. And the
+        score is already in DISPLAY form — `p1_points` reads `"40"` or
+        `"AD"`, `set_line` is one string such as `"5-7 2-0"`, and each set has
+        its own column — so nothing has to be formatted downstream.
+
+
+        It is a PROJECTION of what the public API already publishes: the match
+        object, its embedded score and the model probability, plus the
+        break-, set- and match-point flags derived by the same classifiers the
+        scoring pipeline uses. Nothing here is a new fact and nothing is
+        guessed.
+
+
+        BUILT FOR 1 Hz. Every response carries a strong `ETag` and
+        `Cache-Control: no-cache, max-age=1`; send `If-None-Match` and an
+        unchanged state costs a 304 with no body. ULTRA's burst window is 600
+        requests a minute, so ten single-match pollers at 1 Hz fit on one key.
+        Detect a new state on `sequence`, not on `served_at`, which changes on
+        every read.
+
+
+        The key may be sent as `Authorization: Bearer <key>`, as `X-API-Key`,
+        or as `?token=<key>` for tools that cannot set a header.
+      operationId: getBroadcastMatch
+      parameters:
+        - $ref: "#/components/parameters/matchId"
+      responses:
+        "200":
+          description: The broadcast object for this match
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BroadcastObject" }
+        "304": { description: Unchanged since the `ETag` you sent }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /broadcast/live:
+    get:
+      summary: The broadcast object for every live match (ULTRA)
+      description: >-
+        The same object as `GET /broadcast/match/{matchId}`, for every
+        actively-live match, in one call. A ticker or a multi-match wall polls
+        this instead of one URL per match, and it stays ONE request however
+        many matches are live. At most 200 objects.
+
+
+        Same 1 Hz contract, same `ETag` and `Cache-Control`, same display-form
+        fields, same every-key-present rule. An empty `data` means nothing is
+        live right now and is the ordinary overnight answer, not a fault.
+      operationId: getBroadcastLive
+      parameters:
+        - name: tour
+          in: query
+          description: Restrict to one tour, same vocabulary as `?tour=` elsewhere.
+          schema: { type: string }
+      responses:
+        "200":
+          description: Every live match as a broadcast object
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: "#/components/schemas/BroadcastObject" }
+                  count: { type: integer }
+                  served_at: { type: string, format: date-time }
+        "304": { description: Unchanged since the `ETag` you sent }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/UpgradeRequired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
   /ws-token:
     get:
       summary: Mint a connection token for the high-fan-out push feed (ULTRA)
@@ -4568,6 +4654,68 @@ components:
         duration_seconds:
           type: [integer, "null"]
           description: end rows only.
+    BroadcastObject:
+      type: object
+      description: >-
+        One flat object for a live-graphics template. EVERY key below is
+        present on every read; a value we do not hold is `null` rather than
+        absent, because a missing key breaks a template binding. Points and
+        the set line are already in display form.
+      properties:
+        match_id: { type: integer }
+        status: { type: string, description: "`live`, `completed`, `upcoming`" }
+        event_status: { type: string, nullable: true, description: "The terminal badge where one is stated (`Finished`, `Retired`, `Walk Over`, `Interrupted`); null on a normal live row." }
+        outcome: { type: string, nullable: true }
+        winner: { type: integer, nullable: true, description: "1 or 2, null until a result is established." }
+        tour: { type: string, nullable: true }
+        tournament: { type: string, nullable: true }
+        round: { type: string, nullable: true }
+        surface: { type: string, nullable: true }
+        best_of: { type: integer, nullable: true }
+        is_doubles: { type: boolean }
+        p1_id: { type: integer, nullable: true }
+        p1_name: { type: string, nullable: true }
+        p1_short: { type: string, nullable: true, description: "Display short form, `\"J. Sinner\"`. A doubles team keeps each side's last token." }
+        p1_country: { type: string, nullable: true, description: "Three-letter code." }
+        p1_ranking: { type: integer, nullable: true }
+        p2_id: { type: integer, nullable: true }
+        p2_name: { type: string, nullable: true }
+        p2_short: { type: string, nullable: true }
+        p2_country: { type: string, nullable: true }
+        p2_ranking: { type: integer, nullable: true }
+        p1_sets: { type: integer, nullable: true }
+        p2_sets: { type: integer, nullable: true }
+        p1_games: { type: integer, nullable: true, description: "Games in the set in play." }
+        p2_games: { type: integer, nullable: true }
+        p1_points: { type: string, nullable: true, description: "As printed: `\"0\"`, `\"15\"`, `\"30\"`, `\"40\"`, `\"AD\"`, or the tiebreak count." }
+        p2_points: { type: string, nullable: true }
+        p1_set1: { type: integer, nullable: true, description: "Per-set columns. A set not yet played is null on both sides." }
+        p2_set1: { type: integer, nullable: true }
+        p1_set2: { type: integer, nullable: true }
+        p2_set2: { type: integer, nullable: true }
+        p1_set3: { type: integer, nullable: true }
+        p2_set3: { type: integer, nullable: true }
+        p1_set4: { type: integer, nullable: true }
+        p2_set4: { type: integer, nullable: true }
+        p1_set5: { type: integer, nullable: true }
+        p2_set5: { type: integer, nullable: true }
+        set_line: { type: string, nullable: true, description: "The completed and in-play sets as one string, `\"5-7 2-0\"`." }
+        current_set: { type: integer, nullable: true }
+        is_tiebreak: { type: boolean }
+        match_tiebreak: { type: boolean, description: "True while a deciding match tiebreak is in play." }
+        server: { type: integer, nullable: true, description: "1 or 2." }
+        p1_serving: { type: boolean, nullable: true }
+        p2_serving: { type: boolean, nullable: true }
+        break_point_for: { type: integer, nullable: true, description: "1, 2 or null. Cue an animation on the transition to non-null." }
+        set_point_for: { type: integer, nullable: true }
+        match_point_for: { type: integer, nullable: true }
+        p1_win_pct: { type: integer, nullable: true, description: "The model probability as a whole percent. Null where no model figure was computed for this state — never guessed." }
+        p2_win_pct: { type: integer, nullable: true }
+        sequence: { type: integer, nullable: true, description: "The per-match accept counter. THIS is how a poller detects a new state." }
+        updated_at: { type: string, format: date-time, nullable: true }
+        age_seconds: { type: integer, nullable: true, description: "Seconds since the score CONTENT last changed." }
+        stale: { type: boolean, nullable: true, description: "A live match whose content has frozen past the threshold." }
+        served_at: { type: string, format: date-time, description: "When this response was built. Changes on every read — do not use it to detect a new state." }
     ScoreWithdrawal:
       type: object
       description: >-
