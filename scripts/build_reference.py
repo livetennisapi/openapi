@@ -43,6 +43,9 @@ SPEC = ROOT / "openapi.yaml"
 DOCS = ROOT / "docs"
 SITE = "https://livetennisapi.com"
 DOCS_URL = "https://docs.livetennisapi.com"
+# Footer credit on every generated page. Synapse Research Ltd builds and runs the API.
+CREDIT = ('<p class="meta">Built by <a href="https://synapsereality.io/work/live-tennis-api/">'
+          'Synapse Research Ltd</a>.</p>')
 
 
 def site_navigation(active: str) -> str:
@@ -938,6 +941,7 @@ across a <code>?tour=</code> group.</p>
 <p class="meta">Writing about tennis, or building a tool on this API? The affiliate
 programme pays 51% recurring for the lifetime of every subscription referred,
 10% off for them, free to join.</p>
+{CREDIT}
 </footer>
 
 </div>
@@ -1529,6 +1533,7 @@ carries all {total_ops} operations of the API on one page.</p>
 <p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
 <a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
 this page is also in <a href="./reference.html">the full reference</a>.</p>
+{CREDIT}
 </footer>
 </div>
 {BEACON}{CLARITY}</body>
