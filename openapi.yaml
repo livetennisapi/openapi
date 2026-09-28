@@ -4664,57 +4664,57 @@ components:
       properties:
         match_id: { type: integer }
         status: { type: string, description: "`live`, `completed`, `upcoming`" }
-        event_status: { type: string, nullable: true, description: "The terminal badge where one is stated (`Finished`, `Retired`, `Walk Over`, `Interrupted`); null on a normal live row." }
-        outcome: { type: string, nullable: true }
-        winner: { type: integer, nullable: true, description: "1 or 2, null until a result is established." }
-        tour: { type: string, nullable: true }
-        tournament: { type: string, nullable: true }
-        round: { type: string, nullable: true }
-        surface: { type: string, nullable: true }
-        best_of: { type: integer, nullable: true }
+        event_status: { type: [string, "null"], description: "The terminal badge where one is stated (`Finished`, `Retired`, `Walk Over`, `Interrupted`); null on a normal live row." }
+        outcome: { type: [string, "null"] }
+        winner: { type: [integer, "null"], description: "1 or 2, null until a result is established." }
+        tour: { type: [string, "null"] }
+        tournament: { type: [string, "null"] }
+        round: { type: [string, "null"] }
+        surface: { type: [string, "null"] }
+        best_of: { type: [integer, "null"] }
         is_doubles: { type: boolean }
-        p1_id: { type: integer, nullable: true }
-        p1_name: { type: string, nullable: true }
-        p1_short: { type: string, nullable: true, description: "Display short form, `\"J. Sinner\"`. A doubles team keeps each side's last token." }
-        p1_country: { type: string, nullable: true, description: "Three-letter code." }
-        p1_ranking: { type: integer, nullable: true }
-        p2_id: { type: integer, nullable: true }
-        p2_name: { type: string, nullable: true }
-        p2_short: { type: string, nullable: true }
-        p2_country: { type: string, nullable: true }
-        p2_ranking: { type: integer, nullable: true }
-        p1_sets: { type: integer, nullable: true }
-        p2_sets: { type: integer, nullable: true }
-        p1_games: { type: integer, nullable: true, description: "Games in the set in play." }
-        p2_games: { type: integer, nullable: true }
-        p1_points: { type: string, nullable: true, description: "As printed: `\"0\"`, `\"15\"`, `\"30\"`, `\"40\"`, `\"AD\"`, or the tiebreak count." }
-        p2_points: { type: string, nullable: true }
-        p1_set1: { type: integer, nullable: true, description: "Per-set columns. A set not yet played is null on both sides." }
-        p2_set1: { type: integer, nullable: true }
-        p1_set2: { type: integer, nullable: true }
-        p2_set2: { type: integer, nullable: true }
-        p1_set3: { type: integer, nullable: true }
-        p2_set3: { type: integer, nullable: true }
-        p1_set4: { type: integer, nullable: true }
-        p2_set4: { type: integer, nullable: true }
-        p1_set5: { type: integer, nullable: true }
-        p2_set5: { type: integer, nullable: true }
-        set_line: { type: string, nullable: true, description: "The completed and in-play sets as one string, `\"5-7 2-0\"`." }
-        current_set: { type: integer, nullable: true }
+        p1_id: { type: [integer, "null"] }
+        p1_name: { type: [string, "null"] }
+        p1_short: { type: [string, "null"], description: "Display short form, `\"J. Sinner\"`. A doubles team keeps each side's last token." }
+        p1_country: { type: [string, "null"], description: "Three-letter code." }
+        p1_ranking: { type: [integer, "null"] }
+        p2_id: { type: [integer, "null"] }
+        p2_name: { type: [string, "null"] }
+        p2_short: { type: [string, "null"] }
+        p2_country: { type: [string, "null"] }
+        p2_ranking: { type: [integer, "null"] }
+        p1_sets: { type: [integer, "null"] }
+        p2_sets: { type: [integer, "null"] }
+        p1_games: { type: [integer, "null"], description: "Games in the set in play." }
+        p2_games: { type: [integer, "null"] }
+        p1_points: { type: [string, "null"], description: "As printed: `\"0\"`, `\"15\"`, `\"30\"`, `\"40\"`, `\"AD\"`, or the tiebreak count." }
+        p2_points: { type: [string, "null"] }
+        p1_set1: { type: [integer, "null"], description: "Per-set columns. A set not yet played is null on both sides." }
+        p2_set1: { type: [integer, "null"] }
+        p1_set2: { type: [integer, "null"] }
+        p2_set2: { type: [integer, "null"] }
+        p1_set3: { type: [integer, "null"] }
+        p2_set3: { type: [integer, "null"] }
+        p1_set4: { type: [integer, "null"] }
+        p2_set4: { type: [integer, "null"] }
+        p1_set5: { type: [integer, "null"] }
+        p2_set5: { type: [integer, "null"] }
+        set_line: { type: [string, "null"], description: "The completed and in-play sets as one string, `\"5-7 2-0\"`." }
+        current_set: { type: [integer, "null"] }
         is_tiebreak: { type: boolean }
         match_tiebreak: { type: boolean, description: "True while a deciding match tiebreak is in play." }
-        server: { type: integer, nullable: true, description: "1 or 2." }
-        p1_serving: { type: boolean, nullable: true }
-        p2_serving: { type: boolean, nullable: true }
-        break_point_for: { type: integer, nullable: true, description: "1, 2 or null. Cue an animation on the transition to non-null." }
-        set_point_for: { type: integer, nullable: true }
-        match_point_for: { type: integer, nullable: true }
-        p1_win_pct: { type: integer, nullable: true, description: "The model probability as a whole percent. Null where no model figure was computed for this state — never guessed." }
-        p2_win_pct: { type: integer, nullable: true }
-        sequence: { type: integer, nullable: true, description: "The per-match accept counter. THIS is how a poller detects a new state." }
-        updated_at: { type: string, format: date-time, nullable: true }
-        age_seconds: { type: integer, nullable: true, description: "Seconds since the score CONTENT last changed." }
-        stale: { type: boolean, nullable: true, description: "A live match whose content has frozen past the threshold." }
+        server: { type: [integer, "null"], description: "1 or 2." }
+        p1_serving: { type: [boolean, "null"] }
+        p2_serving: { type: [boolean, "null"] }
+        break_point_for: { type: [integer, "null"], description: "1, 2 or null. Cue an animation on the transition to non-null." }
+        set_point_for: { type: [integer, "null"] }
+        match_point_for: { type: [integer, "null"] }
+        p1_win_pct: { type: [integer, "null"], description: "The model probability as a whole percent. Null where no model figure was computed for this state — never guessed." }
+        p2_win_pct: { type: [integer, "null"] }
+        sequence: { type: [integer, "null"], description: "The per-match accept counter. THIS is how a poller detects a new state." }
+        updated_at: { type: [string, "null"], format: date-time }
+        age_seconds: { type: [integer, "null"], description: "Seconds since the score CONTENT last changed." }
+        stale: { type: [boolean, "null"], description: "A live match whose content has frozen past the threshold." }
         served_at: { type: string, format: date-time, description: "When this response was built. Changes on every read — do not use it to detect a new state." }
     ScoreWithdrawal:
       type: object
