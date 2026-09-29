@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.54, last change 2026-09-28.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.55, last change 2026-09-29.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -17,7 +17,7 @@
 "headline":"Live Tennis API — Changelog",
 "description":"Every change to the Live Tennis API specification, dated and versioned.",
 "url":"https://docs.livetennisapi.com/changelog.html",
-"dateModified":"2026-09-28",
+"dateModified":"2026-09-29",
 "inLanguage":"en",
 "isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
 "publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
@@ -157,8 +157,12 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.54</strong>, last change <time datetime="2026-09-28">2026-09-28</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.55</strong>, last change <time datetime="2026-09-29">2026-09-29</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.55"><h2>1.13.55 <time datetime="2026-09-29">2026-09-29</time></h2>
+<ul>
+<li><strong>ITF World Tennis Tour DOUBLES started stating <code>outcome</code>, and the reference still said no doubles draw carries either field.</strong> The 1.13.42 note measured 454 completed doubles matches and found not one tagged row, which was true when it was written. On 2026-09-23 the first doubles row carried a tag, and by 2026-09-29 <code>GET /matches/{id}/points</code> published <code>outcome</code> — ace and double fault, the same vocabulary as the ITF singles draws — on <strong>104 of 596</strong> completed ITF doubles matches (17%), against <strong>0 of 371</strong> for every other doubles draw (ATP, WTA and Challenger) in the same window. <code>serve</code> remains unstated on every doubles draw, measured 0, and that sentence is unchanged. The cause was upstream of the tagger: a dedup change let a doubles fixture be adopted and oriented by its member sets instead of being refused, so the ITF per-point join started reaching rows it had never been able to match. Because 17% sits between &quot;almost none&quot; and &quot;a clear majority&quot;, the description now states it as a measured fraction and points the reader at <code>enrichment</code> per match rather than at the draw — the same treatment WTA main-tour qualifying has carried since 1.13.42. Found by the every-sweep tag-coverage check. No field, endpoint or behaviour change.</li>
+</ul></article>
 <article id="v1.13.54"><h2>1.13.54 <time datetime="2026-09-28">2026-09-28</time></h2>
 <h3>Added</h3>
 <ul>
