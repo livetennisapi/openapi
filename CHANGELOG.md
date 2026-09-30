@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.56] - 2026-10-01
+
+### Fixed
+- **An exact player name that sat inside a longer name could not be asked about on any of the three name endpoints.** Every name lookup is a substring match, so there was no way to say "exactly this one", and a person whose name is a prefix of somebody else's was unreachable: `GET /h2h?p1=Carlos%20Alcaraz` answered `400 ambiguous_name` listing `Carlos Alcaraz` and `Carlos Alcaraz Gonzalez`, with no string that could pick between them. Measured on the live roster and corpus: **14 of the 1,177 ranked players** on `/h2h`, **21 of 1,500** distinct archive names on `/history/archive/career` and **4 of 1,739** charted names on `/charting/players`, the men's world #2 and #3 among them. Passing a name exactly now selects that person on all three. A name given in part is still a fragment and still refuses with the candidate list, so `Sinner` continues to list Jannik and Martin rather than guessing, and a single name charted under both genders on `/charting/players` still needs `gender`. The refusal also reports the candidates it would have shown before the exact match was applied, so a hint never gets shorter than it was. Verified on the wire: Alcaraz against Sinner returns 18 meetings 11-7 with the surface split and the ULTRA aggregates. No field, endpoint, parameter or error code changed.
+
 ## [1.13.55] - 2026-09-29
 
 ### Fixed

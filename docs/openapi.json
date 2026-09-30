@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.55",
+  "version": "1.13.56",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -2018,7 +2018,7 @@
   "/history/archive/career": {
    "get": {
     "summary": "Career aggregates over the results archive, 1968–2022 (BASIC)",
-    "description": "One player's whole archive career in one response: W-L record (overall, by surface, by level, by year), titles, and the summed serve-stat block with derived ratios. Everything is a sum or a ratio of sums over rows you can fetch individually from `/history/archive/matches` — nothing is modelled. `serve.matches_with_stats` states the coverage honestly: the corpus records per-match serve statistics from 1991 only, so a 1970s career has a full W-L record and an empty serve block. Ambiguous name fragments are refused with candidates (same rule as `/h2h`); an unknown name is a 404. Requires BASIC, or any Historical Data API plan.",
+    "description": "One player's whole archive career in one response: W-L record (overall, by surface, by level, by year), titles, and the summed serve-stat block with derived ratios. Everything is a sum or a ratio of sums over rows you can fetch individually from `/history/archive/matches` — nothing is modelled. `serve.matches_with_stats` states the coverage honestly: the corpus records per-match serve statistics from 1991 only, so a 1970s career has a full W-L record and an empty serve block. Ambiguous name fragments are refused with candidates, and an exact name selects its person even where a longer name contains it (same rule as `/h2h`); an unknown name is a 404. Requires BASIC, or any Historical Data API plan.",
     "operationId": "getArchiveCareer",
     "parameters": [
      {
@@ -2064,7 +2064,7 @@
   "/h2h": {
    "get": {
     "summary": "Head-to-head across the results archive (1968–2022) and our own completed matches (2023→now) (BASIC)",
-    "description": "The record between two players, assembled from BOTH halves of the product: the results archive, where the winner is a stored column, and our own completed matches, where the winner is derived from the final recorded state. Names are the keys — archive people have no roster ids. A fragment matching more than one player is refused with the candidate list (`400 ambiguous_name`), because two people summed into one record is a wrong answer, not a convenience. Totals count meetings with a KNOWN winner; `undecided` counts the rest. Walkovers and retirements are part of the record, and each meeting carries `outcome` so you can exclude them. Requires BASIC, or any Historical Data API plan. On ULTRA, a per-player `stats` block adds serve/return/break-point aggregates over the pairing: `archive_serve` (serve-side, from 1991) and `current` (2023+, adding return and break-point conversion, aces and winners), each with `meetings_with_stats`.",
+    "description": "The record between two players, assembled from BOTH halves of the product: the results archive, where the winner is a stored column, and our own completed matches, where the winner is derived from the final recorded state. Names are the keys — archive people have no roster ids. A fragment matching more than one player is refused with the candidate list (`400 ambiguous_name`), because two people summed into one record is a wrong answer, not a convenience. Passing a name EXACTLY selects that person, even where a longer name contains it, so `Carlos Alcaraz` resolves although `Carlos Alcaraz Gonzalez` also exists. A name you did not type in full stays a fragment: `Sinner` still refuses, and lists Jannik and Martin. Totals count meetings with a KNOWN winner; `undecided` counts the rest. Walkovers and retirements are part of the record, and each meeting carries `outcome` so you can exclude them. Requires BASIC, or any Historical Data API plan. On ULTRA, a per-player `stats` block adds serve/return/break-point aggregates over the pairing: `archive_serve` (serve-side, from 1991) and `current` (2023+, adding return and break-point conversion, aces and winners), each with `meetings_with_stats`.",
     "operationId": "getHeadToHead",
     "parameters": [
      {
@@ -2762,7 +2762,7 @@
   "/charting/players": {
    "get": {
     "summary": "Career shot-level charting aggregate for one player (ULTRA)",
-    "description": "The deepest serve/return profile we hold, from the Match Charting Project: serve placement (deuce/ad × wide/body/T), return depth and outcomes, net and serve-and-volley conversion, clutch break/game/set-point serving and returning, winners and unforced errors by wing, and rally-length and shot-direction tendencies — summed over the player's charted matches. `name` (min 3 chars) is the key; a fragment matching more than one charted person is refused with the candidate list, and `gender=men|women` disambiguates. Every field is a raw SUM over the player's Total rows and `matches_charted` states the sample. COVERAGE IS CURATED — 11,803 charted matches across both tours back to the 1960s, concentrated on the majors, NOT full-slate coverage.",
+    "description": "The deepest serve/return profile we hold, from the Match Charting Project: serve placement (deuce/ad × wide/body/T), return depth and outcomes, net and serve-and-volley conversion, clutch break/game/set-point serving and returning, winners and unforced errors by wing, and rally-length and shot-direction tendencies — summed over the player's charted matches. `name` (min 3 chars) is the key; a fragment matching more than one charted person is refused with the candidate list, and `gender=men|women` disambiguates. An exact name selects its person even where a longer name contains it (same rule as `/h2h`), while one name charted under both genders still refuses, which is what `gender` is for. Every field is a raw SUM over the player's Total rows and `matches_charted` states the sample. COVERAGE IS CURATED — 11,803 charted matches across both tours back to the 1960s, concentrated on the majors, NOT full-slate coverage.",
     "operationId": "getChartingPlayer",
     "parameters": [
      {

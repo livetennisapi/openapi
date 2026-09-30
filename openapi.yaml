@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.55"
+  version: "1.13.56"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1968,7 +1968,8 @@ paths:
         `serve.matches_with_stats` states the coverage honestly: the corpus
         records per-match serve statistics from 1991 only, so a 1970s career
         has a full W-L record and an empty serve block. Ambiguous name
-        fragments are refused with candidates (same rule as `/h2h`); an
+        fragments are refused with candidates, and an exact name selects its
+        person even where a longer name contains it (same rule as `/h2h`); an
         unknown name is a 404. Requires BASIC, or any Historical Data API
         plan.
       operationId: getArchiveCareer
@@ -2002,7 +2003,11 @@ paths:
         recorded state. Names are the keys — archive people have no roster
         ids. A fragment matching more than one player is refused with the
         candidate list (`400 ambiguous_name`), because two people summed into
-        one record is a wrong answer, not a convenience. Totals count meetings
+        one record is a wrong answer, not a convenience. Passing a name
+        EXACTLY selects that person, even where a longer name contains it, so
+        `Carlos Alcaraz` resolves although `Carlos Alcaraz Gonzalez` also
+        exists. A name you did not type in full stays a fragment: `Sinner`
+        still refuses, and lists Jannik and Martin. Totals count meetings
         with a KNOWN winner; `undecided` counts the rest. Walkovers and
         retirements are part of the record, and each meeting carries `outcome`
         so you can exclude them. Requires BASIC, or any Historical Data API
@@ -2518,7 +2523,10 @@ paths:
         errors by wing, and rally-length and shot-direction tendencies —
         summed over the player's charted matches. `name` (min 3 chars) is the
         key; a fragment matching more than one charted person is refused with
-        the candidate list, and `gender=men|women` disambiguates. Every field
+        the candidate list, and `gender=men|women` disambiguates. An exact
+        name selects its person even where a longer name contains it (same
+        rule as `/h2h`), while one name charted under both genders still
+        refuses, which is what `gender` is for. Every field
         is a raw SUM over the player's Total rows and `matches_charted` states
         the sample. COVERAGE IS CURATED — 11,803 charted matches across both
         tours back to the 1960s, concentrated on the majors, NOT full-slate
