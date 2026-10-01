@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.57] - 2026-10-01
+
+### Fixed
+- **`HistoryTapeRow.accepted_at` was documented as covering the whole observed corpus, and on an archived tape it begins 2026-09-23.** The field is the one this reference tells a timing study to use, and its description read "It rides the whole observed corpus, so a study that spans 2026-09-24 must use this one and not `received_at`", while `received_at` said "THIS CLOCK HAS A START DATE AND THE OTHER TWO DO NOT". Both sentences were wrong about `accepted_at`. Measured over the whole archived observed corpus: **307,512 of 4,659,024 rows carry it**, which is 0.0% of every month to August 2026 (286 rows in all of August), 27.3% of September and 100% of October. Wire-verified on match 2168 (26 April 2026), answered with `meta.from_archive: true`: 131 observed rows, `timestamp` on all 131 and `accepted_at` on none. The measurement quoted in 1.13.5x — match 189679, `accepted_at` on all 171 observed rows — is correct and does not generalise, because that match is still inside live retention and is answered from its live rows (`from_archive: false`); its own archived copy carries the clock on **0 of 367** rows. So coverage depends on which copy answers the read, `meta.from_archive` is how you tell, and a null here is a boundary of the record rather than a missing value. `timestamp` is the only one of the three clocks with no start date. Found while answering a customer who asked for "a timestamp precise enough to line up with exchange quotes" — the exact question the wrong sentence was there to answer. No field, endpoint or type changed.
+
 ## [1.13.56] - 2026-10-01
 
 ### Fixed

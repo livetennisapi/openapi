@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.56"
+  version: "1.13.57"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -5041,9 +5041,22 @@ components:
             most raw rows `timestamp` is a later re-assertion instant (measured
             on match 189679: 164 of its 171 observed rows carry a `timestamp`
             more than a second after `accepted_at`). Null on every
-            reconstructed row, which never had a clock. It rides the whole
-            observed corpus, so a study that spans 2026-09-24 must use this one
-            and not `received_at`.
+            reconstructed row, which never had a clock. IT ALSO HAS A START
+            DATE ON THE ARCHIVED TAPE, and this description claimed the
+            opposite ("it rides the whole observed corpus") until 2026-10-01.
+            A tape answered from the archive (`meta.from_archive: true`)
+            carries it only on rows archived from 2026-09-23: measured over
+            the whole archived observed corpus, 307,512 of 4,659,024 rows,
+            which is 0.0% of every month to August 2026, 27.3% of September
+            and 100% of October. Wire-verified on match 2168 (26 April 2026):
+            131 observed rows, `timestamp` on all 131 and `accepted_at` on
+            none. A match still inside live retention is answered from the
+            live rows instead and carries the clock there, which is why the
+            189679 measurement above holds: that match is served with
+            `from_archive: false`, and its own archived copy carries the clock
+            on 0 of 367 rows. So read `meta.from_archive` before planning a
+            timing study, and treat a null here as a boundary of the record
+            rather than as a missing value.
         received_at:
           type: [string, "null"]
           format: date-time
@@ -5052,15 +5065,19 @@ components:
             edge, before the arbiter ran, stamped once. `accepted_at` minus
             `received_at` is our own arbitration step; neither figure is a
             claim about how fast anything upstream is, and neither is the
-            court's clock. THIS CLOCK HAS A START DATE AND THE OTHER TWO DO
-            NOT. It is stamped only as a state arrives, so it can never be
+            court's clock. `timestamp` is the only one of the three with no
+            start date: this clock begins 2026-09-24 and `accepted_at` begins
+            2026-09-23 on an archived tape (this description said the other
+            two had no start date until 2026-10-01, which was wrong about
+            `accepted_at` — see `HistoryTapeRow.accepted_at`). It is stamped
+            only as a state arrives, so it can never be
             filled in afterwards: the earliest one we hold is
             `2026-09-24T02:00:26Z`, and on every observed row accepted before
-            that instant it is null while `timestamp` and `accepted_at` are
-            populated. Measured on match 189679 (12 September) after a Basic
+            that instant it is null while `timestamp` is populated. Measured on match 189679 (12 September) after a Basic
             customer reported it on 2026-09-25: 171 observed rows,
-            `accepted_at` on all 171, `received_at` on none. Null on every
-            reconstructed row.
+            `accepted_at` on all 171, `received_at` on none — a match served
+            from its live rows, so it says nothing about the archived tape.
+            Null on every reconstructed row.
         sequence:
           type: [integer, "null"]
           description: >-
