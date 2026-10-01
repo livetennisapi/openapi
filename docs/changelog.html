@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.57, last change 2026-10-01.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.58, last change 2026-10-01.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -157,8 +157,13 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.57</strong>, last change <time datetime="2026-10-01">2026-10-01</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.58</strong>, last change <time datetime="2026-10-01">2026-10-01</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.58"><h2>1.13.58 <time datetime="2026-10-01">2026-10-01</time></h2>
+<h3>Changed</h3>
+<ul>
+<li><strong>The archived tape&#x27;s accept clock now begins 2026-08-11, six weeks earlier than 1.13.57 published, because the missing values were recovered rather than written off.</strong> 1.13.57 measured the boundary honestly at 2026-09-23, the day <code>history_archived_scores.content_changed_at</code> landed as a catalogue-only column with no backfill. What that measurement did not say is that the values were still reachable: for every archive row copied before the column existed, the live row it was copied from may still be inside the 90-day retention, and that row holds the value the archiver would itself have written. A backfill carried them across on 2026-10-01 in six bounded tranches, <strong>1,413,471 accept clocks and 1,393,458 accept counters, inside 1,538,176 rows over 14,491 matches</strong>, and left <code>fillable=0</code>. Nothing is derived, rounded or taken from a neighbouring row, and a row whose live row had already been trimmed stays null for good. Measured after the run: the archive carries the clock on <strong>100.0% of every day from 2026-08-11 to 2026-10-01</strong>, 92.5% of 2026-08-10 (the live column&#x27;s own first instant is <code>2026-08-10T08:07:42Z</code>) and 0.0% of every day before it, which is <strong>1,721,102 of 4,663,181</strong> archived observed rows against 307,631 before. <code>HistoryTapeRow.sequence</code>, the accept counter, has its own later floor because <code>live_scores.match_seq</code> landed after the clock: nothing to 2026-08-13, 68.2% of 08-14, 99.3% of 08-15, then 95.9% or more of every day from <strong>2026-08-16</strong> and 100% from 2026-09-01. Two boundaries, not one. <code>received_at</code> could not move at all and the reference now says so: its live column landed 2026-09-24, a day AFTER the archive column, so every live row carrying an arrival clock was archived with it and the recoverable count is zero. Wire-verified both sides: match 2168 (26 April 2026), before the boundary, still answers 131 observed rows with <code>timestamp</code> on all 131 and <code>accepted_at</code> on none; match 189679&#x27;s archived copy carried the clock on 0 of its 171 observed rows before the run and on 171 of 171 after it. The practical consequence for a timing study is that the clock no longer disappears when a match ages out of live retention. No field, endpoint or type changed.</li>
+</ul></article>
 <article id="v1.13.57"><h2>1.13.57 <time datetime="2026-10-01">2026-10-01</time></h2>
 <h3>Fixed</h3>
 <ul>

@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.57"
+  version: "1.13.58"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -5044,19 +5044,29 @@ components:
             reconstructed row, which never had a clock. IT ALSO HAS A START
             DATE ON THE ARCHIVED TAPE, and this description claimed the
             opposite ("it rides the whole observed corpus") until 2026-10-01.
-            A tape answered from the archive (`meta.from_archive: true`)
-            carries it only on rows archived from 2026-09-23: measured over
-            the whole archived observed corpus, 307,512 of 4,659,024 rows,
-            which is 0.0% of every month to August 2026, 27.3% of September
-            and 100% of October. Wire-verified on match 2168 (26 April 2026):
-            131 observed rows, `timestamp` on all 131 and `accepted_at` on
-            none. A match still inside live retention is answered from the
-            live rows instead and carries the clock there, which is why the
-            189679 measurement above holds: that match is served with
-            `from_archive: false`, and its own archived copy carries the clock
-            on 0 of 367 rows. So read `meta.from_archive` before planning a
-            timing study, and treat a null here as a boundary of the record
-            rather than as a missing value.
+            THAT DATE MOVED BACK SIX WEEKS ON 2026-10-01. A tape answered
+            from the archive (`meta.from_archive: true`) now carries the clock
+            on every observed row from 2026-08-11: 100.0% of every day from
+            2026-08-11 to 2026-10-01, 92.5% of 2026-08-10 (the live column's
+            own first instant is `2026-08-10T08:07:42Z`), and 0.0% of every day
+            before that. Over the whole archived observed corpus, 1,721,102 of
+            4,663,181 rows carry it (36.9%, against 307,631 before the
+            backfill): 0.0% of every month to July 2026, 68.8% of August,
+            100.0% of September and of October. The boundary was 2026-09-23,
+            the day the archive column landed, until a backfill took each
+            missing value from the live row that archived row had been copied
+            from: 1,413,471 clocks and 1,393,458 counters, inside 1,538,176
+            rows over 14,491 matches. Nothing is derived, rounded or taken from
+            a neighbouring row, and a row whose live row was already trimmed at
+            the 90-day retention stays null for good. Wire-verified on match
+            2168 (26 April 2026), before the boundary: 131 observed rows,
+            `timestamp` on all 131 and `accepted_at` on none. Match 189679's
+            own archived copy carried the clock on 0 of its 171 observed rows
+            before that run and on 171 of 171 after it, which is why the
+            189679 measurement above holds either way: that match is served
+            with `from_archive: false`. So read `meta.from_archive` before
+            planning a timing study, and treat a null here as a boundary of the
+            record rather than as a missing value.
         received_at:
           type: [string, "null"]
           format: date-time
@@ -5067,9 +5077,13 @@ components:
             claim about how fast anything upstream is, and neither is the
             court's clock. `timestamp` is the only one of the three with no
             start date: this clock begins 2026-09-24 and `accepted_at` begins
-            2026-09-23 on an archived tape (this description said the other
+            2026-08-11 on an archived tape (this description said the other
             two had no start date until 2026-10-01, which was wrong about
-            `accepted_at` — see `HistoryTapeRow.accepted_at`). It is stamped
+            `accepted_at` — see `HistoryTapeRow.accepted_at`). This is also the
+            one clock the 2026-10-01 archive backfill could not move: the live
+            column landed 2026-09-24, a day AFTER the archive column, so every
+            live row carrying an arrival clock was archived with it and the
+            recoverable count is zero. It is stamped
             only as a state arrives, so it can never be
             filled in afterwards: the earliest one we hold is
             `2026-09-24T02:00:26Z`, and on every observed row accepted before
@@ -5094,10 +5108,14 @@ components:
             "the history rows lack sequence IDs, so these responses alone
             cannot reconstruct exactly what a live client received".
             NULL, NEVER FABRICATED, IN TWO CASES, and both are honest gaps
-            rather than errors: a row archived before 2026-09-26, because the
-            archive did not keep the counter and it died with the live row at
-            retention, and the pre-2023 archive tape, which has no such
-            counter because no live accept ever happened. Unlike the two
+            rather than errors: a row whose archived copy could not be filled
+            from its own live row, and the pre-2023 archive tape, which has no
+            such counter because no live accept ever happened. The 2026-10-01
+            backfill moved the first of those from 2026-09-26 back to
+            2026-08-14, so the archived counter is on 68.2% of 2026-08-14,
+            99.3% of 08-15, 95.9% or more of every day from 2026-08-16 and 100%
+            from 2026-09-01; before that the counter died with the live row at
+            the 90-day retention. Unlike the two
             clocks it is NOT null on a reconstructed row: a counter is a fact
             about our own accept order, so wherever one is present a live
             reader really did receive that state at that position.
