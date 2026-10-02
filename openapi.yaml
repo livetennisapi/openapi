@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.58"
+  version: "1.13.59"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -248,6 +248,8 @@ paths:
         - $ref: "#/components/parameters/tier"
         - $ref: "#/components/parameters/hasAnalysis"
         - $ref: "#/components/parameters/hasMarket"
+        - $ref: "#/components/parameters/isQualifying"
+        - $ref: "#/components/parameters/gender"
         - $ref: "#/components/parameters/playedFrom"
         - $ref: "#/components/parameters/playedTo"
         - $ref: "#/components/parameters/updatedSince"
@@ -1403,6 +1405,8 @@ paths:
       operationId: listCompletedMatches
       parameters:
         - $ref: '#/components/parameters/hasMarket'
+        - $ref: "#/components/parameters/isQualifying"
+        - $ref: "#/components/parameters/gender"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
         - $ref: "#/components/parameters/playedFrom"
@@ -2172,6 +2176,8 @@ paths:
       parameters:
         - $ref: "#/components/parameters/tour"
         - $ref: "#/components/parameters/draw"
+        - $ref: "#/components/parameters/isQualifying"
+        - $ref: "#/components/parameters/gender"
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -3149,6 +3155,45 @@ components:
         the matches `/history/matches/{id}/prices` and `/matches/{id}/prices` can serve; every other
         id answers 404 `no_market`. Measured 2026-09-15: 3,718 of the 9,741 matches completed since
         2026-08-16 (38%) had a price tape.
+
+    isQualifying:
+      name: is_qualifying
+      in: query
+      required: false
+      schema:
+        type: boolean
+      description: >-
+        Return only matches in the QUALIFYING draw (`true`) or only those the source states are not
+        (`false`), matching the `is_qualifying` flag each row carries (field added 2026-08-12,
+        filter added 2026-10-02). Omit for both. Anything other than true/false is a 400
+        `bad_is_qualifying`, never a silently ignored filter.
+
+        THIS IS THE ONLY WAY TO SPLIT THE TWO DRAWS, and the reason is in the `is_qualifying` field
+        description: the two are routinely carried under ONE tournament name with ONE round
+        vocabulary, so `tournament`, `tournament_id`, `round` and `round_code` all read main-draw for
+        a qualifying match. Do not filter on the round text.
+
+        THREE-VALUED, so this filter is too: a row whose flag is `null` (no source has ever stated
+        it) matches NEITHER value and is returned only when the filter is omitted. `null` is an
+        answer, not a `false` — returning it under `is_qualifying=false` would assert "main draw" on
+        the strength of nothing. Measured 2026-10-02 over completed matches: the flag is stated on
+        98.9% of the last 30 days and 98.3% of 2026 outside the UTR circuit, where it is mostly
+        unstated (1,695 of the 1,831 unstated rows in the last 30 days are UTR).
+
+    gender:
+      name: gender
+      in: query
+      required: false
+      schema: { type: string, enum: [men, women] }
+      description: >-
+        Return only men's or only women's matches, matching the `gender` field each row carries
+        (added 2026-09-09, documented here 2026-10-02). Omit for both. Anything other than
+        men/women is a 400 `bad_gender`, never a silently ignored filter.
+
+        It exists because `?tour=` deliberately collapses: `challenger` is ATP Challenger AND WTA
+        125, and `itf` and `juniors` are both sexes — so without this there is no way to ask for
+        men's Challenger at all. A row whose `gender` is `null` (mixed doubles, a team tie) matches
+        NEITHER value, the same contract as `?draw=` and `?is_qualifying=`.
             bad_points_complete, bad_combination, points_read_disabled, bad_after_seq, bad_has_market, no_market, points_disabled,
     country:
       name: country
