@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.59, last change 2026-10-02.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.60, last change 2026-10-03.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -17,7 +17,7 @@
 "headline":"Live Tennis API — Changelog",
 "description":"Every change to the Live Tennis API specification, dated and versioned.",
 "url":"https://docs.livetennisapi.com/changelog.html",
-"dateModified":"2026-10-02",
+"dateModified":"2026-10-03",
 "inLanguage":"en",
 "isPartOf":{"@type":"WebSite","name":"Live Tennis API","url":"https://livetennisapi.com"},
 "publisher":{"@type":"Organization","@id":"https://livetennisapi.com/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"https://livetennisapi.com","logo":"https://docs.livetennisapi.com/icon-256.png"}}
@@ -157,8 +157,14 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.59</strong>, last change <time datetime="2026-10-02">2026-10-02</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.60</strong>, last change <time datetime="2026-10-03">2026-10-03</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.60"><h2>1.13.60 <time datetime="2026-10-03">2026-10-03</time></h2>
+<h3>Added</h3>
+<ul>
+<li><strong>The hosted MCP endpoint, which this reference had never mentioned.</strong> A remote</li>
+<p>Streamable HTTP server has run at <code>https://mcp.livetennisapi.com/mcp</code> for weeks. The only MCP line here named the self-run package, <code>npx livetennisapi-mcp</code>. A reader who wanted an LLM agent over this API was therefore told to install and host one. The string <code>mcp.livetennisapi.com</code> appeared zero times in the reference, zero times in <code>llms.txt</code> and zero times in the README. An engineer evaluating the API found the endpoint by going looking for it, which is what prompted this. A new <strong>MCP server</strong> section now sets the hosted and self-run routes side by side. The client-libraries table, <code>llms.txt</code> and the README name the endpoint too. Everything in the section was read off the live server on 2026-10-03, not taken from a release note. <code>initialize</code> reports <code>serverInfo</code> version <strong>1.5.0</strong>. <code>tools/list</code> returns <strong>24</strong> tools, set-identical to the 24 the section lists by name. Both documented auth headers were called and both work: <code>Authorization: Bearer twjp_...</code> and <code>X-API-Key: twjp_...</code>. The rate headers read <code>limit=300</code> on a key and <code>limit=60</code> without one. The section states both, and states that the caller&#x27;s own plan limit still applies underneath. That second sentence is load-bearing. The hosted cap sits above a free key&#x27;s 30 a minute, so publishing it alone would read as a quota raise. With no key at all only <code>check_api_status</code> answers, and it returns the free-key URL. <code>GET /mcp</code> answers 405 <code>&quot;use POST&quot;</code>, so the section says POST only. <code>GET /health</code> reports the running version. Every plan reaches MCP, free keys included, and each tool reaches exactly what that plan reaches. No price is quoted anywhere, because the endpoint takes the key a customer already has. No field, parameter or type changed, and no endpoint of the REST API changed.</p>
+</ul></article>
 <article id="v1.13.59"><h2>1.13.59 <time datetime="2026-10-02">2026-10-02</time></h2>
 <h3>Added</h3>
 <ul>

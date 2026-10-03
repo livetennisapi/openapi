@@ -5,6 +5,31 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.60] - 2026-10-03
+
+### Added
+- **The hosted MCP endpoint, which this reference had never mentioned.** A remote
+Streamable HTTP server has run at `https://mcp.livetennisapi.com/mcp` for weeks. The only MCP
+line here named the self-run package, `npx livetennisapi-mcp`. A reader who wanted an LLM
+agent over this API was therefore told to install and host one. The string `mcp.livetennisapi.com`
+appeared zero times in the reference, zero times in `llms.txt` and zero times in the README.
+An engineer evaluating the API found the endpoint by going looking for it, which is what
+prompted this. A new **MCP server** section now sets the hosted and self-run routes side by
+side. The client-libraries table, `llms.txt` and the README name the endpoint too.
+Everything in the section was read off the live server on 2026-10-03, not taken from a
+release note. `initialize` reports `serverInfo` version **1.5.0**. `tools/list` returns
+**24** tools, set-identical to the 24 the section lists by name. Both documented auth headers
+were called and both work: `Authorization: Bearer twjp_...` and `X-API-Key: twjp_...`. The
+rate headers read `limit=300` on a key and `limit=60` without one. The section states both,
+and states that the caller's own plan limit still applies underneath. That second sentence is
+load-bearing. The hosted cap sits above a free key's 30 a minute, so publishing it alone
+would read as a quota raise. With no key at all only `check_api_status` answers, and it
+returns the free-key URL. `GET /mcp` answers 405 `"use POST"`, so the section says POST only.
+`GET /health` reports the running version. Every plan reaches MCP, free keys included, and
+each tool reaches exactly what that plan reaches. No price is quoted anywhere, because the
+endpoint takes the key a customer already has. No field, parameter or type changed, and no
+endpoint of the REST API changed.
+
 ## [1.13.59] - 2026-10-02
 
 ### Added

@@ -670,6 +670,7 @@ answer engines and any HTTP client.</p>
 <li><a href="#authentication">Authentication</a></li>
 <li><a href="#plans">Plans</a></li>
 <li><a href="#clients">Official client libraries</a></li>
+<li><a href="#mcp">MCP server</a></li>
 <li><a href="#conventions">Conventions</a></li>
 <li><a href="#endpoints">Endpoints</a> — all {len(toc)}, with parameters and responses</li>
 <li><a href="#websocket">WebSocket feed (ULTRA)</a></li>
@@ -769,8 +770,34 @@ Details: <a href="{SITE}">livetennisapi.com</a>.</p>
 <thead><tr><th scope="col">Language</th><th scope="col">Install</th><th scope="col">Source</th></tr></thead><tbody>
 <tr><th scope="row">Python</th><td><code>pip install livetennisapi</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-python">livetennisapi-python</a></td></tr>
 <tr><th scope="row">JavaScript / TypeScript</th><td><code>npm install livetennisapi</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-js">livetennisapi-js</a></td></tr>
-<tr><th scope="row">MCP server (LLM agents)</th><td><code>npx livetennisapi-mcp</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a></td></tr>
+<tr><th scope="row">MCP server (LLM agents)</th><td>hosted at <code>https://mcp.livetennisapi.com/mcp</code>, or <code>npx livetennisapi-mcp</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a></td></tr>
 </tbody></table></div>
+
+<h2 id="mcp">MCP server</h2>
+<p>Two ways to put this API behind an LLM agent. Both expose the same 24 read-only tools, and
+both authorise every tool call on your own key, so a tool reaches what your plan reaches.</p>
+<p><strong>Hosted.</strong> POST to <code>https://mcp.livetennisapi.com/mcp</code>
+(Streamable HTTP, POST only) and send your key as
+<code>Authorization: Bearer twjp_...</code> or <code>X-API-Key: twjp_...</code>. Nothing to
+install and nothing to keep running. <code>GET https://mcp.livetennisapi.com/health</code>
+reports the running version.</p>
+<p><strong>Self-run.</strong> <code>npx livetennisapi-mcp</code> with
+<code>LIVETENNISAPI_KEY</code> in the environment. Listed in the official MCP Registry as
+<code>io.github.livetennisapi/livetennisapi-mcp</code>, source at
+<a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a>.</p>
+<p>Without a key only <code>check_api_status</code> answers, and it says where to get a free
+one. The hosted endpoint allows 300 requests a minute on a key and 60 without one. Your
+plan's own rate limit applies underneath that.</p>
+<p>The 24 tools: <code>get_live_matches</code>, <code>get_upcoming_matches</code>,
+<code>get_match</code>, <code>get_match_score</code>, <code>get_fixtures</code>,
+<code>get_recent_results</code>, <code>search_players</code>, <code>get_player</code>,
+<code>search_tournaments</code>, <code>get_tournament</code>, <code>get_h2h</code>,
+<code>get_rankings</code>, <code>get_player_rankings</code>, <code>get_match_events</code>,
+<code>get_match_odds</code>, <code>get_match_analysis</code>,
+<code>get_match_statistics</code>, <code>search_archive_matches</code>,
+<code>get_archive_match</code>, <code>search_archive_players</code>,
+<code>get_archive_career</code>, <code>get_charting_player</code>,
+<code>get_charting_match</code>, <code>check_api_status</code>.</p>
 
 <h2 id="conventions">Conventions</h2>
 <ul>
@@ -1105,7 +1132,11 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "## Official client libraries",
         "- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python",
         "- JavaScript/TypeScript: `npm install livetennisapi` — https://github.com/livetennisapi/livetennisapi-js",
-        "- MCP server for LLM agents: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp",
+        "- MCP server for LLM agents, hosted: POST https://mcp.livetennisapi.com/mcp (Streamable HTTP;",
+        "  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 24",
+        "  read-only tools on every plan, free keys included, each tool reaching what that plan",
+        "  reaches. Nothing to install.",
+        "- MCP server, self-run: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp",
         "",
         "## Affiliate programme",
         "- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime",

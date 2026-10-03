@@ -194,7 +194,11 @@ backtest.
 ## Official client libraries
 - Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python
 - JavaScript/TypeScript: `npm install livetennisapi` — https://github.com/livetennisapi/livetennisapi-js
-- MCP server for LLM agents: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp
+- MCP server for LLM agents, hosted: POST https://mcp.livetennisapi.com/mcp (Streamable HTTP;
+  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 24
+  read-only tools on every plan, free keys included, each tool reaching what that plan
+  reaches. Nothing to install.
+- MCP server, self-run: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp
 
 ## Affiliate programme
 - https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime
