@@ -25,130 +25,98 @@
 <link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/space-grotesk-latin-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="fonts/jetbrains-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="fonts.css">
 <style>
-  /* Design tokens (app/services/design_tokens.py). This page used to carry the
-     legacy marketing palette — every one of its six dark hexes was an exact key
-     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
-  :root {
-    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
-    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
-    --r:6px;           /* control radius; structure is square */
-    color-scheme: dark;        /* was "normal", which invites the UA to
-                                  render form controls and scrollbars light */
-  }
-  * { box-sizing:border-box; }
-  body { margin:0; background:var(--bg); color:var(--text);
-         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
-  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+/* Self-hosted webfonts (latin subsets), shared by index.html and reference.html.
+   Both pages previously shipped `document.fonts.size === 0` — reference.html
+   rendered entirely in the system UI stack and Space Grotesk, the product's
+   display face, appeared on neither page.
 
-  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
-     it; running body text to that width gives ~110 characters a line, well past
-     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
-     pre and the endpoint sections keep the full width they need. */
-  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+   These are served from this origin, so the docs have no font dependency they
+   cannot verify: nothing is fetched from Google Fonts or any other third party,
+   and a blocked CDN cannot change how the page reads.
 
-  a { color:var(--accent); }
-  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
-    outline:2px solid var(--accent); outline-offset:2px; }
-  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
-  h1 { font-size:2rem; margin:0 0 .3em; }
-  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
-  h3 { margin-top:2em; }
-  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
-  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
-          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
-  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
-         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
-  pre code { background:none; padding:0; }
+   Family names must stay EXACTLY 'Inter' / 'Space Grotesk' / 'JetBrains Mono' —
+   they are the names the rest of the product's stylesheets use, and the ones
+   Scalar is handed via --scalar-font / --scalar-font-code.
 
-  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
-     copyable and every character is on screen. */
-  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+   Only the weights actually used are shipped (180 KB total):
+     Inter          400/500/600/700  body, UI, Scalar's semibold + bold
+     Space Grotesk  500/700          display: headings
+     JetBrains Mono 400/500          code, numerals */
 
-  /* An inline <code> cannot scroll — it is inline. A long token inside one
-     (the /ws URL) pushed the whole document 44px wider than the viewport at
-     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
-  code { overflow-wrap:anywhere; }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/inter-latin-400.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/inter-latin-500.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('fonts/inter-latin-600.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/inter-latin-700.woff2') format('woff2'); }
 
-  /* Wide blocks scroll in a focusable region rather than in the table itself,
-     so a keyboard can reach them. */
-  .scrollx { overflow-x:auto; max-width:100%; }
-  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
-  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
-           vertical-align:top; font-size:.92rem; }
-  th { color:var(--muted); font-weight:600; }
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/space-grotesk-latin-500.woff2') format('woff2'); }
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/space-grotesk-latin-700.woff2') format('woff2'); }
 
-  /* Visually hidden, still announced. */
-  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
-         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-400.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-500.woff2') format('woff2'); }
+</style>
 
-  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
-  .meta { color:var(--muted); font-size:.9rem; }
-  .summary { margin:.2em 0; }
-  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
-             padding:14px 18px; border-radius:0; margin:1.5em 0; }
-  ul.toc { list-style:none; padding:0; }
-  ul.toc li { border-bottom:1px solid var(--struct); }
+<style>
+/* Self-hosted webfonts (latin subsets), shared by index.html and reference.html.
+   Both pages previously shipped `document.fonts.size === 0` — reference.html
+   rendered entirely in the system UI stack and Space Grotesk, the product's
+   display face, appeared on neither page.
 
-  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
-     apart — the page's only chrome, and the hardest thing on it to hit. The two
-     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
-     exempts a link inline in a block of text, and padding them would break the
-     line box around them. */
-  ul.toc li a, .pagenav a, .footnav a {
-    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
-  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
-  .skip-link { position:absolute; left:-9999px; top:0;
-                background:var(--panel); color:var(--accent); padding:12px 16px;
-                border:1px solid var(--struct); z-index:10; }
-  .skip-link:focus { left:8px; top:8px; }
+   These are served from this origin, so the docs have no font dependency they
+   cannot verify: nothing is fetched from Google Fonts or any other third party,
+   and a blocked CDN cannot change how the page reads.
 
-  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
-     them at 390px — every annotation sliced mid-word, which is precisely the
-     content a first-time reader needs most. As a two-column grid the alignment
-     that makes it teach survives on a wide screen, and on a narrow one the
-     explanation simply stacks under the code it explains. Nothing scrolls,
-     nothing is cut. */
-  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
-            background:var(--panel); border:1px solid var(--struct);
-            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
-  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
-               white-space:pre; margin:0; }
-  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
-  @media (max-width:600px) {
-    .annot { grid-template-columns:1fr; gap:0; }
-    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
-    .annot dt:first-child { margin-top:0; }
-    .annot dd { padding-bottom:.2em; }
-  }
+   Family names must stay EXACTLY 'Inter' / 'Space Grotesk' / 'JetBrains Mono' —
+   they are the names the rest of the product's stylesheets use, and the ones
+   Scalar is handed via --scalar-font / --scalar-font-code.
 
-  /* Link-only table cells are targets, not prose, so they get the full 44px.
-     (The inline links inside sentences are left alone — see above.) */
-  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+   Only the weights actually used are shipped (180 KB total):
+     Inter          400/500/600/700  body, UI, Scalar's semibold + bold
+     Space Grotesk  500/700          display: headings
+     JetBrains Mono 400/500          code, numerals */
 
-  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
-     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
-     costs nothing on copy: a soft wrap is not a newline, so a copied curl
-     command is still byte-for-byte the command. Desktop has the room and keeps
-     the original hard lines. A table cannot wrap, so tables still scroll. */
-  @media (max-width:760px) {
-    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
-  }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/inter-latin-400.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/inter-latin-500.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('fonts/inter-latin-600.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/inter-latin-700.woff2') format('woff2'); }
 
-  /* A horizontal scrollbar is invisible on touch until you already know it is
-     there, and the design system has no gradients to fade an edge with. So the
-     regions that genuinely still scroll get a scrollbar that is always drawn,
-     in tokens, plus a note in words. */
-  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
-  @media (max-width:760px) {
-    .scrollnote { display:block; }
-    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
-    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
-    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
-    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
-  }
-</style><link rel="stylesheet" href="docs-design-20260918.css">
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/space-grotesk-latin-500.woff2') format('woff2'); }
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/space-grotesk-latin-700.woff2') format('woff2'); }
+
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-400.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-500.woff2') format('woff2'); }
+</style><style>
+/* Documentation shares the product palette while keeping reference content compact. */
+:root{--bg:#0b100e;--panel:#131c16;--struct:#2d3b31;--text:#f0f4ee;--muted:#afbeb2;--ours:#b7f875;--accent:#b7f875;--r:8px;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;margin:0}a{color:var(--accent);text-underline-offset:4px}a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid #d1ffa7;outline-offset:4px}img{max-width:100%}.docs-site-header{display:flex;align-items:center;gap:24px;justify-content:space-between;max-width:1280px;margin:auto;padding:22px 36px;border-bottom:1px solid var(--struct);position:relative;z-index:2}.docs-brand{font:700 17px/1.3 'Space Grotesk',Inter,sans-serif;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);white-space:nowrap}.docs-brand span{font:400 12px/1.5 Inter,sans-serif;color:var(--muted);border-left:1px solid var(--struct);padding-left:12px;margin-left:5px}.docs-desktop-nav{display:flex;gap:26px}.docs-desktop-nav a{font-size:13px;text-decoration:none;min-height:44px;display:flex;align-items:center;color:var(--muted)}.docs-desktop-nav a:hover,.docs-desktop-nav a[aria-current=page]{color:var(--accent)}.docs-key{display:inline-flex;align-items:center;gap:20px;min-height:44px;padding:8px 15px;background:var(--accent);color:var(--bg);font-size:12px;text-decoration:none;border-radius:7px}.docs-topic-menu{max-width:1208px;margin:0 auto;border-bottom:1px solid var(--struct);color:var(--muted)}.docs-topic-menu summary{cursor:pointer;min-height:44px;padding:14px 0;font-size:12px}.docs-topic-menu nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 24px;padding-bottom:16px}.docs-topic-menu a{display:flex;align-items:center;min-height:44px;font-size:12px;color:var(--muted);text-decoration:none}.docs-topic-menu a:hover,.docs-topic-menu a[aria-current]{color:var(--accent)}
+.docs-page .wrap{max-width:1120px;padding:58px 36px 80px;min-width:0}.docs-page .wrap>header{padding-bottom:28px;margin-bottom:32px;border-bottom:1px solid var(--struct)}.docs-page h1{font:700 clamp(34px,4.2vw,58px)/1.09 'Space Grotesk',Inter,sans-serif;letter-spacing:-.05em;max-width:22ch;margin:12px 0 24px;overflow-wrap:anywhere}.docs-page h2{font-size:26px;letter-spacing:-.03em;line-height:1.25;margin-top:48px}.docs-page h3{font-size:20px;letter-spacing:-.02em;line-height:1.4;overflow-wrap:anywhere}.docs-page h4{color:var(--muted);font-size:11px;letter-spacing:.12em;margin-top:28px}.docs-page .meta,.docs-page .eyebrow{color:var(--muted);font-size:13px}.docs-page .wrap>header>.meta:first-child,.docs-page .eyebrow{text-transform:uppercase;font-size:10px;letter-spacing:.15em;color:var(--accent)}.docs-page .wrap>header>p:not(.meta){max-width:76ch;line-height:1.8}.docs-page .pagenav{gap:8px 12px}.docs-page .pagenav a{padding:7px 12px;border:1px solid var(--struct);border-radius:6px;min-height:40px;font-size:12px;text-decoration:none}.docs-page .pagenav a:hover{background:var(--panel);border-color:#637958}.docs-page .banner{border-radius:8px;padding:18px 22px;background:var(--panel);border-color:var(--struct);border-left:3px solid var(--accent)}.docs-page .banner p{font-size:14px;margin:0;line-height:1.7}.docs-page .toc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}.docs-page .toc li{font-size:13px}.docs-page .toc li a{font-size:14px;min-height:46px}.docs-page .op{margin-top:42px;padding-top:4px;min-width:0}.docs-page pre{border-radius:10px;padding:22px;font-size:12px;line-height:1.8;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}.docs-page pre code{font-size:inherit}.docs-page code{overflow-wrap:anywhere;word-break:normal}.docs-page .scrollx{border:1px solid var(--struct);border-radius:8px;margin:14px 0 18px;max-width:100%;min-width:0}.docs-page .scrollx table{margin:0;min-width:540px}.docs-page table th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:var(--panel);padding:12px 14px}.docs-page table td{font-size:13px;padding:13px 14px}.docs-page table tr:last-child td{border-bottom:0}.docs-page .annot{border-radius:8px;padding:18px}.docs-page footer{margin-top:60px}.docs-page footer hr{border:0;border-top:1px solid var(--struct);margin:20px 0}.docs-changelog article{border-top:1px solid var(--struct);padding:24px 0;max-width:80ch}.docs-changelog article h2{border:0;margin-top:0;display:flex;align-items:baseline;gap:20px;flex-wrap:wrap}.docs-changelog time{font:400 12px/1.5 Inter,sans-serif;color:var(--muted)}
+/* A useful landing page stays visible before the optional explorer is loaded. */
+.docs-home #static-intro{position:relative;inset:auto;max-width:1208px;max-height:none;overflow:visible;min-height:0;padding:64px 0 48px;margin:auto;background:none;z-index:0}.docs-home #static-intro[hidden]{display:none}.docs-home .docs-hero{display:grid;grid-template-columns:1.2fr 1fr;gap:70px;align-items:center;margin-bottom:68px}.docs-home .docs-eyebrow{color:var(--accent);font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 22px}.docs-home #static-intro h1{font:700 clamp(40px,5vw,70px)/1.04 'Space Grotesk',Inter,sans-serif;letter-spacing:-.055em;color:var(--text);margin:0 0 24px}.docs-home .docs-lede{font-size:16px;line-height:1.8;color:var(--muted);max-width:55ch}.docs-home .docs-actions{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:28px 0 14px}.docs-home #open-explorer{padding:13px 18px;font:500 13px/1.5 Inter,sans-serif;border:0;border-radius:8px;background:var(--accent);color:var(--bg);min-height:48px;cursor:pointer}.docs-home .docs-actions>a{font-size:13px;min-height:44px;display:inline-flex;align-items:center}.docs-home .docs-code{padding:24px;background:var(--panel);border:1px solid #3b4d3e;border-radius:12px;min-width:0;box-shadow:0 24px 80px #0005}.docs-home .docs-code-label{font-size:10px;letter-spacing:.14em;color:var(--muted);display:flex;justify-content:space-between;text-transform:uppercase;border-bottom:1px solid var(--struct);padding-bottom:18px;margin-bottom:22px}.docs-home .docs-code pre{font:12px/1.9 'JetBrains Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;color:var(--text)}.docs-home .docs-code .code-accent{color:var(--accent)}.docs-home .docs-code>p{font-size:12px;line-height:1.7;color:var(--muted);border-top:1px solid var(--struct);padding-top:16px;margin:22px 0 0}.docs-home .docs-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin:0 0 20px}.docs-home #static-intro h2{font:700 27px/1.2 'Space Grotesk',Inter,sans-serif;letter-spacing:-.035em;margin:0}.docs-home .docs-section-title p{font-size:12px;color:var(--muted);margin:0}.docs-home .docs-topics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.docs-home .docs-topics>a{border:1px solid var(--struct);border-radius:9px;display:flex;flex-direction:column;gap:14px;padding:22px;text-decoration:none;min-width:0;color:var(--text);background:#0f1712}.docs-home .docs-topics>a:hover{background:var(--panel);border-color:#6c885c}.docs-home .docs-topics strong{font-size:14px;font-weight:500;line-height:1.4}.docs-home .docs-topics span{font-size:12px;line-height:1.7;color:var(--muted)}.docs-home .docs-topics small{font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace}.docs-home .docs-resources{display:flex;gap:20px;flex-wrap:wrap;border-top:1px solid var(--struct);padding:24px 0;margin-top:32px}.docs-home .docs-resources a{font-size:12px;min-height:32px;display:flex;align-items:center}.docs-home .docs-clients{display:flex;flex-wrap:wrap;gap:12px 24px;color:var(--muted);font-size:12px}.docs-home .docs-clients code{color:var(--text);font-size:11px}.docs-home .docs-corner{display:none}.docs-home #boot{position:relative;inset:auto;max-width:1208px;margin:0 auto;padding:20px;min-height:0;border-bottom:1px solid var(--struct);pointer-events:none}.docs-home #boot[hidden]{display:none}.docs-home #boot a{pointer-events:auto}.docs-home .skip-link{position:absolute;left:-9999px;z-index:20;background:var(--panel);padding:14px;color:var(--accent)}.docs-home .skip-link:focus{left:8px;top:8px}
+@media(max-width:1280px){.docs-topic-menu{margin:0 36px}.docs-home #static-intro{padding:52px 36px}.docs-home .docs-hero{gap:36px}}
+@media(max-width:900px){.docs-desktop-nav{gap:16px}.docs-home .docs-hero{grid-template-columns:1fr;gap:28px;margin-bottom:44px}.docs-home .docs-code{max-width:620px}.docs-home .docs-topics{grid-template-columns:repeat(2,minmax(0,1fr))}.docs-home .docs-section-title{display:block}.docs-home .docs-section-title p{margin-top:10px}.docs-page .wrap{padding-top:36px}}
+@media(max-width:640px){.docs-site-header{padding:16px 20px;gap:12px;flex-wrap:wrap}.docs-brand{font-size:14px;gap:8px}.docs-brand img{width:22px;height:22px}.docs-brand span{font-size:10px;padding-left:8px;margin-left:0}.docs-desktop-nav{display:none}.docs-key{font-size:10px;gap:8px;padding:7px 10px}.docs-topic-menu{margin:0 20px}.docs-topic-menu nav{grid-template-columns:1fr}.docs-page .wrap{padding:30px 20px 60px}.docs-page h1{font-size:36px}.docs-page .toc{grid-template-columns:1fr}.docs-page h3{font-size:18px}.docs-page .pagenav a{min-height:44px}.docs-page pre{padding:16px;font-size:11px}.docs-page .wrap>header>p:not(.meta){font-size:15px}.docs-home #static-intro{padding:38px 20px}.docs-home .docs-lede{font-size:15px}.docs-home .docs-code{padding:18px}.docs-home .docs-code pre{font-size:11px}.docs-home .docs-topics>a{padding:18px 15px}.docs-home .docs-resources{gap:8px 20px}.docs-home .docs-resources a{min-height:44px}.docs-home .docs-actions{gap:8px 18px}}
+@media(max-width:360px){.docs-brand span{display:none}.docs-home .docs-topics{grid-template-columns:1fr}.docs-page h1{font-size:32px}}
+@media(prefers-reduced-motion:no-preference){a,button{transition:color .15s,background .15s,border-color .15s}}
+
+.docs-page p,.docs-page li,.docs-page a,.docs-page td{overflow-wrap:anywhere}.docs-page .scrollx{width:100%;overflow-x:auto}
+</style>
+
 </head>
 <body class="docs-page docs-changelog">
 <a class="skip-link" href="#main">Skip to content</a>

@@ -76,7 +76,7 @@ def site_navigation(active: str) -> str:
     )
 
 
-DESIGN_STYLES = '<link rel="stylesheet" href="docs-design-20260918.css">'
+# Inlined below (INLINE_STYLES / DESIGN_STYLES): see the note above _inline_css.
 
 # --- design tokens ----------------------------------------------------------
 # Mirrored from the product's canonical palette (app/services/design_tokens.py
@@ -120,6 +120,33 @@ TIER_ORDER = {"BASIC": 0, "PRO": 1, "ULTRA": 2}
 FONT_PRELOADS = "".join(
     f'<link rel="preload" href="fonts/{f}.woff2" as="font" type="font/woff2" crossorigin>\n'
     for f in ("inter-latin-400", "space-grotesk-latin-700", "jetbrains-mono-latin-400")
+)
+
+# fonts.css and the shared design stylesheet are inlined into every generated page instead of
+# being linked. Both are small (2.3 KB and 10 KB), and as <link>s they were two render-blocking
+# requests discovered only after the whole document had arrived: on PageSpeed's slow-4G mobile
+# profile reference.html (131 KB over the wire) painted at 1.8 s and the h1 settled at 2.85 s,
+# over the 2.5 s LCP budget (launch acceptance R1.6, 2026-10-06). Inlined, the first paint needs
+# nothing beyond the document and the preloaded fonts. The files stay on disk for index.html,
+# which Scalar styles, and for anything that still links them.
+_DOCS = Path(__file__).resolve().parents[1] / "docs"
+
+
+def _inline_css(name: str) -> str:
+    return "<style>\n" + (_DOCS / name).read_text(encoding="utf-8").strip() + "\n</style>\n"
+
+
+INLINE_STYLES = _inline_css("fonts.css")
+DESIGN_STYLES = _inline_css("docs-design-20260918.css")
+
+# The reference is one 36,000-word document with 95 <section>s and a header-to-footer run of
+# tables. Chrome styled and laid out all of it before the first paint: 670 ms of style and
+# layout on the PageSpeed mobile profile, most of it for content far below the fold. With
+# content-visibility:auto a section is laid out when it comes into view (anchor links and
+# find-in-page still reach it), and contain-intrinsic-size keeps the scrollbar honest.
+SECTION_CSS = (
+    "<style>\n  main section { content-visibility:auto; contain-intrinsic-size: auto 800px; }\n"
+    "</style>\n"
 )
 
 # The first-party pageview beacon, shared by every generated page.
@@ -506,7 +533,7 @@ def build_html(spec: dict[str, Any]) -> str:
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
 "publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
-{FONT_PRELOADS}<link rel="stylesheet" href="fonts.css">
+{FONT_PRELOADS}{INLINE_STYLES}
 <style>
   /* Design tokens (app/services/design_tokens.py). This page used to carry the
      legacy marketing palette — every one of its six dark hexes was an exact key
@@ -630,8 +657,7 @@ def build_html(spec: dict[str, Any]) -> str:
     .scrollx::-webkit-scrollbar-thumb {{ background:var(--muted); }}
   }}
 </style>
-{DESIGN_STYLES}
-</head>
+{DESIGN_STYLES}{SECTION_CSS}</head>
 <body class="docs-page docs-reference">
 <a class="skip-link" href="#main">Skip to content</a>
 {site_navigation('reference')}
@@ -1264,7 +1290,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
 "publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
-{FONT_PRELOADS}<link rel="stylesheet" href="fonts.css">
+{FONT_PRELOADS}{INLINE_STYLES}
 {style_html}{DESIGN_STYLES}
 </head>
 <body class="docs-page docs-changelog">
@@ -1526,7 +1552,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
 "publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
 </script>
-{FONT_PRELOADS}<link rel="stylesheet" href="fonts.css">
+{FONT_PRELOADS}{INLINE_STYLES}
 {style_html}{DESIGN_STYLES}
 </head>
 <body class="docs-page docs-topic">
