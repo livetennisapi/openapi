@@ -117,9 +117,13 @@ TIER_ORDER = {"BASIC": 0, "PRO": 1, "ULTRA": 2}
 #
 # Preloading is the right lever rather than font-display:optional, which would fix CLS by not
 # showing the display face at all on a first visit.
+# The two text faces fetch at high priority: they are what the h1 and the first paragraph, the
+# largest text above the fold, wait for. Mono stays preloaded (the base-URL <code> in the header
+# would otherwise move the page when it arrived) but queues behind them rather than beside them.
 FONT_PRELOADS = "".join(
-    f'<link rel="preload" href="fonts/{f}.woff2" as="font" type="font/woff2" crossorigin>\n'
-    for f in ("inter-latin-400", "space-grotesk-latin-700", "jetbrains-mono-latin-400")
+    f'<link rel="preload" href="fonts/{f}.woff2" as="font" type="font/woff2" crossorigin fetchpriority="{pr}">\n'
+    for f, pr in (("inter-latin-400", "high"), ("space-grotesk-latin-700", "high"),
+                  ("jetbrains-mono-latin-400", "low"))
 )
 
 # fonts.css and the shared design stylesheet are inlined into every generated page instead of
