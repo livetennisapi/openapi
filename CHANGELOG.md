@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.64] - 2026-10-22
+
+### Changed
+- The AI SDK guide now pins livetennisapi-ai 1.2.1. That release fixes `check_api_status` for FREE keys, so the known-issue note and its workaround are gone.
+
 ## [1.13.63] - 2026-10-22
 
 ### Fixed

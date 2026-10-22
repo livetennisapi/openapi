@@ -14,7 +14,7 @@
 <meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
-{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Live Tennis API tools for the Vercel AI SDK", "description": "How do you give a Vercel AI SDK model live tennis data? Install livetennisapi-ai and pass livetennisTools() to generateText. Free keys need no card.", "url": "https://docs.livetennisapi.com/ai-sdk.html", "dateModified": "2026-10-22", "about": {"@type": "SoftwareSourceCode", "name": "livetennisapi-ai", "url": "https://www.npmjs.com/package/livetennisapi-ai", "version": "1.1.0", "programmingLanguage": "TypeScript", "runtimePlatform": "Node.js"}, "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": "https://livetennisapi.com"}, "publisher": {"@type": "Organization", "@id": "https://livetennisapi.com/#org", "name": "JSB Holdings LLC", "alternateName": "Live Tennis API", "url": "https://livetennisapi.com", "logo": "https://docs.livetennisapi.com/icon-256.png"}}
+{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Live Tennis API tools for the Vercel AI SDK", "description": "How do you give a Vercel AI SDK model live tennis data? Install livetennisapi-ai and pass livetennisTools() to generateText. Free keys need no card.", "url": "https://docs.livetennisapi.com/ai-sdk.html", "dateModified": "2026-10-22", "about": {"@type": "SoftwareSourceCode", "name": "livetennisapi-ai", "url": "https://www.npmjs.com/package/livetennisapi-ai", "version": "1.2.1", "programmingLanguage": "TypeScript", "runtimePlatform": "Node.js"}, "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": "https://livetennisapi.com"}, "publisher": {"@type": "Organization", "@id": "https://livetennisapi.com/#org", "name": "JSB Holdings LLC", "alternateName": "Live Tennis API", "url": "https://livetennisapi.com", "logo": "https://docs.livetennisapi.com/icon-256.png"}}
 </script>
 <link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
 <link rel="preload" href="fonts/space-grotesk-latin-700.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
@@ -205,7 +205,7 @@
 <p class="meta">Live Tennis API &middot; docs &middot; guide</p>
 <h1>Live Tennis API tools for the Vercel AI SDK</h1>
 <p><strong>How do you give a Vercel AI SDK model live tennis data?</strong> Install <a href="https://www.npmjs.com/package/livetennisapi-ai"><code>livetennisapi-ai</code></a> and pass <code>livetennisTools()</code> to <code>generateText</code>. The model gets 24 read-only tools for live scores, players, fixtures, rankings, head-to-head, the results archive and model win probability.</p>
-<p class="meta">Package <a href="https://www.npmjs.com/package/livetennisapi-ai">livetennisapi-ai</a> 1.1.0, for <code>ai</code> v7. Tested with ai 7.0.148 on <time datetime="2026-10-22">2026-10-22</time>. Free keys need no card.</p>
+<p class="meta">Package <a href="https://www.npmjs.com/package/livetennisapi-ai">livetennisapi-ai</a> 1.2.1, for <code>ai</code> v7. Tested with ai 7.0.148 on <time datetime="2026-10-22">2026-10-22</time>. Free keys need no card.</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./reference.html">Full reference: all endpoints</a>
 <a href="./">Interactive reference</a>
@@ -273,16 +273,6 @@ and <a href="./shot-level-rally-data.html">shot-level charting</a> pages.</p>
 the plan it detects for the key. That is the quickest way to find out why another tool declined.
 Treat the plan as an estimate. A FREE key with History access reads as BASIC. Plans and prices are on the
 <a href="https://livetennisapi.com/pricing">pricing page</a>.</p>
-<p><strong>Known issue with FREE keys.</strong> In livetennisapi-ai 1.1.0, <code>check_api_status</code>
-fails for a FREE key without History access. Its first probe lists completed matches, which that plan
-does not include. The tool then returns <code>ok: false</code> with "Could not reach the API", even though
-the API and the key both work. The fix ships in livetennisapi-ai 1.2.1. Until that version is on npm, check a
-FREE key by calling <code>/health</code> and <code>/players</code> directly. A 200 from
-<code>/players</code> means the key is valid.</p>
-<pre><code>curl https://api.livetennisapi.com/api/public/v1/health
-curl "https://api.livetennisapi.com/api/public/v1/players?limit=1" \
-  -H "Authorization: Bearer twjp_..."</code></pre>
-
 <h2 id="results">What happens when a tool can't return data?</h2>
 <p>A successful call returns <code>ok: true</code>, a readable <code>message</code> and the data.
 An empty answer is still a success, for example <code>ok: true</code> with no live matches.
@@ -322,7 +312,7 @@ wait time on to the user.</p>
 <a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
 <a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
 </nav>
-<p class="meta">Written for <a href="https://www.npmjs.com/package/livetennisapi-ai">livetennisapi-ai</a> 1.1.0. Something wrong on this page? Write to <a href="mailto:hello@livetennisapi.com">hello@livetennisapi.com</a>.</p>
+<p class="meta">Written for <a href="https://www.npmjs.com/package/livetennisapi-ai">livetennisapi-ai</a> 1.2.1. Something wrong on this page? Write to <a href="mailto:hello@livetennisapi.com">hello@livetennisapi.com</a>.</p>
 <p class="meta">Built by <a href="https://synapsereality.io/work/live-tennis-api/">Synapse Research Ltd</a>.</p>
 </footer>
 </div>

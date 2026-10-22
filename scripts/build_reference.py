@@ -1751,7 +1751,7 @@ this page is also in <a href="./reference.html">the full reference</a>.</p>
 # (livetennisapi-ai 1.1.0) with ai 7.0.148 on 2026-10-22: the export names, the env var, the
 # 24 tool names and their plans. Re-check them when the package changes its tool set.
 AI_SDK_PACKAGE = "livetennisapi-ai"
-AI_SDK_VERSION = "1.1.0"
+AI_SDK_VERSION = "1.2.1"
 # The day the page's facts were last checked against the package. It is the page's content
 # date: the visible "Tested" line, JSON-LD dateModified and the sitemap lastmod all read it.
 AI_SDK_CHECKED = "2026-10-22"
@@ -1867,16 +1867,6 @@ and <a href="./shot-level-rally-data.html">shot-level charting</a> pages.</p>
 the plan it detects for the key. That is the quickest way to find out why another tool declined.
 Treat the plan as an estimate. A FREE key with History access reads as BASIC. Plans and prices are on the
 <a href="{SITE}/pricing">pricing page</a>.</p>
-<p><strong>Known issue with FREE keys.</strong> In livetennisapi-ai {AI_SDK_VERSION}, <code>check_api_status</code>
-fails for a FREE key without History access. Its first probe lists completed matches, which that plan
-does not include. The tool then returns <code>ok: false</code> with "Could not reach the API", even though
-the API and the key both work. The fix ships in livetennisapi-ai 1.2.1. Until that version is on npm, check a
-FREE key by calling <code>/health</code> and <code>/players</code> directly. A 200 from
-<code>/players</code> means the key is valid.</p>
-<pre><code>curl https://api.livetennisapi.com/api/public/v1/health
-curl "https://api.livetennisapi.com/api/public/v1/players?limit=1" \\
-  -H "Authorization: Bearer twjp_..."</code></pre>
-
 <h2 id="results">What happens when a tool can't return data?</h2>
 <p>A successful call returns <code>ok: true</code>, a readable <code>message</code> and the data.
 An empty answer is still a success, for example <code>ok: true</code> with no live matches.
