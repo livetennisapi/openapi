@@ -43,6 +43,16 @@ SPEC = ROOT / "openapi.yaml"
 DOCS = ROOT / "docs"
 SITE = "https://livetennisapi.com"
 DOCS_URL = "https://docs.livetennisapi.com"
+# Where the pages send a reader for each package and for a report. The github.com/livetennisapi
+# organisation is suspended and every URL under it is a 404 to a logged-out reader, so the pages
+# link each package's registry page instead and take reports by mail. main() refuses any
+# generated page that links the org again.
+PYPI_URL = "https://pypi.org/project/livetennisapi/"
+NPM_JS_URL = "https://www.npmjs.com/package/livetennisapi"
+NPM_MCP_URL = "https://www.npmjs.com/package/livetennisapi-mcp"
+CONTACT_EMAIL = "hello@livetennisapi.com"
+SPEC_REPORT = f"mailto:{CONTACT_EMAIL}?subject=Spec%20mismatch"
+DEAD_ORG = "github.com/livetennisapi"
 # Footer credit on every generated page. Synapse Research Ltd builds and runs the API.
 CREDIT = ('<p class="meta">Built by <a href="https://synapsereality.io/work/live-tennis-api/">'
           'Synapse Research Ltd</a>.</p>')
@@ -62,7 +72,7 @@ def site_navigation(active: str) -> str:
     topics = "".join(
         f'<a href="./{t["slug"]}.html"'
         + (' aria-current="page"' if t["slug"] == active else '')
-        + f'>{E(t["title"])}</a>' for t in TOPICS
+        + f'>{E(t["title"])}</a>' for t in TOPICS + GUIDES
     )
     return (
         '<header class="docs-site-header"><a class="docs-brand" href="./">'
@@ -142,6 +152,19 @@ def _inline_css(name: str) -> str:
 
 INLINE_STYLES = _inline_css("fonts.css")
 DESIGN_STYLES = _inline_css("docs-design-20260918.css")
+
+
+def reference_base_style(reference_html: str) -> str:
+    """The reference's own base stylesheet (tokens, .wrap, .pagenav, .vh), for the pages that
+    reuse its look. Since fonts.css was inlined the first <style> in reference.html is the font
+    block, so "the first <style>" silently gave every topic page the fonts twice and no base
+    rules: captions meant for screen readers showed on screen. Skip the shared blocks instead."""
+    for block in re.findall(r"<style>.*?</style>\n?", reference_html, re.S):
+        if block.strip() not in (INLINE_STYLES.strip(), DESIGN_STYLES.strip()):
+            if ".vh" not in block:
+                raise SystemExit("reference.html: base stylesheet not found (no .vh rule)")
+            return block.rstrip("\n")
+    raise SystemExit("reference.html: no base stylesheet found")
 
 # The reference is one 36,000-word document with 95 <section>s and a header-to-footer run of
 # tables. Chrome styled and laid out all of it before the first paint: 670 ms of style and
@@ -511,7 +534,7 @@ def build_html(spec: dict[str, Any]) -> str:
     # Every topic page links back here; this is the link the other way, so neither is an
     # orphan and a crawler reaching either one reaches all of them.
     topic_nav = "\n".join(
-        f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>' for t in TOPICS
+        f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>' for t in TOPICS + GUIDES
     )
 
     return f"""<!doctype html>
@@ -796,11 +819,11 @@ Details: <a href="{SITE}">livetennisapi.com</a>.</p>
 
 <h2 id="clients">Official client libraries</h2>
 <div class="scrollx" tabindex="0" role="region" aria-label="Official client libraries">
-<table class="linkrow"><caption class="vh">Official client libraries — install command and source repository</caption>
-<thead><tr><th scope="col">Language</th><th scope="col">Install</th><th scope="col">Source</th></tr></thead><tbody>
-<tr><th scope="row">Python</th><td><code>pip install livetennisapi</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-python">livetennisapi-python</a></td></tr>
-<tr><th scope="row">JavaScript / TypeScript</th><td><code>npm install livetennisapi</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-js">livetennisapi-js</a></td></tr>
-<tr><th scope="row">MCP server (LLM agents)</th><td>hosted at <code>https://mcp.livetennisapi.com/mcp</code>, or <code>npx livetennisapi-mcp</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a></td></tr>
+<table class="linkrow"><caption class="vh">Official client libraries: install command and package page</caption>
+<thead><tr><th scope="col">Language</th><th scope="col">Install</th><th scope="col">Package</th></tr></thead><tbody>
+<tr><th scope="row">Python</th><td><code>pip install livetennisapi</code></td><td><a href="{PYPI_URL}">livetennisapi on PyPI</a></td></tr>
+<tr><th scope="row">JavaScript / TypeScript</th><td><code>npm install livetennisapi</code></td><td><a href="{NPM_JS_URL}">livetennisapi on npm</a></td></tr>
+<tr><th scope="row">MCP server (LLM agents)</th><td>hosted at <code>https://mcp.livetennisapi.com/mcp</code>, or <code>npx livetennisapi-mcp</code></td><td><a href="{NPM_MCP_URL}">livetennisapi-mcp on npm</a></td></tr>
 </tbody></table></div>
 
 <h2 id="mcp">MCP server</h2>
@@ -813,8 +836,8 @@ install and nothing to keep running. <code>GET https://mcp.livetennisapi.com/hea
 reports the running version.</p>
 <p><strong>Self-run.</strong> <code>npx livetennisapi-mcp</code> with
 <code>LIVETENNISAPI_KEY</code> in the environment. Listed in the official MCP Registry as
-<code>io.github.livetennisapi/livetennisapi-mcp</code>, source at
-<a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a>.</p>
+<code>io.github.livetennisapi/livetennisapi-mcp</code>. The package is
+<a href="{NPM_MCP_URL}">livetennisapi-mcp on npm</a>.</p>
 <p>Without a key only <code>check_api_status</code> answers, and it says where to get a free
 one. The hosted endpoint allows 300 requests a minute on a key and 60 without one. Your
 plan's own rate limit applies underneath that.</p>
@@ -989,10 +1012,10 @@ across a <code>?tour=</code> group.</p>
 
 <footer>
 <hr>
-<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
-<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.</p>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a>, also published as
+<a href="./openapi.json">openapi.json</a>.</p>
 <nav class="footnav" aria-label="Elsewhere">
-<a href="https://github.com/livetennisapi/openapi/issues">Report a spec mismatch</a>
+<a href="{SPEC_REPORT}">Report a spec mismatch</a>
 <a href="https://affiliates.livetennisapi.com/program">Affiliate programme — 51% lifetime</a>
 </nav>
 <p class="meta">Writing about tennis, or building a tool on this API? The affiliate
@@ -1037,6 +1060,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "Each answers one question and carries the full parameter and response detail for its",
         "endpoints, generated from the same spec as the reference:",
         *[f"- {t['question']} {DOCS_URL}/{t['slug']}.html" for t in TOPICS],
+        "",
+        "## Guides",
+        *[f"- {t['question']} {DOCS_URL}/{t['slug']}.html" for t in GUIDES],
         "",
         "## Quickstart (no code required)",
         f"Open this in a browser — no install, no headers: {base}/matches?status=live&token=YOUR_KEY",
@@ -1160,13 +1186,16 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "backtest.",
         "",
         "## Official client libraries",
-        "- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python",
-        "- JavaScript/TypeScript: `npm install livetennisapi` — https://github.com/livetennisapi/livetennisapi-js",
+        f"- Python: `pip install livetennisapi`, package {PYPI_URL}",
+        f"- JavaScript/TypeScript: `npm install livetennisapi`, package {NPM_JS_URL}",
         "- MCP server for LLM agents, hosted: POST https://mcp.livetennisapi.com/mcp (Streamable HTTP;",
         "  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 24",
         "  read-only tools on every plan, free keys included, each tool reaching what that plan",
         "  reaches. Nothing to install.",
-        "- MCP server, self-run: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp",
+        f"- MCP server, self-run: `npx livetennisapi-mcp`, package {NPM_MCP_URL}",
+        f"- Vercel AI SDK tools: `npm install livetennisapi-ai`, package {AI_SDK_NPM}",
+        f"  (guide: {DOCS_URL}/ai-sdk.html). The same 24 tools as the MCP server, as AI SDK tools.",
+        "  Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7, which needs Node 22 or later.",
         "",
         "## Affiliate programme",
         "- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime",
@@ -1263,8 +1292,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
     The sitemap's lastmod for this page is the newest entry's date — a date the file proves."""
     entries = changelog_entries(CHANGELOG.read_text(encoding="utf-8"))
     latest = entries[0]["date"] if entries else ""
-    style = re.search(r"<style>.*?</style>", reference_html, re.S)
-    style_html = style.group(0) if style else ""
+    style_html = reference_base_style(reference_html)
     articles = "\n".join(
         f'<article id="v{E(e["version"])}"><h2>{E(e["version"])} <time datetime="{e["date"]}">{e["date"]}</time></h2>\n{_md_block(e["body_md"])}</article>'
         for e in entries
@@ -1476,8 +1504,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
     failure this guards against is a new endpoint quietly missing from the docs site, which
     is invisible in review because the reference page would still list it.
     """
-    style = re.search(r"<style>.*?</style>", reference_html, re.S)
-    style_html = style.group(0) if style else ""
+    style_html = reference_base_style(reference_html)
     info = spec["info"]
     base = spec["servers"][0]["url"]
 
@@ -1508,7 +1535,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
                 op_count += 1
         siblings = "\n".join(
             f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>'
-            for t in TOPICS if t["slug"] != topic["slug"]
+            for t in TOPICS + GUIDES if t["slug"] != topic["slug"]
         )
         plans = ", ".join(sorted(t for t in tiers if t)) or "FREE"
         # A meta description past ~160 characters is truncated in the result, so the tail is
@@ -1594,9 +1621,282 @@ carries all {total_ops} operations of the API on one page.</p>
 <nav class="pagenav" aria-label="Other topics">
 {siblings}
 </nav>
-<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
-<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a>. Every endpoint on
 this page is also in <a href="./reference.html">the full reference</a>.</p>
+{CREDIT}
+</footer>
+</div>
+{BEACON}{CLARITY}</body>
+</html>
+"""
+    return pages
+
+
+# ------------------------------------------------------------------ guides ---------------------
+# Pages about a client package. A topic page covers a slice of the spec, a guide covers none.
+# Guides share the topic pages' head, navigation and footer. Their body is written here, not
+# generated from paths, so they sit outside the TOPICS rule that every path lands on one page.
+#
+# Every fact on the AI SDK page was checked against the published npm package
+# (livetennisapi-ai 1.1.0) with ai 7.0.148 on 2026-10-22: the export names, the env var, the
+# 24 tool names and their plans. Re-check them when the package changes its tool set.
+AI_SDK_PACKAGE = "livetennisapi-ai"
+AI_SDK_VERSION = "1.1.0"
+# The day the page's facts were last checked against the package. It is the page's content
+# date: the visible "Tested" line, JSON-LD dateModified and the sitemap lastmod all read it.
+AI_SDK_CHECKED = "2026-10-22"
+AI_SDK_NPM = "https://www.npmjs.com/package/livetennisapi-ai"
+
+# (tool name, export, what it returns, plan). Names, exports and plans are the package's own.
+# The "returns" column paraphrases the README table and each tool's description.
+AI_SDK_TOOLS = [
+    ("get_live_matches", "getLiveMatches", "Matches in progress, with live scores", "FREE"),
+    ("get_upcoming_matches", "getUpcomingMatches", "Matches due to start soon", "FREE"),
+    ("get_match", "getMatch", "Full detail for one match", "FREE"),
+    ("get_match_score", "getMatchScore", "The score only, the lowest-latency read", "FREE"),
+    ("search_players", "searchPlayers", "Find players by name", "FREE"),
+    ("get_player", "getPlayer", "One player's profile and ranking", "FREE"),
+    ("get_fixtures", "getFixtures", "The forward schedule", "FREE"),
+    ("search_tournaments", "searchTournaments", "The tournament catalogue behind tournament_id", "FREE"),
+    ("get_tournament", "getTournament", "One tournament by its stable id", "FREE"),
+    ("check_api_status", "checkApiStatus", "Whether the API is up, and the plan it detects for the key", "FREE"),
+    ("get_recent_results", "getRecentResults", "Completed matches with winners, filterable", "BASIC"),
+    ("search_archive_matches", "searchArchiveMatches", "The results archive, 1968 to 2022", "BASIC"),
+    ("get_archive_match", "getArchiveMatch", "One archive result, with serve stats where recorded", "BASIC"),
+    ("search_archive_players", "searchArchivePlayers", "Archive bios: hand, date of birth, career-high rank", "BASIC"),
+    ("get_archive_career", "getArchiveCareer", "Career win-loss, titles and serve totals over the archive", "BASIC"),
+    ("get_h2h", "getH2H", "All-time head-to-head across the archive and recent matches", "BASIC"),
+    ("get_match_events", "getMatchEvents", "Match timeline: breaks, games, momentum", "PRO"),
+    ("get_match_odds", "getMatchOdds", "Match-winner market: bid, ask and mid", "PRO"),
+    ("get_rankings", "getRankings", "Published ranking rows for one system, up to 200 per call", "PRO"),
+    ("get_match_analysis", "getMatchAnalysis", "Model win probability and thesis", "ULTRA"),
+    ("get_player_rankings", "getPlayerRankings", "Point-in-time rankings for specific players", "ULTRA"),
+    ("get_match_statistics", "getMatchStatistics", "In-play statistics, derived and measured", "ULTRA"),
+    ("get_charting_player", "getChartingPlayer", "A player's career shot-level charting profile", "ULTRA"),
+    ("get_charting_match", "getChartingMatch", "Every charting stat family for one match", "ULTRA"),
+]
+
+AI_SDK_EXAMPLE = """import { generateText, gateway, isStepCount } from 'ai';
+import { livetennisTools } from 'livetennisapi-ai';
+
+const { text } = await generateText({
+  model: gateway('openai/gpt-5-mini'),
+  prompt: 'Which tennis matches are live right now, and what are the scores?',
+  tools: livetennisTools(), // reads LIVETENNISAPI_KEY
+  stopWhen: isStepCount(3),
+});
+
+console.log(text);"""
+
+AI_SDK_SUBSET = """import { getLiveMatches, getMatchScore } from 'livetennisapi-ai';
+
+const apiKey = process.env.LIVETENNISAPI_KEY;
+
+const tools = {
+  get_live_matches: getLiveMatches({ apiKey }),
+  get_match_score: getMatchScore({ apiKey }),
+};"""
+
+AI_SDK_REFUSAL = """{
+  ok: false,
+  message: 'This data requires the ULTRA plan, and the configured API key is on a lower tier. ...'
+}"""
+
+
+def _ai_sdk_body() -> str:
+    plan_label = {"BASIC": "BASIC or any History plan"}
+    rows = "".join(
+        f"<tr><td><code>{E(name)}</code></td><td><code>{E(export)}</code></td>"
+        f"<td>{E(does)}</td><td>{E(plan_label.get(plan, plan))}</td></tr>"
+        for name, export, does, plan in AI_SDK_TOOLS
+    )
+    table = scrollx(
+        f"<table>{vh_caption('The AI SDK tools, their exports and plans')}"
+        '<thead><tr><th scope="col">Tool</th><th scope="col">Export</th>'
+        '<th scope="col">Returns</th><th scope="col">Plan</th></tr></thead>'
+        f"<tbody>{rows}</tbody></table>",
+        "AI SDK tools",
+    )
+    return f"""<h2 id="install">Install livetennisapi-ai</h2>
+<p>The package is <a href="{AI_SDK_NPM}">{AI_SDK_PACKAGE}</a> on npm.
+<code>ai</code> v7 is a peer dependency, so the tools use the copy your app already has. <code>ai</code> v7
+needs Node 22 or later.</p>
+<pre><code>npm install livetennisapi-ai ai
+pnpm add livetennisapi-ai ai
+yarn add livetennisapi-ai ai
+bun add livetennisapi-ai ai</code></pre>
+
+<h2 id="api-key">Set the API key</h2>
+<p>The tools read your key from the <code>LIVETENNISAPI_KEY</code> environment variable.
+<a href="{SITE}/subscribe/free">Get a free key</a>. No card is needed.</p>
+<pre><code>export LIVETENNISAPI_KEY=twjp_...</code></pre>
+<p>You can also pass the key in code as <code>livetennisTools({{ apiKey }})</code>. The
+<code>apiKey</code> option wins over the environment variable. Each call returns a tool set bound to one key, so one
+process can serve users on different plans.</p>
+
+<h2 id="example">How do I use the tools with generateText?</h2>
+<p>Pass the whole set as <code>tools</code>. This example goes through the AI Gateway, which reads
+<code>AI_GATEWAY_API_KEY</code>. Any other AI SDK model that supports tool calling works in its place.</p>
+<pre><code>{E(AI_SDK_EXAMPLE)}</code></pre>
+<p><code>isStepCount(3)</code> gives the model room to call a tool and then answer.</p>
+
+<h2 id="subset">Send only the tools you need</h2>
+<p>Each tool is also exported on its own. Every tool's description and input schema go to the model
+on every request, so a smaller set costs fewer tokens.</p>
+<pre><code>{E(AI_SDK_SUBSET)}</code></pre>
+
+<h2 id="tools">Which tools are there, and which plan does each need?</h2>
+<p>Tool names, exports and plans are the ones the package defines. A tool above your key's plan
+still answers. It explains which plan the data needs instead of returning it.</p>
+{table}
+<p>The tools call the REST endpoints documented on the <a href="./live-scores.html">live scores</a>,
+<a href="./players-and-tournaments.html">players and tournaments</a>,
+<a href="./historical-results-archive.html">results archive</a>, <a href="./tennis-odds.html">odds</a>
+and <a href="./shot-level-rally-data.html">shot-level charting</a> pages.</p>
+<p><code>check_api_status</code> answers even without a key. It probes a few endpoints and reports
+the plan it detects for the key. That is the quickest way to find out why another tool declined.
+Treat the plan as an estimate. A FREE key with History access reads as BASIC. Plans and prices are on the
+<a href="{SITE}/pricing">pricing page</a>.</p>
+
+<h2 id="results">What happens when a tool can't return data?</h2>
+<p>A successful call returns <code>ok: true</code>, a readable <code>message</code> and the data.
+An empty answer is still a success, for example <code>ok: true</code> with no live matches.
+A missing or rejected key, a plan limit, a rate limit, an unknown id or a failed request returns
+<code>ok: false</code>. The <code>message</code> says what to do next.</p>
+<pre><code>{E(AI_SDK_REFUSAL)}</code></pre>
+<p>No tool throws for these. The model reads the message and can pass the upgrade path or the
+wait time on to the user.</p>
+
+<h2 id="mcp">Can I use the same tools over MCP?</h2>
+<p>The same 24 tools also run as an MCP server. The hosted endpoint is
+<code>https://mcp.livetennisapi.com/mcp</code>. Send your key as
+<code>Authorization: Bearer twjp_...</code>. To run it yourself, use
+<code>npx livetennisapi-mcp</code>. The package is
+<a href="{NPM_MCP_URL}">livetennisapi-mcp on npm</a>.</p>
+
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="{AI_SDK_NPM}">livetennisapi-ai on npm</a></li>
+<li><a href="{SITE}/subscribe/free">Free API key</a></li>
+<li><a href="./auth-quota-and-health.html">Authentication, quota and status</a></li>
+</ul>
+"""
+
+
+GUIDES: list[dict[str, Any]] = [
+    {
+        "slug": "ai-sdk",
+        "title": "Live Tennis API tools for the Vercel AI SDK",
+        # The h1 already says Live Tennis API, so the head title leads with the search terms
+        # and keeps the brand for the end. A pipe, since the house style has no dashes.
+        "head_title": "Tennis API tools for the Vercel AI SDK | Live Tennis API",
+        "question": "How do you give a Vercel AI SDK model live tennis data?",
+        "description": (
+            "How do you give a Vercel AI SDK model live tennis data? Install livetennisapi-ai "
+            "and pass livetennisTools() to generateText. Free keys need no card."
+        ),
+        "lede": (
+            f'Install <a href="{AI_SDK_NPM}"><code>livetennisapi-ai</code></a> and pass '
+            "<code>livetennisTools()</code> to <code>generateText</code>. The model gets 24 "
+            "read-only tools for live scores, players, fixtures, rankings, head-to-head, the "
+            "results archive and model win probability."
+        ),
+        "meta": (
+            f'Package <a href="{AI_SDK_NPM}">livetennisapi-ai</a> {AI_SDK_VERSION}, for <code>ai</code> v7. '
+            f'Tested with ai 7.0.148 on <time datetime="{AI_SDK_CHECKED}">{AI_SDK_CHECKED}</time>. '
+            "Free keys need no card."
+        ),
+        "body": _ai_sdk_body,
+        "date": AI_SDK_CHECKED,
+        "about": {"@type": "SoftwareSourceCode", "name": AI_SDK_PACKAGE, "url": AI_SDK_NPM,
+                  "version": AI_SDK_VERSION, "programmingLanguage": "TypeScript",
+                  "runtimePlatform": "Node.js"},
+        "footer": (
+            f'Written for <a href="{AI_SDK_NPM}">livetennisapi-ai</a> {AI_SDK_VERSION}. Something '
+            f'wrong on this page? Write to <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.'
+        ),
+    },
+]
+
+
+def build_guide_pages(reference_html: str) -> dict[str, str]:
+    """{slug: html} for GUIDES, in the topic pages' template."""
+    style_html = reference_base_style(reference_html)
+    pages = {}
+    for guide in GUIDES:
+        desc = guide["description"]
+        if len(E(desc)) > 158:
+            raise SystemExit(f"guide {guide['slug']}: meta description over 158 characters")
+        siblings = "\n".join(
+            f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>'
+            for t in TOPICS + GUIDES if t["slug"] != guide["slug"]
+        )
+        # The page's own <header> gets role="none": the site header above is the one banner
+        # landmark, and a second one makes screen-reader landmark lists ambiguous.
+        # json.dumps, not E(): HTML escaping inside a script element is not decoded, so an
+        # apostrophe would reach the parser as the literal text &#x27;. "</" is escaped so no
+        # string can close the script element early.
+        ld_json = json.dumps({
+            "@context": "https://schema.org",
+            "@type": "TechArticle",
+            "headline": guide["title"],
+            "description": desc,
+            "url": f"{DOCS_URL}/{guide['slug']}.html",
+            "dateModified": guide["date"],
+            "about": guide["about"],
+            "inLanguage": "en",
+            "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": SITE},
+            "publisher": {"@type": "Organization", "@id": f"{SITE}/#org", "name": "JSB Holdings LLC",
+                          "alternateName": "Live Tennis API", "url": SITE,
+                          "logo": f"{DOCS_URL}/icon-256.png"},
+        }, ensure_ascii=False).replace("</", "<\\/")
+        pages[guide["slug"]] = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{E(guide['head_title'])}</title>
+<meta name="description" content="{E(desc)}">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{DOCS_URL}/{guide['slug']}.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{E(guide['title'])}">
+<meta property="og:description" content="{E(desc)}">
+<meta property="og:url" content="{DOCS_URL}/{guide['slug']}.html">
+<meta property="og:image" content="{DOCS_URL}/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{ld_json}
+</script>
+{FONT_PRELOADS}{INLINE_STYLES}
+{style_html}{DESIGN_STYLES}
+</head>
+<body class="docs-page docs-topic">
+<a class="skip-link" href="#main">Skip to content</a>
+{site_navigation(guide['slug'])}
+<div class="wrap">
+<header role="none">
+<p class="meta">Live Tennis API &middot; docs &middot; guide</p>
+<h1>{E(guide['title'])}</h1>
+<p><strong>{E(guide['question'])}</strong> {guide['lede']}</p>
+<p class="meta">{guide['meta']}</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference: all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="{SITE}/pricing">Pricing</a>
+<a href="{SITE}/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+{guide['body']()}</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+{siblings}
+</nav>
+<p class="meta">{guide['footer']}</p>
 {CREDIT}
 </footer>
 </div>
@@ -1663,10 +1963,13 @@ def build_sitemap(changelog_date: str = "") -> str:
         f"<priority>{'1.0' if u.endswith('/') else '0.9'}</priority></url>"
         for u in pages
     )
+    # A guide carries lastmod because its date is a content fact: the day its claims were last
+    # checked against the package, the same date the page shows.
     urls += "\n" + "\n".join(
-        f'  <url><loc>{DOCS_URL}/{t["slug"]}.html</loc><changefreq>weekly</changefreq>'
-        f"<priority>0.8</priority></url>"
-        for t in TOPICS
+        f'  <url><loc>{DOCS_URL}/{t["slug"]}.html</loc>'
+        + (f'<lastmod>{t["date"]}</lastmod>' if t.get("date") else "")
+        + '<changefreq>weekly</changefreq><priority>0.8</priority></url>'
+        for t in TOPICS + GUIDES
     )
     if changelog_date:
         # lastmod ONLY here: the newest entry's date is a fact the file itself proves. The two pages
@@ -1685,10 +1988,12 @@ def main() -> int:
     reference = build_html(spec)
     changelog_html, changelog_date = build_changelog(spec, reference)
     topics = build_topic_pages(spec, reference)
+    guides = build_guide_pages(reference)
     outputs = {
         DOCS / "reference.html": reference,
         DOCS / "changelog.html": changelog_html,
         **{DOCS / f"{slug}.html": html for slug, html in topics.items()},
+        **{DOCS / f"{slug}.html": html for slug, html in guides.items()},
         DOCS / "llms.txt": build_llms_txt(spec),
         DOCS / "robots.txt": build_robots(),
         DOCS / "sitemap.xml": build_sitemap(changelog_date),
@@ -1729,6 +2034,15 @@ def main() -> int:
             + "\n  Add {BEACON} before </body> in that template."
         )
 
+    # No output may link the suspended github.com/livetennisapi organisation: every URL under it is
+    # a 404 to a logged-out reader. openapi.json mirrors openapi.yaml, so this covers the spec too.
+    dead_links = [path.name for path, content in outputs.items() if DEAD_ORG in content]
+    if dead_links:
+        raise SystemExit(
+            f"generated pages link the suspended {DEAD_ORG} organisation: " + ", ".join(dead_links)
+            + "\n  Link the package's registry page, or mailto:" + CONTACT_EMAIL + " for reports."
+        )
+
     # ...and the on-page behaviour tag, for the same reason: the topic pages were written after
     # the beacon lived in one template and silently got none of it. Both guards or neither.
     missing_clarity = [
@@ -1762,7 +2076,8 @@ def main() -> int:
     index = DOCS / "index.html"
     if index.exists():
         index_html = index.read_text(encoding="utf-8")
-        missing = [t["slug"] for t in TOPICS if f'{t["slug"]}.html' not in index_html]
+        hrefs = set(re.findall(r'href="(?:\./)?([^"#?]+)"', index_html))
+        missing = [t["slug"] for t in TOPICS + GUIDES if f'{t["slug"]}.html' not in hrefs]
         if missing:
             raise SystemExit(
                 "docs/index.html does not link these topic pages: "

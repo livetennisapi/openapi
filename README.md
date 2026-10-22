@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/livetennisapi/.github/main/profile/banner.jpg" alt="Live Tennis API" width="640">
+<img src="https://docs.livetennisapi.com/banner.jpg" alt="Live Tennis API" width="640">
 
 # OpenAPI Specification
 
@@ -8,8 +8,6 @@ The machine-readable contract for **[Live Tennis API](https://livetennisapi.com)
 tennis scores, players, rankings, match-winner market prices and model win-probability
 over REST and WebSocket, across ATP, WTA, Challenger, ITF and juniors.
 
-[![lint](https://github.com/livetennisapi/openapi/actions/workflows/lint.yml/badge.svg)](https://github.com/livetennisapi/openapi/actions/workflows/lint.yml)
-[![pages](https://github.com/livetennisapi/openapi/actions/workflows/pages.yml/badge.svg)](https://github.com/livetennisapi/openapi/actions/workflows/pages.yml)
 [![licence: MIT](https://img.shields.io/badge/licence-MIT-green.svg)](LICENSE)
 
 [**Documentation**](https://docs.livetennisapi.com) · [**Website**](https://livetennisapi.com) · [**Get a free key**](https://livetennisapi.com/subscribe/free) · [**Pricing**](https://livetennisapi.com/#pricing) · [**Discord**](https://discord.gg/f8WUZHgDm6)
@@ -30,10 +28,11 @@ the spec is right and the SDK has a bug.
 
 ## Use it
 
-Point any OpenAPI-compatible tool at the raw file:
+Point any OpenAPI-compatible tool at the raw file on the docs site (JSON at
+<https://docs.livetennisapi.com/openapi.json>):
 
 ```
-https://raw.githubusercontent.com/livetennisapi/openapi/main/openapi.yaml
+https://docs.livetennisapi.com/openapi.yaml
 ```
 
 Generate a client in your language of choice:
@@ -41,15 +40,14 @@ Generate a client in your language of choice:
 ```bash
 # openapi-generator
 openapi-generator generate \
-  -i https://raw.githubusercontent.com/livetennisapi/openapi/main/openapi.yaml \
+  -i https://docs.livetennisapi.com/openapi.yaml \
   -g go -o ./livetennis-go
 ```
 
 Or import it into Postman, Insomnia, Bruno, Hoppscotch, or Scalar directly.
 
 > **Prefer an official SDK?** They handle auth, retries, pagination, tier errors and the
-> WebSocket feed for you. See the [organisation profile](https://github.com/livetennisapi)
-> for the current list.
+> WebSocket feed for you. The [Related](#related) table below lists every one.
 
 ## Quick reference
 
@@ -116,24 +114,24 @@ operation, a documented 401 on every authenticated operation) on every push.
 ## Contributing
 
 Found a mismatch between this spec and what the API actually returns? That's a bug worth
-reporting — [open an issue](https://github.com/livetennisapi/openapi/issues) with the
+reporting. Mail [hello@livetennisapi.com](mailto:hello@livetennisapi.com?subject=Spec%20mismatch) with the
 endpoint, the request, and the response you got.
 
 ## Related
 
 Everything in the Live Tennis API developer surface:
 
-| | Install | Source | Package |
-|---|---|---|---|
-| Python client | `pip install livetennisapi` | [repo](https://github.com/livetennisapi/livetennisapi-python) | [package](https://pypi.org/project/livetennisapi/) |
-| JavaScript / TypeScript client | `npm install livetennisapi` | [repo](https://github.com/livetennisapi/livetennisapi-js) | [package](https://www.npmjs.com/package/livetennisapi) |
-| MCP server for LLM agents | hosted at `https://mcp.livetennisapi.com/mcp`, or `npx livetennisapi-mcp` | [repo](https://github.com/livetennisapi/livetennisapi-mcp) | [package](https://www.npmjs.com/package/livetennisapi-mcp) |
+| | Install | Package |
+|---|---|---|
+| Python client | `pip install livetennisapi` | [PyPI](https://pypi.org/project/livetennisapi/) |
+| JavaScript / TypeScript client | `npm install livetennisapi` | [npm](https://www.npmjs.com/package/livetennisapi) |
+| MCP server for LLM agents | hosted at `https://mcp.livetennisapi.com/mcp`, or `npx livetennisapi-mcp` | [npm](https://www.npmjs.com/package/livetennisapi-mcp) |
+| Vercel AI SDK tools | `npm install livetennisapi-ai` ([guide](https://docs.livetennisapi.com/ai-sdk.html)) | [npm](https://www.npmjs.com/package/livetennisapi-ai) |
 
 - **API reference** — <https://docs.livetennisapi.com> ([plain-HTML version](https://docs.livetennisapi.com/reference.html), no JavaScript required)
 - **Website and plans** — <https://livetennisapi.com>
 - **Get a free key** — <https://livetennisapi.com/subscribe/free>
 - **Discord** — <https://discord.gg/f8WUZHgDm6>
-- **GitHub organisation** — <https://github.com/livetennisapi>
 
 ## Licence
 

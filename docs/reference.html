@@ -207,7 +207,7 @@
 </head>
 <body class="docs-page docs-reference">
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./">Overview</a><a href="./reference.html" aria-current="page">API reference</a><a href="./changelog.html">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./">Overview</a><a href="./reference.html" aria-current="page">API reference</a><a href="./changelog.html">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a></nav></details>
+<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./">Overview</a><a href="./reference.html" aria-current="page">API reference</a><a href="./changelog.html">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./">Overview</a><a href="./reference.html" aria-current="page">API reference</a><a href="./changelog.html">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a><a href="./ai-sdk.html">Live Tennis API tools for the Vercel AI SDK</a></nav></details>
 <div class="wrap">
 
 <header>
@@ -231,6 +231,7 @@
 <a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a>
 <a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
 <a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
+<a href="./ai-sdk.html">Live Tennis API tools for the Vercel AI SDK</a>
 </nav>
 
 <div class="banner">
@@ -487,11 +488,11 @@ Details: <a href="https://livetennisapi.com">livetennisapi.com</a>.</p>
 
 <h2 id="clients">Official client libraries</h2>
 <div class="scrollx" tabindex="0" role="region" aria-label="Official client libraries">
-<table class="linkrow"><caption class="vh">Official client libraries — install command and source repository</caption>
-<thead><tr><th scope="col">Language</th><th scope="col">Install</th><th scope="col">Source</th></tr></thead><tbody>
-<tr><th scope="row">Python</th><td><code>pip install livetennisapi</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-python">livetennisapi-python</a></td></tr>
-<tr><th scope="row">JavaScript / TypeScript</th><td><code>npm install livetennisapi</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-js">livetennisapi-js</a></td></tr>
-<tr><th scope="row">MCP server (LLM agents)</th><td>hosted at <code>https://mcp.livetennisapi.com/mcp</code>, or <code>npx livetennisapi-mcp</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a></td></tr>
+<table class="linkrow"><caption class="vh">Official client libraries: install command and package page</caption>
+<thead><tr><th scope="col">Language</th><th scope="col">Install</th><th scope="col">Package</th></tr></thead><tbody>
+<tr><th scope="row">Python</th><td><code>pip install livetennisapi</code></td><td><a href="https://pypi.org/project/livetennisapi/">livetennisapi on PyPI</a></td></tr>
+<tr><th scope="row">JavaScript / TypeScript</th><td><code>npm install livetennisapi</code></td><td><a href="https://www.npmjs.com/package/livetennisapi">livetennisapi on npm</a></td></tr>
+<tr><th scope="row">MCP server (LLM agents)</th><td>hosted at <code>https://mcp.livetennisapi.com/mcp</code>, or <code>npx livetennisapi-mcp</code></td><td><a href="https://www.npmjs.com/package/livetennisapi-mcp">livetennisapi-mcp on npm</a></td></tr>
 </tbody></table></div>
 
 <h2 id="mcp">MCP server</h2>
@@ -504,8 +505,8 @@ install and nothing to keep running. <code>GET https://mcp.livetennisapi.com/hea
 reports the running version.</p>
 <p><strong>Self-run.</strong> <code>npx livetennisapi-mcp</code> with
 <code>LIVETENNISAPI_KEY</code> in the environment. Listed in the official MCP Registry as
-<code>io.github.livetennisapi/livetennisapi-mcp</code>, source at
-<a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a>.</p>
+<code>io.github.livetennisapi/livetennisapi-mcp</code>. The package is
+<a href="https://www.npmjs.com/package/livetennisapi-mcp">livetennisapi-mcp on npm</a>.</p>
 <p>Without a key only <code>check_api_status</code> answers, and it says where to get a free
 one. The hosted endpoint allows 300 requests a minute on a key and 60 without one. Your
 plan's own rate limit applies underneath that.</p>
@@ -2488,10 +2489,10 @@ A <code>_of</code> suffix is the denominator of its base field and a <code>_pct<
 
 <footer>
 <hr>
-<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
-<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.</p>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a>, also published as
+<a href="./openapi.json">openapi.json</a>.</p>
 <nav class="footnav" aria-label="Elsewhere">
-<a href="https://github.com/livetennisapi/openapi/issues">Report a spec mismatch</a>
+<a href="mailto:hello@livetennisapi.com?subject=Spec%20mismatch">Report a spec mismatch</a>
 <a href="https://affiliates.livetennisapi.com/program">Affiliate programme — 51% lifetime</a>
 </nav>
 <p class="meta">Writing about tennis, or building a tool on this API? The affiliate

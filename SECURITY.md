@@ -4,9 +4,9 @@
 
 **Do not open a public issue for a security problem.**
 
-Report it privately through
-[GitHub Security Advisories](https://github.com/livetennisapi/.github/security/advisories/new),
-or email **security@livetennisapi.com**.
+Report it privately by email to
+[hello@livetennisapi.com](mailto:hello@livetennisapi.com?subject=Security%20report)
+or **security@livetennisapi.com**.
 
 Please include what you found, how to reproduce it, and what an attacker could do
 with it. We'll acknowledge within 72 hours and keep you updated until it's fixed.

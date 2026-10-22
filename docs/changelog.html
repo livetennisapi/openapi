@@ -65,42 +65,127 @@
 </style>
 
 <style>
-/* Self-hosted webfonts (latin subsets), shared by index.html and reference.html.
-   Both pages previously shipped `document.fonts.size === 0` — reference.html
-   rendered entirely in the system UI stack and Space Grotesk, the product's
-   display face, appeared on neither page.
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
 
-   These are served from this origin, so the docs have no font dependency they
-   cannot verify: nothing is fetched from Google Fonts or any other third party,
-   and a blocked CDN cannot change how the page reads.
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
 
-   Family names must stay EXACTLY 'Inter' / 'Space Grotesk' / 'JetBrains Mono' —
-   they are the names the rest of the product's stylesheets use, and the ones
-   Scalar is handed via --scalar-font / --scalar-font-code.
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
 
-   Only the weights actually used are shipped (180 KB total):
-     Inter          400/500/600/700  body, UI, Scalar's semibold + bold
-     Space Grotesk  500/700          display: headings
-     JetBrains Mono 400/500          code, numerals */
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
 
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap;
-  src: url('fonts/inter-latin-400.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap;
-  src: url('fonts/inter-latin-500.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap;
-  src: url('fonts/inter-latin-600.woff2') format('woff2'); }
-@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap;
-  src: url('fonts/inter-latin-700.woff2') format('woff2'); }
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
 
-@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500; font-display: swap;
-  src: url('fonts/space-grotesk-latin-500.woff2') format('woff2'); }
-@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 700; font-display: swap;
-  src: url('fonts/space-grotesk-latin-700.woff2') format('woff2'); }
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
 
-@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap;
-  src: url('fonts/jetbrains-mono-latin-400.woff2') format('woff2'); }
-@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap;
-  src: url('fonts/jetbrains-mono-latin-500.woff2') format('woff2'); }
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
 </style><style>
 /* Documentation shares the product palette while keeping reference content compact. */
 :root{--bg:#0b100e;--panel:#131c16;--struct:#2d3b31;--text:#f0f4ee;--muted:#afbeb2;--ours:#b7f875;--accent:#b7f875;--r:8px;color-scheme:dark}
@@ -120,7 +205,7 @@
 </head>
 <body class="docs-page docs-changelog">
 <a class="skip-link" href="#main">Skip to content</a>
-<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html" aria-current="page">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html" aria-current="page">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a></nav></details>
+<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html" aria-current="page">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html" aria-current="page">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a><a href="./ai-sdk.html">Live Tennis API tools for the Vercel AI SDK</a></nav></details>
 <main class="wrap" id="main">
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
@@ -132,6 +217,10 @@
 <ul>
 <li><strong><code>GET /players/{playerId}/stats</code> (PRO; <code>serve_return</code> ULTRA).</strong> One player&#x27;s record over our own completed singles matches, 2023 onward. The default window is the 365 days ending now, and <code>?from=</code>, <code>?to=</code>, <code>?surface=</code>, <code>?level=</code> and <code>?last=</code> narrow it. PRO gets <code>records</code>: W/L overall, over the last 12 months, and by surface, venue, level and season. It also carries the set-based record (tiebreaks, deciding sets, after winning or losing the first set, comebacks, sets won and lost), withdrawals given and received, and the last N matches with the score turned round to the player. Every count carries its sample size, and a percentage on an empty sample is <code>null</code>, not 0. Winners and scores are read the same way the match object publishes them, so this endpoint cannot disagree with <code>GET /matches/{matchId}</code>. ULTRA adds <code>serve_return</code>, the per-match statistics of <code>/matches/{matchId}/statistics</code> summed over the window. Each ratio is published as numerator, denominator and pct, with the number of matches behind it. Below ULTRA the key is absent. A doubles-team id answers 400 <code>doubles_not_supported</code>, and a merged or retired id answers 410 as <code>/players/{playerId}</code> does. For 1968–2022, <code>/history/archive/career</code> remains the endpoint.</li>
 <li><strong><code>height_cm</code> and <code>doubles_ranking</code> on <code>GET /players/{playerId}</code>.</strong> Both are on the single-player read only, on paid tiers, and null on a FREE key. <code>height_cm</code> comes from the results archive&#x27;s record of the same person and is never inferred. <code>doubles_ranking</code> is <code>{rank, points, observed_on}</code>, the current position on the official ATP/WTA doubles table. It is null when the player is off the table or was last seen there more than 21 days ago. It is never copied into <code>ranking</code>, which stays the singles position. Nothing existing changed type or meaning.</li>
+</ul>
+<h3>Changed</h3>
+<ul>
+<li><strong>The licence is named by its SPDX identifier.</strong> <code>info.license</code> now carries <code>identifier: MIT</code> in place of a URL. The old URL pointed at a GitHub page that no longer loads. No endpoint, field or type changed.</li>
 </ul></article>
 <article id="v1.13.60"><h2>1.13.60 <time datetime="2026-10-03">2026-10-03</time></h2>
 <h3>Added</h3>

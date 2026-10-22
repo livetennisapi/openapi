@@ -7,5 +7,5 @@ contact_links:
     url: https://livetennisapi.com
     about: Anything about your subscription or API key — not a code issue.
   - name: Report a security vulnerability
-    url: https://github.com/livetennisapi/.github/security/advisories/new
-    about: Please report privately, never as a public issue.
+    url: mailto:hello@livetennisapi.com?subject=Security%20report
+    about: Please report privately by email, never as a public issue.
