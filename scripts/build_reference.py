@@ -250,7 +250,10 @@ def resolve(node: Any, spec: dict[str, Any], _seen: frozenset[str] = frozenset()
             merged = resolve(target, spec, _seen | {ref})
             rest = {k: resolve(v, spec, _seen) for k, v in node.items() if k != "$ref"}
             if isinstance(merged, dict):
-                return {**merged, **rest}
+                # `_ref` keeps the component's name after inlining, so a field
+                # table can name and link the schema instead of saying "object".
+                name = ref.rsplit("/", 1)[-1] if ref.startswith("#/components/schemas/") else None
+                return {**merged, **({"_ref": name} if name else {}), **rest}
             return merged
         return {k: resolve(v, spec, _seen) for k, v in node.items()}
     if isinstance(node, list):
@@ -278,6 +281,8 @@ def type_of(schema: dict[str, Any]) -> str:
         return "—"
     if "_cycle" in schema:
         return schema["_cycle"]
+    if schema.get("_ref") and _is_object(schema):
+        return schema["_ref"]
     for combinator in ("oneOf", "anyOf", "allOf"):
         if combinator in schema:
             parts = [type_of(s) for s in schema[combinator] if isinstance(s, dict)]
@@ -293,31 +298,126 @@ def type_of(schema: dict[str, Any]) -> str:
         return f"{t or 'string'} ({allowed})"
     if t == "object" and schema.get("properties"):
         return "object"
+    extra = schema.get("additionalProperties")
+    if isinstance(extra, dict) and extra and not schema.get("properties"):
+        return f"map of {type_of(extra)}"
     return str(t or "object")
 
 
-def fields_of(schema: dict[str, Any]) -> list[tuple[str, str, str]]:
-    """Flatten a schema's properties into (name, type, description) rows.
+def _is_object(schema: dict[str, Any]) -> bool:
+    t = schema.get("type")
+    return (t == "object" or (isinstance(t, list) and "object" in t)
+            or "properties" in schema or "allOf" in schema)
 
-    Merges ``allOf`` branches, so a composed schema like ``MatchDetail``
-    (``Match`` + extra embeds) renders its full field set rather than nothing.
-    """
-    if not isinstance(schema, dict):
-        return []
 
+def _own_props(schema: dict[str, Any]) -> dict[str, Any]:
+    """Properties of a schema, with ``allOf`` branches merged in."""
     props: dict[str, Any] = {}
     for branch in schema.get("allOf", []):
         if isinstance(branch, dict) and isinstance(branch.get("properties"), dict):
             props.update(branch["properties"])
     if isinstance(schema.get("properties"), dict):
         props.update(schema["properties"])
+    return props
 
-    rows = []
-    for name, sub in props.items():
-        if not isinstance(sub, dict):
-            continue
-        rows.append((name, type_of(sub), sub.get("description", "")))
+
+def _refs_of(schema: dict[str, Any]) -> list[str]:
+    """Component names a field's type points at: the schema itself, an array's items,
+    or a ``oneOf``/``anyOf`` branch (``Player or null``)."""
+    if not isinstance(schema, dict):
+        return []
+    if schema.get("_ref"):
+        return [schema["_ref"]]
+    if "_cycle" in schema:
+        return [schema["_cycle"]]
+    out: list[str] = []
+    for key in ("items", "additionalProperties"):
+        if isinstance(schema.get(key), dict):
+            out += _refs_of(schema[key])
+    for combinator in ("allOf", "oneOf", "anyOf"):
+        for branch in schema.get(combinator, []):
+            out += _refs_of(branch)
+    return list(dict.fromkeys(out))
+
+
+def _inline_children(schema: dict[str, Any]) -> tuple[str, dict[str, Any]] | None:
+    """The nested object to expand under a field, with the path suffix it takes.
+
+    Only INLINE objects expand. A named component keeps one row that links to its own
+    schema table, so the tables stay readable and a component reached from many fields
+    is described once. Map values (``additionalProperties``) expand as ``.*``.
+    """
+    if schema.get("_ref") or "_cycle" in schema:
+        return None
+    branches = [b for b in schema.get("allOf", []) if isinstance(b, dict)]
+    if (branches and not isinstance(schema.get("properties"), dict)
+            and all(b.get("_ref") or "_cycle" in b for b in branches)):
+        return None  # `allOf: [$ref]` beside a description: still the named component
+    if _own_props(schema):
+        return "", schema
+    for combinator in ("oneOf", "anyOf"):
+        objs = [b for b in schema.get(combinator, [])
+                if isinstance(b, dict) and _own_props(b) and not b.get("_ref")]
+        if len(objs) == 1:
+            return "", objs[0]
+    items = schema.get("items")
+    if isinstance(items, dict) and not items.get("_ref") and _own_props(items):
+        return "[]", items
+    extra = schema.get("additionalProperties")
+    if isinstance(extra, dict) and not extra.get("_ref") and _own_props(extra):
+        return ".*", extra
+    return None
+
+
+#: Deepest nesting a field table spells out. The deepest inline path in the spec is
+#: four levels (records.sets.sample.excluded.retired); past the cap a row stops at its type.
+FIELD_DEPTH_MAX = 6
+
+
+def fields_of(schema: dict[str, Any]) -> list[tuple[str, str, str, list[str]]]:
+    """Flatten a schema's properties into (path, type, description, refs) rows.
+
+    Merges ``allOf`` branches, so a composed schema like ``MatchDetail``
+    (``Match`` + extra embeds) renders its full field set rather than nothing.
+    Nested inline objects are walked recursively and named by dotted path
+    (``records.sets.tiebreaks.won``; ``recent[].date`` for array items). A field
+    whose type is a named component is not expanded: ``refs`` names it so the
+    renderer can link to that component's own table. The walk stops at
+    ``FIELD_DEPTH_MAX`` and at any object it is already inside (YAML aliases can
+    make a shared node reachable from itself).
+    """
+    rows: list[tuple[str, str, str, list[str]]] = []
+
+    def walk(node: dict[str, Any], prefix: str, depth: int, inside: frozenset[int]) -> None:
+        for name, sub in _own_props(node).items():
+            if not isinstance(sub, dict):
+                continue
+            path = f"{prefix}{name}"
+            rows.append((path, type_of(sub), sub.get("description", ""), _refs_of(sub)))
+            nested = _inline_children(sub)
+            if nested is None or depth + 1 >= FIELD_DEPTH_MAX:
+                continue
+            suffix, child = nested
+            if id(child) in inside:
+                continue
+            walk(child, f"{path}{suffix}.", depth + 1, inside | {id(child)})
+
+    if isinstance(schema, dict):
+        walk(schema, "", 0, frozenset({id(schema)}))
     return rows
+
+
+def type_cell(text: str, refs: list[str], href_prefix: str = "#") -> str:
+    """The escaped type text, with each named component linked to its schema table."""
+    out = E(text)
+    for ref in refs:
+        out = re.sub(
+            rf"(?<![\w-]){re.escape(E(ref))}(?![\w-])",
+            f'<a href="{href_prefix}schema-{E(ref.lower())}">{E(ref)}</a>',
+            out,
+            count=1,
+        )
+    return out
 
 
 # ------------------------------------------------------------------ rendering
@@ -389,8 +489,8 @@ def render_schema_table(name: str, schema: dict[str, Any]) -> str:
     if not rows:
         return ""
     body = "\n".join(
-        f"<tr><td><code>{E(n)}</code></td><td>{E(t)}</td><td>{md_inline(d)}</td></tr>"
-        for n, t, d in rows
+        f"<tr><td><code>{E(n)}</code></td><td>{type_cell(t, r)}</td><td>{md_inline(d)}</td></tr>"
+        for n, t, d, r in rows
     )
     desc = md_inline(schema.get("description", ""))
     return (
@@ -406,7 +506,10 @@ def render_schema_table(name: str, schema: dict[str, Any]) -> str:
     )
 
 
-def render_operation(path: str, method: str, op: dict[str, Any], spec: dict[str, Any]) -> str:
+def render_operation(path: str, method: str, op: dict[str, Any], spec: dict[str, Any],
+                     schema_href: str = "#") -> str:
+    """One operation's section. ``schema_href`` prefixes schema links: ``#`` on
+    reference.html, which holds the schema tables, ``./reference.html#`` elsewhere."""
     summary = op.get("summary", "")
     tier = tier_of(summary)
     op_id = op.get("operationId", "")
@@ -483,8 +586,9 @@ def render_operation(path: str, method: str, op: dict[str, Any], spec: dict[str,
             rows = fields_of(schema["properties"]["data"].get("items", {}))
         if rows:
             body = "".join(
-                f"<tr><td><code>{E(n)}</code></td><td>{E(t)}</td><td>{md_inline(d)}</td></tr>"
-                for n, t, d in rows
+                f"<tr><td><code>{E(n)}</code></td><td>{type_cell(t, r, schema_href)}</td>"
+                f"<td>{md_inline(d)}</td></tr>"
+                for n, t, d, r in rows
             )
             parts.append(
                 "<h4>Response fields</h4>"
@@ -1273,7 +1377,10 @@ def _md_block(md: str) -> str:
                 html_parts.append("<ul>")
                 in_list = True
             html_parts.append(f"<li>{_inline(line[2:])}</li>")
-        elif line.startswith("  ") and in_list and html_parts and html_parts[-1].endswith("</li>"):
+        elif line and in_list and html_parts and html_parts[-1].endswith("</li>"):
+            # A continuation line belongs to the open item, indented or not. Markdown's lazy
+            # continuation reads it that way, and treating an unindented one as a paragraph
+            # put a <p> straight inside the <ul> (1.13.60's entry did exactly that).
             html_parts[-1] = html_parts[-1][:-5] + " " + _inline(line.strip()) + "</li>"
         elif not line:
             flush_para()
@@ -1532,7 +1639,8 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
             for method, op in spec["paths"][path].items():
                 if method not in ("get", "post", "put", "patch", "delete"):
                     continue
-                ops_html.append(render_operation(path, method, op, spec))
+                ops_html.append(render_operation(path, method, op, spec,
+                                                 schema_href="./reference.html#"))
                 tiers.add(tier_of(op.get("summary", "")))
                 op_count += 1
         siblings = "\n".join(
@@ -1759,6 +1867,15 @@ and <a href="./shot-level-rally-data.html">shot-level charting</a> pages.</p>
 the plan it detects for the key. That is the quickest way to find out why another tool declined.
 Treat the plan as an estimate. A FREE key with History access reads as BASIC. Plans and prices are on the
 <a href="{SITE}/pricing">pricing page</a>.</p>
+<p><strong>Known issue with FREE keys.</strong> In livetennisapi-ai {AI_SDK_VERSION}, <code>check_api_status</code>
+fails for a FREE key without History access. Its first probe lists completed matches, which that plan
+does not include. The tool then returns <code>ok: false</code> with "Could not reach the API", even though
+the API and the key both work. The fix ships in livetennisapi-ai 1.2.1. Until that version is on npm, check a
+FREE key by calling <code>/health</code> and <code>/players</code> directly. A 200 from
+<code>/players</code> means the key is valid.</p>
+<pre><code>curl https://api.livetennisapi.com/api/public/v1/health
+curl "https://api.livetennisapi.com/api/public/v1/players?limit=1" \\
+  -H "Authorization: Bearer twjp_..."</code></pre>
 
 <h2 id="results">What happens when a tool can't return data?</h2>
 <p>A successful call returns <code>ok: true</code>, a readable <code>message</code> and the data.

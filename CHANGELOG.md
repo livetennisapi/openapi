@@ -5,6 +5,17 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.63] - 2026-10-22
+
+### Fixed
+- **`serve_return.matches_incomplete` is documented.** The API already returns it. It counts matches whose measured statistics stop short of the final. Those matches are left out of every sum.
+- **`serve_return.matches_with_stats` says what it counts.** It counts only matches whose measured statistics reach the final, and only those are summed.
+- **`GET /players` documents its 400 response.** A `restated_since` that is not an ISO-8601 instant answers `bad_restated_since` with the `Error` body.
+- **`Player.tour` lists the values the API sends.** They are `atp`, `wta` and `null`. The old text described capitalised and level values that have not been served since 2026-09-24.
+- **Field tables show nested fields.** Inline objects are spelled out as dotted paths, such as `sets.tiebreaks` and `serve.first_serve_in`. A field typed by a named schema links to that schema's table.
+- **Changelog list items keep their continuation lines.** An unindented line under a bullet rendered as a paragraph inside the list. That is invalid HTML.
+- **The AI SDK guide states a known issue with FREE keys.** In livetennisapi-ai 1.1.0, `check_api_status` reports a FREE key as unreachable. The guide names the workaround until 1.2.1 is on npm.
+
 ## [1.13.62] - 2026-10-22
 
 ### Fixed

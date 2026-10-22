@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.62"
+  version: "1.13.63"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1029,6 +1029,13 @@ paths:
                     type: array
                     items: { $ref: "#/components/schemas/Player" }
                   meta: { $ref: "#/components/schemas/ListMeta" }
+        "400":
+          description: >-
+            `bad_restated_since`: `restated_since` was not an ISO-8601 instant.
+            A bare date is refused, because a day is not an instant.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "429": { $ref: "#/components/responses/RateLimited" }
   /players/{playerId}:
@@ -4200,6 +4207,15 @@ components:
           type: integer
         matches_with_stats:
           type: integer
+          description: >-
+            Matches whose measured statistics reach the final (the
+            `freshness.measured.complete` judgement of GET /matches/{matchId}/statistics).
+            Only these matches are summed.
+        matches_incomplete:
+          type: integer
+          description: >-
+            Matches whose measured statistics are held but stop short of the final, or
+            cannot be judged against it. Left out of every sum.
         serve:
           type: object
           properties:
@@ -4414,13 +4430,16 @@ components:
         name: { type: string }
         tour:
           type: [string, "null"]
+          enum: [atp, wta, null]
           description: >-
-            The record's OWN tour, which is NOT the `tour` filter vocabulary.
-            It is granular (`juniors_boys`, `juniors_girls`, `challenger_men`)
-            where the filter is grouped (`juniors`, `challenger`), and a doubles
-            team reports it UPPERCASE (`ATP`) where an individual reports
-            lowercase (`atp`). Treat it as an opaque string; do not parse it into
-            the filter enum.
+            The circuit the player is filed under: atp | wta | null (normalised
+            2026-09-24 — the capitalised and level values no longer appear). Not
+            the competition level (use the match's tier) and not the draw (use the
+            match's gender). A doubles team carries the circuit both its members
+            are filed under; null when they disagree or either is unknown. null
+            means not filed, never a guess. Distinct from the match-level tour,
+            whose vocabulary is the tour-group filter's (atp | wta | challenger |
+            itf | juniors).
         country: { type: [string, "null"] }
         ranking:
           type: [integer, "null"]
