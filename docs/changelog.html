@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.61, last change 2026-10-22.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.62, last change 2026-10-22.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
 <meta property="og:type" content="article">
@@ -210,8 +210,19 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.61</strong>, last change <time datetime="2026-10-22">2026-10-22</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.62</strong>, last change <time datetime="2026-10-22">2026-10-22</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 </header>
+<article id="v1.13.62"><h2>1.13.62 <time datetime="2026-10-22">2026-10-22</time></h2>
+<h3>Fixed</h3>
+<ul>
+<li><strong><code>PlayerRecentMatch.opponent</code> is nullable.</strong> The endpoint returns <code>null</code> when the match row holds no opponent id. The schema said it was always an object.</li>
+<li><strong><code>PlayerRecentMatch.score.games</code> values are nullable integers.</strong> The per-set lists are passed through from the stored row as <code>GET /matches/{matchId}</code> serves them, and nothing on that path coerces the values.</li>
+<li><strong><code>records.last_12_months</code> now says what window it covers.</strong> It is the 365 days ending at <code>to</code>, whatever <code>from</code> says. With the default window it equals <code>overall</code>.</li>
+<li><strong>The <code>/players/{playerId}/stats</code> 400 response references the <code>Error</code> schema.</strong> It names the five codes and says that <code>bad_surface</code> and <code>bad_level</code> list the accepted values in <code>allowed</code>.</li>
+<li><strong>The <code>Player</code> schema gains seven fields the API already returns.</strong> They are <code>ranking_status</code>, <code>ranking_checked_at</code>, <code>itf_ranking</code>, <code>profile_restated_at</code>, <code>profile_version</code>, <code>archive_player_id</code> and <code>itf_id</code> (ULTRA only). <code>GET /players</code> gains the <code>restated_since</code> parameter that <code>profile_restated_at</code> points to. Nothing changed on the wire.</li>
+<li><strong><code>llms.txt</code> and the plans table name the new endpoint.</strong> <code>/players/{playerId}/stats</code> is listed under PRO and its <code>serve_return</code> block under ULTRA.</li>
+<li><strong>The players topic page no longer says <code>/rankings</code> per-player as-of records are PRO.</strong> The rank-ordered listing is PRO, and the as-of records are ULTRA.</li>
+</ul></article>
 <article id="v1.13.61"><h2>1.13.61 <time datetime="2026-10-22">2026-10-22</time></h2>
 <h3>Added</h3>
 <ul>

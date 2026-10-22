@@ -788,8 +788,8 @@ clicking a link is the fastest route and that trade-off is fine.</p>
 <thead><tr><th scope="col">Plan</th><th scope="col">Adds</th><th scope="col">Rate limit</th><th scope="col">Price</th></tr></thead><tbody>
 <tr><th scope="row">FREE</th><td>The current state of the game: live &amp; upcoming matches, current scores, players, fixtures, your usage stats. No history, no market prices, no model fields, no WebSocket.</td><td>30/min &middot; 100/day</td><td>$0 — no card</td></tr>
 <tr><th scope="row">BASIC</th><td>Historical data, in two continuous halves: the point-by-point tape (2023&rarr;now) — the completed-match listing (<code>/history/matches</code>, <code>status=completed</code>) and the full per-match tape with the model win-probability on the rows where the model ran (<code>/history/matches/{{matchId}}</code>) and the measured completeness rollup per tour &times; draw bucket (<code>/history/coverage</code>) — and the results archive (1968&ndash;2022): deep results (<code>/history/archive/matches</code>), archive player bios, career aggregates and head-to-head (<code>/h2h</code>).</td><td>60/min &middot; 1,000/day</td><td>$9.99/mo</td></tr>
-<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), and the rank-ordered rankings listing (<code>/rankings?system=</code>).</td><td>300/min &middot; 10,000/day</td><td>$29.99/mo</td></tr>
-<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics, live per-point events (<code>/matches/{{matchId}}/points</code> + the WebSocket <code>point</code> frames, where a point-level feed covers the match), per-player as-of ranking records, the as-of Elo tape (<code>/rankings?system=elo</code>), rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
+<tr><th scope="row">PRO</th><td>Match events, market prices (<code>/markets</code>), the pre-built bulk history packages (<code>/history/packages</code>, JSONL/CSV), the rank-ordered rankings listing (<code>/rankings?system=</code>), and per-player records over our matches (<code>/players/{{playerId}}/stats</code>).</td><td>300/min &middot; 10,000/day</td><td>$29.99/mo</td></tr>
+<tr><th scope="row">ULTRA</th><td>Model analysis, live <code>win_probability_p1</code> + <code>danger</code> on every score, in-play match statistics and their per-player sums (<code>serve_return</code> on <code>/players/{{playerId}}/stats</code>), live per-point events (<code>/matches/{{matchId}}/points</code> + the WebSocket <code>point</code> frames, where a point-level feed covers the match), per-player as-of ranking records, the as-of Elo tape (<code>/rankings?system=elo</code>), rally construction (shot-by-shot charted data), the WebSocket push feed, outbound webhooks.</td><td>600/min &middot; 500,000/day</td><td>$99.99/mo</td></tr>
 </tbody></table></div>
 <p class="scrollnote">The table above scrolls sideways.</p>
 <p>Calling an endpoint above your plan returns <code>403 {{"error":"upgrade_required"}}</code> —
@@ -1089,11 +1089,13 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "  (1968–2022): deep results, archive player bios, career aggregates and",
         "  head-to-head (/h2h). 60 req/min, 1,000 req/day.",
         "- PRO ($29.99/mo) — adds match events, market prices, bulk history packages",
-        "  (JSONL/CSV), and the rank-ordered rankings listing. 300 req/min, 10,000 req/day.",
+        "  (JSONL/CSV), the rank-ordered rankings listing, and per-player records over our",
+        "  matches (/players/{playerId}/stats). 300 req/min, 10,000 req/day.",
         "- ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,",
         "  in-play match statistics, live per-point events (/matches/{matchId}/points +",
         "  the WebSocket point frames, where a point-level feed covers the match),",
-        "  per-player as-of rankings, the as-of Elo tape (system=elo), rally construction",
+        "  serve_return on /players/{playerId}/stats (per-match statistics summed over the",
+        "  window), per-player as-of rankings, the as-of Elo tape (system=elo), rally construction",
         "  (shot-by-shot charted data), the reconstructed 2013–2022 archive tape",
         "  (/history/archive/matches/{archiveId}/tape — also opened by ANY active History",
         "  plan, Starter included), the WebSocket push feed and webhooks.",
@@ -1390,8 +1392,8 @@ TOPICS: list[dict[str, Any]] = [
             "serve and return statistics. "
             "<code>GET /tournaments</code> is the catalogue that <code>Match.tournament_id</code> "
             "joins against, so a match can be resolved to its event without a second vendor. "
-            "<code>GET /rankings</code> (PRO) serves rank-ordered listings and per-player as-of "
-            "records, including Elo."
+            "<code>GET /rankings</code> serves rank-ordered listings on PRO. The per-player as-of "
+            "records, including the Elo tape, are ULTRA."
         ),
         "paths": lambda p: p.startswith(("/players", "/tournaments", "/rankings")),
     },

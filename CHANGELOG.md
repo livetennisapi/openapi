@@ -5,6 +5,17 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.62] - 2026-10-22
+
+### Fixed
+- **`PlayerRecentMatch.opponent` is nullable.** The endpoint returns `null` when the match row holds no opponent id. The schema said it was always an object.
+- **`PlayerRecentMatch.score.games` values are nullable integers.** The per-set lists are passed through from the stored row as `GET /matches/{matchId}` serves them, and nothing on that path coerces the values.
+- **`records.last_12_months` now says what window it covers.** It is the 365 days ending at `to`, whatever `from` says. With the default window it equals `overall`.
+- **The `/players/{playerId}/stats` 400 response references the `Error` schema.** It names the five codes and says that `bad_surface` and `bad_level` list the accepted values in `allowed`.
+- **The `Player` schema gains seven fields the API already returns.** They are `ranking_status`, `ranking_checked_at`, `itf_ranking`, `profile_restated_at`, `profile_version`, `archive_player_id` and `itf_id` (ULTRA only). `GET /players` gains the `restated_since` parameter that `profile_restated_at` points to. Nothing changed on the wire.
+- **`llms.txt` and the plans table name the new endpoint.** `/players/{playerId}/stats` is listed under PRO and its `serve_return` block under ULTRA.
+- **The players topic page no longer says `/rankings` per-player as-of records are PRO.** The rank-ordered listing is PRO, and the as-of records are ULTRA.
+
 ## [1.13.61] - 2026-10-22
 
 ### Added

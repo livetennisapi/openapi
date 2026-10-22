@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.61"
+  version: "1.13.62"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1002,6 +1002,19 @@ paths:
         - name: search
           in: query
           schema: { type: string }
+        - name: restated_since
+          in: query
+          required: false
+          schema: { type: string, format: date-time }
+          description: >-
+            Keep only players whose published PROFILE was CORRECTED after this
+            instant (added 2026-10-05) — their `profile_restated_at` is later than
+            it. The poll to run after a sync when you key on a profile field such
+            as `birthday`: anything it returns has a `profile_restated_at` past
+            your cursor and a `profile_version` above the one you hold. An
+            ISO-8601 instant with a `Z` or an offset (a naive value is read as
+            UTC); a bare date is a 400 `bad_restated_since` — a day is not an
+            instant, exactly as on `/history/matches`.
         - $ref: "#/components/parameters/limit"
         - $ref: "#/components/parameters/offset"
       responses:
@@ -1146,7 +1159,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/PlayerStats'
         '400':
-          description: bad_date, bad_surface, bad_level, bad_last or doubles_not_supported
+          description: >-
+            A rejected query or a doubles-team id. `error` is one of bad_date,
+            bad_surface, bad_level, bad_last or doubles_not_supported. An enum
+            rejection (bad_surface, bad_level) lists the accepted values in
+            `allowed`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -3960,7 +3980,14 @@ components:
         overall:
           $ref: '#/components/schemas/PlayerWinLoss'
         last_12_months:
-          $ref: '#/components/schemas/PlayerWinLoss'
+          description: >-
+            W/L over the 365 days ending at the window's `to`, whatever `from`
+            says. With the default window it equals `overall`. With an older
+            `to` it is the year before that date, and it can count matches
+            that fall outside a narrower `from`. `surface` and `level` filters
+            apply to it as to every block.
+          allOf:
+            - $ref: '#/components/schemas/PlayerWinLoss'
         by_surface:
           type: object
           description: Keyed hard, clay, grass, unknown — the match surface.
@@ -4125,7 +4152,11 @@ components:
         level:
           type: [string, 'null']
         opponent:
-          type: object
+          type: [object, 'null']
+          description: >-
+            The other side of the match. `name` is null when the opponent id is
+            not on the roster read. The whole object is null when the match row
+            holds no opponent id.
           properties:
             id:
               type: integer
@@ -4149,10 +4180,16 @@ components:
                 type: [integer, 'null']
             games:
               type: array
+              description: >-
+                The stored per-set lists, passed through as held and not
+                re-validated, exactly as `GET /matches/{matchId}` serves them. A
+                side whose list is unreadable is `[]`. The values are integers in
+                practice, but nothing on this path coerces them, so decode each
+                one as a nullable integer.
               items:
                 type: array
                 items:
-                  type: integer
+                  type: [integer, 'null']
     PlayerServeReturn:
       type: object
       description: >-
@@ -4400,7 +4437,43 @@ components:
         ranking_points:
           type: [integer, "null"]
           description: Points on the same official table, refreshed with `ranking`.
+        ranking_status:
+          type: [string, "null"]
+          enum: [ranked, unranked, unverified, null]
+          description: >-
+            What the last reconcile against the published ATP/WTA singles tables
+            found (added 2026-09-23). `ranked` = on the table (`ranking` is that
+            row). `unranked` = the full table was fetched and the player was not
+            on it (a `ranking` here is the last value held, not current).
+            `unverified` = could not be checked (no id, a name mismatch, or never
+            checked). Null on doubles teams.
+        ranking_checked_at:
+          type: [string, "null"]
+          format: date-time
+          description: When that reconcile ran, UTC (added 2026-09-23).
         ranking_movement: { type: [string, "null"], enum: [up, down, same, null] }
+        itf_ranking:
+          type: [object, "null"]
+          description: >-
+            Added 2026-10-12, paid tiers (BASIC, PRO, ULTRA), null on a FREE key.
+            The player's CURRENT rank on the ITF's own published World Tennis Tour
+            ranking — the rank most ITF and junior players hold while they have no
+            ATP/WTA one. `system` names the circuit (`itf_mt` men's pro, `itf_wt`
+            women's pro, `itf_jt` juniors); a player ranked on a pro circuit and
+            the junior one carries the pro rank. `rank_date` is the ITF's
+            publication date of that row (weekly), so a stale rank is visible as
+            such. NOT comparable with `ranking` (a circuit rank 1 is tens of
+            points) and never written into it. Joined by the same exact ITF id
+            `itf_id` exposes at ULTRA, never by name. Null when no ITF link is
+            held, when that id is held by more than one roster row, when no
+            published row exists, and on doubles teams. The weekly history of
+            these ranks stays at `/rankings?system=itf_*` (ULTRA).
+          properties:
+            system: { type: string, enum: [itf_mt, itf_wt, itf_jt] }
+            rank: { type: integer }
+            points: { type: [number, "null"] }
+            rank_date: { type: string, format: date }
+          required: [system, rank, points, rank_date]
         hand: { type: [string, "null"], enum: [R, L, null] }
         backhand: { type: [integer, "null"], enum: [1, 2, null] }
         birthday: { type: [string, "null"], format: date }
@@ -4426,7 +4499,48 @@ components:
             rank: { type: integer }
             points: { type: [integer, "null"] }
             observed_on: { type: string, format: date }
+        itf_id:
+          type: [integer, "null"]
+          description: >-
+            ULTRA only (added 2026-09-24). The player's identifier in the ITF
+            ranking tables we publish under `system=itf_*` — the `itf_jt` /
+            `itf_mt` / `itf_wt` rows of `/rankings` are linked to this player by
+            it (an id join, never a name match). One human's id across singles
+            and doubles rows, so a join key, not a per-row primary key. Null when
+            no ITF link is held and on doubles teams. Absent, not null, below
+            ULTRA.
         is_doubles_team: { type: boolean }
+        profile_restated_at:
+          type: [string, "null"]
+          format: date-time
+          description: >-
+            When the published PROFILE of this player was LAST corrected (UTC),
+            added 2026-10-05 — the player twin of `result_restated_at`. A
+            correction is a change to a published profile field after it was
+            first published; today that is the name (where the held name was
+            another person's, from 2026-10-06) or the birth date, corrected to
+            the results archive's record of the same person where the two
+            disagreed. Null while the profile stands as first published. Poll
+            `GET /players?restated_since=` to find corrections.
+        profile_version:
+          type: integer
+          description: >-
+            1 plus the number of corrections to the published profile (added
+            2026-10-05), the player twin of `result_version`. 1 = the profile
+            stands as first published. Record it with the profile you hold and
+            compare on re-read — a higher number means a field you hold was
+            superseded.
+        archive_player_id:
+          type: [integer, "null"]
+          description: >-
+            The player's person id in the results archive (added 2026-09-23) —
+            the id `/history/archive/players` publishes as `id` and archive match
+            rows carry as `winner.player_id` / `loser.player_id`. Scoped by
+            `tour` (men and women are numbered independently). Set by a
+            tour-scoped link built offline from names and birth dates; null where
+            none exists. Measured 2026-09-23: 35 of 5,914 links (0.6%) pointed at
+            a differently named person; all 35 repaired on 2026-09-24. Confirm
+            with name and birthday where identity matters.
         data_completeness:
           type: object
           description: >-

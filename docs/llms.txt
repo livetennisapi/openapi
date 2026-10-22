@@ -55,11 +55,13 @@ Every plan includes the plans below it. The concrete deltas:
   (1968–2022): deep results, archive player bios, career aggregates and
   head-to-head (/h2h). 60 req/min, 1,000 req/day.
 - PRO ($29.99/mo) — adds match events, market prices, bulk history packages
-  (JSONL/CSV), and the rank-ordered rankings listing. 300 req/min, 10,000 req/day.
+  (JSONL/CSV), the rank-ordered rankings listing, and per-player records over our
+  matches (/players/{playerId}/stats). 300 req/min, 10,000 req/day.
 - ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,
   in-play match statistics, live per-point events (/matches/{matchId}/points +
   the WebSocket point frames, where a point-level feed covers the match),
-  per-player as-of rankings, the as-of Elo tape (system=elo), rally construction
+  serve_return on /players/{playerId}/stats (per-match statistics summed over the
+  window), per-player as-of rankings, the as-of Elo tape (system=elo), rally construction
   (shot-by-shot charted data), the reconstructed 2013–2022 archive tape
   (/history/archive/matches/{archiveId}/tape — also opened by ANY active History
   plan, Starter included), the WebSocket push feed and webhooks.
