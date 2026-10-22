@@ -1,0 +1,214 @@
+# Live Tennis API — API Reference
+
+> Complete endpoint reference for the Live Tennis API. Real-time tennis scores,
+> players, rankings, match-winner market prices and model win-probability for ATP,
+> WTA, Challenger and ITF, over REST and WebSocket — plus the point-by-point tape
+> (2023→now), the results archive (1968–2022) of deep historical results, and the
+> reconstructed 2013–2022 archive tape (97,901 matches, 14,340,663 rows).
+
+Base URL: https://api.livetennisapi.com/api/public/v1
+Full text reference: https://docs.livetennisapi.com/reference.html
+Changelog (dated, versioned): https://docs.livetennisapi.com/changelog.html
+OpenAPI spec: https://docs.livetennisapi.com/openapi.yaml
+OpenAPI spec (JSON): https://docs.livetennisapi.com/openapi.json
+Website: https://livetennisapi.com
+Plans and pricing: https://livetennisapi.com/pricing
+
+## Pages by topic
+Each answers one question and carries the full parameter and response detail for its
+endpoints, generated from the same spec as the reference:
+- How do you read live tennis scores from the API? https://docs.livetennisapi.com/live-scores.html
+- How do you look up a player, a tournament or a ranking? https://docs.livetennisapi.com/players-and-tournaments.html
+- How do you read tennis match-winner odds and their price history? https://docs.livetennisapi.com/tennis-odds.html
+- Which endpoints return point-by-point tennis data, and how complete is it? https://docs.livetennisapi.com/point-by-point-history.html
+- How far back does the historical tennis data go, and what is in it? https://docs.livetennisapi.com/historical-results-archive.html
+- Is there tennis data below the point — shot by shot? https://docs.livetennisapi.com/shot-level-rally-data.html
+- How do you put live tennis scores into a broadcast graphics template? https://docs.livetennisapi.com/broadcast-graphics.html
+- How do you receive tennis data as it happens instead of polling? https://docs.livetennisapi.com/push-feed-and-webhooks.html
+- How do you authenticate, and how do you see what quota is left? https://docs.livetennisapi.com/auth-quota-and-health.html
+
+## Quickstart (no code required)
+Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
+Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.
+  "sets": [1,0] = p1 leads one set to nil.
+  "games": [[6,3],[4,4]] = 6-4 in the first set, 3-4 in the second.
+  "points": ["0","0"] = the game in progress. "server": 1 = player 1 serving.
+
+## Authentication
+Send the API key as `Authorization: Bearer <key>`, `X-API-Key: <key>`, or `?token=<key>`
+in the query string. The query form is browser-friendly (clickable links, phones); prefer
+a header for anything automated, since URLs leak into logs, history and referrers.
+The /health endpoint requires no key.
+
+## Plans
+Every plan includes the plans below it. The concrete deltas:
+- FREE ($0, no card) — live & upcoming matches, current scores, players, fixtures,
+  usage stats. 30 req/min, 100 req/day. No history, no market prices, no model
+  fields, no WebSocket.
+- BASIC ($9.99/mo) — adds history, in two continuous halves: the point-by-point
+  tape (2023→now) — the completed-match listing, the per-match tape with the
+  model win-probability where computed, and the measured completeness rollup
+  per tour × draw bucket (/history/coverage) — and the results archive
+  (1968–2022): deep results, archive player bios, career aggregates and
+  head-to-head (/h2h). 60 req/min, 1,000 req/day.
+- PRO ($29.99/mo) — adds match events, market prices, bulk history packages
+  (JSONL/CSV), and the rank-ordered rankings listing. 300 req/min, 10,000 req/day.
+- ULTRA ($99.99/mo) — adds model analysis, live win_probability_p1 + danger,
+  in-play match statistics, live per-point events (/matches/{matchId}/points +
+  the WebSocket point frames, where a point-level feed covers the match),
+  per-player as-of rankings, the as-of Elo tape (system=elo), rally construction
+  (shot-by-shot charted data), the reconstructed 2013–2022 archive tape
+  (/history/archive/matches/{archiveId}/tape — also opened by ANY active History
+  plan, Starter included), the WebSocket push feed and webhooks.
+  600 req/min, 500,000 req/day.
+
+Coverage is identical on every plan (all tours, ATP through ITF); plans differ in
+which data products and volumes they unlock. Calling above your plan returns
+403 {"error":"upgrade_required"}.
+
+## Historical Data API (standalone plans for the /history endpoints)
+- Starter — single-match point-by-point tape reads (tape + model win-probability
+  where computed), all tours, one match per request, INCLUDING the reconstructed
+  2013–2022 archive tape. No bulk downloads.
+- Pro — everything in Starter + bulk monthly package downloads (and the per-year
+  archive_tape files) + higher rate limits.
+- Business — everything in Pro + year-scale archive exports + top rate limits +
+  priority support.
+- One-off passes — 1-month and 1-year access, no subscription.
+Prices: https://livetennisapi.com/historical-tennis-data-api
+
+## Break-point Alerts (hosted alerts, no code)
+- Free — high-swing break points only (probability swing >= 0.15), one delivery channel.
+- Pro ($9.99/mo) — every break point (no swing floor), unlimited channels:
+  Telegram, Discord, email, SMS, WhatsApp.
+
+## Endpoints
+- GET /health — Liveness probe (no auth)
+- GET /matches — List matches by lifecycle status (FREE)
+- GET /matches/{matchId} — Full match detail (FREE; +market PRO, +analysis ULTRA)
+- GET /matches/{matchId}/score — Current score only — lowest-latency REST read (FREE)
+- GET /matches/{matchId}/events — Match events, newest first (PRO)
+- GET /events — Slate-wide events feed — every match's events in one call, oldest first, cursor by id (PRO)
+- GET /players/{playerId}/stoppages — One player's in-match stoppages and did-not-finish outcomes, newest first over a window (PRO)
+- GET /players/{playerId}/injuries — Alias of /players/{playerId}/stoppages — the identical response (PRO)
+- GET /matches/{matchId}/status-history — The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)
+- GET /matches/{matchId}/withdrawals — The durable record of every score state we withdrew on this match (ULTRA)
+- GET /matches/{matchId}/analysis — Model analysis for a match (ULTRA)
+- GET /matches/{matchId}/statistics — In-play statistics — aces, double faults, serve split, hold/break %, break points, service & return points (ULTRA)
+- GET /matches/{matchId}/points — Live per-point events in seq order — the REST catch-up for the WebSocket point stream (ULTRA)
+- GET /players — Search players by name (FREE)
+- GET /players/{playerId} — One player's bio + ranking + cached stats (FREE)
+- GET /players/{playerId}/stats — One player's record over our completed singles matches — W/L splits, set-based record, recent matches (PRO; +serve_return ULTRA)
+- GET /tournaments — Tournament catalogue — the id space `Match.tournament_id` joins (FREE)
+- GET /tournaments/{tournamentId} — One tournament by its stable id (FREE)
+- GET /markets — The match's match-winner market (PRO)
+- GET /markets/{matchId}/prices — Market + recent price ticks per side, newest first (PRO)
+- GET /matches/{matchId}/prices — Bare price ticks of the mapped match-winner market, newest first (PRO)
+- GET /history/matches/{matchId}/prices — Per-point price history — the match-winner quote in force at every played point (PRO)
+- GET /history/matches — Completed matches, newest first, with derived winner and tape coverage (BASIC)
+- GET /history/coverage — Measured completeness rollup per tour × draw bucket (BASIC)
+- GET /history/matches/{matchId} — Per-match tape — point-by-point score + per-point model probabilities (BASIC)
+- GET /history/incidents — Published data-quality incidents (BASIC)
+- GET /history/incidents/{incidentId}/matches — The matches one incident affected, as JSONL or CSV (BASIC)
+- GET /history/archive/matches — Results archive (1968–2022) — deep historical results (BASIC)
+- GET /history/archive/matches/{archiveId} — One archive result, with serve statistics where recorded (BASIC)
+- GET /history/archive/matches/{archiveId}/tape — Reconstructed 2013–2022 point-by-point tape for one archive result (ULTRA, or any History plan)
+- GET /history/archive/players — Archive player bios — hand, DOB, country, height, career-high (BASIC)
+- GET /history/archive/career — Career aggregates over the results archive, 1968–2022 (BASIC)
+- GET /h2h — Head-to-head across the results archive (1968–2022) and our own completed matches (2023→now) (BASIC)
+- GET /history/packages — List the pre-built monthly bulk history packages (PRO)
+- GET /history/packages/{period} — One monthly package — manifest, or the bulk file itself (PRO)
+- GET /fixtures — Upcoming scheduled fixtures, earliest first (FREE)
+- GET /usage — Your own usage vs quota (FREE — any tier)
+- GET /rankings — Rankings and Elo — rank-ordered listing (PRO) or per-player as-of records (ULTRA); the as-of Elo tape is ULTRA in both modes
+- GET /rally/matches — Charted matches with shot-by-shot data (ULTRA)
+- GET /rally/matches/{rallyMatchId} — Rally construction for one charted match (ULTRA)
+- GET /history/matches/{matchId}/rally — Rally construction by OUR match id (ULTRA)
+- GET /charting/players — Career shot-level charting aggregate for one player (ULTRA)
+- GET /charting/matches/{chartingMatchId} — One charted match, every stat family for both players (ULTRA)
+- POST /webhooks — Register an outbound webhook (ULTRA, direct keys only)
+- GET /webhooks — List your webhooks (ULTRA, direct keys only; never includes the secret)
+- DELETE /webhooks/{webhookId} — Remove one of your webhooks (ULTRA, direct keys only)
+- GET /broadcast/match/{matchId} — One flat object for on-air graphics (ULTRA)
+- GET /broadcast/live — The broadcast object for every live match (ULTRA)
+- GET /ws-token — Mint a connection token for the high-fan-out push feed (ULTRA)
+
+## FAQ
+How much data can I access on each plan? FREE = the current state only, 100
+req/day. BASIC = + every completed match and its full point-by-point tape, one
+match per request, 1,000/day. PRO = + whole months of history in one bulk file,
+plus events and market prices, 10,000/day. ULTRA = + model analysis and live
+push, 500,000/day.
+How far back does history go? 1968, in two continuous halves. The point-by-point
+tape (2023→now): /history/matches pages every completed match from January 2023
+on (filter with from/to). The results archive (1968–2022): /history/archive/matches
+serves winner/loser-shaped results — ATP and WTA, main draws, qualifying and the
+ITF/futures tiers, 1968 through 2022 — with seeds, ranks at the time, and serve
+stats where the era recorded them (from 1991). The archive ends where the tape
+begins. GET /history/packages lists exactly which bulk periods exist (monthly for
+tape, yearly for ?kind=archive and ?kind=archive_tape) and is always the
+authoritative answer.
+Is there point-by-point data before 2023? For 2013–2022 yes, RECONSTRUCTED, not
+recorded: GET /history/archive/matches/{archiveId}/tape rebuilds the score sequence
+behind a 2013–2022 archive result from the public record — 97,901 matches and
+14,340,663 rows. The floor is hard: 977,903 archive results from 1968–2012 have NO
+tape and never will, because no public point-by-point record of those years exists
+to rebuild and we do not manufacture one. Nobody watched those matches, so
+timestamp, win_probability_p1 and danger are null on EVERY row and cannot be filled
+in later — the production table has no timestamp column at all, and the promotion
+script refuses to run if one ever appears. Do not time
+anything with this tape. The 2023→now tape is the opposite: it is our own
+recording, and the rows we actually watched carry a real clock and most of them a
+model probability. meta per match: coverage (reconstructed | reconstructed_partial),
+granularity (point on 99.4% of the corpus; 556 matches are one row per game, 555 of
+them in 2013), point_source, rows. reconstructed_partial (3,594 matches) has two
+causes and does not say which — 3,038 matches that genuinely stopped early (3,027
+retirements, 11 defaults) and 556 that carry the label only for being per-game.
+Coverage of the era, thin spots included: 19.3% of archive matches played 2013–2022
+and 44.9% of tour-level play; ATP slam main 98.0%, WTA slam main 97.4%, ATP Masters
+98.7%, ATP 250–500 95.4%, WTA Premier 94.1%, WTA Premier Mandatory 97.9%, Challenger
+main 55.3%, Challenger qualifying 33.6%; slam QUALIFYING only 16.0% (ATP) / 18.1%
+(WTA); ITF and futures effectively zero (25 of 116,575 ATP futures, 68 of 19,162
+M15, 48 of 9,380 M25). 31% of the corpus is qualifying-draw play. It is not a
+complete record of the era and is not sold as one. Every tape is bound to its match
+by a five-clause identity proof and a 23-invariant interior audit; one that cannot
+prove its binding is refused rather than published against a guess. Tier: core ULTRA
+or ANY active History plan including Starter; the per-year bulk files
+(?kind=archive_tape, 2013–2022, JSONL + CSV, all ready) need core ULTRA, a History
+Pro/Business subscription, or an active one-off package window. Core PRO carries
+NEITHER.
+What's in the point-by-point tape? One row per recorded point state:
+sets, per-set games, in-game points, server, tiebreak flag, and the model's
+win_probability_p1 + danger on the rows where the model ran (null elsewhere —
+check meta.model_rows). ?points=complete opts into a whole-match reconstruction
+where one exists; the response's meta.points block reports the measured
+point-completeness of exactly the sequence served — per match, never a blanket
+claim. ?points_complete=true filters /history/matches by that measured verdict,
+and ?draw=singles|doubles slices four listings (/matches, /history/matches,
+/tournaments, /fixtures) by the three-valued draw field — a null-draw row
+matches neither value. Measured completeness differs sharply by draw on some
+circuits (as of 2026-08-18: 51.1% of ITF singles point-complete on the best
+basis vs 3.5% of ITF doubles) — read GET /history/coverage, the per-bucket
+rollup rebuilt nightly and dated by its own as_of, before choosing what to
+backtest.
+
+## Official client libraries
+- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python
+- JavaScript/TypeScript: `npm install livetennisapi` — https://github.com/livetennisapi/livetennisapi-js
+- MCP server for LLM agents, hosted: POST https://mcp.livetennisapi.com/mcp (Streamable HTTP;
+  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 24
+  read-only tools on every plan, free keys included, each tool reaching what that plan
+  reaches. Nothing to install.
+- MCP server, self-run: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp
+
+## Affiliate programme
+- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime
+  of every subscription referred, 10% discount for the referred customer, 30-day attribution.
+- Free to join, open to developers, creators and tennis writers: https://affiliates.livetennisapi.com/signup
+
+## Notes
+- Timestamps are UTC ISO 8601 with a Z suffix.
+- List endpoints return {data, meta}; single resources return the object directly.
+- limit defaults to 50, maximum 200; paginate with offset.
+- Additive changes ship within v1: clients must ignore unknown fields.
+- Score `games` is player-major: [[6,3,2],[4,6,1]] reads 6-4, 3-6, 2-1.
