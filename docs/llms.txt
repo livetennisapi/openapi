@@ -205,7 +205,7 @@ backtest.
 - MCP server, self-run: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp
 - Vercel AI SDK tools: `npm install livetennisapi-ai`, source https://github.com/livetennisapi/livetennisapi-ai
   (guide: https://docs.livetennisapi.com/ai-sdk.html). The same 24 tools as the MCP server, as AI SDK tools.
-  Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7.
+  Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7, which needs Node 22 or later.
 
 ## Affiliate programme
 - https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime
