@@ -143,6 +143,19 @@ def _inline_css(name: str) -> str:
 INLINE_STYLES = _inline_css("fonts.css")
 DESIGN_STYLES = _inline_css("docs-design-20260918.css")
 
+
+def reference_base_style(reference_html: str) -> str:
+    """The reference's own base stylesheet (tokens, .wrap, .pagenav, .vh), for the pages that
+    reuse its look. Since fonts.css was inlined the first <style> in reference.html is the font
+    block, so "the first <style>" silently gave every topic page the fonts twice and no base
+    rules: captions meant for screen readers showed on screen. Skip the shared blocks instead."""
+    for block in re.findall(r"<style>.*?</style>\n?", reference_html, re.S):
+        if block.strip() not in (INLINE_STYLES.strip(), DESIGN_STYLES.strip()):
+            if ".vh" not in block:
+                raise SystemExit("reference.html: base stylesheet not found (no .vh rule)")
+            return block.rstrip("\n")
+    raise SystemExit("reference.html: no base stylesheet found")
+
 # The reference is one 36,000-word document with 95 <section>s and a header-to-footer run of
 # tables. Chrome styled and laid out all of it before the first paint: 670 ms of style and
 # layout on the PageSpeed mobile profile, most of it for content far below the fold. With
@@ -1269,8 +1282,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
     The sitemap's lastmod for this page is the newest entry's date — a date the file proves."""
     entries = changelog_entries(CHANGELOG.read_text(encoding="utf-8"))
     latest = entries[0]["date"] if entries else ""
-    style = re.search(r"<style>.*?</style>", reference_html, re.S)
-    style_html = style.group(0) if style else ""
+    style_html = reference_base_style(reference_html)
     articles = "\n".join(
         f'<article id="v{E(e["version"])}"><h2>{E(e["version"])} <time datetime="{e["date"]}">{e["date"]}</time></h2>\n{_md_block(e["body_md"])}</article>'
         for e in entries
@@ -1482,8 +1494,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
     failure this guards against is a new endpoint quietly missing from the docs site, which
     is invisible in review because the reference page would still list it.
     """
-    style = re.search(r"<style>.*?</style>", reference_html, re.S)
-    style_html = style.group(0) if style else ""
+    style_html = reference_base_style(reference_html)
     info = spec["info"]
     base = spec["servers"][0]["url"]
 
@@ -1640,7 +1651,7 @@ AI_SDK_TOOLS = [
     ("get_fixtures", "getFixtures", "The forward schedule", "FREE"),
     ("search_tournaments", "searchTournaments", "The tournament catalogue behind tournament_id", "FREE"),
     ("get_tournament", "getTournament", "One tournament by its stable id", "FREE"),
-    ("check_api_status", "checkApiStatus", "Whether the API is up, and which plan the key is on", "FREE"),
+    ("check_api_status", "checkApiStatus", "Whether the API is up, and the plan it detects for the key", "FREE"),
     ("get_recent_results", "getRecentResults", "Completed matches with winners, filterable", "BASIC"),
     ("search_archive_matches", "searchArchiveMatches", "The results archive, 1968 to 2022", "BASIC"),
     ("get_archive_match", "getArchiveMatch", "One archive result, with serve stats where recorded", "BASIC"),
@@ -1649,7 +1660,7 @@ AI_SDK_TOOLS = [
     ("get_h2h", "getH2H", "All-time head-to-head across the archive and recent matches", "BASIC"),
     ("get_match_events", "getMatchEvents", "Match timeline: breaks, games, momentum", "PRO"),
     ("get_match_odds", "getMatchOdds", "Match-winner market: bid, ask and mid", "PRO"),
-    ("get_rankings", "getRankings", "The full published ranking table per system", "PRO"),
+    ("get_rankings", "getRankings", "Published ranking rows for one system, up to 200 per call", "PRO"),
     ("get_match_analysis", "getMatchAnalysis", "Model win probability and thesis", "ULTRA"),
     ("get_player_rankings", "getPlayerRankings", "Point-in-time rankings for specific players", "ULTRA"),
     ("get_match_statistics", "getMatchStatistics", "In-play statistics, derived and measured", "ULTRA"),
@@ -1717,7 +1728,7 @@ process can serve users on different plans.</p>
 
 <h2 id="example">How do I use the tools with generateText?</h2>
 <p>Pass the whole set as <code>tools</code>. This example goes through the AI Gateway, which reads
-<code>AI_GATEWAY_API_KEY</code>. Any other AI SDK model works in its place.</p>
+<code>AI_GATEWAY_API_KEY</code>. Any other AI SDK model that supports tool calling works in its place.</p>
 <pre><code>{E(AI_SDK_EXAMPLE)}</code></pre>
 <p><code>isStepCount(3)</code> gives the model room to call a tool and then answer.</p>
 
@@ -1734,12 +1745,14 @@ still answers. It explains which plan the data needs instead of returning it.</p
 <a href="./players-and-tournaments.html">players and tournaments</a>,
 <a href="./historical-results-archive.html">results archive</a>, <a href="./tennis-odds.html">odds</a>
 and <a href="./shot-level-rally-data.html">shot-level charting</a> pages.</p>
-<p><code>check_api_status</code> tells the model which plan the key is on. That is the quickest way
-to find out why another tool declined. Plans and prices are on the
+<p><code>check_api_status</code> answers even without a key. It probes a few endpoints and reports
+the plan it detects for the key. That is the quickest way to find out why another tool declined.
+Treat the plan as an estimate. A FREE key with History access reads as BASIC. Plans and prices are on the
 <a href="{SITE}/pricing">pricing page</a>.</p>
 
 <h2 id="results">What happens when a tool can't return data?</h2>
 <p>A successful call returns <code>ok: true</code>, a readable <code>message</code> and the data.
+An empty answer is still a success, for example <code>ok: true</code> with no live matches.
 A missing or rejected key, a plan limit, a rate limit, an unknown id or a failed request returns
 <code>ok: false</code>. The <code>message</code> says what to do next.</p>
 <pre><code>{E(AI_SDK_REFUSAL)}</code></pre>
@@ -1801,8 +1814,7 @@ GUIDES: list[dict[str, Any]] = [
 
 def build_guide_pages(reference_html: str) -> dict[str, str]:
     """{slug: html} for GUIDES, in the topic pages' template."""
-    style = re.search(r"<style>.*?</style>", reference_html, re.S)
-    style_html = style.group(0) if style else ""
+    style_html = reference_base_style(reference_html)
     pages = {}
     for guide in GUIDES:
         desc = guide["description"]
@@ -1862,7 +1874,7 @@ def build_guide_pages(reference_html: str) -> dict[str, str]:
 <p><strong>{E(guide['question'])}</strong> {guide['lede']}</p>
 <p class="meta">{guide['meta']}</p>
 <nav class="pagenav" aria-label="Related pages">
-<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./reference.html">Full reference: all endpoints</a>
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
 <a href="./changelog.html">Changelog</a>
@@ -2048,7 +2060,8 @@ def main() -> int:
     index = DOCS / "index.html"
     if index.exists():
         index_html = index.read_text(encoding="utf-8")
-        missing = [t["slug"] for t in TOPICS + GUIDES if f'{t["slug"]}.html' not in index_html]
+        hrefs = set(re.findall(r'href="(?:\./)?([^"#?]+)"', index_html))
+        missing = [t["slug"] for t in TOPICS + GUIDES if f'{t["slug"]}.html' not in hrefs]
         if missing:
             raise SystemExit(
                 "docs/index.html does not link these topic pages: "
