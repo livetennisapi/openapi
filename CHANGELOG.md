@@ -5,6 +5,13 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.66] - 2026-10-22
+
+### Fixed
+- **`Player.tour` describes a doubles team the way the API decides it.** A team filed under a circuit of its own carries that circuit. Only a team filed under a level word or nothing falls back to the circuit both its members share, and it is `null` when they disagree or either is unknown. The 1.13.63 text put the fallback first. The field for singles or doubles is the match's `draw`, not its `gender`.
+- **Parameter tables show numeric bounds.** Every parameter with a `minimum` or `maximum` now says so next to its default. `/players/{playerId}/stats?last=` reads as 1 to 50, where it used to show only the default of 20.
+- **The AI SDK guide says how `check_api_status` detects the plan.** livetennisapi-ai 1.3.0 reads `/usage` and reports the key's own tier, so a FREE key with History access reports as FREE. The BASIC estimate applies only to the fallback probe, used when `/usage` cannot be read.
+
 ## [1.13.65] - 2026-10-22
 
 ### Changed

@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.65",
+  "version": "1.13.66",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -4860,7 +4860,7 @@
        "wta",
        null
       ],
-      "description": "The circuit the player is filed under: atp | wta | null (normalised 2026-09-24 — the capitalised and level values no longer appear). Not the competition level (use the match's tier) and not the draw (use the match's gender). A doubles team carries the circuit both its members are filed under; null when they disagree or either is unknown. null means not filed, never a guess. Distinct from the match-level tour, whose vocabulary is the tour-group filter's (atp | wta | challenger | itf | juniors)."
+      "description": "The circuit the player is filed under: atp | wta | null (normalised 2026-09-24 — the capitalised and level values no longer appear). Not the competition level (use the match's tier) and not the draw (use the match's draw). A doubles team filed under a circuit of its own carries that circuit; one filed under a level word or nothing falls back to the circuit both its members are filed under, and is null when they disagree or either is unknown. null means not filed, never a guess. Distinct from the match-level tour, whose vocabulary is the tour-group filter's (atp | wta | challenger | itf | juniors)."
      },
      "country": {
       "type": [

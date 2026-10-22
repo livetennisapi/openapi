@@ -539,7 +539,17 @@ def render_operation(path: str, method: str, op: dict[str, Any], spec: dict[str,
                 continue
             sch = p.get("schema", {}) or {}
             default = sch.get("default")
-            extra = f" Default <code>{E(str(default))}</code>." if default is not None else ""
+            lo, hi = sch.get("minimum"), sch.get("maximum")
+            notes = []
+            if default is not None:
+                notes.append(f"Default <code>{E(str(default))}</code>.")
+            if lo is not None and hi is not None:
+                notes.append(f"Range <code>{E(str(lo))}</code>&ndash;<code>{E(str(hi))}</code>.")
+            elif lo is not None:
+                notes.append(f"Minimum <code>{E(str(lo))}</code>.")
+            elif hi is not None:
+                notes.append(f"Maximum <code>{E(str(hi))}</code>.")
+            extra = " " + " ".join(notes) if notes else ""
             rows.append(
                 f"<tr><td><code>{E(str(p.get('name','')))}</code></td>"
                 f"<td>{E(str(p.get('in','')))}</td>"
@@ -1864,9 +1874,12 @@ still answers. It explains which plan the data needs instead of returning it.</p
 <a href="./players-and-tournaments.html">players and tournaments</a>,
 <a href="./historical-results-archive.html">results archive</a>, <a href="./tennis-odds.html">odds</a>
 and <a href="./shot-level-rally-data.html">shot-level charting</a> pages.</p>
-<p><code>check_api_status</code> answers even without a key. It probes a few endpoints and reports
-the plan it detects for the key. That is the quickest way to find out why another tool declined.
-Treat the plan as an estimate. A FREE key with History access reads as BASIC. Plans and prices are on the
+<p><code>check_api_status</code> answers even without a key. It calls <code>/health</code>, then reads
+the key's plan from <code>/usage</code> and reports that plan. A FREE key with History access reports as
+FREE. When a temporary grant lifts the key above its subscription, the message says so and names the
+subscription and the expiry. That is the quickest way to find out why another tool declined.
+If <code>/usage</code> cannot be read, the tool falls back to probing a few endpoints and reports an
+estimate. In that fallback a FREE key with History access reads as BASIC. Plans and prices are on the
 <a href="{SITE}/pricing">pricing page</a>.</p>
 <h2 id="results">What happens when a tool can't return data?</h2>
 <p>A successful call returns <code>ok: true</code>, a readable <code>message</code> and the data.
