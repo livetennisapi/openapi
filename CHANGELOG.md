@@ -5,6 +5,14 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.67] - 2026-10-22
+
+### Fixed
+- **`/players/{playerId}/stats` keeps a UTC instant as given.** `from` and `to` are compared as instants, and `window` echoes what was applied. An instant inside a repeated daylight-saving hour was read through a local wall clock. `to=2025-10-25T22:30:00Z` came back as 23:30Z with `from` an hour late, `from=22:30Z&to=23:15Z` was refused and the reversed window was accepted. The same ordering applies to `from` and `to` on `GET /matches` and `GET /history/matches`.
+- **An omitted `to` is the request instant.** It used to be rounded down to the minute, so a `from` a few seconds earlier answered 400 `bad_date`. Polls without `to` inside one minute still share a cached response, and its `window.to` is the first poll's instant.
+- **`freshness.measured.complete` and `serve_return.matches_with_stats` are one judgement.** A deciding match tiebreak written as its points in the stamp and as one game in the served final, or the other way round, is the same finished set. The statistics endpoint compared the totals first and answered `null` one way and `false` the other, while the player aggregate counted the match complete. The field text now says what the judgement is.
+- **`PlayerRecentMatch.score.games` are the games the match object publishes.** The recent scores go through the same projection as `GET /matches/{matchId}`, so a deciding match tiebreak the row keeps in `points` is rendered into the deciding-set games slot. Before this, the stored lists were read raw and a match that ended in the breaker showed one set fewer.
+
 ## [1.13.66] - 2026-10-22
 
 ### Fixed

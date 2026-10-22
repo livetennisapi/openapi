@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.66"
+  version: "1.13.67"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -1126,14 +1126,14 @@ paths:
         required: false
         schema:
           type: string
-        description: Window start by scheduled start — an ISO date (start of that day) or a UTC instant. Default `to` minus 365 days.
+        description: Window start by scheduled start — an ISO date (start of that day) or a UTC instant, kept and compared as an instant. Default `to` minus 365 days.
         example: '2025-01-01'
       - name: to
         in: query
         required: false
         schema:
           type: string
-        description: Window end — an ISO date (the whole of that day) or a UTC instant. Default now.
+        description: Window end — an ISO date (the whole of that day) or a UTC instant, kept and compared as an instant. Default the request instant; polls without `to` inside one minute share a cached response, whose `window.to` is the first poll's instant.
         example: '2025-12-31'
       - name: surface
         in: query
@@ -4188,11 +4188,14 @@ components:
             games:
               type: array
               description: >-
-                The stored per-set lists, passed through as held and not
-                re-validated, exactly as `GET /matches/{matchId}` serves them. A
-                side whose list is unreadable is `[]`. The values are integers in
-                practice, but nothing on this path coerces them, so decode each
-                one as a nullable integer.
+                The per-set lists through the match object's own projection,
+                exactly as `GET /matches/{matchId}` serves them: a deciding match
+                tiebreak the row keeps in `points` is rendered into the
+                deciding-set games slot (since 2026-10-22; before that the stored
+                lists were read raw). Otherwise passed through as held and not
+                re-validated. A side whose list is unreadable is `[]`. The values
+                are integers in practice, but nothing on this path coerces them,
+                so decode each one as a nullable integer.
               items:
                 type: array
                 items:
@@ -4209,8 +4212,10 @@ components:
           type: integer
           description: >-
             Matches whose measured statistics reach the final (the
-            `freshness.measured.complete` judgement of GET /matches/{matchId}/statistics).
-            Only these matches are summed.
+            `freshness.measured.complete` judgement of GET /matches/{matchId}/statistics:
+            the stamped per-set games against the served final, set by set, a deciding
+            match tiebreak written as its points in one and as one game in the other
+            counted as the same set). Only these matches are summed.
         matches_incomplete:
           type: integer
           description: >-
