@@ -27,6 +27,9 @@ endpoints, generated from the same spec as the reference:
 - How do you receive tennis data as it happens instead of polling? https://docs.livetennisapi.com/push-feed-and-webhooks.html
 - How do you authenticate, and how do you see what quota is left? https://docs.livetennisapi.com/auth-quota-and-health.html
 
+## Guides
+- How do you give a Vercel AI SDK model live tennis data? https://docs.livetennisapi.com/ai-sdk.html
+
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
 Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.
@@ -200,6 +203,9 @@ backtest.
   read-only tools on every plan, free keys included, each tool reaching what that plan
   reaches. Nothing to install.
 - MCP server, self-run: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp
+- Vercel AI SDK tools: `npm install livetennisapi-ai`, source https://github.com/livetennisapi/livetennisapi-ai
+  (guide: https://docs.livetennisapi.com/ai-sdk.html). The same 24 tools as the MCP server, as AI SDK tools.
+  Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7.
 
 ## Affiliate programme
 - https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime

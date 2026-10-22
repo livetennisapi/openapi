@@ -62,7 +62,7 @@ def site_navigation(active: str) -> str:
     topics = "".join(
         f'<a href="./{t["slug"]}.html"'
         + (' aria-current="page"' if t["slug"] == active else '')
-        + f'>{E(t["title"])}</a>' for t in TOPICS
+        + f'>{E(t["title"])}</a>' for t in TOPICS + GUIDES
     )
     return (
         '<header class="docs-site-header"><a class="docs-brand" href="./">'
@@ -511,7 +511,7 @@ def build_html(spec: dict[str, Any]) -> str:
     # Every topic page links back here; this is the link the other way, so neither is an
     # orphan and a crawler reaching either one reaches all of them.
     topic_nav = "\n".join(
-        f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>' for t in TOPICS
+        f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>' for t in TOPICS + GUIDES
     )
 
     return f"""<!doctype html>
@@ -1038,6 +1038,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "endpoints, generated from the same spec as the reference:",
         *[f"- {t['question']} {DOCS_URL}/{t['slug']}.html" for t in TOPICS],
         "",
+        "## Guides",
+        *[f"- {t['question']} {DOCS_URL}/{t['slug']}.html" for t in GUIDES],
+        "",
         "## Quickstart (no code required)",
         f"Open this in a browser — no install, no headers: {base}/matches?status=live&token=YOUR_KEY",
         "Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.",
@@ -1167,6 +1170,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "  read-only tools on every plan, free keys included, each tool reaching what that plan",
         "  reaches. Nothing to install.",
         "- MCP server, self-run: `npx livetennisapi-mcp` — https://github.com/livetennisapi/livetennisapi-mcp",
+        "- Vercel AI SDK tools: `npm install livetennisapi-ai`, source https://github.com/livetennisapi/livetennisapi-ai",
+        f"  (guide: {DOCS_URL}/ai-sdk.html). The same 24 tools as the MCP server, as AI SDK tools.",
+        "  Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7.",
         "",
         "## Affiliate programme",
         "- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime",
@@ -1508,7 +1514,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
                 op_count += 1
         siblings = "\n".join(
             f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>'
-            for t in TOPICS if t["slug"] != topic["slug"]
+            for t in TOPICS + GUIDES if t["slug"] != topic["slug"]
         )
         plans = ", ".join(sorted(t for t in tiers if t)) or "FREE"
         # A meta description past ~160 characters is truncated in the result, so the tail is
@@ -1606,6 +1612,250 @@ this page is also in <a href="./reference.html">the full reference</a>.</p>
     return pages
 
 
+# ------------------------------------------------------------------ guides ---------------------
+# Pages about a client package rather than a slice of the spec. They share the topic pages'
+# head, navigation and footer, but their body is written here, not generated from paths, so
+# they sit outside the TOPICS rule that every path lands on exactly one page.
+#
+# Every fact on the AI SDK page was checked against the published npm package
+# (livetennisapi-ai 1.1.0) with ai 7.0.148 on 2026-10-22: the export names, the env var, the
+# 24 tool names and their plans. Re-check them when the package changes its tool set.
+AI_SDK_PACKAGE = "livetennisapi-ai"
+AI_SDK_NPM = "https://www.npmjs.com/package/livetennisapi-ai"
+AI_SDK_REPO = "https://github.com/livetennisapi/livetennisapi-ai"
+
+# (tool name, export, what it returns, plan) as the package's README table states them.
+AI_SDK_TOOLS = [
+    ("get_live_matches", "getLiveMatches", "Matches in progress, with live scores", "FREE"),
+    ("get_upcoming_matches", "getUpcomingMatches", "Matches due to start soon", "FREE"),
+    ("get_match", "getMatch", "Full detail for one match", "FREE"),
+    ("get_match_score", "getMatchScore", "The score only, the lowest-latency read", "FREE"),
+    ("search_players", "searchPlayers", "Find players by name", "FREE"),
+    ("get_player", "getPlayer", "One player's profile and ranking", "FREE"),
+    ("get_fixtures", "getFixtures", "The forward schedule", "FREE"),
+    ("search_tournaments", "searchTournaments", "The tournament catalogue behind tournament_id", "FREE"),
+    ("get_tournament", "getTournament", "One tournament by its stable id", "FREE"),
+    ("check_api_status", "checkApiStatus", "Whether the API is up, and which plan the key is on", "FREE"),
+    ("get_recent_results", "getRecentResults", "Completed matches with winners, filterable", "BASIC"),
+    ("search_archive_matches", "searchArchiveMatches", "The results archive, 1968 to 2022", "BASIC"),
+    ("get_archive_match", "getArchiveMatch", "One archive result, with serve stats where recorded", "BASIC"),
+    ("search_archive_players", "searchArchivePlayers", "Archive bios: hand, date of birth, career-high rank", "BASIC"),
+    ("get_archive_career", "getArchiveCareer", "Career win-loss, titles and serve totals over the archive", "BASIC"),
+    ("get_h2h", "getH2H", "All-time head-to-head across the archive and recent matches", "BASIC"),
+    ("get_match_events", "getMatchEvents", "Match timeline: breaks, games, momentum", "PRO"),
+    ("get_match_odds", "getMatchOdds", "Match-winner market: bid, ask and mid", "PRO"),
+    ("get_rankings", "getRankings", "The full published ranking table per system", "PRO"),
+    ("get_match_analysis", "getMatchAnalysis", "Model win probability and thesis", "ULTRA"),
+    ("get_player_rankings", "getPlayerRankings", "Point-in-time rankings for specific players", "ULTRA"),
+    ("get_match_statistics", "getMatchStatistics", "In-play statistics, derived and measured", "ULTRA"),
+    ("get_charting_player", "getChartingPlayer", "A player's career shot-level charting profile", "ULTRA"),
+    ("get_charting_match", "getChartingMatch", "Every charting stat family for one match", "ULTRA"),
+]
+
+AI_SDK_EXAMPLE = """import { generateText, gateway, isStepCount } from 'ai';
+import { livetennisTools } from 'livetennisapi-ai';
+
+const { text } = await generateText({
+  model: gateway('openai/gpt-5-mini'),
+  prompt: 'Which tennis matches are live right now, and what are the scores?',
+  tools: livetennisTools(), // reads LIVETENNISAPI_KEY
+  stopWhen: isStepCount(3),
+});
+
+console.log(text);"""
+
+AI_SDK_SUBSET = """import { getLiveMatches, getMatchScore } from 'livetennisapi-ai';
+
+const apiKey = process.env.LIVETENNISAPI_KEY;
+
+const tools = {
+  get_live_matches: getLiveMatches({ apiKey }),
+  get_match_score: getMatchScore({ apiKey }),
+};"""
+
+AI_SDK_REFUSAL = """{
+  ok: false,
+  message: 'This data requires the ULTRA plan, and the configured API key is on a lower tier. ...'
+}"""
+
+
+def _ai_sdk_body() -> str:
+    plan_label = {"BASIC": "BASIC or any History plan"}
+    rows = "".join(
+        f"<tr><td><code>{E(name)}</code></td><td><code>{E(export)}</code></td>"
+        f"<td>{E(does)}</td><td>{E(plan_label.get(plan, plan))}</td></tr>"
+        for name, export, does, plan in AI_SDK_TOOLS
+    )
+    table = scrollx(
+        f"<table>{vh_caption('The AI SDK tools, their exports and plans')}"
+        '<thead><tr><th scope="col">Tool</th><th scope="col">Export</th>'
+        '<th scope="col">Returns</th><th scope="col">Plan</th></tr></thead>'
+        f"<tbody>{rows}</tbody></table>",
+        "AI SDK tools",
+    )
+    return f"""<h2 id="install">Install</h2>
+<p>The package is <a href="{AI_SDK_NPM}">{AI_SDK_PACKAGE}</a> on npm. It needs Node 18 or later.
+<code>ai</code> v7 is a peer dependency, so the tools use the copy your app already has.</p>
+<pre><code>npm install livetennisapi-ai ai
+pnpm add livetennisapi-ai ai
+yarn add livetennisapi-ai ai
+bun add livetennisapi-ai ai</code></pre>
+
+<h2 id="api-key">Set the API key</h2>
+<p>The tools read your key from the <code>LIVETENNISAPI_KEY</code> environment variable.
+<a href="{SITE}/subscribe/free">Get a free key</a>. No card is needed.</p>
+<pre><code>export LIVETENNISAPI_KEY=twjp_...</code></pre>
+<p>You can also pass the key in code as <code>livetennisTools({{ apiKey }})</code>. The
+<code>apiKey</code> option wins over the environment variable. Each call returns a tool set bound to one key, so one
+process can serve users on different plans.</p>
+
+<h2 id="example">Call the tools from generateText</h2>
+<p>Pass the whole set as <code>tools</code>. This example goes through the AI Gateway, which reads
+<code>AI_GATEWAY_API_KEY</code>. Any other AI SDK model works in its place.</p>
+<pre><code>{E(AI_SDK_EXAMPLE)}</code></pre>
+<p>The SDK runs each tool the model picks and hands the result back.
+<code>isStepCount(3)</code> leaves room for a tool call and then the answer.</p>
+
+<h2 id="subset">Send only the tools you need</h2>
+<p>Each tool is also exported on its own. Every tool's description and input schema go to the model
+on every request, so a smaller set costs fewer tokens.</p>
+<pre><code>{E(AI_SDK_SUBSET)}</code></pre>
+
+<h2 id="tools">The 24 tools</h2>
+<p>Tool names, exports and plans are the ones the package defines. A tool above your key's plan
+still answers. It explains which plan the data needs instead of returning it.</p>
+{table}
+<p><code>check_api_status</code> tells the model which plan the key is on. That is the quickest way
+to find out why another tool declined. Plans and prices are on the
+<a href="{SITE}/pricing">pricing page</a>.</p>
+
+<h2 id="results">What a tool returns</h2>
+<p>A successful call returns <code>ok: true</code>, a readable <code>message</code> and the data.
+A missing key, a plan limit, a rate limit or an empty result returns <code>ok: false</code>. The
+<code>message</code> says what to do next.</p>
+<pre><code>{E(AI_SDK_REFUSAL)}</code></pre>
+<p>None of these throw. The model reads the message and can pass the upgrade path or the wait time
+on to the user.</p>
+
+<h2 id="mcp">From an MCP client</h2>
+<p>The same 24 tools also run as an MCP server. The hosted endpoint is
+<code>https://mcp.livetennisapi.com/mcp</code>. To run it yourself, use
+<code>npx livetennisapi-mcp</code> from <a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi/livetennisapi-mcp</a>.</p>
+
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="{AI_SDK_NPM}">livetennisapi-ai on npm</a></li>
+<li><a href="{AI_SDK_REPO}">Source on GitHub</a></li>
+<li><a href="{SITE}/subscribe/free">Free API key</a></li>
+<li><a href="./auth-quota-and-health.html">Authentication, quota and status</a></li>
+</ul>
+"""
+
+
+GUIDES: list[dict[str, Any]] = [
+    {
+        "slug": "ai-sdk",
+        "title": "Live Tennis API tools for the Vercel AI SDK",
+        "question": "How do you give a Vercel AI SDK model live tennis data?",
+        "description": (
+            "How do you give a Vercel AI SDK model live tennis data? Install livetennisapi-ai "
+            "and pass livetennisTools() to generateText."
+        ),
+        "lede": (
+            f'Install <a href="{AI_SDK_NPM}"><code>livetennisapi-ai</code></a> and pass '
+            "<code>livetennisTools()</code> to <code>generateText</code>. The model gets 24 "
+            "read-only tools for live scores, players, fixtures, rankings, head-to-head, the "
+            "results archive and model win probability."
+        ),
+        "meta": (
+            f'Package <a href="{AI_SDK_NPM}">livetennisapi-ai</a> 1.1.0, for <code>ai</code> v7. '
+            "Tested with ai 7.0.148 on 2026-10-22. Free keys need no card."
+        ),
+        "body": _ai_sdk_body,
+        "footer": (
+            f'Written for <a href="{AI_SDK_NPM}">livetennisapi-ai</a> 1.1.0. Package source in '
+            f'<a href="{AI_SDK_REPO}">livetennisapi/livetennisapi-ai</a>, page source in '
+            '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
+        ),
+    },
+]
+
+
+def build_guide_pages(spec: dict[str, Any], reference_html: str) -> dict[str, str]:
+    """{slug: html} for GUIDES, in the topic pages' template."""
+    style = re.search(r"<style>.*?</style>", reference_html, re.S)
+    style_html = style.group(0) if style else ""
+    info = spec["info"]
+    pages = {}
+    for guide in GUIDES:
+        desc = guide["description"]
+        if len(E(desc)) > 158:
+            raise SystemExit(f"guide {guide['slug']}: meta description over 158 characters")
+        siblings = "\n".join(
+            f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>'
+            for t in TOPICS + GUIDES if t["slug"] != guide["slug"]
+        )
+        pages[guide["slug"]] = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{E(guide['title'])} — {E(info['title'])}</title>
+<meta name="description" content="{E(desc)}">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="{DOCS_URL}/{guide['slug']}.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{E(guide['title'])}">
+<meta property="og:url" content="{DOCS_URL}/{guide['slug']}.html">
+<meta property="og:image" content="{DOCS_URL}/banner.jpg">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{{"@context":"https://schema.org","@type":"TechArticle",
+"headline":"{E(guide['title'])}",
+"description":"{E(desc)}",
+"url":"{DOCS_URL}/{guide['slug']}.html",
+"inLanguage":"en",
+"isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
+"publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
+</script>
+{FONT_PRELOADS}{INLINE_STYLES}
+{style_html}{DESIGN_STYLES}
+</head>
+<body class="docs-page docs-topic">
+<a class="skip-link" href="#main">Skip to content</a>
+{site_navigation(guide['slug'])}
+<div class="wrap">
+<header>
+<p class="meta">Live Tennis API &middot; docs &middot; version {E(str(info.get('version','')))}</p>
+<h1>{E(guide['title'])}</h1>
+<p><strong>{E(guide['question'])}</strong> {guide['lede']}</p>
+<p class="meta">{guide['meta']}</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference — all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="{SITE}/pricing">Pricing</a>
+<a href="{SITE}/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+{guide['body']()}</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+{siblings}
+</nav>
+<p class="meta">{guide['footer']}</p>
+{CREDIT}
+</footer>
+</div>
+{BEACON}{CLARITY}</body>
+</html>
+"""
+    return pages
+
+
 def build_robots() -> str:
     return f"""User-agent: *
 Allow: /
@@ -1666,7 +1916,7 @@ def build_sitemap(changelog_date: str = "") -> str:
     urls += "\n" + "\n".join(
         f'  <url><loc>{DOCS_URL}/{t["slug"]}.html</loc><changefreq>weekly</changefreq>'
         f"<priority>0.8</priority></url>"
-        for t in TOPICS
+        for t in TOPICS + GUIDES
     )
     if changelog_date:
         # lastmod ONLY here: the newest entry's date is a fact the file itself proves. The two pages
@@ -1685,10 +1935,12 @@ def main() -> int:
     reference = build_html(spec)
     changelog_html, changelog_date = build_changelog(spec, reference)
     topics = build_topic_pages(spec, reference)
+    guides = build_guide_pages(spec, reference)
     outputs = {
         DOCS / "reference.html": reference,
         DOCS / "changelog.html": changelog_html,
         **{DOCS / f"{slug}.html": html for slug, html in topics.items()},
+        **{DOCS / f"{slug}.html": html for slug, html in guides.items()},
         DOCS / "llms.txt": build_llms_txt(spec),
         DOCS / "robots.txt": build_robots(),
         DOCS / "sitemap.xml": build_sitemap(changelog_date),
@@ -1762,7 +2014,7 @@ def main() -> int:
     index = DOCS / "index.html"
     if index.exists():
         index_html = index.read_text(encoding="utf-8")
-        missing = [t["slug"] for t in TOPICS if f'{t["slug"]}.html' not in index_html]
+        missing = [t["slug"] for t in TOPICS + GUIDES if f'{t["slug"]}.html' not in index_html]
         if missing:
             raise SystemExit(
                 "docs/index.html does not link these topic pages: "
