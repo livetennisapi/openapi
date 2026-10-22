@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.65] - 2026-10-22
+
+### Changed
+- The AI SDK guide now pins livetennisapi-ai 1.3.0, which adds `player_stats` (PRO, with `serve_return` on ULTRA). The guide and llms.txt now say 25 tools, the same set as livetennisapi-mcp 1.6.1.
+
 ## [1.13.64] - 2026-10-22
 
 ### Changed

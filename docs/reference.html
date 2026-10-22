@@ -212,7 +212,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.13.64 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.13.65 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -496,7 +496,7 @@ Details: <a href="https://livetennisapi.com">livetennisapi.com</a>.</p>
 </tbody></table></div>
 
 <h2 id="mcp">MCP server</h2>
-<p>Two ways to put this API behind an LLM agent. Both expose the same 24 read-only tools, and
+<p>Two ways to put this API behind an LLM agent. Both expose the same 25 read-only tools, and
 both authorise every tool call on your own key, so a tool reaches what your plan reaches.</p>
 <p><strong>Hosted.</strong> POST to <code>https://mcp.livetennisapi.com/mcp</code>
 (Streamable HTTP, POST only) and send your key as
@@ -510,7 +510,7 @@ reports the running version.</p>
 <p>Without a key only <code>check_api_status</code> answers, and it says where to get a free
 one. The hosted endpoint allows 300 requests a minute on a key and 60 without one. Your
 plan's own rate limit applies underneath that.</p>
-<p>The 24 tools: <code>get_live_matches</code>, <code>get_upcoming_matches</code>,
+<p>The 25 tools: <code>get_live_matches</code>, <code>get_upcoming_matches</code>,
 <code>get_match</code>, <code>get_match_score</code>, <code>get_fixtures</code>,
 <code>get_recent_results</code>, <code>search_players</code>, <code>get_player</code>,
 <code>search_tournaments</code>, <code>get_tournament</code>, <code>get_h2h</code>,
@@ -519,7 +519,7 @@ plan's own rate limit applies underneath that.</p>
 <code>get_match_statistics</code>, <code>search_archive_matches</code>,
 <code>get_archive_match</code>, <code>search_archive_players</code>,
 <code>get_archive_career</code>, <code>get_charting_player</code>,
-<code>get_charting_match</code>, <code>check_api_status</code>.</p>
+<code>get_charting_match</code>, <code>player_stats</code>, <code>check_api_status</code>.</p>
 
 <h2 id="conventions">Conventions</h2>
 <ul>

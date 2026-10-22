@@ -931,7 +931,7 @@ Details: <a href="{SITE}">livetennisapi.com</a>.</p>
 </tbody></table></div>
 
 <h2 id="mcp">MCP server</h2>
-<p>Two ways to put this API behind an LLM agent. Both expose the same 24 read-only tools, and
+<p>Two ways to put this API behind an LLM agent. Both expose the same 25 read-only tools, and
 both authorise every tool call on your own key, so a tool reaches what your plan reaches.</p>
 <p><strong>Hosted.</strong> POST to <code>https://mcp.livetennisapi.com/mcp</code>
 (Streamable HTTP, POST only) and send your key as
@@ -945,7 +945,7 @@ reports the running version.</p>
 <p>Without a key only <code>check_api_status</code> answers, and it says where to get a free
 one. The hosted endpoint allows 300 requests a minute on a key and 60 without one. Your
 plan's own rate limit applies underneath that.</p>
-<p>The 24 tools: <code>get_live_matches</code>, <code>get_upcoming_matches</code>,
+<p>The 25 tools: <code>get_live_matches</code>, <code>get_upcoming_matches</code>,
 <code>get_match</code>, <code>get_match_score</code>, <code>get_fixtures</code>,
 <code>get_recent_results</code>, <code>search_players</code>, <code>get_player</code>,
 <code>search_tournaments</code>, <code>get_tournament</code>, <code>get_h2h</code>,
@@ -954,7 +954,7 @@ plan's own rate limit applies underneath that.</p>
 <code>get_match_statistics</code>, <code>search_archive_matches</code>,
 <code>get_archive_match</code>, <code>search_archive_players</code>,
 <code>get_archive_career</code>, <code>get_charting_player</code>,
-<code>get_charting_match</code>, <code>check_api_status</code>.</p>
+<code>get_charting_match</code>, <code>player_stats</code>, <code>check_api_status</code>.</p>
 
 <h2 id="conventions">Conventions</h2>
 <ul>
@@ -1295,12 +1295,12 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"- Python: `pip install livetennisapi`, package {PYPI_URL}",
         f"- JavaScript/TypeScript: `npm install livetennisapi`, package {NPM_JS_URL}",
         "- MCP server for LLM agents, hosted: POST https://mcp.livetennisapi.com/mcp (Streamable HTTP;",
-        "  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 24",
+        "  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 25",
         "  read-only tools on every plan, free keys included, each tool reaching what that plan",
         "  reaches. Nothing to install.",
         f"- MCP server, self-run: `npx livetennisapi-mcp`, package {NPM_MCP_URL}",
         f"- Vercel AI SDK tools: `npm install livetennisapi-ai`, package {AI_SDK_NPM}",
-        f"  (guide: {DOCS_URL}/ai-sdk.html). The same 24 tools as the MCP server, as AI SDK tools.",
+        f"  (guide: {DOCS_URL}/ai-sdk.html). The same 25 tools as the MCP server, as AI SDK tools.",
         "  Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7, which needs Node 22 or later.",
         "",
         "## Affiliate programme",
@@ -1748,10 +1748,10 @@ this page is also in <a href="./reference.html">the full reference</a>.</p>
 # generated from paths, so they sit outside the TOPICS rule that every path lands on one page.
 #
 # Every fact on the AI SDK page was checked against the published npm package
-# (livetennisapi-ai 1.1.0) with ai 7.0.148 on 2026-10-22: the export names, the env var, the
-# 24 tool names and their plans. Re-check them when the package changes its tool set.
+# (livetennisapi-ai 1.3.0) with ai 7.0.148 on 2026-10-22: the export names, the env var, the
+# 25 tool names and their plans. Re-check them when the package changes its tool set.
 AI_SDK_PACKAGE = "livetennisapi-ai"
-AI_SDK_VERSION = "1.2.1"
+AI_SDK_VERSION = "1.3.0"
 # The day the page's facts were last checked against the package. It is the page's content
 # date: the visible "Tested" line, JSON-LD dateModified and the sitemap lastmod all read it.
 AI_SDK_CHECKED = "2026-10-22"
@@ -1779,6 +1779,7 @@ AI_SDK_TOOLS = [
     ("get_match_events", "getMatchEvents", "Match timeline: breaks, games, momentum", "PRO"),
     ("get_match_odds", "getMatchOdds", "Match-winner market: bid, ask and mid", "PRO"),
     ("get_rankings", "getRankings", "Published ranking rows for one system, up to 200 per call", "PRO"),
+    ("player_stats", "playerStats", "One player's record: W/L splits, tiebreaks, deciding sets, recent matches. Its serve_return block needs ULTRA", "PRO"),
     ("get_match_analysis", "getMatchAnalysis", "Model win probability and thesis", "ULTRA"),
     ("get_player_rankings", "getPlayerRankings", "Point-in-time rankings for specific players", "ULTRA"),
     ("get_match_statistics", "getMatchStatistics", "In-play statistics, derived and measured", "ULTRA"),
@@ -1877,7 +1878,7 @@ A missing or rejected key, a plan limit, a rate limit, an unknown id or a failed
 wait time on to the user.</p>
 
 <h2 id="mcp">Can I use the same tools over MCP?</h2>
-<p>The same 24 tools also run as an MCP server. The hosted endpoint is
+<p>The same 25 tools also run as an MCP server. The hosted endpoint is
 <code>https://mcp.livetennisapi.com/mcp</code>. Send your key as
 <code>Authorization: Bearer twjp_...</code>. To run it yourself, use
 <code>npx livetennisapi-mcp</code>. The package is
@@ -1906,7 +1907,7 @@ GUIDES: list[dict[str, Any]] = [
         ),
         "lede": (
             f'Install <a href="{AI_SDK_NPM}"><code>livetennisapi-ai</code></a> and pass '
-            "<code>livetennisTools()</code> to <code>generateText</code>. The model gets 24 "
+            "<code>livetennisTools()</code> to <code>generateText</code>. The model gets 25 "
             "read-only tools for live scores, players, fixtures, rankings, head-to-head, the "
             "results archive and model win probability."
         ),

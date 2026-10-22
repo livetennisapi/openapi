@@ -201,12 +201,12 @@ backtest.
 - Python: `pip install livetennisapi`, package https://pypi.org/project/livetennisapi/
 - JavaScript/TypeScript: `npm install livetennisapi`, package https://www.npmjs.com/package/livetennisapi
 - MCP server for LLM agents, hosted: POST https://mcp.livetennisapi.com/mcp (Streamable HTTP;
-  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 24
+  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 25
   read-only tools on every plan, free keys included, each tool reaching what that plan
   reaches. Nothing to install.
 - MCP server, self-run: `npx livetennisapi-mcp`, package https://www.npmjs.com/package/livetennisapi-mcp
 - Vercel AI SDK tools: `npm install livetennisapi-ai`, package https://www.npmjs.com/package/livetennisapi-ai
-  (guide: https://docs.livetennisapi.com/ai-sdk.html). The same 24 tools as the MCP server, as AI SDK tools.
+  (guide: https://docs.livetennisapi.com/ai-sdk.html). The same 25 tools as the MCP server, as AI SDK tools.
   Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7, which needs Node 22 or later.
 
 ## Affiliate programme
