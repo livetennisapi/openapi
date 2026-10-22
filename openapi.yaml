@@ -7,7 +7,7 @@ info:
     url: https://livetennisapi.com
   license:
     name: MIT
-    url: https://github.com/livetennisapi/openapi/blob/main/LICENSE
+    identifier: MIT
   termsOfService: https://livetennisapi.com/terms
   description: |
     Real-time tennis scores, player data, match-winner market prices, and

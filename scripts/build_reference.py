@@ -2034,13 +2034,9 @@ def main() -> int:
             + "\n  Add {BEACON} before </body> in that template."
         )
 
-    # No page may link the suspended github.com/livetennisapi organisation: every URL under it is a
-    # 404 to a logged-out reader. openapi.json is exempt because it mirrors openapi.yaml byte for
-    # byte, and the spec's info.license.url is a spec change with its own version and changelog.
-    dead_links = [
-        path.name for path, content in outputs.items()
-        if path.name != "openapi.json" and DEAD_ORG in content
-    ]
+    # No output may link the suspended github.com/livetennisapi organisation: every URL under it is
+    # a 404 to a logged-out reader. openapi.json mirrors openapi.yaml, so this covers the spec too.
+    dead_links = [path.name for path, content in outputs.items() if DEAD_ORG in content]
     if dead_links:
         raise SystemExit(
             f"generated pages link the suspended {DEAD_ORG} organisation: " + ", ".join(dead_links)
