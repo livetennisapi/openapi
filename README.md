@@ -22,7 +22,7 @@ over REST and WebSocket, across ATP, WTA, Challenger, ITF and juniors.
 
 | File | Purpose |
 |---|---|
-| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 48 operations (47 paths), 56 schemas |
+| [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 49 operations (48 paths), 66 schemas |
 | [`docs/`](docs/) | Rendered reference, published to <https://docs.livetennisapi.com> |
 
 The spec is the **source of truth** for our official SDKs. If the spec and an SDK disagree,
@@ -68,7 +68,8 @@ your own usage stats — self-serve, no card:
 <https://livetennisapi.com/subscribe/free>) · BASIC (+ history in two halves: the
 point-by-point tape (2023→now) and the results archive (1968–2022) with `/h2h` and
 career aggregates) · PRO (+ events, market prices, bulk packages, the rankings
-listing) · ULTRA (+ analysis, model fields, in-play statistics, live per-point
+listing, per-player W/L records) · ULTRA (+ analysis, model fields, in-play statistics
+and their per-player sums, live per-point
 events (`/matches/{matchId}/points` + the WebSocket `point` frames, where a
 point-level feed covers the match), per-player as-of
 rankings, rally construction, shot-level charting, the reconstructed 2013–2022

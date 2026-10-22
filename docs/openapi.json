@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.60",
+  "version": "1.13.61",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -12,7 +12,7 @@
    "url": "https://github.com/livetennisapi/openapi/blob/main/LICENSE"
   },
   "termsOfService": "https://livetennisapi.com/terms",
-  "description": "Real-time tennis scores, player data, match-winner market prices, and\nmodel-driven match analysis. Read-only. Coverage spans ATP, WTA,\nChallenger, ITF and the junior Grand Slam draws — depth differs by tour\nand surface; `GET /history/coverage` states the measured numbers.\n\nAccess is tiered (FREE / BASIC / PRO / ULTRA). Each tier includes\neverything in the tiers below it; the concrete deltas are:\n\n`FREE` — self-serve, no card (https://livetennisapi.com/subscribe/free).\nLive and upcoming matches, current scores, players, fixtures, the\ntournament catalogue (`/tournaments`), and your own usage stats.\n30 requests/minute, 100/day. No market prices, no model fields, no\nWebSocket. Historical results are not part of the tier, but a FREE key\nmay spend 20 calls per calendar month on the history endpoints as a\ntaste of the product — served exactly like an entitled call. Past that\nthey answer `403 upgrade_required` carrying\n`free_history_taste: \"used\"`.\n\n`BASIC` — adds historical data: the completed-match listing\n(`/history/matches`, and `status=completed` on `/matches`), the\nper-match point-by-point tape with the model win-probability on the\nrows where the model ran\n(`/history/matches/{matchId}`), the measured completeness rollup\n(`/history/coverage`), and the results archive (1968–2022) —\ndeep results (`/history/archive/matches`), archive player bios\n(`/history/archive/players`), career aggregates\n(`/history/archive/career`) and head-to-head (`/h2h`).\n60 requests/minute, 1,000/day.\n\n`PRO` — adds match events (`/matches/{matchId}/events`), market prices\n(`/markets`, `/markets/{matchId}/prices`, `/matches/{matchId}/prices`),\nthe pre-built monthly bulk history packages (`/history/packages`) and the\nrank-ordered rankings listing (`/rankings?system=`).\n300 requests/minute, 10,000/day.\n\n`ULTRA` — adds model analysis (`/matches/{matchId}/analysis`), the live\nmodel fields (`win_probability_p1`, `danger`) on every score object,\nin-play match statistics (`/matches/{matchId}/statistics`), per-player\nas-of ranking records (`/rankings?player=`), the as-of Elo tape\n(`/rankings?system=elo` — both modes, plus `kind=elo` bulk packages),\nrally construction\n(`/rally/matches`, shot-by-shot charted data), career and per-match\ncharting stats (`/charting/players`, `/charting/matches/{chartingMatchId}`),\nthe reconstructed 2013–2022 archive tape\n(`/history/archive/matches/{archiveId}/tape` — also opened by ANY active\nHistory plan, Starter included), the WebSocket live feed at `/ws` and the\nhigh-fan-out push feed (`/ws-token`), and outbound webhooks (direct keys).\n600 requests/minute, 500,000/day.\n\nHistory runs in two continuous halves, deliberately non-overlapping: the\npoint-by-point tape (2023→now) covers January 2023 to now, match by\nmatch, point by point; the results archive (1968–2022) covers 1968\nthrough 2022 as winner/loser-shaped RESULTS (final score, seeds, ranks at\nthe time — no point-by-point). The archive ends exactly where the tape\nbegins, so no match is ever served from two datasets.\n\nArchive results played **2013–2022** additionally carry a RECONSTRUCTED\npoint-by-point tape at `/history/archive/matches/{archiveId}/tape` — the\nscore sequence behind the published result, rebuilt from the public record\nafter the fact. 97,901 matches / 14,340,663 rows, seasons **2013–2022\nONLY**: the archive holds a further 977,903 results from 1968–2012 and NOT\nONE of them has a tape, because there is no public point-by-point record of\nthose years to rebuild and we do not manufacture one. Write the range as\n2013–2022, never as \"pre-2023\" — the second phrasing reads as 1968 onward\nand is wrong by 45 seasons.\n\nNobody watched those matches, and the data says so: `timestamp`,\n`win_probability_p1` and `danger` are null on EVERY row and cannot be\nfilled in later — the production table has no timestamp column at all, and\nthe promotion script refuses to run if one ever appears.\nContrast the 2023→now tape, which is our own recording: the rows we\nactually watched carry a real clock, and most of them a model probability.\nCoverage of the era is real but partial — 19.3% of archive matches played\n2013–2022 and 44.9% of tour-level play; main-draw tour buckets run\n91.6–98.7%, ATP Challenger main draws 55.3% and Challenger qualifying\n33.6%, slam QUALIFYING only 16.0% (ATP) / 18.1% (WTA), and ITF/futures\neffectively nothing (25 of 116,575 ATP futures matches). It is not a\ncomplete record of the era and is not sold as one.\n\nTwo different gates, on purpose: the per-match tape needs core ULTRA **or\nany active History plan, Starter included**; the per-year bulk files\n(`/history/packages?kind=archive_tape`, 2013–2022, JSONL + CSV) need core\nULTRA **or** a History Pro/Business subscription (an active one-off package\nwindow counts). Core PRO carries NEITHER — it reads the archive RESULT and\nis refused the tape.\n\nA call above your tier returns `403 {\"error\":\"upgrade_required\"}` — never\na silent empty result.\n\nCORS is enabled across the REST surface: every response carries\n`Access-Control-Allow-Origin: *` (GET/OPTIONS, no credentials mode — there\nis no cookie or session, and a wildcard origin is incompatible with\ncredentials by design). Putting a FREE key in browser code is acceptable —\nit is capped and revocable; a paid key belongs server-side only.\n\nThe `/history/*` endpoints are also sold standalone as the **Historical\nData API** (no live-API subscription required): **Starter** — single-match\npoint-by-point tape reads via the API (tape plus the model win-probability\nper point), all tours (ATP/WTA/Challenger/ITF/juniors), one match per\nrequest, no bulk downloads; **Pro** — everything in Starter plus bulk\nmonthly package\ndownloads and higher rate limits; **Business** — everything in Pro plus\nyear-scale archive exports, top rate limits and priority support. One-off\n1-month and 1-year access passes are available without a subscription.\nThe results archive (1968–2022) endpoints (`/history/archive/*`, `/h2h`)\nride with the same entitlement — any active History plan, Starter\nincluded, opens them alongside the tape endpoints, and that includes the\nreconstructed 2013–2022 archive tape. The per-year `archive_tape` bulk\nfiles do not: those need Pro, Business or an active one-off package pass,\nbecause a Starter grant reads tapes one at a time and does not download\nyears of them.\nPlans and prices: https://livetennisapi.com/historical-tennis-data-api\n\nAll timestamps are UTC ISO 8601 with a `Z` suffix. List endpoints return\n`{data, meta}`; single resources return the object directly. Ignore\nunknown fields — additive changes land within v1.\n\nA native WebSocket live feed (ULTRA) exists at `/ws` under the same base\nURL. Subscribe with one JSON frame whose keys are `topics` and\n(optionally) `signals`: `{\"topics\":[\"live-scores\"]}` — `topics` may also\nname `\"match:<id>\"`. The server acks with a `subscribed` frame, then\npushes `score` frames on every change plus a `ping` heartbeat roughly\nevery 15s. Score frames carry the ULTRA model fields\n(`win_probability_p1`, `danger`) live; a null there means the model had\nno output for that point, not that the field is REST-only. Opt into extra\nsignals with `{\"topics\":[\"live-scores\"],\"signals\":[\"break_point\"]}` to\nalso receive `break_point` and `break_point_result` frames — and\n`signals:[\"stoppages\"]` (2026-09-12) for the stoppage family: medical\ntimeouts, trainer calls, toilet breaks, whole-match stops and clock-inferred\npauses, each an Event object plus `match_id` — (schemas\n`BreakPoint` / `BreakPointResult`). Without `signals`, score frames only.\n\n`signals` may also name `points` — the live per-point event stream: one\n`point` frame (schema `PointFrame`) per persisted point of your\nsubscribed matches. On the live basis `seq` is ARRIVAL order, not match\norder: use it to page, dedup and resume, and sort by\n`(set, game, number)` to replay in playing order — a tuple that may\nrepeat or carry a null `number`, so it orders points without identifying\nthem (see `GET /matches/{matchId}/points`). The signal is\nconfig-gated and ships OFF by default; the `subscribed` ack echoes the\nsignals actually active, so `points` present in the ack means point\nframes will flow and missing means they will not. Frames arrive only for\nmatches with `pbp_coverage: \"point\"` — a `game`-coverage match sends\nnone, honestly. Best-effort with NO replay: on reconnect (or to join\nmid-match) catch up via `GET /matches/{matchId}/points?after_seq=` and\ndedup by `seq`.\n\nMax 2 concurrent connections per key. For high fan-out, `GET /ws-token`\nmints a token for the separate push feed.\n\nCLOSE CODES. Every refusal sends its `error` frame **and then closes with a\ncode that says what to do next**, so a reconnect loop or a supervisor keyed\non the close code alone behaves correctly without parsing the frame. The\nclose *reason* repeats the frame's `error` string, so `(code, reason)` is a\ncomplete diagnosis even if the frame was missed.\n`1013` Try Again Later — transient, the request was fine: `connection_limit`\n(reason `connection_limit:per_key` or `connection_limit:server`) and\n`service_unavailable`. Back off and retry; for `per_key` release a\nconnection first, or move to the push feed, which has no shared ceiling.\n`1008` Policy Violation — the request as sent will never be accepted:\n`unauthorized`, `upgrade_required`, `email_unverified`, `client_blocked`,\n`bad_json`, `no_topics`, and any mid-stream loss of access. Fix the request\nor the credentials; do not retry unchanged.\n`1012` Service Restart — reconnect with backoff and re-subscribe.\n`1000` Normal Closure — you closed it, or the stream ended normally.\nChanged 2026-09-18: refusals raised during the *handshake* previously closed\n`1000` with an empty reason, indistinguishable from an orderly shutdown, so\na client awaiting its `subscribed` ack saw only a normal close. The error\nframe was, and still is, delivered before the close; only the close code and\nreason changed.\n\nGetting a match id: it is the `id` field on any match object returned by\n`GET /matches`, `GET /fixtures` or `GET /history/matches`, and the same value\nworks on every route that takes `matchId`.\n"
+  "description": "Real-time tennis scores, player data, match-winner market prices, and\nmodel-driven match analysis. Read-only. Coverage spans ATP, WTA,\nChallenger, ITF and the junior Grand Slam draws — depth differs by tour\nand surface; `GET /history/coverage` states the measured numbers.\n\nAccess is tiered (FREE / BASIC / PRO / ULTRA). Each tier includes\neverything in the tiers below it; the concrete deltas are:\n\n`FREE` — self-serve, no card (https://livetennisapi.com/subscribe/free).\nLive and upcoming matches, current scores, players, fixtures, the\ntournament catalogue (`/tournaments`), and your own usage stats.\n30 requests/minute, 100/day. No market prices, no model fields, no\nWebSocket. Historical results are not part of the tier, but a FREE key\nmay spend 20 calls per calendar month on the history endpoints as a\ntaste of the product — served exactly like an entitled call. Past that\nthey answer `403 upgrade_required` carrying\n`free_history_taste: \"used\"`.\n\n`BASIC` — adds historical data: the completed-match listing\n(`/history/matches`, and `status=completed` on `/matches`), the\nper-match point-by-point tape with the model win-probability on the\nrows where the model ran\n(`/history/matches/{matchId}`), the measured completeness rollup\n(`/history/coverage`), and the results archive (1968–2022) —\ndeep results (`/history/archive/matches`), archive player bios\n(`/history/archive/players`), career aggregates\n(`/history/archive/career`) and head-to-head (`/h2h`).\n60 requests/minute, 1,000/day.\n\n`PRO` — adds match events (`/matches/{matchId}/events`), market prices\n(`/markets`, `/markets/{matchId}/prices`, `/matches/{matchId}/prices`),\nthe pre-built monthly bulk history packages (`/history/packages`), the\nrank-ordered rankings listing (`/rankings?system=`) and one player's\nwin/loss and set-based record (`/players/{playerId}/stats`).\n300 requests/minute, 10,000/day.\n\n`ULTRA` — adds model analysis (`/matches/{matchId}/analysis`), the live\nmodel fields (`win_probability_p1`, `danger`) on every score object,\nin-play match statistics (`/matches/{matchId}/statistics`) and their\nper-player sums (`serve_return` on `/players/{playerId}/stats`), per-player\nas-of ranking records (`/rankings?player=`), the as-of Elo tape\n(`/rankings?system=elo` — both modes, plus `kind=elo` bulk packages),\nrally construction\n(`/rally/matches`, shot-by-shot charted data), career and per-match\ncharting stats (`/charting/players`, `/charting/matches/{chartingMatchId}`),\nthe reconstructed 2013–2022 archive tape\n(`/history/archive/matches/{archiveId}/tape` — also opened by ANY active\nHistory plan, Starter included), the WebSocket live feed at `/ws` and the\nhigh-fan-out push feed (`/ws-token`), and outbound webhooks (direct keys).\n600 requests/minute, 500,000/day.\n\nHistory runs in two continuous halves, deliberately non-overlapping: the\npoint-by-point tape (2023→now) covers January 2023 to now, match by\nmatch, point by point; the results archive (1968–2022) covers 1968\nthrough 2022 as winner/loser-shaped RESULTS (final score, seeds, ranks at\nthe time — no point-by-point). The archive ends exactly where the tape\nbegins, so no match is ever served from two datasets.\n\nArchive results played **2013–2022** additionally carry a RECONSTRUCTED\npoint-by-point tape at `/history/archive/matches/{archiveId}/tape` — the\nscore sequence behind the published result, rebuilt from the public record\nafter the fact. 97,901 matches / 14,340,663 rows, seasons **2013–2022\nONLY**: the archive holds a further 977,903 results from 1968–2012 and NOT\nONE of them has a tape, because there is no public point-by-point record of\nthose years to rebuild and we do not manufacture one. Write the range as\n2013–2022, never as \"pre-2023\" — the second phrasing reads as 1968 onward\nand is wrong by 45 seasons.\n\nNobody watched those matches, and the data says so: `timestamp`,\n`win_probability_p1` and `danger` are null on EVERY row and cannot be\nfilled in later — the production table has no timestamp column at all, and\nthe promotion script refuses to run if one ever appears.\nContrast the 2023→now tape, which is our own recording: the rows we\nactually watched carry a real clock, and most of them a model probability.\nCoverage of the era is real but partial — 19.3% of archive matches played\n2013–2022 and 44.9% of tour-level play; main-draw tour buckets run\n91.6–98.7%, ATP Challenger main draws 55.3% and Challenger qualifying\n33.6%, slam QUALIFYING only 16.0% (ATP) / 18.1% (WTA), and ITF/futures\neffectively nothing (25 of 116,575 ATP futures matches). It is not a\ncomplete record of the era and is not sold as one.\n\nTwo different gates, on purpose: the per-match tape needs core ULTRA **or\nany active History plan, Starter included**; the per-year bulk files\n(`/history/packages?kind=archive_tape`, 2013–2022, JSONL + CSV) need core\nULTRA **or** a History Pro/Business subscription (an active one-off package\nwindow counts). Core PRO carries NEITHER — it reads the archive RESULT and\nis refused the tape.\n\nA call above your tier returns `403 {\"error\":\"upgrade_required\"}` — never\na silent empty result.\n\nCORS is enabled across the REST surface: every response carries\n`Access-Control-Allow-Origin: *` (GET/OPTIONS, no credentials mode — there\nis no cookie or session, and a wildcard origin is incompatible with\ncredentials by design). Putting a FREE key in browser code is acceptable —\nit is capped and revocable; a paid key belongs server-side only.\n\nThe `/history/*` endpoints are also sold standalone as the **Historical\nData API** (no live-API subscription required): **Starter** — single-match\npoint-by-point tape reads via the API (tape plus the model win-probability\nper point), all tours (ATP/WTA/Challenger/ITF/juniors), one match per\nrequest, no bulk downloads; **Pro** — everything in Starter plus bulk\nmonthly package\ndownloads and higher rate limits; **Business** — everything in Pro plus\nyear-scale archive exports, top rate limits and priority support. One-off\n1-month and 1-year access passes are available without a subscription.\nThe results archive (1968–2022) endpoints (`/history/archive/*`, `/h2h`)\nride with the same entitlement — any active History plan, Starter\nincluded, opens them alongside the tape endpoints, and that includes the\nreconstructed 2013–2022 archive tape. The per-year `archive_tape` bulk\nfiles do not: those need Pro, Business or an active one-off package pass,\nbecause a Starter grant reads tapes one at a time and does not download\nyears of them.\nPlans and prices: https://livetennisapi.com/historical-tennis-data-api\n\nAll timestamps are UTC ISO 8601 with a `Z` suffix. List endpoints return\n`{data, meta}`; single resources return the object directly. Ignore\nunknown fields — additive changes land within v1.\n\nA native WebSocket live feed (ULTRA) exists at `/ws` under the same base\nURL. Subscribe with one JSON frame whose keys are `topics` and\n(optionally) `signals`: `{\"topics\":[\"live-scores\"]}` — `topics` may also\nname `\"match:<id>\"`. The server acks with a `subscribed` frame, then\npushes `score` frames on every change plus a `ping` heartbeat roughly\nevery 15s. Score frames carry the ULTRA model fields\n(`win_probability_p1`, `danger`) live; a null there means the model had\nno output for that point, not that the field is REST-only. Opt into extra\nsignals with `{\"topics\":[\"live-scores\"],\"signals\":[\"break_point\"]}` to\nalso receive `break_point` and `break_point_result` frames — and\n`signals:[\"stoppages\"]` (2026-09-12) for the stoppage family: medical\ntimeouts, trainer calls, toilet breaks, whole-match stops and clock-inferred\npauses, each an Event object plus `match_id` — (schemas\n`BreakPoint` / `BreakPointResult`). Without `signals`, score frames only.\n\n`signals` may also name `points` — the live per-point event stream: one\n`point` frame (schema `PointFrame`) per persisted point of your\nsubscribed matches. On the live basis `seq` is ARRIVAL order, not match\norder: use it to page, dedup and resume, and sort by\n`(set, game, number)` to replay in playing order — a tuple that may\nrepeat or carry a null `number`, so it orders points without identifying\nthem (see `GET /matches/{matchId}/points`). The signal is\nconfig-gated and ships OFF by default; the `subscribed` ack echoes the\nsignals actually active, so `points` present in the ack means point\nframes will flow and missing means they will not. Frames arrive only for\nmatches with `pbp_coverage: \"point\"` — a `game`-coverage match sends\nnone, honestly. Best-effort with NO replay: on reconnect (or to join\nmid-match) catch up via `GET /matches/{matchId}/points?after_seq=` and\ndedup by `seq`.\n\nMax 2 concurrent connections per key. For high fan-out, `GET /ws-token`\nmints a token for the separate push feed.\n\nCLOSE CODES. Every refusal sends its `error` frame **and then closes with a\ncode that says what to do next**, so a reconnect loop or a supervisor keyed\non the close code alone behaves correctly without parsing the frame. The\nclose *reason* repeats the frame's `error` string, so `(code, reason)` is a\ncomplete diagnosis even if the frame was missed.\n`1013` Try Again Later — transient, the request was fine: `connection_limit`\n(reason `connection_limit:per_key` or `connection_limit:server`) and\n`service_unavailable`. Back off and retry; for `per_key` release a\nconnection first, or move to the push feed, which has no shared ceiling.\n`1008` Policy Violation — the request as sent will never be accepted:\n`unauthorized`, `upgrade_required`, `email_unverified`, `client_blocked`,\n`bad_json`, `no_topics`, and any mid-stream loss of access. Fix the request\nor the credentials; do not retry unchanged.\n`1012` Service Restart — reconnect with backoff and re-subscribe.\n`1000` Normal Closure — you closed it, or the stream ended normally.\nChanged 2026-09-18: refusals raised during the *handshake* previously closed\n`1000` with an empty reason, indistinguishable from an orderly shutdown, so\na client awaiting its `subscribed` ack saw only a normal close. The error\nframe was, and still is, delivered before the close; only the close code and\nreason changed.\n\nGetting a match id: it is the `id` field on any match object returned by\n`GET /matches`, `GET /fixtures` or `GET /history/matches`, and the same value\nworks on every route that takes `matchId`.\n"
  },
  "servers": [
   {
@@ -922,6 +922,123 @@
      },
      "404": {
       "description": "No roster player holds this id. When the id IS a corpus person id the body adds `detail` and `see` (the archive lookup); otherwise it is the plain `Error` body.",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlayerNotFound"
+        }
+       }
+      }
+     },
+     "410": {
+      "$ref": "#/components/responses/PlayerGone"
+     },
+     "429": {
+      "$ref": "#/components/responses/RateLimited"
+     }
+    }
+   }
+  },
+  "/players/{playerId}/stats": {
+   "get": {
+    "summary": "One player's record over our completed singles matches — W/L splits, set-based record, recent matches (PRO; +serve_return ULTRA)",
+    "description": "Added 2026-10-22. Aggregates over OUR OWN completed singles matches (2023 onward); the default window is the 365 days ending now. For 1968–2022 use `/history/archive/career`.\n\nPRO returns `records`: W/L overall, `last_12_months`, `by_surface`, `by_venue` (indoor / outdoor / unknown), `by_level` (the match `tour` vocabulary) and `by_season` (UTC calendar year); the set-based record (tiebreaks, deciding sets, after winning or losing the first set, comebacks, sets won and lost) over completed matches whose final score is complete and legal; withdrawals given and received (retired, walkover, default); `excluded` counts by reason; and `recent`, the last N matches newest first with the opponent, the outcome and the final score turned round to this player.\n\nEvery count carries its sample size, and a percentage is `null`, never 0, on an empty sample. Winner, outcome and score are read exactly as the match object publishes them, so this endpoint cannot name a different winner than `GET /matches/{matchId}`.\n\nULTRA adds `serve_return`: the measured per-match statistics of `GET /matches/{matchId}/statistics` summed over the player's completed matches in the window. Each ratio is numerator / denominator / pct with the number of matches it was summed over, and `matches_with_stats` sits beside `matches`. A field no match carried is null with `matches` 0. Below ULTRA the key is absent, not null.\n\nA doubles-team id is refused with 400 `doubles_not_supported`; query each member's player id instead. A merged or retired id answers 410 like `GET /players/{playerId}`. Cached up to 60 seconds (`meta.generated_at`).",
+    "operationId": "getPlayerStats",
+    "parameters": [
+     {
+      "name": "playerId",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer"
+      }
+     },
+     {
+      "name": "from",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      },
+      "description": "Window start by scheduled start — an ISO date (start of that day) or a UTC instant. Default `to` minus 365 days.",
+      "example": "2025-01-01"
+     },
+     {
+      "name": "to",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string"
+      },
+      "description": "Window end — an ISO date (the whole of that day) or a UTC instant. Default now.",
+      "example": "2025-12-31"
+     },
+     {
+      "name": "surface",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "hard",
+        "clay",
+        "grass",
+        "indoor"
+       ]
+      },
+      "description": "hard, clay or grass read the match surface; indoor keeps matches whose venue is stated indoor, on any surface."
+     },
+     {
+      "name": "level",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "string",
+       "enum": [
+        "atp",
+        "wta",
+        "challenger",
+        "itf",
+        "juniors"
+       ]
+      },
+      "description": "The match `tour` vocabulary. A match with no stated tour matches no level."
+     },
+     {
+      "name": "last",
+      "in": "query",
+      "required": false,
+      "schema": {
+       "type": "integer",
+       "default": 20,
+       "minimum": 1,
+       "maximum": 50
+      },
+      "description": "How many recent matches `records.recent` lists, newest first."
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "The player's record (and, on ULTRA, the serve/return aggregates)",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/PlayerStats"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "bad_date, bad_surface, bad_level, bad_last or doubles_not_supported"
+     },
+     "401": {
+      "$ref": "#/components/responses/Unauthorized"
+     },
+     "403": {
+      "$ref": "#/components/responses/UpgradeRequired"
+     },
+     "404": {
+      "description": "No roster player holds this id. Carries the archive signpost (`detail` + `see`) when the id is a corpus person id.",
       "content": {
        "application/json": {
         "schema": {
@@ -3937,6 +4054,526 @@
      }
     }
    },
+   "PlayerStats": {
+    "type": "object",
+    "description": "GET /players/{playerId}/stats (added 2026-10-22). `records` is PRO; `serve_return` is ULTRA and absent, not null, below ULTRA.",
+    "properties": {
+     "player": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "integer"
+       },
+       "name": {
+        "type": "string"
+       }
+      }
+     },
+     "window": {
+      "type": "object",
+      "description": "The window applied, UTC.",
+      "properties": {
+       "from": {
+        "type": "string",
+        "format": "date-time"
+       },
+       "to": {
+        "type": "string",
+        "format": "date-time"
+       }
+      }
+     },
+     "filters": {
+      "type": "object",
+      "properties": {
+       "surface": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "level": {
+        "type": [
+         "string",
+         "null"
+        ]
+       },
+       "last": {
+        "type": "integer"
+       }
+      }
+     },
+     "records": {
+      "$ref": "#/components/schemas/PlayerRecords"
+     },
+     "serve_return": {
+      "$ref": "#/components/schemas/PlayerServeReturn"
+     },
+     "meta": {
+      "type": "object",
+      "properties": {
+       "generated_at": {
+        "type": "string",
+        "format": "date-time"
+       },
+       "note": {
+        "type": "string",
+        "description": "States what the aggregates are computed from and where the 1968–2022 equivalent lives."
+       }
+      }
+     }
+    }
+   },
+   "PlayerRecords": {
+    "type": "object",
+    "description": "The results-based record (PRO). W/L blocks count matches with a published winner and an outcome of completed, retired, walkover or default.",
+    "properties": {
+     "overall": {
+      "$ref": "#/components/schemas/PlayerWinLoss"
+     },
+     "last_12_months": {
+      "$ref": "#/components/schemas/PlayerWinLoss"
+     },
+     "by_surface": {
+      "type": "object",
+      "description": "Keyed hard, clay, grass, unknown — the match surface.",
+      "additionalProperties": {
+       "$ref": "#/components/schemas/PlayerWinLoss"
+      }
+     },
+     "by_venue": {
+      "type": "object",
+      "description": "Keyed indoor, outdoor, unknown — the match indoor flag.",
+      "additionalProperties": {
+       "$ref": "#/components/schemas/PlayerWinLoss"
+      }
+     },
+     "by_level": {
+      "type": "object",
+      "description": "Keyed by the match tour (atp, wta, challenger, itf, juniors) or unknown.",
+      "additionalProperties": {
+       "$ref": "#/components/schemas/PlayerWinLoss"
+      }
+     },
+     "by_season": {
+      "type": "object",
+      "description": "Keyed by the UTC calendar year of the scheduled start.",
+      "additionalProperties": {
+       "$ref": "#/components/schemas/PlayerWinLoss"
+      }
+     },
+     "sets": {
+      "type": "object",
+      "description": "Over completed matches whose final score is complete and legal and agrees with the published winner. Retirements, walkovers, defaults and incomplete scores are counted out by name in sample.excluded.",
+      "properties": {
+       "sample": {
+        "type": "object",
+        "properties": {
+         "matches": {
+          "type": "integer"
+         },
+         "excluded": {
+          "type": "object",
+          "properties": {
+           "retired": {
+            "type": "integer"
+           },
+           "walkover": {
+            "type": "integer"
+           },
+           "default": {
+            "type": "integer"
+           },
+           "score_incomplete": {
+            "type": "integer"
+           }
+          }
+         }
+        }
+       },
+       "tiebreaks": {
+        "$ref": "#/components/schemas/PlayerPlayedRecord"
+       },
+       "deciding_sets": {
+        "$ref": "#/components/schemas/PlayerPlayedRecord"
+       },
+       "after_winning_first_set": {
+        "$ref": "#/components/schemas/PlayerSplitRecord"
+       },
+       "after_losing_first_set": {
+        "$ref": "#/components/schemas/PlayerSplitRecord"
+       },
+       "comebacks": {
+        "type": "object",
+        "description": "Matches in which the player lost at least one set, and how many of them they won.",
+        "properties": {
+         "matches_lost_a_set": {
+          "type": "integer"
+         },
+         "won": {
+          "type": "integer"
+         },
+         "win_pct": {
+          "type": [
+           "number",
+           "null"
+          ]
+         }
+        }
+       },
+       "sets": {
+        "type": "object",
+        "properties": {
+         "won": {
+          "type": "integer"
+         },
+         "lost": {
+          "type": "integer"
+         },
+         "win_pct": {
+          "type": [
+           "number",
+           "null"
+          ]
+         }
+        }
+       }
+      }
+     },
+     "withdrawals": {
+      "type": "object",
+      "description": "Per outcome, matches this player did not finish (given) and matches the opponent did not finish (received).",
+      "properties": {
+       "retired": {
+        "$ref": "#/components/schemas/PlayerWithdrawalCount"
+       },
+       "walkover": {
+        "$ref": "#/components/schemas/PlayerWithdrawalCount"
+       },
+       "default": {
+        "$ref": "#/components/schemas/PlayerWithdrawalCount"
+       }
+      }
+     },
+     "excluded": {
+      "type": "object",
+      "description": "Matches in the window left out of every record, by reason.",
+      "properties": {
+       "not_singles": {
+        "type": "integer"
+       },
+       "unresolved": {
+        "type": "integer"
+       },
+       "abandoned": {
+        "type": "integer"
+       },
+       "no_published_winner": {
+        "type": "integer"
+       }
+      }
+     },
+     "recent": {
+      "type": "array",
+      "description": "The last `last` matches in the window, newest first.",
+      "items": {
+       "$ref": "#/components/schemas/PlayerRecentMatch"
+      }
+     }
+    }
+   },
+   "PlayerWinLoss": {
+    "type": "object",
+    "properties": {
+     "matches": {
+      "type": "integer"
+     },
+     "wins": {
+      "type": "integer"
+     },
+     "losses": {
+      "type": "integer"
+     },
+     "win_pct": {
+      "type": [
+       "number",
+       "null"
+      ],
+      "description": "Percent with one decimal; null when matches is 0."
+     }
+    }
+   },
+   "PlayerPlayedRecord": {
+    "type": "object",
+    "properties": {
+     "played": {
+      "type": "integer"
+     },
+     "won": {
+      "type": "integer"
+     },
+     "lost": {
+      "type": "integer"
+     },
+     "win_pct": {
+      "type": [
+       "number",
+       "null"
+      ]
+     }
+    }
+   },
+   "PlayerSplitRecord": {
+    "type": "object",
+    "properties": {
+     "matches": {
+      "type": "integer"
+     },
+     "won": {
+      "type": "integer"
+     },
+     "lost": {
+      "type": "integer"
+     },
+     "win_pct": {
+      "type": [
+       "number",
+       "null"
+      ]
+     }
+    }
+   },
+   "PlayerWithdrawalCount": {
+    "type": "object",
+    "properties": {
+     "given": {
+      "type": "integer"
+     },
+     "received": {
+      "type": "integer"
+     }
+    }
+   },
+   "PlayerRecentMatch": {
+    "type": "object",
+    "properties": {
+     "match_id": {
+      "type": "integer"
+     },
+     "date": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "format": "date"
+     },
+     "scheduled_time": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "format": "date-time"
+     },
+     "tournament_id": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "tournament": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "round": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "round_code": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "surface": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "indoor": {
+      "type": [
+       "boolean",
+       "null"
+      ]
+     },
+     "level": {
+      "type": [
+       "string",
+       "null"
+      ]
+     },
+     "opponent": {
+      "type": "object",
+      "properties": {
+       "id": {
+        "type": "integer"
+       },
+       "name": {
+        "type": [
+         "string",
+         "null"
+        ]
+       }
+      }
+     },
+     "won": {
+      "type": "boolean"
+     },
+     "outcome": {
+      "type": "string",
+      "enum": [
+       "completed",
+       "retired",
+       "walkover",
+       "default"
+      ]
+     },
+     "score": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "description": "The final score turned round to this player — sets [player, opponent], games [[player per set], [opponent per set]] — from the row the match object serves. Null when no score row is held.",
+      "properties": {
+       "sets": {
+        "type": "array",
+        "items": {
+         "type": [
+          "integer",
+          "null"
+         ]
+        }
+       },
+       "games": {
+        "type": "array",
+        "items": {
+         "type": "array",
+         "items": {
+          "type": "integer"
+         }
+        }
+       }
+      }
+     }
+    }
+   },
+   "PlayerServeReturn": {
+    "type": "object",
+    "description": "ULTRA only; absent below. Measured per-match statistics summed over the player's completed matches in the window. Each field carries the matches it was summed over.",
+    "properties": {
+     "matches": {
+      "type": "integer"
+     },
+     "matches_with_stats": {
+      "type": "integer"
+     },
+     "serve": {
+      "type": "object",
+      "properties": {
+       "aces": {
+        "$ref": "#/components/schemas/PlayerStatCount"
+       },
+       "double_faults": {
+        "$ref": "#/components/schemas/PlayerStatCount"
+       },
+       "first_serve_in": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       },
+       "first_serve_points_won": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       },
+       "second_serve_points_won": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       },
+       "service_games_won": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       },
+       "break_points_saved": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       }
+      }
+     },
+     "return": {
+      "type": "object",
+      "properties": {
+       "first_serve_return_points_won": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       },
+       "second_serve_return_points_won": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       },
+       "return_games_won": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       },
+       "break_points_converted": {
+        "$ref": "#/components/schemas/PlayerStatRatio"
+       }
+      }
+     }
+    }
+   },
+   "PlayerStatRatio": {
+    "type": "object",
+    "description": "A sum of numerators over a sum of denominators. All null with matches 0 when no match carried the field.",
+    "properties": {
+     "numerator": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "denominator": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "pct": {
+      "type": [
+       "number",
+       "null"
+      ]
+     },
+     "matches": {
+      "type": "integer"
+     }
+    }
+   },
+   "PlayerStatCount": {
+    "type": "object",
+    "description": "A summed count. `total` and `per_match` are null with matches 0 when no match carried the field.",
+    "properties": {
+     "total": {
+      "type": [
+       "integer",
+       "null"
+      ]
+     },
+     "matches": {
+      "type": "integer"
+     },
+     "per_match": {
+      "type": [
+       "number",
+       "null"
+      ]
+     }
+    }
+   },
    "PlayerStoppage": {
     "description": "One row of GET /players/{playerId}/stoppages — an in-match stoppage on one of the player's matches, or a match the player did not finish. Stoppage rows carry `score_at`, `duration_seconds` and `reason`; outcome rows carry `final_score` when a score row exists. Never inferred except `pause` (source_stated false).",
     "type": "object",
@@ -4235,6 +4872,35 @@
        "null"
       ],
       "format": "date"
+     },
+     "height_cm": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "description": "Added 2026-10-22. Single-player read (`/players/{playerId}`) only; paid tiers (BASIC, PRO, ULTRA), null on a FREE key. Height in centimetres from the results archive's record of the same person. Null when the player has no archive record or the archive holds no height. Never inferred."
+     },
+     "doubles_ranking": {
+      "type": [
+       "object",
+       "null"
+      ],
+      "description": "Added 2026-10-22. Single-player read (`/players/{playerId}`) only; paid tiers (BASIC, PRO, ULTRA), null on a FREE key. The current position on the official ATP/WTA doubles table, from our weekly refresh of the published tables. `observed_on` is the UTC date that refresh last found the player on the table. Null when the player is not on the table or the last sighting is more than 21 days old. Never copied into `ranking`, which stays the singles position.",
+      "properties": {
+       "rank": {
+        "type": "integer"
+       },
+       "points": {
+        "type": [
+         "integer",
+         "null"
+        ]
+       },
+       "observed_on": {
+        "type": "string",
+        "format": "date"
+       }
+      }
      },
      "is_doubles_team": {
       "type": "boolean"

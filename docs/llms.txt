@@ -98,6 +98,7 @@ Prices: https://livetennisapi.com/historical-tennis-data-api
 - GET /matches/{matchId}/points — Live per-point events in seq order — the REST catch-up for the WebSocket point stream (ULTRA)
 - GET /players — Search players by name (FREE)
 - GET /players/{playerId} — One player's bio + ranking + cached stats (FREE)
+- GET /players/{playerId}/stats — One player's record over our completed singles matches — W/L splits, set-based record, recent matches (PRO; +serve_return ULTRA)
 - GET /tournaments — Tournament catalogue — the id space `Match.tournament_id` joins (FREE)
 - GET /tournaments/{tournamentId} — One tournament by its stable id (FREE)
 - GET /markets — The match's match-winner market (PRO)

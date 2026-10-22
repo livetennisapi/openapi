@@ -1357,6 +1357,9 @@ TOPICS: list[dict[str, Any]] = [
         "lede": (
             "<code>GET /players</code> searches by name and <code>GET /players/{playerId}</code> "
             "returns one player's bio, current ranking and cached statistics — both FREE. "
+            "<code>GET /players/{playerId}/stats</code> (PRO) is the player's win/loss record over "
+            "our completed matches, split by surface, level and season, with ULTRA adding summed "
+            "serve and return statistics. "
             "<code>GET /tournaments</code> is the catalogue that <code>Match.tournament_id</code> "
             "joins against, so a match can be resolved to its event without a second vendor. "
             "<code>GET /rankings</code> (PRO) serves rank-ordered listings and per-player as-of "

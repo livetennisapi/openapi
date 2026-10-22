@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.60"
+  version: "1.13.61"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -41,13 +41,15 @@ info:
 
     `PRO` — adds match events (`/matches/{matchId}/events`), market prices
     (`/markets`, `/markets/{matchId}/prices`, `/matches/{matchId}/prices`),
-    the pre-built monthly bulk history packages (`/history/packages`) and the
-    rank-ordered rankings listing (`/rankings?system=`).
+    the pre-built monthly bulk history packages (`/history/packages`), the
+    rank-ordered rankings listing (`/rankings?system=`) and one player's
+    win/loss and set-based record (`/players/{playerId}/stats`).
     300 requests/minute, 10,000/day.
 
     `ULTRA` — adds model analysis (`/matches/{matchId}/analysis`), the live
     model fields (`win_probability_p1`, `danger`) on every score object,
-    in-play match statistics (`/matches/{matchId}/statistics`), per-player
+    in-play match statistics (`/matches/{matchId}/statistics`) and their
+    per-player sums (`serve_return` on `/players/{playerId}/stats`), per-player
     as-of ranking records (`/rankings?player=`), the as-of Elo tape
     (`/rankings?system=elo` — both modes, plus `kind=elo` bulk packages),
     rally construction
@@ -1054,6 +1056,112 @@ paths:
         "410":
           $ref: '#/components/responses/PlayerGone'
         "429": { $ref: "#/components/responses/RateLimited" }
+  /players/{playerId}/stats:
+    get:
+      summary: One player's record over our completed singles matches — W/L splits, set-based record, recent matches (PRO; +serve_return ULTRA)
+      description: >-
+        Added 2026-10-22. Aggregates over OUR OWN completed singles matches
+        (2023 onward); the default window is the 365 days ending now. For
+        1968–2022 use `/history/archive/career`.
+
+
+        PRO returns `records`: W/L overall, `last_12_months`, `by_surface`,
+        `by_venue` (indoor / outdoor / unknown), `by_level` (the match `tour`
+        vocabulary) and `by_season` (UTC calendar year); the set-based record
+        (tiebreaks, deciding sets, after winning or losing the first set,
+        comebacks, sets won and lost) over completed matches whose final score
+        is complete and legal; withdrawals given and received (retired,
+        walkover, default); `excluded` counts by reason; and `recent`, the
+        last N matches newest first with the opponent, the outcome and the
+        final score turned round to this player.
+
+
+        Every count carries its sample size, and a percentage is `null`,
+        never 0, on an empty sample. Winner, outcome and score are read
+        exactly as the match object publishes them, so this endpoint cannot
+        name a different winner than `GET /matches/{matchId}`.
+
+
+        ULTRA adds `serve_return`: the measured per-match statistics of
+        `GET /matches/{matchId}/statistics` summed over the player's
+        completed matches in the window. Each ratio is numerator /
+        denominator / pct with the number of matches it was summed over, and
+        `matches_with_stats` sits beside `matches`. A field no match carried
+        is null with `matches` 0. Below ULTRA the key is absent, not null.
+
+
+        A doubles-team id is refused with 400 `doubles_not_supported`; query
+        each member's player id instead. A merged or retired id answers 410
+        like `GET /players/{playerId}`. Cached up to 60 seconds
+        (`meta.generated_at`).
+      operationId: getPlayerStats
+      parameters:
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: from
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Window start by scheduled start — an ISO date (start of that day) or a UTC instant. Default `to` minus 365 days.
+        example: '2025-01-01'
+      - name: to
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Window end — an ISO date (the whole of that day) or a UTC instant. Default now.
+        example: '2025-12-31'
+      - name: surface
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [hard, clay, grass, indoor]
+        description: hard, clay or grass read the match surface; indoor keeps matches whose venue is stated indoor, on any surface.
+      - name: level
+        in: query
+        required: false
+        schema:
+          type: string
+          enum: [atp, wta, challenger, itf, juniors]
+        description: The match `tour` vocabulary. A match with no stated tour matches no level.
+      - name: last
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+          maximum: 50
+        description: How many recent matches `records.recent` lists, newest first.
+      responses:
+        '200':
+          description: The player's record (and, on ULTRA, the serve/return aggregates)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlayerStats'
+        '400':
+          description: bad_date, bad_surface, bad_level, bad_last or doubles_not_supported
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/UpgradeRequired'
+        '404':
+          description: >-
+            No roster player holds this id. Carries the archive signpost
+            (`detail` + `see`) when the id is a corpus person id.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PlayerNotFound" }
+        '410':
+          $ref: '#/components/responses/PlayerGone'
+        '429':
+          $ref: '#/components/responses/RateLimited'
   /tournaments:
     get:
       summary: Tournament catalogue — the id space `Match.tournament_id` joins (FREE)
@@ -3798,6 +3906,313 @@ components:
             derivable: { type: boolean }
             note: { type: string }
             url: { type: string }
+    PlayerStats:
+      type: object
+      description: >-
+        GET /players/{playerId}/stats (added 2026-10-22). `records` is PRO;
+        `serve_return` is ULTRA and absent, not null, below ULTRA.
+      properties:
+        player:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+        window:
+          type: object
+          description: The window applied, UTC.
+          properties:
+            from:
+              type: string
+              format: date-time
+            to:
+              type: string
+              format: date-time
+        filters:
+          type: object
+          properties:
+            surface:
+              type: [string, 'null']
+            level:
+              type: [string, 'null']
+            last:
+              type: integer
+        records:
+          $ref: '#/components/schemas/PlayerRecords'
+        serve_return:
+          $ref: '#/components/schemas/PlayerServeReturn'
+        meta:
+          type: object
+          properties:
+            generated_at:
+              type: string
+              format: date-time
+            note:
+              type: string
+              description: States what the aggregates are computed from and where the 1968–2022 equivalent lives.
+    PlayerRecords:
+      type: object
+      description: >-
+        The results-based record (PRO). W/L blocks count matches with a published winner and
+        an outcome of completed, retired, walkover or default.
+      properties:
+        overall:
+          $ref: '#/components/schemas/PlayerWinLoss'
+        last_12_months:
+          $ref: '#/components/schemas/PlayerWinLoss'
+        by_surface:
+          type: object
+          description: Keyed hard, clay, grass, unknown — the match surface.
+          additionalProperties:
+            $ref: '#/components/schemas/PlayerWinLoss'
+        by_venue:
+          type: object
+          description: Keyed indoor, outdoor, unknown — the match indoor flag.
+          additionalProperties:
+            $ref: '#/components/schemas/PlayerWinLoss'
+        by_level:
+          type: object
+          description: Keyed by the match tour (atp, wta, challenger, itf, juniors) or unknown.
+          additionalProperties:
+            $ref: '#/components/schemas/PlayerWinLoss'
+        by_season:
+          type: object
+          description: Keyed by the UTC calendar year of the scheduled start.
+          additionalProperties:
+            $ref: '#/components/schemas/PlayerWinLoss'
+        sets:
+          type: object
+          description: >-
+            Over completed matches whose final score is complete and legal and agrees with the
+            published winner. Retirements, walkovers, defaults and incomplete scores are counted
+            out by name in sample.excluded.
+          properties:
+            sample:
+              type: object
+              properties:
+                matches:
+                  type: integer
+                excluded:
+                  type: object
+                  properties:
+                    retired:
+                      type: integer
+                    walkover:
+                      type: integer
+                    default:
+                      type: integer
+                    score_incomplete:
+                      type: integer
+            tiebreaks:
+              $ref: '#/components/schemas/PlayerPlayedRecord'
+            deciding_sets:
+              $ref: '#/components/schemas/PlayerPlayedRecord'
+            after_winning_first_set:
+              $ref: '#/components/schemas/PlayerSplitRecord'
+            after_losing_first_set:
+              $ref: '#/components/schemas/PlayerSplitRecord'
+            comebacks:
+              type: object
+              description: Matches in which the player lost at least one set, and how many of them they won.
+              properties:
+                matches_lost_a_set:
+                  type: integer
+                won:
+                  type: integer
+                win_pct:
+                  type: [number, 'null']
+            sets:
+              type: object
+              properties:
+                won:
+                  type: integer
+                lost:
+                  type: integer
+                win_pct:
+                  type: [number, 'null']
+        withdrawals:
+          type: object
+          description: Per outcome, matches this player did not finish (given) and matches the opponent did not finish (received).
+          properties:
+            retired:
+              $ref: '#/components/schemas/PlayerWithdrawalCount'
+            walkover:
+              $ref: '#/components/schemas/PlayerWithdrawalCount'
+            default:
+              $ref: '#/components/schemas/PlayerWithdrawalCount'
+        excluded:
+          type: object
+          description: Matches in the window left out of every record, by reason.
+          properties:
+            not_singles:
+              type: integer
+            unresolved:
+              type: integer
+            abandoned:
+              type: integer
+            no_published_winner:
+              type: integer
+        recent:
+          type: array
+          description: The last `last` matches in the window, newest first.
+          items:
+            $ref: '#/components/schemas/PlayerRecentMatch'
+    PlayerWinLoss:
+      type: object
+      properties:
+        matches:
+          type: integer
+        wins:
+          type: integer
+        losses:
+          type: integer
+        win_pct:
+          type: [number, 'null']
+          description: Percent with one decimal; null when matches is 0.
+    PlayerPlayedRecord:
+      type: object
+      properties:
+        played:
+          type: integer
+        won:
+          type: integer
+        lost:
+          type: integer
+        win_pct:
+          type: [number, 'null']
+    PlayerSplitRecord:
+      type: object
+      properties:
+        matches:
+          type: integer
+        won:
+          type: integer
+        lost:
+          type: integer
+        win_pct:
+          type: [number, 'null']
+    PlayerWithdrawalCount:
+      type: object
+      properties:
+        given:
+          type: integer
+        received:
+          type: integer
+    PlayerRecentMatch:
+      type: object
+      properties:
+        match_id:
+          type: integer
+        date:
+          type: [string, 'null']
+          format: date
+        scheduled_time:
+          type: [string, 'null']
+          format: date-time
+        tournament_id:
+          type: [string, 'null']
+        tournament:
+          type: [string, 'null']
+        round:
+          type: [string, 'null']
+        round_code:
+          type: [string, 'null']
+        surface:
+          type: [string, 'null']
+        indoor:
+          type: [boolean, 'null']
+        level:
+          type: [string, 'null']
+        opponent:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: [string, 'null']
+        won:
+          type: boolean
+        outcome:
+          type: string
+          enum: [completed, retired, walkover, default]
+        score:
+          type: [object, 'null']
+          description: >-
+            The final score turned round to this player — sets [player, opponent], games
+            [[player per set], [opponent per set]] — from the row the match object serves.
+            Null when no score row is held.
+          properties:
+            sets:
+              type: array
+              items:
+                type: [integer, 'null']
+            games:
+              type: array
+              items:
+                type: array
+                items:
+                  type: integer
+    PlayerServeReturn:
+      type: object
+      description: >-
+        ULTRA only; absent below. Measured per-match statistics summed over the player's
+        completed matches in the window. Each field carries the matches it was summed over.
+      properties:
+        matches:
+          type: integer
+        matches_with_stats:
+          type: integer
+        serve:
+          type: object
+          properties:
+            aces:
+              $ref: '#/components/schemas/PlayerStatCount'
+            double_faults:
+              $ref: '#/components/schemas/PlayerStatCount'
+            first_serve_in:
+              $ref: '#/components/schemas/PlayerStatRatio'
+            first_serve_points_won:
+              $ref: '#/components/schemas/PlayerStatRatio'
+            second_serve_points_won:
+              $ref: '#/components/schemas/PlayerStatRatio'
+            service_games_won:
+              $ref: '#/components/schemas/PlayerStatRatio'
+            break_points_saved:
+              $ref: '#/components/schemas/PlayerStatRatio'
+        return:
+          type: object
+          properties:
+            first_serve_return_points_won:
+              $ref: '#/components/schemas/PlayerStatRatio'
+            second_serve_return_points_won:
+              $ref: '#/components/schemas/PlayerStatRatio'
+            return_games_won:
+              $ref: '#/components/schemas/PlayerStatRatio'
+            break_points_converted:
+              $ref: '#/components/schemas/PlayerStatRatio'
+    PlayerStatRatio:
+      type: object
+      description: A sum of numerators over a sum of denominators. All null with matches 0 when no match carried the field.
+      properties:
+        numerator:
+          type: [integer, 'null']
+        denominator:
+          type: [integer, 'null']
+        pct:
+          type: [number, 'null']
+        matches:
+          type: integer
+    PlayerStatCount:
+      type: object
+      description: A summed count. `total` and `per_match` are null with matches 0 when no match carried the field.
+      properties:
+        total:
+          type: [integer, 'null']
+        matches:
+          type: integer
+        per_match:
+          type: [number, 'null']
     PlayerStoppage:
       description: >-
         One row of GET /players/{playerId}/stoppages — an in-match stoppage on one of the
@@ -3989,6 +4404,28 @@ components:
         hand: { type: [string, "null"], enum: [R, L, null] }
         backhand: { type: [integer, "null"], enum: [1, 2, null] }
         birthday: { type: [string, "null"], format: date }
+        height_cm:
+          type: [integer, "null"]
+          description: >-
+            Added 2026-10-22. Single-player read (`/players/{playerId}`) only;
+            paid tiers (BASIC, PRO, ULTRA), null on a FREE key. Height in
+            centimetres from the results archive's record of the same person.
+            Null when the player has no archive record or the archive holds no
+            height. Never inferred.
+        doubles_ranking:
+          type: [object, "null"]
+          description: >-
+            Added 2026-10-22. Single-player read (`/players/{playerId}`) only;
+            paid tiers (BASIC, PRO, ULTRA), null on a FREE key. The current
+            position on the official ATP/WTA doubles table, from our weekly
+            refresh of the published tables. `observed_on` is the UTC date that
+            refresh last found the player on the table. Null when the player is
+            not on the table or the last sighting is more than 21 days old.
+            Never copied into `ranking`, which stays the singles position.
+          properties:
+            rank: { type: integer }
+            points: { type: [integer, "null"] }
+            observed_on: { type: string, format: date }
         is_doubles_team: { type: boolean }
         data_completeness:
           type: object

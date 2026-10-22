@@ -5,6 +5,12 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.61] - 2026-10-22
+
+### Added
+- **`GET /players/{playerId}/stats` (PRO; `serve_return` ULTRA).** One player's record over our own completed singles matches, 2023 onward. The default window is the 365 days ending now, and `?from=`, `?to=`, `?surface=`, `?level=` and `?last=` narrow it. PRO gets `records`: W/L overall, over the last 12 months, and by surface, venue, level and season. It also carries the set-based record (tiebreaks, deciding sets, after winning or losing the first set, comebacks, sets won and lost), withdrawals given and received, and the last N matches with the score turned round to the player. Every count carries its sample size, and a percentage on an empty sample is `null`, not 0. Winners and scores are read the same way the match object publishes them, so this endpoint cannot disagree with `GET /matches/{matchId}`. ULTRA adds `serve_return`, the per-match statistics of `/matches/{matchId}/statistics` summed over the window. Each ratio is published as numerator, denominator and pct, with the number of matches behind it. Below ULTRA the key is absent. A doubles-team id answers 400 `doubles_not_supported`, and a merged or retired id answers 410 as `/players/{playerId}` does. For 1968–2022, `/history/archive/career` remains the endpoint.
+- **`height_cm` and `doubles_ranking` on `GET /players/{playerId}`.** Both are on the single-player read only, on paid tiers, and null on a FREE key. `height_cm` comes from the results archive's record of the same person and is never inferred. `doubles_ranking` is `{rank, points, observed_on}`, the current position on the official ATP/WTA doubles table. It is null when the player is off the table or was last seen there more than 21 days ago. It is never copied into `ranking`, which stays the singles position. Nothing existing changed type or meaning.
+
 ## [1.13.60] - 2026-10-03
 
 ### Added
