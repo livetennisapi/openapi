@@ -5,6 +5,12 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.68] - 2026-10-23
+
+### Changed
+- **The docs' Organization node matches the apex page's.** Every docs page publishes the same `Organization` as livetennisapi.com: `alternateName` and the ten `sameAs` profiles (RapidAPI, Apify, API.market, Postman, GitLab, PyPI, the two npm packages, the docs site and X). Ahrefs flagged the docs node as incomplete while it carried only the name, url and logo.
+- **Titles fit 60 characters and descriptions 110 to 155.** Three topic pages carry a shorter head title than their h1, the authentication page's description says what `GET /usage` is for, and a description the budget cuts no longer ends on a connective. The generator refuses a page outside these budgets, index.html included.
+
 ## [1.13.67] - 2026-10-22
 
 ### Fixed

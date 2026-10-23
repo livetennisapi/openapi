@@ -56,6 +56,34 @@ DEAD_ORG = "github.com/livetennisapi"
 # Footer credit on every generated page. Synapse Research Ltd builds and runs the API.
 CREDIT = ('<p class="meta">Built by <a href="https://synapsereality.io/work/live-tennis-api/">'
           'Synapse Research Ltd</a>.</p>')
+# The publisher node on every page. It carries the same @id as the apex page's Organization so
+# the two nodes merge into one entity, and the same profiles: Ahrefs flagged the docs'
+# Organization as incomplete while it had only name, url and logo and the apex had the brand
+# name and sameAs. Keep this list and livetennisapi.com's in step.
+ORG_SAMEAS = [
+    "https://rapidapi.com/contact-whTqTESH5/api/tennis-data-analytics-api3",
+    "https://apify.com/livetennisapi/tennis-data-analytics",
+    "https://api.market/store/live-tennis-api/tennis-data-analytics",
+    "https://www.postman.com/livetennisapi",
+    "https://gitlab.com/livetennisapi",
+    PYPI_URL,
+    NPM_JS_URL,
+    NPM_MCP_URL,
+    DOCS_URL,
+    "https://x.com/livetennisapi",
+]
+ORG_NODE = {"@type": "Organization", "@id": f"{SITE}/#org", "name": "JSB Holdings LLC",
+            "alternateName": "Live Tennis API", "url": SITE, "logo": f"{DOCS_URL}/icon-256.png",
+            "sameAs": ORG_SAMEAS}
+ORG_LD = json.dumps(ORG_NODE, separators=(",", ":"), ensure_ascii=False)
+# Result-page budgets. A <title> past 60 characters and a description past 155 are cut in the
+# result; a description under 110 leaves the snippet half empty. main() refuses a page outside
+# them, index.html included.
+TITLE_MAX = 60
+DESC_MIN, DESC_MAX = 110, 155
+# Words a description must not end on when the budget cuts it mid-sentence.
+DANGLING = {"a", "an", "and", "as", "at", "by", "for", "from", "get", "post", "in", "is", "of",
+            "on", "or", "so", "the", "then", "to", "with"}
 
 
 def site_navigation(active: str) -> str:
@@ -672,7 +700,7 @@ def build_html(spec: dict[str, Any]) -> str:
 "url":"{DOCS_URL}/reference.html",
 "inLanguage":"en",
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
-"publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
+"publisher":{ORG_LD}}}
 </script>
 {FONT_PRELOADS}{INLINE_STYLES}
 <style>
@@ -1439,7 +1467,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 "dateModified":"{latest}",
 "inLanguage":"en",
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
-"publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
+"publisher":{ORG_LD}}}
 </script>
 {FONT_PRELOADS}{INLINE_STYLES}
 {style_html}{DESIGN_STYLES}
@@ -1500,6 +1528,7 @@ TOPICS: list[dict[str, Any]] = [
     {
         "slug": "players-and-tournaments",
         "title": "Tennis players, tournaments and rankings API",
+        "head_title": "Players, tournaments and rankings API — Live Tennis API",
         "question": "How do you look up a player, a tournament or a ranking?",
         "lede": (
             "<code>GET /players</code> searches by name and <code>GET /players/{playerId}</code> "
@@ -1547,6 +1576,7 @@ TOPICS: list[dict[str, Any]] = [
     {
         "slug": "historical-results-archive",
         "title": "Historical tennis results API — 1968 onward",
+        "head_title": "Historical tennis results API from 1968 — Live Tennis API",
         "question": "How far back does the historical tennis data go, and what is in it?",
         "lede": (
             "The results archive covers 1968 to 2022: <code>GET /history/archive/matches</code> for "
@@ -1604,7 +1634,12 @@ TOPICS: list[dict[str, Any]] = [
     {
         "slug": "auth-quota-and-health",
         "title": "Tennis API authentication, quota and status",
+        "head_title": "API authentication, quota and status — Live Tennis API",
         "question": "How do you authenticate, and how do you see what quota is left?",
+        "description": (
+            "How do you authenticate, and how do you see what quota is left? Send your key as "
+            "X-API-Key on every request. GET /usage shows your headroom on every tier."
+        ),
         "lede": (
             "Send your key as <code>X-API-Key</code> on every request. <code>GET /usage</code> returns "
             "your own consumption against your plan's quota and works on every tier including FREE, so "
@@ -1669,10 +1704,10 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
         plain = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", topic["lede"])).strip()
         desc = topic["question"]
         for sentence in re.findall(r"[^.]+\.", plain):
-            if len(desc) + 1 + len(sentence.strip()) > 158:
+            if len(desc) + 1 + len(sentence.strip()) > DESC_MAX:
                 break
             desc = f"{desc} {sentence.strip()}"
-        if len(desc) < 90:
+        if len(desc) < DESC_MIN:
             # Whole sentences did not fill the budget — these ledes open with one long
             # sentence, so the loop above could add nothing. Use the space rather than waste
             # it: cut question + lede on a word boundary. A description trimmed mid-sentence
@@ -1681,14 +1716,26 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
             desc = full
             # Measure the ESCAPED length: an apostrophe becomes &#x27; in the attribute, so a
             # 158-character cut can ship a 160-character description and trip the crawl check.
-            while len(E(desc)) > 158 and " " in desc:
+            while len(E(desc)) > DESC_MAX and " " in desc:
                 desc = desc.rsplit(" ", 1)[0].rstrip(",;:")
+            # A cut that lands on "and GET" or "match: the" reads as a typo in the result. Drop
+            # the dangling connective, verb or article as well; the budget check below keeps
+            # the result from falling under DESC_MIN unnoticed.
+            while desc.rsplit(" ", 1)[-1].lower() in DANGLING and " " in desc:
+                desc = desc.rsplit(" ", 1)[0].rstrip(",;:")
+        if topic.get("description"):
+            # Written by hand where the lede's sentences fit the budget badly: whole sentences
+            # stop short of DESC_MIN and the word cut would end on a dangling preposition.
+            desc = topic["description"]
+        # The h1 is the topic title; the head title may be a shorter form of it, so that
+        # "title — Live Tennis API" stays inside TITLE_MAX.
+        head_title = topic.get("head_title") or f"{topic['title']} — {info['title']}"
         pages[topic["slug"]] = f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{E(topic['title'])} — {E(info['title'])}</title>
+<title>{E(head_title)}</title>
 <meta name="description" content="{E(desc)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{DOCS_URL}/{topic['slug']}.html">
@@ -1704,7 +1751,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 "url":"{DOCS_URL}/{topic['slug']}.html",
 "inLanguage":"en",
 "isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
-"publisher":{{"@type":"Organization","@id":"{SITE}/#org","name":"JSB Holdings LLC","alternateName":"Live Tennis API","url":"{SITE}","logo":"{DOCS_URL}/icon-256.png"}}}}
+"publisher":{ORG_LD}}}
 </script>
 {FONT_PRELOADS}{INLINE_STYLES}
 {style_html}{DESIGN_STYLES}
@@ -1948,8 +1995,8 @@ def build_guide_pages(reference_html: str) -> dict[str, str]:
     pages = {}
     for guide in GUIDES:
         desc = guide["description"]
-        if len(E(desc)) > 158:
-            raise SystemExit(f"guide {guide['slug']}: meta description over 158 characters")
+        if len(E(desc)) > DESC_MAX:
+            raise SystemExit(f"guide {guide['slug']}: meta description over {DESC_MAX} characters")
         siblings = "\n".join(
             f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>'
             for t in TOPICS + GUIDES if t["slug"] != guide["slug"]
@@ -1969,9 +2016,7 @@ def build_guide_pages(reference_html: str) -> dict[str, str]:
             "about": guide["about"],
             "inLanguage": "en",
             "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": SITE},
-            "publisher": {"@type": "Organization", "@id": f"{SITE}/#org", "name": "JSB Holdings LLC",
-                          "alternateName": "Live Tennis API", "url": SITE,
-                          "logo": f"{DOCS_URL}/icon-256.png"},
+            "publisher": ORG_NODE,
         }, ensure_ascii=False).replace("</", "<\\/")
         pages[guide["slug"]] = f"""<!doctype html>
 <html lang="en">
@@ -2143,6 +2188,25 @@ def main() -> int:
             "generated pages skip a heading level: "
             + "; ".join(f"{k} {v}" for k, v in skipped.items())
         )
+
+    # Every page's <title> and meta description must fit the result page: Ahrefs reported the
+    # auth page's description at 108 characters and four others past 155, and three titles at
+    # 61 or 62. Measured as rendered (entities decoded), on the generated pages and on the
+    # hand-written index.html alike.
+    out_of_budget = []
+    pages_to_check = {p: c for p, c in outputs.items() if p.suffix == ".html"}
+    if (DOCS / "index.html").exists():
+        pages_to_check[DOCS / "index.html"] = (DOCS / "index.html").read_text(encoding="utf-8")
+    for path, content in pages_to_check.items():
+        title = html.unescape(re.search(r"<title>(.*?)</title>", content, re.S).group(1).strip())
+        meta = re.search(r'<meta name="description" content="([^"]*)"', content)
+        desc_len = len(html.unescape(meta.group(1))) if meta else 0
+        if len(title) > TITLE_MAX:
+            out_of_budget.append(f"{path.name}: title {len(title)} > {TITLE_MAX}")
+        if not DESC_MIN <= desc_len <= DESC_MAX:
+            out_of_budget.append(f"{path.name}: description {desc_len} not in {DESC_MIN}..{DESC_MAX}")
+    if out_of_budget:
+        raise SystemExit("pages outside the title/description budget:\n  " + "\n  ".join(out_of_budget))
 
     # Every generated HTML page must carry the beacon. It used to live inside the reference's
     # own template, so the eight topic pages and the changelog were written later and got none
