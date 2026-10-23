@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.69] - 2026-10-23
+
+### Fixed
+- **JSON-LD carries raw text, not HTML entities.** The players page's `TechArticle` description read `player&#x27;s` inside its JSON-LD while the meta tag decoded to `player's`: the topic, reference and changelog templates formatted the block with the HTML escaper, and a script element's text is never decoded. Every JSON-LD block is now built as a dict and serialized once with `json.dumps`, `</` escaped as `<\/`. The reference and changelog descriptions in JSON-LD are the same text as their meta descriptions. The generator refuses a page whose JSON-LD does not parse, contains an entity, or whose `TechArticle` description differs from the decoded meta description.
+
 ## [1.13.68] - 2026-10-23
 
 ### Changed

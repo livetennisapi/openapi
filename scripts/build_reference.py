@@ -75,7 +75,31 @@ ORG_SAMEAS = [
 ORG_NODE = {"@type": "Organization", "@id": f"{SITE}/#org", "name": "JSB Holdings LLC",
             "alternateName": "Live Tennis API", "url": SITE, "logo": f"{DOCS_URL}/icon-256.png",
             "sameAs": ORG_SAMEAS}
-ORG_LD = json.dumps(ORG_NODE, separators=(",", ":"), ensure_ascii=False)
+
+
+def tech_article_ld(headline: str, description: str, url: str, **extra: Any) -> str:
+    """The TechArticle JSON-LD block every docs page carries, serialized once from a dict.
+
+    JSON-LD is JSON inside a script element: the browser hands the parser the raw text, so an
+    HTML entity in it is never decoded. The topic pages used to format this block with E() and
+    shipped the literal text player&#x27;s in a description while the meta tag decoded to
+    player's. json.dumps writes the string as JSON; the one escape that matters is "</", which
+    would otherwise close the script element early. `extra` keeps the dict's key order after url
+    (dateModified, about), so the four templates emit the same shape."""
+    node: dict[str, Any] = {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": headline,
+        "description": description,
+        "url": url,
+        **extra,
+        "inLanguage": "en",
+        "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": SITE},
+        "publisher": ORG_NODE,
+    }
+    return json.dumps(node, ensure_ascii=False).replace("</", "<\\/")
+
+
 # Result-page budgets. A <title> past 60 characters and a description past 155 are cut in the
 # result; a description under 110 leaves the snippet half empty. main() refuses a page outside
 # them, index.html included.
@@ -679,13 +703,18 @@ def build_html(spec: dict[str, Any]) -> str:
         f'<a href="./{t["slug"]}.html">{E(t["title"])}</a>' for t in TOPICS + GUIDES
     )
 
+    desc = ("Complete text reference for the Live Tennis API: every endpoint, parameter, "
+            "response field and plan tier, for ATP, WTA, Challenger and ITF.")
+    ld_json = tech_article_ld(f"{info['title']} — Full API Reference", desc,
+                              f"{DOCS_URL}/reference.html")
+
     return f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{E(info['title'])} — Full API Reference (text)</title>
-<meta name="description" content="Complete text reference for the Live Tennis API: every endpoint, parameter, response field and plan tier, for ATP, WTA, Challenger and ITF.">
+<meta name="description" content="{E(desc)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{DOCS_URL}/reference.html">
 <meta property="og:type" content="article">
@@ -694,13 +723,7 @@ def build_html(spec: dict[str, Any]) -> str:
 <meta property="og:image" content="{DOCS_URL}/banner.jpg">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
-{{"@context":"https://schema.org","@type":"TechArticle",
-"headline":"{E(info['title'])} — Full API Reference",
-"description":"Complete text reference for every Live Tennis API endpoint, parameter, response field and plan tier.",
-"url":"{DOCS_URL}/reference.html",
-"inLanguage":"en",
-"isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
-"publisher":{ORG_LD}}}
+{ld_json}
 </script>
 {FONT_PRELOADS}{INLINE_STYLES}
 <style>
@@ -1445,13 +1468,17 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
         for e in entries
     )
     info = spec["info"]
+    desc = ("Every change to the Live Tennis API specification, dated and versioned: additive "
+            f"within v1, newest first. Current version {info['version']}, last change {latest}.")
+    ld_json = tech_article_ld(f"{info['title']} — Changelog", desc, f"{DOCS_URL}/changelog.html",
+                              dateModified=latest)
     page = f"""<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{E(info['title'])} — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version {E(info['version'])}, last change {latest}.">
+<meta name="description" content="{E(desc)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{DOCS_URL}/changelog.html">
 <meta property="og:type" content="article">
@@ -1460,14 +1487,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 <meta property="og:image" content="{DOCS_URL}/banner.jpg">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
-{{"@context":"https://schema.org","@type":"TechArticle",
-"headline":"{E(info['title'])} — Changelog",
-"description":"Every change to the Live Tennis API specification, dated and versioned.",
-"url":"{DOCS_URL}/changelog.html",
-"dateModified":"{latest}",
-"inLanguage":"en",
-"isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
-"publisher":{ORG_LD}}}
+{ld_json}
 </script>
 {FONT_PRELOADS}{INLINE_STYLES}
 {style_html}{DESIGN_STYLES}
@@ -1730,6 +1750,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
         # The h1 is the topic title; the head title may be a shorter form of it, so that
         # "title — Live Tennis API" stays inside TITLE_MAX.
         head_title = topic.get("head_title") or f"{topic['title']} — {info['title']}"
+        ld_json = tech_article_ld(topic["title"], desc, f"{DOCS_URL}/{topic['slug']}.html")
         pages[topic["slug"]] = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -1745,13 +1766,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 <meta property="og:image" content="{DOCS_URL}/banner.jpg">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
-{{"@context":"https://schema.org","@type":"TechArticle",
-"headline":"{E(topic['title'])}",
-"description":"{E(desc)}",
-"url":"{DOCS_URL}/{topic['slug']}.html",
-"inLanguage":"en",
-"isPartOf":{{"@type":"WebSite","name":"Live Tennis API","url":"{SITE}"}},
-"publisher":{ORG_LD}}}
+{ld_json}
 </script>
 {FONT_PRELOADS}{INLINE_STYLES}
 {style_html}{DESIGN_STYLES}
@@ -2003,21 +2018,8 @@ def build_guide_pages(reference_html: str) -> dict[str, str]:
         )
         # The page's own <header> gets role="none": the site header above is the one banner
         # landmark, and a second one makes screen-reader landmark lists ambiguous.
-        # json.dumps, not E(): HTML escaping inside a script element is not decoded, so an
-        # apostrophe would reach the parser as the literal text &#x27;. "</" is escaped so no
-        # string can close the script element early.
-        ld_json = json.dumps({
-            "@context": "https://schema.org",
-            "@type": "TechArticle",
-            "headline": guide["title"],
-            "description": desc,
-            "url": f"{DOCS_URL}/{guide['slug']}.html",
-            "dateModified": guide["date"],
-            "about": guide["about"],
-            "inLanguage": "en",
-            "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": SITE},
-            "publisher": ORG_NODE,
-        }, ensure_ascii=False).replace("</", "<\\/")
+        ld_json = tech_article_ld(guide["title"], desc, f"{DOCS_URL}/{guide['slug']}.html",
+                                  dateModified=guide["date"], about=guide["about"])
         pages[guide["slug"]] = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -2207,6 +2209,32 @@ def main() -> int:
             out_of_budget.append(f"{path.name}: description {desc_len} not in {DESC_MIN}..{DESC_MAX}")
     if out_of_budget:
         raise SystemExit("pages outside the title/description budget:\n  " + "\n  ".join(out_of_budget))
+
+    # Every JSON-LD block must be JSON an engine can parse, with no HTML entity in it: a script
+    # element's text is not decoded, so an entity reaches the parser as literal characters. The
+    # players page shipped player&#x27;s in its TechArticle description while its meta tag
+    # decoded to player's. On the generated pages the TechArticle description must also be the
+    # meta description, decoded: two descriptions of one page that disagree are two claims.
+    ld_bad = []
+    for path, content in pages_to_check.items():
+        blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', content, re.S)
+        if not blocks:
+            ld_bad.append(f"{path.name}: no JSON-LD block")
+            continue
+        meta = re.search(r'<meta name="description" content="([^"]*)"', content)
+        meta_desc = html.unescape(meta.group(1)) if meta else None
+        for block in blocks:
+            if re.search(r"&#|&amp;|&quot;", block):
+                ld_bad.append(f"{path.name}: HTML entity inside JSON-LD")
+            try:
+                node = json.loads(block.replace("<\\/", "</"))
+            except ValueError as exc:
+                ld_bad.append(f"{path.name}: JSON-LD does not parse ({exc})")
+                continue
+            if path in outputs and node.get("@type") == "TechArticle" and node.get("description") != meta_desc:
+                ld_bad.append(f"{path.name}: TechArticle description differs from the meta description")
+    if ld_bad:
+        raise SystemExit("JSON-LD defects:\n  " + "\n  ".join(ld_bad))
 
     # Every generated HTML page must carry the beacon. It used to live inside the reference's
     # own template, so the eight topic pages and the changelog were written later and got none
