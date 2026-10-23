@@ -2213,8 +2213,8 @@ def main() -> int:
     # Every JSON-LD block must be JSON an engine can parse, with no HTML entity in it: a script
     # element's text is not decoded, so an entity reaches the parser as literal characters. The
     # players page shipped player&#x27;s in its TechArticle description while its meta tag
-    # decoded to player's. On the generated pages the TechArticle description must also be the
-    # meta description, decoded: two descriptions of one page that disagree are two claims.
+    # decoded to player's. The TechArticle description must also be the meta description,
+    # decoded, index.html included: two descriptions of one page that disagree are two claims.
     ld_bad = []
     for path, content in pages_to_check.items():
         blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', content, re.S)
@@ -2231,7 +2231,7 @@ def main() -> int:
             except ValueError as exc:
                 ld_bad.append(f"{path.name}: JSON-LD does not parse ({exc})")
                 continue
-            if path in outputs and node.get("@type") == "TechArticle" and node.get("description") != meta_desc:
+            if node.get("@type") == "TechArticle" and node.get("description") != meta_desc:
                 ld_bad.append(f"{path.name}: TechArticle description differs from the meta description")
     if ld_bad:
         raise SystemExit("JSON-LD defects:\n  " + "\n  ".join(ld_bad))

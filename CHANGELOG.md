@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.70] - 2026-10-23
+
+### Fixed
+- **index.html's JSON-LD description is its meta description.** The hub page's `TechArticle` carried a different sentence from its meta tag. The meta text is the one that fits the result-page budget, so the JSON-LD now repeats it. The generator's JSON-LD check covers index.html as well as the generated pages.
+
 ## [1.13.69] - 2026-10-23
 
 ### Fixed
