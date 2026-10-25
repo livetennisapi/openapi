@@ -721,6 +721,7 @@ def build_html(spec: dict[str, Any]) -> str:
 <meta property="og:title" content="{E(info['title'])} — Full API Reference">
 <meta property="og:url" content="{DOCS_URL}/reference.html">
 <meta property="og:image" content="{DOCS_URL}/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
 {ld_json}
@@ -1485,6 +1486,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 <meta property="og:title" content="{E(info['title'])} — Changelog">
 <meta property="og:url" content="{DOCS_URL}/changelog.html">
 <meta property="og:image" content="{DOCS_URL}/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
 {ld_json}
@@ -1764,6 +1766,7 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 <meta property="og:title" content="{E(topic['title'])}">
 <meta property="og:url" content="{DOCS_URL}/{topic['slug']}.html">
 <meta property="og:image" content="{DOCS_URL}/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
 {ld_json}
@@ -2034,6 +2037,7 @@ def build_guide_pages(reference_html: str) -> dict[str, str]:
 <meta property="og:description" content="{E(desc)}">
 <meta property="og:url" content="{DOCS_URL}/{guide['slug']}.html">
 <meta property="og:image" content="{DOCS_URL}/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
 {ld_json}

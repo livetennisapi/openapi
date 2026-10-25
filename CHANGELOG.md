@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.71] - 2026-10-26
+
+### Fixed
+- **Every docs page head carries the X (Twitter) card tag.** The 2026-10-25 Ahrefs crawl listed twelve docs pages under "X card missing". The heads already carried the Open Graph tags, so the card tag names the card type and the rest falls back to Open Graph.
+
 ## [1.13.70] - 2026-10-23
 
 ### Fixed
