@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.74] - 2026-10-26
+
+### Changed
+- **The point-by-point page describes the tape by what it holds.** The tape is the ordered score states we hold for a completed match, with coverage declared per match. The model's win probability sits only on rows that were observed live.
+
 ## [1.13.73] - 2026-10-26
 
 ### Changed

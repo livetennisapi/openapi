@@ -1580,7 +1580,8 @@ TOPICS: list[dict[str, Any]] = [
         "question": "Which endpoints return point-by-point tennis data, and how complete is it?",
         "lede": (
             "<code>GET /history/matches/{matchId}</code> returns the tape for one completed match: "
-            "the score after every point, with the model's win probability at that point. "
+            "the ordered score states we hold for it. The model's win probability sits on the rows "
+            "that were observed live, and coverage is declared per match. "
             "<code>GET /history/matches</code> lists completed matches with their tape coverage, and "
             "<code>GET /history/coverage</code> is the measured completeness rollup per tour and draw "
             "bucket — a number we publish rather than estimate, with its own <code>as_of</code>. "
