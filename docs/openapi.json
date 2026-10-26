@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.71",
+  "version": "1.13.72",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -8708,6 +8708,10 @@
        "stream_illegal"
       ],
       "description": "Added 2026-09-21. Present on the `reconstruction` basis only — why the stored live stream was not served. `stream_absent` = no stream rows; `stream_incomplete` = the stream is legal but does not measure complete (joined mid-match or stopped short) and carries no tags; `stream_illegal` = at least one transition is not attributable to one point (a gap or a torn row). A stream that is complete, or tagged and legal end to end, is always served (basis `live`) and this key is absent."
+     },
+     "duplicates_collapsed": {
+      "type": "integer",
+      "description": "Added 2026-10-26. How many rows of this page repeated a point the match had already published (same set, game, `number` and score) and were left out. The writer no longer stores such repeats; this counts the ones written before that, so paging stays dense and `last_seq` still advances past them. A page of repeats alone returns `points: []` and a cursor."
      },
      "ends_at_final": {
       "type": "boolean",
