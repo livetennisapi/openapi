@@ -43,16 +43,6 @@ SPEC = ROOT / "openapi.yaml"
 DOCS = ROOT / "docs"
 SITE = "https://livetennisapi.com"
 DOCS_URL = "https://docs.livetennisapi.com"
-# Where the pages send a reader for each package and for a report. The github.com/livetennisapi
-# organisation is suspended and every URL under it is a 404 to a logged-out reader, so the pages
-# link each package's registry page instead and take reports by mail. main() refuses any
-# generated page that links the org again.
-PYPI_URL = "https://pypi.org/project/livetennisapi/"
-NPM_JS_URL = "https://www.npmjs.com/package/livetennisapi"
-NPM_MCP_URL = "https://www.npmjs.com/package/livetennisapi-mcp"
-CONTACT_EMAIL = "hello@livetennisapi.com"
-SPEC_REPORT = f"mailto:{CONTACT_EMAIL}?subject=Spec%20mismatch"
-DEAD_ORG = "github.com/livetennisapi"
 # Footer credit on every generated page. Synapse Research Ltd builds and runs the API.
 CREDIT = ('<p class="meta">Built by <a href="https://synapsereality.io/work/live-tennis-api/">'
           'Synapse Research Ltd</a>.</p>')
@@ -60,12 +50,18 @@ CREDIT = ('<p class="meta">Built by <a href="https://synapsereality.io/work/live
 # the two nodes merge into one entity, and the same profiles: Ahrefs flagged the docs'
 # Organization as incomplete while it had only name, url and logo and the apex had the brand
 # name and sameAs. Keep this list and livetennisapi.com's in step.
+# Registry pages per package, and the organisation that hosts the source.
+GITHUB_ORG_URL = "https://github.com/livetennisapi"
+PYPI_URL = "https://pypi.org/project/livetennisapi/"
+NPM_JS_URL = "https://www.npmjs.com/package/livetennisapi"
+NPM_MCP_URL = "https://www.npmjs.com/package/livetennisapi-mcp"
+CONTACT_EMAIL = "hello@livetennisapi.com"
 ORG_SAMEAS = [
     "https://rapidapi.com/contact-whTqTESH5/api/tennis-data-analytics-api3",
     "https://apify.com/livetennisapi/tennis-data-analytics",
     "https://api.market/store/live-tennis-api/tennis-data-analytics",
     "https://www.postman.com/livetennisapi",
-    "https://gitlab.com/livetennisapi",
+    GITHUB_ORG_URL,
     PYPI_URL,
     NPM_JS_URL,
     NPM_MCP_URL,
@@ -985,11 +981,11 @@ Details: <a href="{SITE}">livetennisapi.com</a>.</p>
 
 <h2 id="clients">Official client libraries</h2>
 <div class="scrollx" tabindex="0" role="region" aria-label="Official client libraries">
-<table class="linkrow"><caption class="vh">Official client libraries: install command and package page</caption>
-<thead><tr><th scope="col">Language</th><th scope="col">Install</th><th scope="col">Package</th></tr></thead><tbody>
-<tr><th scope="row">Python</th><td><code>pip install livetennisapi</code></td><td><a href="{PYPI_URL}">livetennisapi on PyPI</a></td></tr>
-<tr><th scope="row">JavaScript / TypeScript</th><td><code>npm install livetennisapi</code></td><td><a href="{NPM_JS_URL}">livetennisapi on npm</a></td></tr>
-<tr><th scope="row">MCP server (LLM agents)</th><td>hosted at <code>https://mcp.livetennisapi.com/mcp</code>, or <code>npx livetennisapi-mcp</code></td><td><a href="{NPM_MCP_URL}">livetennisapi-mcp on npm</a></td></tr>
+<table class="linkrow"><caption class="vh">Official client libraries — install command and source repository</caption>
+<thead><tr><th scope="col">Language</th><th scope="col">Install</th><th scope="col">Source</th></tr></thead><tbody>
+<tr><th scope="row">Python</th><td><code>pip install livetennisapi</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-python">livetennisapi-python</a></td></tr>
+<tr><th scope="row">JavaScript / TypeScript</th><td><code>npm install livetennisapi</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-js">livetennisapi-js</a></td></tr>
+<tr><th scope="row">MCP server (LLM agents)</th><td>hosted at <code>https://mcp.livetennisapi.com/mcp</code>, or <code>npx livetennisapi-mcp</code></td><td><a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a></td></tr>
 </tbody></table></div>
 
 <h2 id="mcp">MCP server</h2>
@@ -1002,8 +998,8 @@ install and nothing to keep running. <code>GET https://mcp.livetennisapi.com/hea
 reports the running version.</p>
 <p><strong>Self-run.</strong> <code>npx livetennisapi-mcp</code> with
 <code>LIVETENNISAPI_KEY</code> in the environment. Listed in the official MCP Registry as
-<code>io.github.livetennisapi/livetennisapi-mcp</code>. The package is
-<a href="{NPM_MCP_URL}">livetennisapi-mcp on npm</a>.</p>
+<code>io.github.livetennisapi/livetennisapi-mcp</code>, source at
+<a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi-mcp</a>.</p>
 <p>Without a key only <code>check_api_status</code> answers, and it says where to get a free
 one. The hosted endpoint allows 300 requests a minute on a key and 60 without one. Your
 plan's own rate limit applies underneath that.</p>
@@ -1178,10 +1174,10 @@ across a <code>?tour=</code> group.</p>
 
 <footer>
 <hr>
-<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a>, also published as
-<a href="./openapi.json">openapi.json</a>.</p>
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.</p>
 <nav class="footnav" aria-label="Elsewhere">
-<a href="{SPEC_REPORT}">Report a spec mismatch</a>
+<a href="https://github.com/livetennisapi/openapi/issues">Report a spec mismatch</a>
 <a href="https://affiliates.livetennisapi.com/program">Affiliate programme — 51% lifetime</a>
 </nav>
 <p class="meta">Writing about tennis, or building a tool on this API? The affiliate
@@ -1354,14 +1350,14 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "backtest.",
         "",
         "## Official client libraries",
-        f"- Python: `pip install livetennisapi`, package {PYPI_URL}",
-        f"- JavaScript/TypeScript: `npm install livetennisapi`, package {NPM_JS_URL}",
+        "- Python: `pip install livetennisapi` — https://github.com/livetennisapi/livetennisapi-python",
+        "- JavaScript/TypeScript: `npm install livetennisapi` — https://github.com/livetennisapi/livetennisapi-js",
         "- MCP server for LLM agents, hosted: POST https://mcp.livetennisapi.com/mcp (Streamable HTTP;",
         "  send your key as `Authorization: Bearer twjp_...` or `X-API-Key: twjp_...`). Same 25",
         "  read-only tools on every plan, free keys included, each tool reaching what that plan",
         "  reaches. Nothing to install.",
-        f"- MCP server, self-run: `npx livetennisapi-mcp`, package {NPM_MCP_URL}",
-        f"- Vercel AI SDK tools: `npm install livetennisapi-ai`, package {AI_SDK_NPM}",
+        f"- MCP server, self-run: `npx livetennisapi-mcp`, package {NPM_MCP_URL}, source https://github.com/livetennisapi/livetennisapi-mcp",
+        f"- Vercel AI SDK tools: `npm install livetennisapi-ai`, package {AI_SDK_NPM}, source https://github.com/livetennisapi/livetennisapi-ai",
         f"  (guide: {DOCS_URL}/ai-sdk.html). The same 25 tools as the MCP server, as AI SDK tools.",
         "  Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7, which needs Node 22 or later.",
         "",
@@ -1806,7 +1802,8 @@ carries all {total_ops} operations of the API on one page.</p>
 <nav class="pagenav" aria-label="Other topics">
 {siblings}
 </nav>
-<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a>. Every endpoint on
+<p class="meta">Generated from <a href="./openapi.yaml">openapi.yaml</a> by
+<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>. Every endpoint on
 this page is also in <a href="./reference.html">the full reference</a>.</p>
 {CREDIT}
 </footer>
@@ -1831,6 +1828,7 @@ AI_SDK_VERSION = "1.3.0"
 # date: the visible "Tested" line, JSON-LD dateModified and the sitemap lastmod all read it.
 AI_SDK_CHECKED = "2026-10-22"
 AI_SDK_NPM = "https://www.npmjs.com/package/livetennisapi-ai"
+AI_SDK_REPO = "https://github.com/livetennisapi/livetennisapi-ai"
 
 # (tool name, export, what it returns, plan). Names, exports and plans are the package's own.
 # The "returns" column paraphrases the README table and each tool's description.
@@ -1959,12 +1957,12 @@ wait time on to the user.</p>
 <p>The same 25 tools also run as an MCP server. The hosted endpoint is
 <code>https://mcp.livetennisapi.com/mcp</code>. Send your key as
 <code>Authorization: Bearer twjp_...</code>. To run it yourself, use
-<code>npx livetennisapi-mcp</code>. The package is
-<a href="{NPM_MCP_URL}">livetennisapi-mcp on npm</a>.</p>
+<code>npx livetennisapi-mcp</code> from <a href="https://github.com/livetennisapi/livetennisapi-mcp">livetennisapi/livetennisapi-mcp</a>.</p>
 
 <h2 id="links">Links</h2>
 <ul>
 <li><a href="{AI_SDK_NPM}">livetennisapi-ai on npm</a></li>
+<li><a href="{AI_SDK_REPO}">Source on GitHub</a></li>
 <li><a href="{SITE}/subscribe/free">Free API key</a></li>
 <li><a href="./auth-quota-and-health.html">Authentication, quota and status</a></li>
 </ul>
@@ -2000,8 +1998,9 @@ GUIDES: list[dict[str, Any]] = [
                   "version": AI_SDK_VERSION, "programmingLanguage": "TypeScript",
                   "runtimePlatform": "Node.js"},
         "footer": (
-            f'Written for <a href="{AI_SDK_NPM}">livetennisapi-ai</a> {AI_SDK_VERSION}. Something '
-            f'wrong on this page? Write to <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.'
+            f'Written for <a href="{AI_SDK_NPM}">livetennisapi-ai</a> {AI_SDK_VERSION}. Package source in '
+            f'<a href="{AI_SDK_REPO}">livetennisapi/livetennisapi-ai</a>, page source in '
+            '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
         ),
     },
 ]
@@ -2251,15 +2250,6 @@ def main() -> int:
         raise SystemExit(
             "generated pages with no pageview beacon: " + ", ".join(missing_beacon)
             + "\n  Add {BEACON} before </body> in that template."
-        )
-
-    # No output may link the suspended github.com/livetennisapi organisation: every URL under it is
-    # a 404 to a logged-out reader. openapi.json mirrors openapi.yaml, so this covers the spec too.
-    dead_links = [path.name for path, content in outputs.items() if DEAD_ORG in content]
-    if dead_links:
-        raise SystemExit(
-            f"generated pages link the suspended {DEAD_ORG} organisation: " + ", ".join(dead_links)
-            + "\n  Link the package's registry page, or mailto:" + CONTACT_EMAIL + " for reports."
         )
 
     # ...and the on-page behaviour tag, for the same reason: the topic pages were written after

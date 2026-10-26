@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.73] - 2026-10-26
+
+### Changed
+- **Source links point at GitHub again.** The github.com/livetennisapi organisation is public again, so every page, the README and llms.txt link each package's repository on GitHub beside its registry page. The Organization's sameAs names the GitHub org instead of the GitLab mirror.
+
 ## [1.13.72] - 2026-10-26
 
 ### Added
