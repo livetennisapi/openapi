@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.75",
+  "version": "1.13.76",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -3056,7 +3056,7 @@
   "/webhooks": {
    "post": {
     "summary": "Register an outbound webhook (ULTRA, direct keys only)",
-    "description": "We POST the same frames the WebSocket sends to your HTTPS endpoint on every live score commit. Up to 3 webhooks per key (`409 webhook_limit` past that). The response is the ONLY time the signing secret is shown — store it.\n\nEach delivery carries `X-LTAPI-Signature` (`sha256=<hex>` — HMAC-SHA256 of the RAW request body with your webhook secret; verify with a constant-time compare), `X-LTAPI-Timestamp` (Unix seconds at send time — reject stale replays at your edge) and `X-LTAPI-Event` (the frame type: `score`, `break_point`, `break_point_result` or `point`).\n\nDelivery is best-effort, at-most-once, no replay: one attempt per frame with a ~3s timeout and redirects disabled. Every `score` frame is the complete current score, so a missed delivery self-corrects on the next commit. A `point` frame is an EVENT, not a state — a missed one does NOT self-correct; recover it with `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`. After 25 consecutive failures the webhook is disabled automatically (`enabled:false`, `last_error` set — visible in `GET /webhooks`); delete and re-register to resume.",
+    "description": "We POST the same frames the WebSocket sends to your HTTPS endpoint on every live score commit. Up to 3 webhooks per key (`409 webhook_limit` past that). The response is the ONLY time the signing secret is shown — store it.\n\nEach delivery body is the frame plus a top-level `delivery_id`, a string unique per delivery. Verify the `X-LTAPI-Signature-V1` header, `t=<unix seconds>,v1=<hex>`. The hex is HMAC-SHA256, keyed with your webhook secret, of the string `<t>.<raw request body>`. Accept the request if any `v1` value matches. Then run these receiver checks. Reject a `t` more than 5 minutes from your clock. Compare with a constant-time function, over the raw bytes before any JSON parsing. Dedupe on `delivery_id` and keep each id until `t` + 5 minutes on your clock. With several workers, record it with an atomic insert-if-absent. `X-LTAPI-Timestamp` repeats `t`, and `X-LTAPI-Event` names the frame type: `score`, `score_withdrawn`, `break_point`, `break_point_result`, `point` or `status`.\n\nDeprecated: `X-LTAPI-Signature` (`sha256=<hex>`, HMAC-SHA256 of the raw body alone). It does not cover the timestamp, so a captured delivery still verifies when re-sent later under a fresh `X-LTAPI-Timestamp`. We keep sending it unchanged until 2027-02-01. Deliveries sent from 00:00 UTC on that date do not carry it. Both headers use the same secret. Once your receiver checks `X-LTAPI-Signature-V1`, require it and never fall back to the old header: a fallback lets a re-stamped replay through.\n\nDelivery is best-effort, at-most-once, no replay: one attempt per frame with a ~3s timeout and redirects disabled. Every `score` frame is the complete current score, so a missed delivery self-corrects on the next commit. A `point` frame is an EVENT, not a state — a missed one does NOT self-correct; recover it with `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`. After 25 consecutive failures the webhook is disabled automatically (`enabled:false`, `last_error` set — visible in `GET /webhooks`); delete and re-register to resume.",
     "operationId": "createWebhook",
     "requestBody": {
      "required": true,
@@ -3080,14 +3080,13 @@
             "score",
             "break_point",
             "point",
-            "status",
-            "stoppages"
+            "status"
            ]
           },
           "default": [
            "score"
           ],
-          "description": "`score` = every accepted live-score commit; `break_point` = the derived `break_point` / `break_point_result` frames; `point` = one POST per live point (the `PointFrame` shape), where that surface is enabled and the match has `pbp_coverage: \"point\"`."
+          "description": "`score` = every accepted live-score commit; `break_point` = the derived `break_point` / `break_point_result` frames; `point` = one POST per live point (the `PointFrame` shape), where that surface is enabled and the match has `pbp_coverage: \"point\"`. `status` = one POST per admin-status change, the WebSocket `status` frame. Any other value is a 400."
          }
         }
        }
@@ -8267,7 +8266,9 @@
        "type": "string",
        "enum": [
         "score",
-        "break_point"
+        "break_point",
+        "point",
+        "status"
        ]
       }
      },
@@ -8300,7 +8301,7 @@
      },
      "secret": {
       "type": "string",
-      "description": "Present ONLY on the 201 registration response — shown exactly once"
+      "description": "Present ONLY on the 201 registration response — shown exactly once. Signs every delivery: `X-LTAPI-Signature-V1` is HMAC-SHA256 of `<t>.<raw request body>` with this secret."
      },
      "secret_note": {
       "type": "string"
