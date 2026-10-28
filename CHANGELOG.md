@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.75] - 2026-10-28
+
+### Changed
+- **Fields are described by what they hold.** Rounds, stoppages, per-point tags, statistics and surfaces now say what each value means and when it is null. Earlier entries in this changelog were reworded the same way. The 2013 to 2022 archive tape is described as reconstructed point sequences with no capture timestamps. Its `point_source_detail` value is unchanged. The charting endpoints describe the charted corpus by its coverage. Nothing on the wire changed.
+
 ## [1.13.74] - 2026-10-26
 
 ### Changed
@@ -148,7 +153,7 @@ endpoint of the REST API changed.
 ## [1.13.55] - 2026-09-29
 
 ### Fixed
-- **ITF World Tennis Tour doubles began stating `outcome`, and the reference still said no doubles draw carries either field.** The 1.13.42 note measured 454 completed doubles matches and found no tagged row. That was true when it was written. The first doubles row carried a tag on 2026-09-23, and by 2026-09-29 `GET /matches/{id}/points` published `outcome` on **104 of 596** completed ITF doubles matches, 17%, against **0 of 371** for the ATP, WTA and Challenger doubles draws in the same window. The vocabulary is ace and double fault, as on the ITF singles draws. `serve` is still unstated on every doubles draw, measured 0, and that sentence is unchanged. The cause sat upstream of the tagger: a dedup change let a doubles fixture be adopted and oriented by its member sets instead of being refused, so the ITF per-point join reached rows it had never been able to match. 17% falls between "almost none" and "a clear majority", so the description states it as a measured fraction and sends the reader to `enrichment` per match instead of to the draw. WTA main-tour qualifying has carried that treatment since 1.13.42. Found by the every-sweep tag-coverage check. No field, endpoint or behaviour changed.
+- **ITF World Tennis Tour doubles began stating `outcome`, and the reference still said no doubles draw carries either field.** The 1.13.42 note measured 454 completed doubles matches and found no tagged row. That was true when it was written. The first doubles row carried a tag on 2026-09-23, and by 2026-09-29 `GET /matches/{id}/points` published `outcome` on **104 of 596** completed ITF doubles matches, 17%, against **0 of 371** for the ATP, WTA and Challenger doubles draws in the same window. The vocabulary is ace and double fault, as on the ITF singles draws. `serve` is still unstated on every doubles draw, measured 0, and that sentence is unchanged. The cause sat before the tagger: a dedup change let a doubles fixture be adopted and oriented by its member sets instead of being refused, so the ITF per-point join reached rows it had never been able to match. 17% falls between "almost none" and "a clear majority", so the description states it as a measured fraction and sends the reader to `enrichment` per match instead of to the draw. WTA main-tour qualifying has carried that treatment since 1.13.42. Found by the every-sweep tag-coverage check. No field, endpoint or behaviour changed.
 
 ## [1.13.54] - 2026-09-28
 ### Added
@@ -164,7 +169,7 @@ endpoint of the REST API changed.
 
 ## [1.13.52] - 2026-09-25
 ### Added
-- **The tape's two accept clocks are published.** `HistoryTapeRow.accepted_at` and `HistoryTapeRow.received_at` have ridden every observed row of `GET /history/matches/{matchId}` since 2026-09-24 and were documented nowhere, so a customer doing timing research on a tape had no published field to read. `accepted_at` is the instant our arbiter accepted the state, stamped once and never refreshed, which is the clock to difference against: `timestamp` starts equal to it and is then refreshed while the owning source keeps re-asserting the unchanged state, so on most raw rows `timestamp` is a later re-assertion instant (on match 189679, 164 of its 171 observed rows carry a `timestamp` more than a second after `accepted_at`). `received_at` is the instant the state reached our edge before arbitration, so `accepted_at` minus `received_at` is our own arbitration step. Neither figure is a claim about upstream speed and neither is the court's clock. Both are null on every reconstructed row, which never had a clock.
+- **The tape's two accept clocks are published.** `HistoryTapeRow.accepted_at` and `HistoryTapeRow.received_at` have ridden every observed row of `GET /history/matches/{matchId}` since 2026-09-24 and were documented nowhere, so a customer doing timing research on a tape had no published field to read. `accepted_at` is the instant our arbiter accepted the state, stamped once and never refreshed, which is the clock to difference against: `timestamp` starts equal to it and is then refreshed while the owning source keeps re-asserting the unchanged state, so on most raw rows `timestamp` is a later re-assertion instant (on match 189679, 164 of its 171 observed rows carry a `timestamp` more than a second after `accepted_at`). `received_at` is the instant the state reached our edge before arbitration, so `accepted_at` minus `received_at` is our own arbitration step. Neither figure is a claim about speed before our edge and neither is the court's clock. Both are null on every reconstructed row, which never had a clock.
 - **The arrival clock's start date, which is the part that bites.** `received_at` is stamped only as a state arrives, so it can never be filled in afterwards. The earliest one we hold is `2026-09-24T02:00:26Z`; on every observed row accepted before that instant it is null while `timestamp` and `accepted_at` are populated. A study that spans the boundary has to read `accepted_at`, which rides the whole observed corpus. Measured on match 189679 (12 September) after a Basic customer reported it: 171 observed rows, `accepted_at` on all 171, `received_at` on none.
 - **What `server` guarantees on a tiebreak row, and what it does not.** Tiebreak rows are never settled on either sequence. The server genuinely changes during a breaker, so there is no constant to take a majority of, and the field is the source's own assertion carried through. Where a breaker's rows skip points the rotation cannot be reconstructed from what is served: you have the server of a state, not of a numbered point, and `meta.points.transitions_legal` against `transitions_total` tells you whether that happened. On the set roll-up row carrying `tiebreak_final`, `server` is the value of that committed set-end state and is NOT a preserved copy of the final breaker point's server. Reported by a Basic customer who could not reconcile 21 tiebreak transitions against the standard rotation and was right not to.
 
@@ -241,12 +246,12 @@ No field, endpoint or behaviour changed; every correction is to a description.
 - **`schema_version` on the packages listing, and bulk tape rows carry the enriched tape.** Under `schema_version` 2 a `kind=tape` JSONL line is exactly what `GET /history/matches/{matchId}` returns for that match on its default basis, produced by the same code — the same rows with `origin`, `serve`, `outcome` and `winner` beside the score columns, and the full `meta` (`enrichment`, `reconstructed_at`, `observed_span`, `meta.points` where served) — so a model reads its serve states from the bulk file just as it would from the endpoint; the CSV appends `origin`, `serve`, `outcome`, `winner` after `danger`, in that order, and its column order grows only at the end. `1` is the shape every month built before 22 September 2026 carries: score columns only, no `meta.enrichment`, and a CSV that ends at `danger`. Months built before that date keep shape `1` until they are rebuilt — newest month first, then backwards, `built_at` and `sha256` moving as each flips — so check the manifest rather than assuming; a consumer that needs the enriched fields should require `schema_version >= 2` and, for a month still at `1`, read the per-match endpoint for the matches it needs. `null` on the non-tape kinds.
 
 ### Changed
-- **A completed match on the tours whose own point-by-point console we read is re-joined after the match against the console's complete sequence.** ATP 250/500/1000, ATP Challenger and WTA 1000/500/250/125: the live join paired `serve` / `outcome` onto points as they were captured, so a point the console published after our capture went untagged. A completed match is now re-joined against the complete console sequence by the same exact-state rule, and its serve/outcome coverage exceeds what was captured live. The late tags arrive as `point_update` frames and `tagged_at` revisions like any other — collect them with `?changed_since=`. Nothing is inferred; a point the console never states stays null.
+- **A completed match on the tours with a complete per-point record is re-joined after the match against that complete sequence.** ATP 250/500/1000, ATP Challenger and WTA 1000/500/250/125: the live join paired `serve` / `outcome` onto points as they were captured, so a point tagged after our capture went untagged. A completed match is now re-joined against the complete sequence by the same exact-state rule, and its serve/outcome coverage exceeds what was captured live. The late tags arrive as `point_update` frames and `tagged_at` revisions like any other — collect them with `?changed_since=`. Nothing is inferred; a point that is never stated stays null.
 - **The pre-2023 archive tape no longer claims `point_winner` is null throughout a per-game tape.** On a per-game tape (556 matches, 555 of them 2013) consecutive rows differ by a whole game, and the reference said no point was attributable there. Each row in fact reads the side whose game count rose — the game point was theirs — and says nothing about the game's other points; `winner` reads the same. No field changed shape or value.
 
 ## [1.13.39] - 2026-09-22
 ### Changed
-- **`is_qualifying` states the one case where a round label DOES decide the draw.** The field said it is "never inferred from the round label", which is the right instinct and slightly too strong: main-draw vocabulary (`Semi-finals`, `Final`) is indeed never read that way, but a round the feed itself spells `Qualification Round 1` is the source STATING the draw, and it reads `true` — a `false` beside such a round is a payload contradicting itself rather than asserting main draw. Three matches (Chengdu, 22 Sep) were briefly served `is_qualifying: false` with `round_code: "Q1"` beside them and were repaired the same morning. Readers segregating a corpus by draw need to know which way that conflict resolves. No field changed shape or type.
+- **`is_qualifying` states the one case where a round label DOES decide the draw.** The field said it is "never inferred from the round label", which is the right instinct and slightly too strong: main-draw vocabulary (`Semi-finals`, `Final`) is indeed never read that way, but a round label that itself reads `Qualification Round 1` is STATING the draw, and it reads `true` — a `false` beside such a round is a payload contradicting itself rather than asserting main draw. Three matches (Chengdu, 22 Sep) were briefly served `is_qualifying: false` with `round_code: "Q1"` beside them and were repaired the same morning. Readers segregating a corpus by draw need to know which way that conflict resolves. No field changed shape or type.
 
 ## [1.13.38] - 2026-09-22
 ### Changed
@@ -257,11 +262,11 @@ No field, endpoint or behaviour changed; every correction is to a description.
 - **`is_qualifying` is documented on the match object.** The field has been served on `GET /matches`, `GET /matches/{matchId}` and `GET /history/matches` for some time and was absent from this reference entirely, which left the one field that separates a qualifying draw from the main draw invisible to anyone reading the docs. Three-valued: `true`/`false` are the source's own assertion, `null` means no source has ever stated it, and `null` is not `false`.
 
 ### Changed
-- **`round` and `round_code` now state that they are DRAW-RELATIVE.** Both describe the round *within* the draw the match belongs to, and the draw is named by `is_qualifying` — not by the round. A qualifying semi-final carries `round: "... - Semi-finals"` and `round_code: SF`, exactly as a main-draw semi-final does; `Q`/`Q1`..`Q4` appear only where the feed itself names the round as qualifying, which most feeds do not. `round_code` previously said "this is the field to branch on" without that limit, and two customers independently read a qualifying match as a main-draw one and reported it as a data fault. The data was correct in every case; the documentation was not. No field changed shape or value.
+- **`round` and `round_code` now state that they are DRAW-RELATIVE.** Both describe the round *within* the draw the match belongs to, and the draw is named by `is_qualifying` — not by the round. A qualifying semi-final carries `round: "... - Semi-finals"` and `round_code: SF`, exactly as a main-draw semi-final does; `Q`/`Q1`..`Q4` appear only where the label itself names the round as qualifying, which most labels do not. `round_code` previously said "this is the field to branch on" without that limit, and two customers independently read a qualifying match as a main-draw one and reported it as a data fault. The data was correct in every case; the documentation was not. No field changed shape or value.
 
 ## [1.13.36] - 2026-09-21
 ### Changed
-- **`GET /charting/players` states a sample of 11,803 charted matches, not 11,646.** The charted corpus was refreshed on 2026-09-19 and 184 matches — 133 of them played after 2026-05-24, including the US Open women's draw to the quarter-finals — were loaded into the product on 2026-09-21. `matches_charted` on every response has always been the true per-player denominator and was never affected; the curated-coverage note beside it was quoting an older total and understating the sample. `GET /rally/matches` grew in the same load: 11,822 charted matches and 1,875,132 shot-by-shot points, with the newest women's chart now 2026-09-09. The men's corpus is unchanged because nothing has been charted upstream since 2026-05-21. No field changed shape.
+- **`GET /charting/players` states a sample of 11,803 charted matches, not 11,646.** The charted corpus was refreshed on 2026-09-19 and 184 matches — 133 of them played after 2026-05-24, including the US Open women's draw to the quarter-finals — were loaded into the product on 2026-09-21. `matches_charted` on every response has always been the true per-player denominator and was never affected; the curated-coverage note beside it was quoting an older total and understating the sample. `GET /rally/matches` grew in the same load: 11,822 charted matches and 1,875,132 shot-by-shot points, with the newest women's chart now 2026-09-09. The men's corpus is unchanged because no men's match has been charted since 2026-05-21. No field changed shape.
 
 ## [1.13.35] - 2026-09-21
 ### Added
@@ -277,7 +282,7 @@ No field, endpoint or behaviour changed; every correction is to a description.
 - **A double fault stated on a first serve is a contradiction; the point is served untagged.** A source point whose serve number and outcome contradict each other — a double fault on serve 1 — was carried through as stated. `serve` and `outcome` on such a point now both read `null` on `GET /matches/{matchId}/points` and on the WebSocket frames rather than tagged wrongly; nothing is corrected to a second serve. Stored tags that carried the contradiction have been cleared.
 ## [1.13.34] - 2026-09-21
 ### Changed
-- **The reference said Davis Cup and the Grand Slams "read null throughout" for the per-point tags; `serve` is in fact stated on the top Davis Cup tiers.** `serve` and `outcome` are joined from *different* outside sources, and the old sentence excluded both on the strength of one of them: the tour's own per-point console does not carry team ties or Slams, so `outcome` is genuinely `null` there — but the source that states the serve number does carry them. Measured over completed matches with a per-point stream since 2026-09-12: Davis Cup World Group states `serve` on 22 of 22 matches and World Group I on 41 of 42, while World Group II states it on 0 of 38; `outcome` is null on all of them, on every one of the 14,132 rows. The machine-readable authority was right throughout and is unchanged — a World Group I match answers `enrichment: {"serve": "stated", "outcome": "none"}` and a World Group II match answers `{"serve": "none", "outcome": "none"}` — so this corrects the prose to match what the API already returns, in the direction of more coverage, not less. The `serve` description now names the Davis Cup tiers in its coverage list with the measurement; the `outcome` description now separates the two sources instead of excluding a competition from both. No field, endpoint or behaviour change.
+- **The reference said Davis Cup and the Grand Slams "read null throughout" for the per-point tags; `serve` is in fact stated on the top Davis Cup tiers.** `serve` and `outcome` are stated separately, and the old sentence excluded both on the strength of one of them: team ties and Slams carry no per-point outcome, so `outcome` is genuinely `null` there — but the serve number is stated on them. Measured over completed matches with a per-point stream since 2026-09-12: Davis Cup World Group states `serve` on 22 of 22 matches and World Group I on 41 of 42, while World Group II states it on 0 of 38; `outcome` is null on all of them, on every one of the 14,132 rows. The machine-readable authority was right throughout and is unchanged — a World Group I match answers `enrichment: {"serve": "stated", "outcome": "none"}` and a World Group II match answers `{"serve": "none", "outcome": "none"}` — so this corrects the prose to match what the API already returns, in the direction of more coverage, not less. The `serve` description now names the Davis Cup tiers in its coverage list with the measurement; the `outcome` description now treats the two fields separately instead of excluding a competition from both. No field, endpoint or behaviour change.
 
 ## [1.13.33] - 2026-09-21
 ### Changed
@@ -294,7 +299,7 @@ No field, endpoint or behaviour changed; every correction is to a description.
 
 ## [1.13.30] - 2026-09-20
 ### Changed
-- **The ATP per-point outcome row said "full" as a projection from the feed's content, not a measurement.** In the 30 days since the tour's own per-point console went live (2026-09-12), no ATP main-tour event was actually played — the only tour tennis in that window was a Grand Slam and Davis Cup, neither of which is on that feed — so every ATP main-tour match carried no outcome tags at all, while the docs asserted `full` (ace, double fault, winner, forced error, unforced error) unconditionally. The row now names the tours the feed covers (ATP 250 / 500 / 1000), states plainly that Grand Slams and Davis Cup are not on it and read null throughout (check `enrichment` per match), and gives the first date the claim was actually measured against a played tour event: the week of 2026-09-22.
+- **The ATP per-point outcome row said "full" as a projection, not a measurement.** In the 30 days since ATP per-point outcomes went live (2026-09-12), no ATP main-tour event was actually played — the only tour tennis in that window was a Grand Slam and Davis Cup, neither of which carries per-point outcomes — so every ATP main-tour match carried no outcome tags at all, while the docs asserted `full` (ace, double fault, winner, forced error, unforced error) unconditionally. The row now names the tours covered (ATP 250 / 500 / 1000), states plainly that Grand Slams and Davis Cup are not on it and read null throughout (check `enrichment` per match), and gives the first date the claim was actually measured against a played tour event: the week of 2026-09-22.
 
 ## [1.13.29] - 2026-09-20
 ### Changed
@@ -304,11 +309,11 @@ No field, endpoint or behaviour changed; every correction is to a description.
 
 ## [1.13.28] - 2026-09-20
 ### Added
-- **`meta.points.games_withheld` on `GET /history/matches/{matchId}`.** Present whenever reconstructed rows are in the response: the count of games whose vendor point record was internally inconsistent — a recorded score state that repeats or moves backwards partway through the game — and whose in-game points are therefore withheld rather than published. The game's opening `0-0` row is still served, so the games spine stays intact; nothing is repaired, reordered or inferred — a game is served exactly as recorded, or not at all. `> 0` forces `meta.points.complete` to `false`. `null` means not measured: either the reconstruction predates this check, or it was built from the multi-vendor union rather than a single vendor's point record.
+- **`meta.points.games_withheld` on `GET /history/matches/{matchId}`.** Present whenever reconstructed rows are in the response: the count of games whose recorded points were internally inconsistent — a recorded score state that repeats or moves backwards partway through the game — and whose in-game points are therefore withheld rather than published. The game's opening `0-0` row is still served, so the games spine stays intact; nothing is repaired, reordered or inferred — a game is served exactly as recorded, or not at all. `> 0` forces `meta.points.complete` to `false`. `null` means not measured: either the reconstruction predates this check, or it was built by merging more than one point record rather than from a single one.
 - **`tape.points_complete_default`, `tape.points_complete_recon` and `tape.points_basis` on the `GET /history/matches` listing.** `points_complete` on that listing is a best-basis OR: the ledger's default basis is the `clean` collapse of an observed tape, while the per-match read serves and measures the `raw` sequence, so `points_complete: true` can sit next to `meta.points.complete: false` on the same match with both honest about their own sequence. These three fields say which measurement produced the `true` and on which sequence — `points_complete_recon: true` means "fetch it with `?points=complete`". All null when not yet measured.
-- **`meta.points.resent_rows` on `GET /history/matches/{matchId}`.** A row identical to the row before it is the same state re-sent by a source on its timer, which the raw tape carries by design — no point separates the two rows, so they no longer count as a non-point transition. `transitions_total` is now `rows − 1 − resent_rows`. `resent_rows` is `0` on a `clean` or `recon` basis: the collapse already removes re-sends, and in a reconstruction one row is one point, so a repeat there is a vendor tear and is never dropped.
+- **`meta.points.resent_rows` on `GET /history/matches/{matchId}`.** A row identical to the row before it is the same state re-sent by a source on its timer, which the raw tape carries by design — no point separates the two rows, so they no longer count as a non-point transition. `transitions_total` is now `rows − 1 − resent_rows`. `resent_rows` is `0` on a `clean` or `recon` basis: the collapse already removes re-sends, and in a reconstruction one row is one point, so a repeat there is a tear in the recorded sequence and is never dropped.
 ### Fixed
-- **A vendor's finished-match point record that moved backwards inside a game was being reconstructed as if it were legal.** Since July 2026 one vendor's point-by-point feed has not been monotone within a game (a real example: 40-30, 15-15, 15-30, 30-30, 15-30, 30-30, 30-30, 40-30 — 547 of 586 August ATP/WTA matches carried at least one such game). The tape builder kept the longest forward-moving chain through the inconsistency and published the result as an ordinary reconstructed row, so a state like 30-30 repeating three times in a row was served as fact. Those games are now withheld whole instead — counted in the new `games_withheld` field — rather than fitted into a plausible-looking sequence.
+- **A finished-match point record that moved backwards inside a game was being reconstructed as if it were legal.** Since July 2026 some recorded point sequences have not been monotone within a game (a real example: 40-30, 15-15, 15-30, 30-30, 15-30, 30-30, 30-30, 40-30 — 547 of 586 August ATP/WTA matches carried at least one such game). The tape builder kept the longest forward-moving chain through the inconsistency and published the result as an ordinary reconstructed row, so a state like 30-30 repeating three times in a row was served as fact. Those games are now withheld whole instead — counted in the new `games_withheld` field — rather than fitted into a plausible-looking sequence.
 
 ## [1.13.27] - 2026-09-20
 ### Added
@@ -319,15 +324,15 @@ No field, endpoint or behaviour changed; every correction is to a description.
 
 ## [1.13.26] - 2026-09-20
 ### Fixed
-- **Team-competition matches now carry the surface of their tie.** Davis Cup, Billie Jean King Cup and Laver Cup matches published `surface: null` on the match and on `tournament.surface` — 268 of 268 team-event matches in the 60 days to 2026-09-20. 1.13.25 documented that null as structural; it was only structural for the sources we had. Every surface source was per tournament, and the vendor's team "tournament" (`ATP Davis Cup - World Group I`) is a tier whose surface field carries the draw stage, not a surface; a tie is played on whatever its host nation chose. The ITF's own draw feed states the surface, venue and indoor/outdoor flag per tie, so the API now holds one row per tie and resolves each match to its tie by competition, date window and the nations on court — answering only when a single tie remains, never from a nation, a name or a previous tie. Existing team-event matches (last 60 days and upcoming) were backfilled with one audit row per write; new ties are picked up as they are drawn. Ties whose venue the ITF has not announced stay null. `tournament.surface` for a team competition remains null by design: the surface belongs to the tie, and it is published on the match. Raised by a public report that Davis Cup match 191867 returned `surface: null`; that match now serves `hard`. Payload shape unchanged.
+- **Team-competition matches now carry the surface of their tie.** Davis Cup, Billie Jean King Cup and Laver Cup matches published `surface: null` on the match and on `tournament.surface` — 268 of 268 team-event matches in the 60 days to 2026-09-20. 1.13.25 documented that null as structural; it was only structural for the data we held. Every surface we held was per tournament, and a team "tournament" (`ATP Davis Cup - World Group I`) is a tier with a draw stage, not a surface; a tie is played on whatever its host nation chose. Each tie's published record states the surface, venue and indoor/outdoor flag, so the API now holds one row per tie and resolves each match to its tie by competition, date window and the nations on court — answering only when a single tie remains, never from a nation, a name or a previous tie. Existing team-event matches (last 60 days and upcoming) were backfilled with one audit row per write; new ties are picked up as they are drawn. Ties whose venue the ITF has not announced stay null. `tournament.surface` for a team competition remains null by design: the surface belongs to the tie, and it is published on the match. Raised by a public report that Davis Cup match 191867 returned `surface: null`; that match now serves `hard`. Payload shape unchanged.
 ### Changed
 - **`Match.surface` and `Tournament.surface` descriptions** now state the per-tie rule for team competitions instead of describing the null as permanent.
 
 ## [1.13.25] - 2026-09-20
 ### Fixed
-- **A match that had been given a `tournament_id` was never given the surface that id serves.** `matches.tournament_key` was backfilled on 2026-09-04 for matches discovered through the secondary source, which had been publishing `tournament_id: null`; the pass gave those rows an id and stopped there. The catalogue-surface fallback runs only in the ingest upsert, and every repaired row was already terminal, so it never ran again: 2,533 matches (2026-06-21..2026-09-04, all ITF) published `surface: null` while `GET /tournaments/{id}` — for the id that same row hands you — answered `"surface": "hard"`. Two surfaces for one question, each written by a different writer. Measured and wire-confirmed before the repair on match `186637` (`surface: null`, `tournament_id: "12158"`) against `/tournaments/12158` (`"surface": "hard"`), and after it on the same row. All 2,533 now carry the surface their own tournament states; `indoor` was filled from the same catalogue row where the match held none. Nothing after 2026-09-04 was affected — the same commit's ingest hook sets the key before the fallback reads it, so the forward path has been correct throughout and the weekly count is flat zero since. The repair resolves surface through the same chain the ingest uses (tournament-name map first, catalogue second), so a later upsert cannot answer one of these rows differently. Match-level `surface` null over the previous 90 days: 19.8% before, 11.8% after. No field or endpoint added.
+- **A match that had been given a `tournament_id` was never given the surface that id serves.** `matches.tournament_key` was backfilled on 2026-09-04 for matches that had been publishing `tournament_id: null`; the pass gave those rows an id and stopped there. The tournament-surface fallback runs only in the ingest upsert, and every repaired row was already terminal, so it never ran again: 2,533 matches (2026-06-21..2026-09-04, all ITF) published `surface: null` while `GET /tournaments/{id}` — for the id that same row hands you — answered `"surface": "hard"`. Two surfaces for one question, each written by a different writer. Measured and wire-confirmed before the repair on match `186637` (`surface: null`, `tournament_id: "12158"`) against `/tournaments/12158` (`"surface": "hard"`), and after it on the same row. All 2,533 now carry the surface their own tournament states; `indoor` was filled from the same tournament row where the match held none. Nothing after 2026-09-04 was affected — the same commit's ingest hook sets the key before the fallback reads it, so the forward path has been correct throughout and the weekly count is flat zero since. The repair resolves surface through the same chain the ingest uses (tournament-name map first, tournament row second), so a later upsert cannot answer one of these rows differently. Match-level `surface` null over the previous 90 days: 19.8% before, 11.8% after. No field or endpoint added.
 ### Changed
-- **`Match.surface` and `Tournament.surface` now say when they are null and why.** Both were documented as nullable with no account of the population, while the `tournament_id` field beside them carries a measured one. The remaining match-level nulls are two structural groups and an 8-row residue: UTR events, which are not in the tournament catalogue at all (and so publish `tournament_id: null` too), and TEAM COMPETITIONS — Davis Cup, Billie Jean King Cup, Laver Cup — where the surface is the host nation's choice per tie, so neither the season-long tournament row nor the match has one to state. Raised by a public report that Davis Cup matches return `surface: null`. For those 35 catalogue rows the upstream surface field carries the draw tier ("- Preliminary", "- Play Offs", "- Promotion") rather than a surface, and a value outside hard/clay/grass is rejected rather than published. No behaviour change.
+- **`Match.surface` and `Tournament.surface` now say when they are null and why.** Both were documented as nullable with no account of the population, while the `tournament_id` field beside them carries a measured one. The remaining match-level nulls are two structural groups and an 8-row residue: UTR events, which are not in our tournament list at all (and so publish `tournament_id: null` too), and TEAM COMPETITIONS — Davis Cup, Billie Jean King Cup, Laver Cup — where the surface is the host nation's choice per tie, so neither the season-long tournament row nor the match has one to state. Raised by a public report that Davis Cup matches return `surface: null`. For those 35 tournament rows a value outside hard/clay/grass is rejected rather than published. No behaviour change.
 
 ## [1.13.24] - 2026-09-20
 ### Changed
@@ -375,7 +380,7 @@ Documentation only. No field, endpoint or wire value changed.
 ### Added
 - Native WebSocket **close codes**, documented for the first time. Every refusal sends its `error` frame and then closes with a code that says what to do next — `1013` Try Again Later for transient refusals (`connection_limit:per_key`, `connection_limit:server`, `service_unavailable`), `1008` Policy Violation for anything a retry cannot fix (`unauthorized`, `upgrade_required`, `email_unverified`, `client_blocked`, `bad_json`, `no_topics`, and any mid-stream loss of access), `1012` on a restart, `1000` on a normal close. The close reason repeats the frame's `error` string, so `(code, reason)` is a complete diagnosis even if the frame was missed. Behaviour change the same day: refusals raised during the *handshake* previously closed `1000` with an empty reason, indistinguishable from an orderly shutdown, so a client awaiting its `subscribed` ack saw only a normal close. The error frame was, and still is, delivered before the close; only the close code and reason changed.
 ### Changed
-- `GET /matches/{matchId}/points`, the `point` frame and the `points` signal: **`seq` is arrival order, not match order, on the live basis.** It is assigned in commit order, and a live match is fed by more than one upstream at different speeds, so a point from a set that has just ended can be committed after points from the set that follows it and carry the higher `seq`. Each row is self-consistent; reading the tape in `seq` order can show the set or game counter step backwards. Measured over a recent seven-day window this affected a minority of live matches, and never the `reconstruction` basis. `seq` remains the right key for paging, dedup and resume, and is the wrong key for chronology — sort by `(set, game, number)` to replay in playing order. The spec previously said "ordered per match by `seq`", which reads as chronological. Documentation only; nothing on the wire changed.
+- `GET /matches/{matchId}/points`, the `point` frame and the `points` signal: **`seq` is arrival order, not match order, on the live basis.** It is assigned in commit order, and points of a live match arrive by more than one path at different speeds, so a point from a set that has just ended can be committed after points from the set that follows it and carry the higher `seq`. Each row is self-consistent; reading the tape in `seq` order can show the set or game counter step backwards. Measured over a recent seven-day window this affected a minority of live matches, and never the `reconstruction` basis. `seq` remains the right key for paging, dedup and resume, and is the wrong key for chronology — sort by `(set, game, number)` to replay in playing order. The spec previously said "ordered per match by `seq`", which reads as chronological. Documentation only; nothing on the wire changed.
 
 ## [1.13.16] - 2026-09-18
 ### Changed
@@ -385,7 +390,7 @@ Documentation only. No field, endpoint or wire value changed.
 ### Fixed
 - `event_status` (match object): the enum omitted **`Finished`** and **`Unresolved`**. `Finished` is the value the field carries on a normally-completed match and is by far its most common — 144,266 of the 150,678 rows carrying one, measured on 2026-09-18 — so a client generated from this spec with strict enum validation rejected the majority of completed matches. Both values are listed now. The API has always published them; only the spec was wrong, so nothing on the wire changed.
 ### Changed
-- `event_status` description: "NULL means the match completed normally" was wrong in the direction that matters — null means the feed never stated anything for the match, which covers matches that ran their course and matches nothing was ever said about alike. Branch on `outcome`, not on the absence of a badge.
+- `event_status` description: "NULL means the match completed normally" was wrong in the direction that matters — null means nothing was ever stated for the match, which covers matches that ran their course and matches nothing was ever said about alike. Branch on `outcome`, not on the absence of a badge.
 - `event_status` description: `event_status: Finished` while `status` is still `live` is documented as the pending-final state (one source has called the match over, the final is not confirmed). The score stands still through it — `stale` true, `age_seconds` climbing. Measured over the seven days to 2026-09-18, across 649 matches, that gap closed in 111 s at the median and 911 s at the ninetieth percentile; 85 ran past ten minutes.
 
 ## [1.13.14] - 2026-09-17
@@ -412,7 +417,7 @@ Documentation only. No field, endpoint or wire value changed.
 ### Added
 - `Score.accepted_at` (string|null, live score reads and push frames): the instant we accepted this state, stamped once and never refreshed — the clock to difference a latency study against.
 ### Changed
-- `Score.timestamp` documented for what it is: our clock, stamped at acceptance and then refreshed (at most every 8 s) while the owning source keeps re-asserting an unchanged state, so on a live read it is usually the last-assertion instant. It was described as "when this state was true"; it never was. Never an upstream observation time.
+- `Score.timestamp` documented for what it is: our clock, stamped at acceptance and then refreshed (at most every 8 s) while the owning source keeps re-asserting an unchanged state, so on a live read it is usually the last-assertion instant. It was described as "when this state was true"; it never was. Never an observation time from outside our process.
 - The `Score` schema on this site now carries the full field set and descriptions: `sequence`, `age_seconds`, `stale`, `observed_age_seconds`, `sources_count` and `detail` were missing from the published table, and `sets`/`server`/`is_tiebreak`/`win_probability_p1`/`danger`/`timestamp` had no description.
 
 ## [1.13.8] - 2026-09-15
@@ -454,25 +459,25 @@ Documentation only. No field, endpoint or wire value changed.
 ## [1.13.4] - 2026-09-14
 
 ### Added
-- ITF World Tennis Tour **qualifying rounds** (singles) are now listed and live-scored from the ITF's own
-  live scoring: matches appear in `GET /matches` with `round`, `tournament` and `scheduled_time`, receive
-  live scores while in play and complete on the feed's result. Sundays and Mondays, the qualifying days,
-  were previously almost empty because the schedule feed carries main draws only. `GET /fixtures` still
-  mirrors the schedule feed and does not list qualifying.
+- ITF World Tennis Tour **qualifying rounds** (singles) are now listed and live-scored:
+  matches appear in `GET /matches` with `round`, `tournament` and `scheduled_time`, receive
+  live scores while in play and complete on the official result. Sundays and Mondays, the qualifying days,
+  were previously almost empty because the published schedule carries main draws only. `GET /fixtures` still
+  follows that schedule and does not list qualifying.
 
 ## [1.13.3] - 2026-09-13
 
 ### Changed
-- WTA / WTA 125 stoppages now arrive in two layers. The console's match state is read within
+- WTA / WTA 125 stoppages now arrive in two layers. The match state is read within
   about 20 seconds and yields `trainer_called`, `toilet_break_*` and `stoppage_*` rows (player
-  null). The console's event feed, which the tour publishes with a variable delay — measured on
+  null). A later event layer with a variable delay — measured on
   2026-09-13 from about one minute to an hour behind play — adds `medical_timeout_start/end` with the player and the exact instants. The
-  1.13.1 note implied the event feed was live; it is not.
+  1.13.1 note implied the event layer was live; it is not.
 
 ## [1.13.2] - 2026-09-13
 
 ### Added
-- ATP main-tour stoppages: a public live-score service's match stage is now watched for its
+- ATP main-tour stoppages: the live match stage is now watched for its
   medical-timeout and interruption stages. Those stages exist in the vocabulary but have not yet
   been observed on a tennis match, so ATP rows are documented as mapped, not yet proven; they
   carry `player: null` and an `at` equal to the instant the stage was observed.
@@ -484,19 +489,19 @@ Documentation only. No field, endpoint or wire value changed.
 
 ### Added
 - Scorer-stated stoppages for **WTA and WTA 125** singles: `medical_timeout_*`, `trainer_called*`,
-  `toilet_break_*` and `stoppage_*` rows now come from the chair umpire's console for those tours
+  `toilet_break_*` and `stoppage_*` rows are now published for those tours
   (measured over 138 finished matches: 27 physio calls, 65 treatment records, 22 suspensions).
   Same fields, same endpoints, same WebSocket signal. `stoppage_start.reason` gains `heat`,
   `darkness` and `injury`; every `stoppage_end` carries `reason: "resumed"`.
 
 - Scorer-stated stoppages for **ITF World Tennis Tour** singles from the court's live-scoring
   state: `toilet_break_*`, `medical_timeout_*`, `trainer_called*` and `stoppage_*` rows on entering
-  and leaving the state, with `duration_seconds`; `player` is null on these rows because the feed
-  names the state, not the player.
+  and leaving the state, with `duration_seconds`; `player` is null on these rows because the
+  live-scoring state names the state, not the player.
 
 ### Changed
-- Coverage note: WTA, WTA 125, Challenger, UTR and ITF singles are covered; ATP main tour is still
-  being sourced and is stated as not covered.
+- Coverage note: WTA, WTA 125, Challenger, UTR and ITF singles are covered; ATP main tour is not
+  covered yet and is stated as not covered.
 
 ## [1.13.0] - 2026-09-13
 
@@ -511,17 +516,17 @@ Documentation only. No field, endpoint or wire value changed.
 ### Changed
 - Stoppage coverage, corrected: scorer-stated `medical_timeout_*`, `trainer_called*` and
   `toilet_break_*` rows exist for **Challenger and UTR singles**. The 1.11.0/1.12.0 text said
-  ATP, WTA and WTA 125 as well; measured over 11 days those tours' scorer feed carries none
+  ATP, WTA and WTA 125 as well; measured over 11 days those tours' scorer data carries none
   (0 of 70 finished matches each, against 22 of 70 for Challenger). Main-tour and ITF medical
-  timeouts are being sourced; the note changes the day they are live.
+  timeouts are not covered yet; the note changes the day they are live.
 
 ## [1.12.0] - 2026-09-12
 
 ### Added
 - **`serve` and `outcome` on live point rows** (`GET /matches/{matchId}/points`, the
   `point` frames): the serve the point was played on (1 | 2) and how it ended
-  (`ace` | `double_fault` | `winner` | `forced_error` | `unforced_error`), as an
-  outside source states them, joined onto our rows by exact state; `null` when not
+  (`ace` | `double_fault` | `winner` | `forced_error` | `unforced_error`), as
+  stated for the point, joined onto our rows by exact state; `null` when not
   stated. Coverage per match in the new `enrichment` object; per tour in the reference.
 - **`point_update` frame** on the point opt-in — a point's `serve`/`outcome` landing
   after its `point` frame; apply by `seq`.
@@ -668,9 +673,9 @@ Documentation only. No field, endpoint or wire value changed.
 
 ### Clarified
 - **`Match.tournament_id` null cases** restated with the real causes and a
-  measured rate: not in the catalogue (UTR), or a secondary-source match whose
-  name matched no single catalogue edition. The API now resolves the latter at
-  ingest by name + event type + date against the vendor's own fixtures, and the
+  measured rate: not in our tournament list (UTR), or a match whose
+  name matched no single edition in that list. The API now resolves the latter at
+  ingest by name + event type + date against the published fixtures, and the
   2026 backlog was backfilled the same day (2,547 rows); ITF null rate went
   from about 25% to about 2.5%. No wire change.
 
@@ -727,8 +732,8 @@ Documentation only. No field, endpoint or wire value changed.
 ### Added
 - **`GET /history/archive/matches/{archiveId}/tape`** (`getArchiveTape`) — the
   RECONSTRUCTED 2013–2022 point-by-point tape for one archive result: the score
-  sequence behind the published result, rebuilt from the public record after
-  the fact. Shipped to production 2026-09-01; the spec was the last place it
+  sequence behind the published result: reconstructed point sequences, no
+  capture timestamps. Shipped to production 2026-09-01; the spec was the last place it
   was missing. Tier: core ULTRA, **or any active History plan including
   Starter** (which opens it on a FREE core key). The archive RESULT stays on
   BASIC, so core BASIC and core PRO read the result and are refused the tape —
@@ -791,7 +796,7 @@ Documentation only. No field, endpoint or wire value changed.
   asserted only for a match we observed being played or whose match-winner
   market settled decisively; a closed market alone never finishes a match.
   `cancelled` with `event_status: null` means positive evidence the match
-  was not played as scheduled (the market settled void) and no vendor word
+  was not played as scheduled (the market settled void) and no stated reason
   for why — `outcome` / fixture `reason` stay null rather than guessed, and
   the row upgrades to a completed walkover if a `Walk Over` with a stated
   winner lands later. Before 2026-08-23 a void market closure completed the
@@ -806,7 +811,7 @@ Documentation only. No field, endpoint or wire value changed.
   timestamp, right after `event_status`: when `event_status` last CHANGED —
   the instant WE recorded the walkover / retirement / cancellation /
   postponement / suspension (or its clearing), not when the tournament desk
-  or the feed did. It is the field to measure our admin-status latency with.
+  did. It is the field to measure our admin-status latency with.
   Bumps only on a change of value (a re-read of the same status never moves
   it; a clear back to null does). Null while `event_status` has never changed
   since the field was introduced (2026-08-19) — never backfilled, never
@@ -850,7 +855,7 @@ Documentation only. No field, endpoint or wire value changed.
   same vocabulary as the new `?draw=` filter, decided by one shared
   definition, so filter and field cannot disagree. Evidence order: a
   doubles-team participant proves doubles over any event type; otherwise the
-  feed's event type decides. Null means neither says anything — no stated
+  stated event type decides. Null means neither says anything — no stated
   event type, or a team tie (Davis Cup / BJK Cup / United Cup class), where
   one event type covers both singles and doubles rubbers and we will not
   guess which this is. Null is NOT singles. `is_doubles` stays for
@@ -950,7 +955,7 @@ Documentation only. No field, endpoint or wire value changed.
   winners/unforced/forced-errors family historically on ~43% of ATP
   singles, ~24% of WTA singles and ~47% of tour doubles, and NONE of
   Challenger, ITF or juniors (24,552 payloads, 2026-07-31) — and that the
-  upstream feed has not delivered that family since 2026-07-12 (0 of 4,513
+  family has not been available since 2026-07-12 (0 of 4,513
   August payloads carry it, measured 2026-08-17).
 - **`errors_total` is documented as the total of FORCED errors**, with the
   evidence (3,766 payload sides, June–July 2026: equals the per-stroke
@@ -1045,7 +1050,7 @@ Documentation only. No field, endpoint or wire value changed.
 
 ### Added
 - **Shot-level charting.** `GET /charting/players` (ULTRA) — career
-  serve/return profile from the Match Charting Project: serve placement
+  serve/return profile: serve placement
   (deuce/ad × wide/body/T), return depth and outcomes, net and
   serve-and-volley conversion, clutch break/game/set-point serving and
   returning, winners and unforced errors by wing, rally-length and
@@ -1183,7 +1188,7 @@ Documentation only. No field, endpoint or wire value changed.
 - **In-play match statistics.** `GET /matches/{matchId}/statistics` (ULTRA):
   two families, deliberately never merged — DERIVED (rebuilt from the
   point-by-point record: hold/break %, break points, service & return points)
-  and MEASURED (counted upstream: aces, double faults, the serve split,
+  and MEASURED (counted during the match: aces, double faults, the serve split,
   winners/unforced errors). Each family carries its own `coverage`, `as_of`
   and `age_seconds`; absent measured fields are omitted, never zero-filled;
   `coverage: none` on both families is a 200 with null `players`, not a 404;
