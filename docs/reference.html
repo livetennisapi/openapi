@@ -207,7 +207,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.13.75 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.13.76 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -1221,7 +1221,9 @@ Ids are stable for the life of a match, so one captured before it starts still r
 <p class="meta">Plan required: <strong>ULTRA</strong> &middot; operationId: <code>createWebhook</code></p>
 <p>We POST the same frames the WebSocket sends to your HTTPS endpoint on every live score commit. Up to 3 webhooks per key (<code>409 webhook_limit</code> past that). The response is the ONLY time the signing secret is shown — store it.
 
-Each delivery carries <code>X-LTAPI-Signature</code> (<code>sha256=&lt;hex&gt;</code> — HMAC-SHA256 of the RAW request body with your webhook secret; verify with a constant-time compare), <code>X-LTAPI-Timestamp</code> (Unix seconds at send time — reject stale replays at your edge) and <code>X-LTAPI-Event</code> (the frame type: <code>score</code>, <code>break_point</code>, <code>break_point_result</code> or <code>point</code>).
+Each delivery body is the frame plus a top-level <code>delivery_id</code>, a string unique per delivery. Verify the <code>X-LTAPI-Signature-V1</code> header, <code>t=&lt;unix seconds&gt;,v1=&lt;hex&gt;</code>. The hex is HMAC-SHA256, keyed with your webhook secret, of the string <code>&lt;t&gt;.&lt;raw request body&gt;</code>. Accept the request if any <code>v1</code> value matches. Then run these receiver checks. Reject a <code>t</code> more than 5 minutes from your clock. Compare with a constant-time function, over the raw bytes before any JSON parsing. Dedupe on <code>delivery_id</code> and keep each id until <code>t</code> + 5 minutes on your clock. With several workers, record it with an atomic insert-if-absent. <code>X-LTAPI-Timestamp</code> repeats <code>t</code>, and <code>X-LTAPI-Event</code> names the frame type: <code>score</code>, <code>score_withdrawn</code>, <code>break_point</code>, <code>break_point_result</code>, <code>point</code> or <code>status</code>.
+
+Deprecated: <code>X-LTAPI-Signature</code> (<code>sha256=&lt;hex&gt;</code>, HMAC-SHA256 of the raw body alone). It does not cover the timestamp, so a captured delivery still verifies when re-sent later under a fresh <code>X-LTAPI-Timestamp</code>. We keep sending it unchanged until 2027-02-01. Deliveries sent from 00:00 UTC on that date do not carry it. Both headers use the same secret. Once your receiver checks <code>X-LTAPI-Signature-V1</code>, require it and never fall back to the old header: a fallback lets a re-stamped replay through.
 
 Delivery is best-effort, at-most-once, no replay: one attempt per frame with a ~3s timeout and redirects disabled. Every <code>score</code> frame is the complete current score, so a missed delivery self-corrects on the next commit. A <code>point</code> frame is an EVENT, not a state — a missed one does NOT self-correct; recover it with <code>GET /matches/{matchId}/points?after_seq=</code> and dedup by <code>seq</code>. After 25 consecutive failures the webhook is disabled automatically (<code>enabled:false</code>, <code>last_error</code> set — visible in <code>GET /webhooks</code>); delete and re-register to resume.</p>
 <h4>Responses</h4><div class="scrollx" tabindex="0" role="region" aria-label="POST /webhooks responses"><table><caption class="vh">POST /webhooks — responses</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th></tr></thead><tbody><tr><td><code>201</code></td><td>Created — includes <code>secret</code> (shown exactly once)</td></tr><tr><td><code>400</code></td><td>Bad query parameter</td></tr><tr><td><code>401</code></td><td>Missing, unknown, or disabled credentials</td></tr><tr><td><code>403</code></td><td>Your tier doesn&#x27;t unlock this endpoint</td></tr><tr><td><code>409</code></td><td>Webhook limit reached (3 per key) — delete an existing webhook first</td></tr><tr><td><code>429</code></td><td>Rate limit exceeded (Retry-After header present). Three body shapes, told apart by <code>error</code> and <code>scope</code>: the per-MINUTE limit (<code>rate_limited</code>, with <code>upgrade_url</code>, <code>tier</code> and <code>price</code> naming the next tier up); the per-DAY quota (<code>rate_limited</code> with <code>scope: &quot;day&quot;</code>, <code>limit_per_day</code>, and <code>resets_at</code> — the absolute ISO instant the daily window resets); and <code>abuse_throttled</code> with <code>retry_at_epoch</code> — a 24-hour block applied to clients that keep hammering far past their cap, which a well-behaved retry loop never sees. Fix the loop rather than retrying through it.</td></tr></tbody></table></div>
@@ -2461,13 +2463,13 @@ A <code>_of</code> suffix is the denominator of its base field and a <code>_pct<
 <div class="scrollx" tabindex="0" role="region" aria-label="Webhook fields"><table><caption class="vh">Webhook schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
 <tbody><tr><td><code>id</code></td><td>integer</td><td></td></tr>
 <tr><td><code>url</code></td><td>string</td><td></td></tr>
-<tr><td><code>events</code></td><td>array of string (score, break_point)</td><td></td></tr>
+<tr><td><code>events</code></td><td>array of string (score, break_point, point, status)</td><td></td></tr>
 <tr><td><code>enabled</code></td><td>boolean</td><td>Set to false automatically after 25 consecutive delivery failures — delete and re-register to resume.</td></tr>
 <tr><td><code>created_at</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>last_delivery_at</code></td><td>string or null</td><td></td></tr>
 <tr><td><code>consecutive_failures</code></td><td>integer</td><td></td></tr>
 <tr><td><code>last_error</code></td><td>string or null</td><td></td></tr>
-<tr><td><code>secret</code></td><td>string</td><td>Present ONLY on the 201 registration response — shown exactly once</td></tr>
+<tr><td><code>secret</code></td><td>string</td><td>Present ONLY on the 201 registration response — shown exactly once. Signs every delivery: <code>X-LTAPI-Signature-V1</code> is HMAC-SHA256 of <code>&lt;t&gt;.&lt;raw request body&gt;</code> with this secret.</td></tr>
 <tr><td><code>secret_note</code></td><td>string</td><td></td></tr></tbody></table></div>
 </section>
 <section id="schema-breakpoint">

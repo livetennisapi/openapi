@@ -5,6 +5,17 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.76] - 2026-10-28
+
+### Added
+- **`X-LTAPI-Signature-V1` on every webhook delivery.** The value is `t=<unix seconds>,v1=<hex>`, and the hex is HMAC-SHA256 of `<t>.<raw request body>` with your webhook secret. The timestamp is inside the signed string, so a captured delivery re-sent later under a new time no longer verifies. Each body also carries a top-level `delivery_id`, unique per delivery, to dedupe on. The `POST /webhooks` description lists the receiver checks: a 5-minute timestamp window, a constant-time compare and a dedupe on `delivery_id`. It also lists `score_withdrawn` among the `X-LTAPI-Event` values, which it had left out.
+
+### Fixed
+- **The webhook `events` enum matches what registration accepts.** `POST /webhooks` listed `stoppages`, which registration refuses with a 400, and the `Webhook` schema listed only `score` and `break_point`. Both now read `score`, `break_point`, `point`, `status`.
+
+### Deprecated
+- **`X-LTAPI-Signature`, the body-only webhook signature.** It does not cover the timestamp. We keep sending it unchanged until 2027-02-01, and deliveries sent from 00:00 UTC on that date do not carry it. Both headers use the same secret, so moving to the new header needs no re-registration.
+
 ## [1.13.75] - 2026-10-28
 
 ### Changed
