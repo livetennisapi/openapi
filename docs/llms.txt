@@ -154,11 +154,11 @@ begins. GET /history/packages lists exactly which bulk periods exist (monthly fo
 tape, yearly for ?kind=archive and ?kind=archive_tape) and is always the
 authoritative answer.
 Is there point-by-point data before 2023? For 2013–2022 yes, RECONSTRUCTED, not
-recorded: GET /history/archive/matches/{archiveId}/tape rebuilds the score sequence
-behind a 2013–2022 archive result from the public record — 97,901 matches and
-14,340,663 rows. The floor is hard: 977,903 archive results from 1968–2012 have NO
-tape and never will, because no public point-by-point record of those years exists
-to rebuild and we do not manufacture one. Nobody watched those matches, so
+recorded: GET /history/archive/matches/{archiveId}/tape serves the score sequence
+behind a 2013–2022 archive result as reconstructed point sequences, no capture
+timestamps. 97,901 matches and 14,340,663 rows. The floor is hard: 977,903 archive
+results from 1968–2012 have NO tape and never will, because we hold no point
+sequence for those years and we do not manufacture one. Nobody watched those matches, so
 timestamp, win_probability_p1 and danger are null on EVERY row and cannot be filled
 in later — the production table has no timestamp column at all, and the promotion
 script refuses to run if one ever appears. Do not time

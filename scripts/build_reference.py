@@ -1096,11 +1096,11 @@ the Historical Data API Business plan.</p>
 <h3 id="faq-pre-2023-points">Is there point-by-point data before 2023?</h3>
 <p><strong>For 2013&ndash;2022, yes — reconstructed, not recorded.</strong>
 <code>GET /history/archive/matches/{{archiveId}}/tape</code> serves the score sequence
-behind a 2013&ndash;2022 archive result, rebuilt from the public record after the
-fact: <strong>97,901 matches and 14,340,663 rows</strong>. The floor is hard. The
+behind a 2013&ndash;2022 archive result: reconstructed point sequences, no capture
+timestamps. <strong>97,901 matches and 14,340,663 rows</strong>. The floor is hard. The
 archive holds a further <strong>977,903 results from 1968&ndash;2012 and not one of
-them has a tape</strong> — there is no public point-by-point record of those years
-to rebuild, and we do not manufacture one.</p>
+them has a tape</strong>. We hold no point sequence for those years, and we do not
+manufacture one.</p>
 <p><strong>Nobody watched those matches, and the data says so.</strong>
 <code>timestamp</code>, <code>win_probability_p1</code> and <code>danger</code> are
 null on <em>every</em> row and cannot be filled in later — the production table has no
@@ -1306,11 +1306,11 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "tape, yearly for ?kind=archive and ?kind=archive_tape) and is always the",
         "authoritative answer.",
         "Is there point-by-point data before 2023? For 2013–2022 yes, RECONSTRUCTED, not",
-        "recorded: GET /history/archive/matches/{archiveId}/tape rebuilds the score sequence",
-        "behind a 2013–2022 archive result from the public record — 97,901 matches and",
-        "14,340,663 rows. The floor is hard: 977,903 archive results from 1968–2012 have NO",
-        "tape and never will, because no public point-by-point record of those years exists",
-        "to rebuild and we do not manufacture one. Nobody watched those matches, so",
+        "recorded: GET /history/archive/matches/{archiveId}/tape serves the score sequence",
+        "behind a 2013–2022 archive result as reconstructed point sequences, no capture",
+        "timestamps. 97,901 matches and 14,340,663 rows. The floor is hard: 977,903 archive",
+        "results from 1968–2012 have NO tape and never will, because we hold no point",
+        "sequence for those years and we do not manufacture one. Nobody watched those matches, so",
         "timestamp, win_probability_p1 and danger are null on EVERY row and cannot be filled",
         "in later — the production table has no timestamp column at all, and the promotion",
         "script refuses to run if one ever appears. Do not time",
@@ -1555,7 +1555,7 @@ TOPICS: list[dict[str, Any]] = [
             "our completed matches, split by surface, level and season, with ULTRA adding summed "
             "serve and return statistics. "
             "<code>GET /tournaments</code> is the catalogue that <code>Match.tournament_id</code> "
-            "joins against, so a match can be resolved to its event without a second vendor. "
+            "joins against, so a match can be resolved to its event without a second lookup. "
             "<code>GET /rankings</code> serves rank-ordered listings on PRO. The per-player as-of "
             "records, including the Elo tape, are ULTRA."
         ),

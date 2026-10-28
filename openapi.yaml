@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.74"
+  version: "1.13.75"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -70,11 +70,11 @@ info:
 
     Archive results played **2013–2022** additionally carry a RECONSTRUCTED
     point-by-point tape at `/history/archive/matches/{archiveId}/tape` — the
-    score sequence behind the published result, rebuilt from the public record
-    after the fact. 97,901 matches / 14,340,663 rows, seasons **2013–2022
+    score sequence behind the published result: reconstructed point sequences,
+    no capture timestamps. 97,901 matches / 14,340,663 rows, seasons **2013–2022
     ONLY**: the archive holds a further 977,903 results from 1968–2012 and NOT
-    ONE of them has a tape, because there is no public point-by-point record of
-    those years to rebuild and we do not manufacture one. Write the range as
+    ONE of them has a tape, because we hold no point sequence for those years and
+    we do not manufacture one. Write the range as
     2013–2022, never as "pre-2023" — the second phrasing reads as 1968 onward
     and is wrong by 45 seasons.
 
@@ -413,7 +413,7 @@ paths:
         to a comma-separated list of event types or the family name `stoppages`
         (stoppage_*, pause_*, medical_timeout_*, trainer_called*, toilet_break_*). Rows
         carry `id` and `match_id` next to the per-match fields. Measured 2026-09-13: a
-        scorer-stated stoppage reaches the feed a median 8 s (p90 13 s) after the
+        scorer-stated stoppage reaches the API a median 8 s (p90 13 s) after the
         scorer's own instant; the WebSocket `stoppages` signal pushes the same row as it
         is written.
       parameters:
@@ -755,8 +755,8 @@ paths:
         and return points.
 
 
-        MEASURED (`players.pN.measured`) are counted upstream, so they include
-        what no point record can yield — ACES AND DOUBLE FAULTS, the first- and
+        MEASURED (`players.pN.measured`) are match counts recorded as the match is
+        played, so they include what no point record can yield — ACES AND DOUBLE FAULTS, the first- and
         second-serve split, winners and unforced errors. Both families name
         some of the same quantities, computed two entirely different ways; that
         is a cross-check, not a duplication to collapse.
@@ -767,7 +767,7 @@ paths:
         given. Aces and double faults are present across every tour. The serve
         split and break points saved are present on the main tours and absent
         on ITF singles. Winners and unforced errors historically appeared on
-        a minority of main-tour matches and have not been delivered upstream
+        a minority of main-tour matches and have not been available
         since 2026-07-12 (measured 2026-08-17).
 
 
@@ -820,8 +820,8 @@ paths:
 
 
         `seq` IS ARRIVAL ORDER, NOT MATCH ORDER, ON THE LIVE BASIS. It is
-        assigned in the order points are committed, and a live match is fed by
-        more than one upstream at different speeds, so a point from a set that
+        assigned in the order points are committed, and points of a live match
+        arrive by more than one path at different speeds, so a point from a set that
         has just ended can be committed AFTER points from the set that follows
         it and carry the higher `seq`. Each row is self-consistent — its `set`,
         `game`, `number`, `score`, `sets` and `games` all describe the point
@@ -854,7 +854,7 @@ paths:
         on the first played point. To admit a match as advancing, gate on
         `sequence > 1` (a seeded match is 1) together with `stale: false`. Per-point coverage is
         never promised slate-wide; ITF and qualifying coverage in particular
-        is partial. `quality: "revised"` means the upstream feed rewrote an
+        is partial. `quality: "revised"` means the point record was rewritten over an
         already-served prefix at least once during this match; served rows
         are never edited (append-only).
 
@@ -1924,8 +1924,8 @@ paths:
         Reconstructed 2013–2022 point-by-point tape for one archive result
         (ULTRA, or any History plan)
       description: >-
-        The score sequence behind a 2013–2022 archive result, REBUILT FROM THE
-        PUBLIC RECORD. The result tells you what happened; this tells you how.
+        The score sequence behind a 2013–2022 archive result: RECONSTRUCTED POINT
+        SEQUENCES, NO CAPTURE TIMESTAMPS. The result tells you what happened; this tells you how.
 
 
         NOBODY WATCHED THESE MATCHES, and every field that would imply
@@ -1973,7 +1973,7 @@ paths:
         meetings of the same pair inside one edition); the SET SPINE derived
         from the rows equals the published final score exactly (a retirement
         matches on a one-directional prefix rule — a tape may stop short, never
-        run past the printed score); and the vendor DATE lies inside the
+        run past the printed score); and the recorded match DATE lies inside the
         tournament's window. The tape is then walked step by step against 23
         interior invariants — games and sets never regress or jump, a closed
         set holds a score a set can actually finish on, a tiebreak is flagged
@@ -2406,7 +2406,7 @@ paths:
         below an established one for several seasons while beating them. A
         CURRENT per-player Elo remains free on `GET /players/{id}`; this is
         the point-in-time series, the leaderboard and the bulk export. That
-        free rating is sourced differently and sits on a DIFFERENT scale —
+        free rating is computed differently and sits on a DIFFERENT scale —
         the two differ by roughly 150 Elo of per-player standard deviation —
         so never present a rating from one scale against a rating from the
         other. The Elo listing REQUIRES `tour` — the ATP and WTA walks are
@@ -2657,8 +2657,7 @@ paths:
     get:
       summary: Career shot-level charting aggregate for one player (ULTRA)
       description: >-
-        The deepest serve/return profile we hold, from the Match Charting
-        Project: serve placement (deuce/ad × wide/body/T), return depth and
+        The deepest serve/return profile we hold: serve placement (deuce/ad × wide/body/T), return depth and
         outcomes, net and serve-and-volley conversion, clutch
         break/game/set-point serving and returning, winners and unforced
         errors by wing, and rally-length and shot-direction tendencies —
@@ -2707,7 +2706,7 @@ paths:
     get:
       summary: One charted match, every stat family for both players (ULTRA)
       description: >-
-        Every Match Charting Project stat family for one charted match, both
+        Every charting stat family for one charted match, both
         players, with the per-set split (row/set 1, 2, Total) exactly as
         charted. `chartingMatchId` is this product's own id space (1960–2026,
         mostly matches with no counterpart in the live table).
@@ -3675,8 +3674,8 @@ components:
             accepted (the same step that assigns `sequence`), then refreshed — at
             most every 8 s — while the owning source keeps re-asserting the
             unchanged state, so on a live read it is usually the last-assertion
-            instant, not the accept instant. Never an upstream observation time,
-            never a source's own clock. NOT an ordering key — use `sequence`; for
+            instant, not the accept instant. Never an observation time from
+            outside our process. NOT an ordering key — use `sequence`; for
             the accept instant use `accepted_at`.
         accepted_at:
           type:
@@ -3784,7 +3783,7 @@ components:
             score in the last 300 seconds — sources that inserted a new state,
             counted on the content clock alone. A source re-asserting an
             unchanged state is not counted, which is the difference from
-            sources_count: a feed stuck re-sending its last state keeps
+            sources_count: a source stuck re-sending its last state keeps
             sources_count at 1 for as long as the echo lasts and keeps this at
             0. The window is wider than sources_count's on purpose, because a
             point lands every 30-60 s and a changeover is about 90 s. A
@@ -4570,7 +4569,7 @@ components:
           type: object
           description: >-
             How much biographical detail is known for this player, so a consumer
-            can distinguish "not in the feed" from "not yet fetched" without
+            can distinguish "never published" from "not yet filled in" without
             probing. Present on every player in a match payload. Lower tours
             carry far less of it than main tour.
           properties:
@@ -4618,8 +4617,8 @@ components:
           description: >-
             The tour, in the SAME vocabulary the `tour` query filter accepts —
             both are derived from one registry, so a match selected by
-            `?tour=X` always carries that value in `tour`. Null when the feed
-            never stated a tour or the event type has no public tour name
+            `?tour=X` always carries that value in `tour`. Null when no tour
+            is stated for the match or the event type has no public tour name
             (exhibitions, team and mixed events) — never guessed. Safe to
             group and filter on; never parse the tournament name for this.
         tournament_id:
@@ -4627,10 +4626,9 @@ components:
           description: >-
             Stable tournament identity — one id per tournament × event type,
             stable across seasons. Joins `GET /tournaments/{tournamentId}`.
-            Null when the tournament is not in the catalogue at all (UTR
-            events), and on the small residue of matches discovered through a
-            secondary source whose tournament name could not be matched to
-            exactly one catalogue edition — never guessed. Measured over
+            Null when the tournament is not in our tournament list at all (UTR
+            events), and on the small residue of matches whose tournament name
+            could not be matched to exactly one edition in that list — never guessed. Measured over
             August 2026 terminal matches: ATP 1 of 531 and WTA 3 of 513 null;
             ITF about 2.5% after the 2026-09-04 backfill (was ~25%); UTR 100%.
             (Edge case — a match mislabelled as qualifying by the
@@ -4719,7 +4717,7 @@ components:
             unambiguous name rule (the ITF category is in the event's official
             name — `M25 …`, `W35 …` — team and UTR events are named as such,
             and the Slam junior draws and exhibitions are their own event
-            type); `wikipedia` = the season's schedule page, used only where
+            type); `wikipedia` = a published season schedule, used only where
             the official calendar could not state the level for that season
             (Eastbourne 2023–2025); `resolver` = resolved after the seed
             dataset, by the same rules, from the event's name, tour and dates
@@ -4738,8 +4736,8 @@ components:
             them. A team-event match is null only when the tie's venue is not
             yet published or the match cannot be matched to a single tie
             (competition, date window and the nations on court must agree).
-            The other structural null is UTR events, which are not in the vendor
-            tournament catalogue at all and so carry `tournament_id: null` too.
+            The other structural null is UTR events, which are not in our
+            tournament list at all and so carry `tournament_id: null` too.
             For every other event a surface that IS known is published on both
             the match and its `tournament`, and the two agree.
         indoor: { type: boolean }
@@ -4747,28 +4745,28 @@ components:
         round:
           type: [string, "null"]
           description: >-
-            The feed's own free-text round label, verbatim. It is the round
+            The free-text round label, verbatim, as published for the match. It is the round
             WITHIN the draw this match belongs to, and the draw is named by
             `is_qualifying` — NOT by this string. A qualifying draw has its
             own semi-final and its own final, so `"Buenos Aires 3 -
             Semi-finals"` with `is_qualifying: true` is the semi-final of the
             QUALIFYING draw, not of the tournament. Read the two fields
             together or not at all. The label also embeds the tournament name
-            for most feeds — parse the suffix after the last `" - "`, or
+            on most matches — parse the suffix after the last `" - "`, or
             better, use `round_code`.
         round_code:
           type: [string, "null"]
           enum: [F, SF, QF, R16, R32, R64, R128, RR, BR, Q, Q1, Q2, Q3, Q4, ER, null]
           description: >-
             The round in the archive's controlled vocabulary, normalized from
-            the free-text label above (`Q` = qualifying round the feed does
+            the free-text label above (`Q` = qualifying round the label does
             not number). It matches `/history/archive/matches?round=` exactly.
             Null when the label is unrecognised — never guessed.
 
             IT IS DRAW-RELATIVE AND CANNOT, BY ITSELF, TELL YOU WHETHER A
             MATCH IS QUALIFYING. A qualifying semi-final carries `SF`, the
             same as a main-draw semi-final; only `Q`/`Q1`..`Q4` appear when
-            the feed itself names the round as qualifying, which most feeds
+            the label itself names the round as qualifying, which most labels
             do not. To branch on main draw vs qualifying, use `round_code`
             AND `is_qualifying` together.
         is_qualifying:
@@ -4776,8 +4774,8 @@ components:
           description: >-
             Whether this match belongs to the QUALIFYING draw, as the source
             states it — never GUESSED from main-draw round vocabulary or from
-            the tournament name. (A round the feed itself spells
-            `Qualification Round 1` is the source stating it, and reads
+            the tournament name. (A round label that itself reads
+            `Qualification Round 1` states it, and reads
             `true`: a `false` beside such a round is a payload contradicting
             itself, not a main-draw assertion. `Semi-finals` and `Final` are
             main-draw vocabulary and are never read that way.)
@@ -4805,17 +4803,17 @@ components:
             finishes a match (rule stated 2026-08-23; rows mis-published
             before it were corrected). `cancelled` with `event_status: null`
             means we hold positive evidence the match was not played as
-            scheduled (the market settled void) but no vendor word for why —
+            scheduled (the market settled void) but no stated reason why —
             `outcome` and the fixture `reason` stay null rather than guessed,
             and the row upgrades to a completed walkover with `winner` /
             `withdrew` if a `Walk Over` with a stated winner lands later. The
             flip `upcoming → cancelled` runs through a gate (well past the
-            scheduled time, no play recorded), never inline on a feed flap.
+            scheduled time, no play recorded), never inline on a momentary status flap.
         event_status:
           type: [string, "null"]
           enum: [Finished, Retired, Cancelled, Walk Over, Postponed, Interrupted, Unresolved, null]
           description: >-
-            The feed's own designator for the match state, passed through
+            The stated designator for the match state, published
             verbatim. `Finished` is by far the most common value — 144,266 of
             the 150,678 rows carrying one at 2026-09-18 — and until this
             version it was missing from this enum, so a strictly-validating
@@ -4825,7 +4823,7 @@ components:
             course: retirement, cancellation, walkover, postponement, or an
             in-play suspension (`Interrupted` — rain/darkness/medical; the
             match is paused, not over). NULL does NOT mean "completed
-            normally": it means the feed never stated anything for this match,
+            normally": it means nothing was ever stated for this match,
             which covers matches that ran their course and matches nothing was
             ever said about alike. `event_status: Finished` while `status` is
             still `live` is not a contradiction — one source has called the
@@ -4844,7 +4842,7 @@ components:
             When `event_status` last CHANGED, UTC (ISO-8601, `Z`) — added
             2026-08-19. The instant WE recorded the walkover / retirement /
             cancellation / postponement / suspension (or its clearing), not
-            when the tournament desk or the feed did: this is the field to
+            when the tournament desk did: this is the field to
             measure our admin-status latency with. Bumps only on a change of
             value (a re-read of the same status never moves it; a clear back
             to null does). Null while `event_status` has never changed since
@@ -4855,7 +4853,7 @@ components:
           description: >-
             Doubles match — kept for compatibility, and LOSSY. Evidence order:
             a doubles-team participant proves true regardless of the event
-            type; otherwise the feed's event type decides. The loss: false
+            type; otherwise the stated event type decides. The loss: false
             also covers "unknown" — a match with no stated event type and no
             team participant reads false here, which is not a claim of
             singles. Prefer `draw`, whose null says so honestly.
@@ -4867,8 +4865,8 @@ components:
             as the `?draw=` filter, decided by the same shared definition, so
             filter and field cannot disagree. Evidence order as is_doubles: a
             doubles-team participant proves doubles over any event type;
-            otherwise the feed's event type decides. Null means neither says
-            anything — the feed stated no event type, or the match is part of
+            otherwise the stated event type decides. Null means neither says
+            anything — no event type is stated, or the match is part of
             a team tie (Davis Cup / BJK Cup / United Cup class), where one
             event type covers both singles and doubles rubbers and we will not
             guess which this is. Null is NOT singles.
@@ -5227,17 +5225,17 @@ components:
             `trainer_called/_end` and `toilet_break_start/end` are stated by the
             match scorer or chair umpire, with `player` = the player concerned.
             Coverage (2026-09-13): WTA, WTA 125, Challenger and UTR singles — WTA and
-            WTA 125 from the umpire console in two layers: the match state within
+            WTA 125 in two layers: the match state within
             ~20 s (`trainer_called`, `toilet_break_*`, `stoppage_*`, player null) and
-            the console's event feed, published by the tour with a variable delay
+            a later event layer with a variable delay
             (measured 2026-09-13: about one minute to an hour behind play), which adds `medical_timeout_start/end` with
             the player and exact instants; Challenger and UTR from the scorer
             timeline (22 of 70 finished Challenger matches, median 8 s).
             ITF World Tennis Tour singles from the court's live-scoring state
             (the state, not the player: `player` is null on ITF rows; first
             medical timeout observed and published 2026-09-13). ATP main tour:
-            a public live-score service's match stage is watched for its
-            medical-timeout and interruption stages — present in its
+            the live match stage is watched for its
+            medical-timeout and interruption stages — present in the
             vocabulary, not yet observed on a tennis match, so ATP rows are
             mapped, not yet proven (`player` null, `at` = our observation
             instant). Not doubles. `stoppage_start/end` is a
@@ -5354,7 +5352,7 @@ components:
         sequence:
           type: integer
           description: >-
-            The refused state's `sequence` — the value you hold from the feed,
+            The refused state's `sequence` — the value you hold from the push feed,
             and the frame's `superseded_sequence`.
         kind:
           type: string
@@ -5528,7 +5526,7 @@ components:
         else; `server`, `serve` and `winner` together are the three per-point
         facts a model needs, and the third was only implicit in the score
         step before. Reconstructed rows are never
-        repaired or reordered: a game whose vendor point record is internally
+        repaired or reordered: a game whose recorded points are internally
         inconsistent is withheld whole, not fitted or patched into a legal
         sequence — see `meta.points.games_withheld` (added 2026-09-20).
       properties:
@@ -5575,7 +5573,7 @@ components:
           - unforced_error
           - null
           description: >-
-            How the point ended, as an outside source states it — same join
+            How the point ended, as stated for the point — same join
             rule and same nulls as `serve`. `meta.enrichment` says what landed
             on this tape. Added 2026-09-20.
         sets:
@@ -5598,7 +5596,7 @@ components:
           type: [integer, "null"]
           enum: [1, 2, null]
           description: >-
-            Who is serving — null where the feed never asserted it. On
+            Who is serving — null where it was never stated. On
             `?sequence=clean` the server is SETTLED per non-tiebreak game
             (the server is physically constant within a game, so the game's
             majority assertion fills nulls and corrects transient
@@ -5695,7 +5693,7 @@ components:
             On tape rows since 2026-09-24. The instant this state reached our
             edge, before the arbiter ran, stamped once. `accepted_at` minus
             `received_at` is our own arbitration step; neither figure is a
-            claim about how fast anything upstream is, and neither is the
+            claim about how fast anything before our edge is, and neither is the
             court's clock. `timestamp` is the only one of the three with no
             start date: this clock begins 2026-09-24 and `accepted_at` begins
             2026-08-11 on an archived tape (this description said the other
@@ -5991,8 +5989,8 @@ components:
             transition counts (`transitions_total` = `rows` − 1 −
             `resent_rows`) rather than counted as non-point steps. 0 on a
             `clean` or `recon` basis: the collapse removes them, and in a
-            reconstruction one row IS one point so a repeat is a vendor tear
-            and is never dropped. Added 2026-09-20.
+            reconstruction one row IS one point so a repeat is a tear in the
+            recorded sequence and is never dropped. Added 2026-09-20.
         server_rows:
           type: integer
           description: Rows carrying a server.
@@ -6045,7 +6043,7 @@ components:
           type: [integer, "null"]
           description: >-
             Present only when reconstructed rows are in the response. Games
-            whose vendor point record was internally inconsistent (the
+            whose recorded points were internally inconsistent (the
             recorded in-game scores do not form a legal single-point
             progression from 0-0 — a state repeating or moving backwards)
             have their in-game points withheld rather than published; the
@@ -6053,8 +6051,8 @@ components:
             intact. Nothing is repaired, reordered or inferred: a game is
             served exactly as recorded, or not at all. `> 0` means `complete`
             is `false`. `null` = not measured — the reconstruction predates
-            this check, or was built from the multi-vendor union rather than
-            a single vendor's point record. Added 2026-09-20.
+            this check, or was built by merging more than one point record
+            rather than from a single one. Added 2026-09-20.
     HistoryPackage:
       type: object
       description: >-
@@ -6195,7 +6193,7 @@ components:
         watch. True about the score, silent about the clock.
         `reconstructed_partial` — as `reconstructed`, AND the reconstruction is
         known not to cover the whole match. That happens two ways: it OPENS
-        AFTER 0-0 (the upstream record begins mid-match), or it STOPS SHORT of
+        AFTER 0-0 (the recorded sequence begins mid-match), or it STOPS SHORT of
         the official final score (the record truncated, usually by the deciding
         game). Every row is still a point somebody recorded — nothing is
         synthesised to close either gap — but the match is NOT complete and
@@ -6424,8 +6422,8 @@ components:
       description: >-
         One player's in-play statistics, in TWO families that are deliberately
         not merged. The fields at this level are DERIVED from the
-        point-by-point record. `measured` holds counts taken upstream,
-        including the ones no point record can yield: aces, double faults, the
+        point-by-point record. `measured` holds match counts recorded as the
+        match is played, including the ones no point record can yield: aces, double faults, the
         serve split, winners and unforced errors. Both families name some of
         the same quantities, computed two entirely different ways — that is a
         cross-check, not a duplication to be collapsed.
@@ -6460,7 +6458,7 @@ components:
       type: object
       description: >-
         Measured counting statistics for one player. These are COUNTED
-        upstream, not derived from the point record — which is why they can
+        during the match, not derived from the point record — which is why they can
         include aces and double faults, and the derived fields above cannot.
         They are MATCH TOTALS only — one whole-match rollup per player; there
         are no per-set measured statistics.
@@ -6484,14 +6482,14 @@ components:
         total and by shot type. Historically delivered on ~43% of ATP singles,
         ~24% of WTA singles and ~47% of tour doubles, and on NONE of
         Challenger, ITF or juniors — those zeros are hard, not sampling noise.
-        The upstream feed has NOT DELIVERED this group at all since 2026-07-12
+        This group has NOT BEEN AVAILABLE at all since 2026-07-12
         (measured 2026-08-17: 0 of 4,513 August payloads carry it, live ATP
-        Masters included), so expect it absent on current matches until the
-        upstream feed resumes it.
+        Masters included), so expect it absent on current matches until it
+        returns.
 
         A `_of` suffix is the denominator of its base field and a `_pct` suffix
-        is the percentage, recomputed from the two counts rather than read from
-        the upstream rounding.
+        is the percentage, recomputed from the two counts rather than read
+        as a rounded figure.
       properties:
         aces: { type: [integer, "null"] }
         break_points_won: { type: [integer, "null"] }
@@ -6582,7 +6580,7 @@ components:
           description: Winners on the lob.
         overhead_errors:
           type: [integer, "null"]
-          description: Forced errors on the overhead — the upstream's
+          description: Forced errors on the overhead — the
             overhead-stroke count.
         overhead_winners:
           type: [integer, "null"]
@@ -6650,7 +6648,7 @@ components:
         describes:
           type: [object, "null"]
           description: >-
-            The match state these statistics describe, per upstream.
+            The match state these statistics describe, as recorded with them.
             `age_seconds` says when we fetched; this says WHAT we fetched. Null
             when unavailable.
           properties:
@@ -6967,8 +6965,8 @@ components:
           type: [integer, "null"]
           enum: [1, 2, null]
           description: >-
-            Server of the point played FROM this state; null when the feed
-            omits it.
+            Server of the point played FROM this state; null when it is
+            not stated.
         winner:
           type: [integer, "null"]
           enum: [1, 2, null]
@@ -7009,7 +7007,7 @@ components:
           enum: [1, 2, null]
           description: >-
             Added 2026-09-12. The serve the point was played on (1 first, 2
-            second) as an outside source states it, joined onto the row by
+            second) as stated for the point, joined onto the row by
             exact state. Null = not stated for this point; never inferred. A
             source point whose serve number and outcome contradict each other
             (a double fault stated on a first serve) is served untagged —
@@ -7042,9 +7040,9 @@ components:
             under `tour: challenger`) 47 of 63 against 117 of 147. Read
             `enrichment` per match — it is the only per-match answer, none
             of this is a promise about a match not yet played. Since
-            2026-09-22, on the tours whose own point-by-point console we read
+            2026-09-22, on the tours with a complete per-point record
             (ATP 250/500/1000, ATP Challenger, WTA 1000/500/250/125), a
-            COMPLETED match is re-joined after the match against the console's
+            COMPLETED match is re-joined after the match against that
             complete sequence by the same exact-state rule, so a completed
             match's serve/outcome coverage exceeds what was captured live —
             the tags arrive as `point_update` frames and `tagged_at`
@@ -7053,22 +7051,21 @@ components:
           type: [string, "null"]
           enum: [ace, double_fault, winner, forced_error, unforced_error, null]
           description: >-
-            Added 2026-09-12. How the point ended, as an outside source states
-            it. ATP 250 / 500 / 1000: serve stated, outcome full (ace, double
-            fault, winner, forced error, unforced error) from the tour's own
-            per-point console. Grand Slams and Davis Cup are not on that
-            console, so `outcome` reads null there — but `serve` comes from a
-            different source and IS stated on them, so those matches are not
+            Added 2026-09-12. How the point ended, as stated for the point.
+            ATP 250 / 500 / 1000: serve stated, outcome full (ace, double
+            fault, winner, forced error, unforced error). Grand Slams and Davis
+            Cup have no per-point outcome, so `outcome` reads null there — but
+            `serve` IS stated on them, so those matches are not
             blanket-null; read `enrichment` per match. First
             measured on tour events from the week of 2026-09-22 — before that,
-            no tour event had been played since the source went live on
+            no tour event had been played since outcomes went live on
             2026-09-12. ATP Challenger — `tour: challenger` with a
             `challenger_*` tier — states all five. `tour: challenger` also
             carries the WTA 125 events (`tier: wta_125`), and those state ace
             and double fault only, so read `tier` rather than `tour` to tell
             the two apart. The ITF World Tennis Tour: ace and double fault.
-            WTA 1000/500/250/125: ace and double fault where the tour's
-            console reports the match — read the page's `enrichment` per
+            WTA 1000/500/250/125: ace and double fault where the match
+            has a per-point record — read the page's `enrichment` per
             match. Grand Slams and UTR: none. ITF World Tennis Tour
             DOUBLES draws state ace and double fault on a growing minority of
             matches — the tags first reached a doubles row on 2026-09-23 and
@@ -7094,10 +7091,10 @@ components:
             stated. A source point whose serve number and outcome contradict
             each other (a double fault stated on a first serve) is served
             untagged — `serve` and `outcome` both null — rather than tagged
-            wrongly (since 2026-09-21). Since 2026-09-22, on the tours whose
-            own point-by-point console we read (ATP 250/500/1000, ATP
+            wrongly (since 2026-09-21). Since 2026-09-22, on the tours with a
+            complete per-point record (ATP 250/500/1000, ATP
             Challenger, WTA 1000/500/250/125), a COMPLETED match is re-joined
-            after the match against the console's complete sequence by the
+            after the match against that complete sequence by the
             same exact-state rule, so a completed match's coverage exceeds
             what was captured live — collect the late tags with
             `?changed_since=` or the `point_update` frame.
@@ -7170,12 +7167,12 @@ components:
           type: string
           enum: [clean, revised]
           description: >-
-            `revised` = the upstream feed rewrote an already-served prefix at
+            `revised` = the point record was rewritten over an already-served prefix at
             least once during this match; served rows are never edited.
         enrichment:
           type: object
           description: >-
-            Added 2026-09-12. What an outside source has stated for THIS match
+            Added 2026-09-12. What has been stated for THIS match
             so far — `serve`: stated | none; `outcome`: full |
             ace_double_fault | none. Read it before building on the fields;
             it is never a promise about the rest of the match.
@@ -7295,12 +7292,10 @@ components:
             tournaments on 2026-09-20. 35 of those are team competitions (Davis
             Cup, Billie Jean King Cup, Laver Cup), which have no tournament-level
             surface to hold: each tie is played on the host nation's choice, and
-            that surface is published on each MATCH of the tie instead. The
-            upstream field for those rows carries the DRAW TIER rather than a
-            surface ("- Preliminary", "- Play Offs", "- Promotion"), and a value
-            that is not one of hard/clay/grass is rejected rather than published.
-            3 are the exhibition catch-all and 23 are ordinary events the
-            upstream catalogue simply never stated a surface for.
+            that surface is published on each MATCH of the tie instead. A
+            surface value that is not one of hard/clay/grass is rejected
+            rather than published. 3 are the exhibition catch-all and 23 are
+            ordinary events with no stated surface.
         indoor: { type: boolean }
         city:
           type: [string, "null"]
@@ -7385,7 +7380,7 @@ components:
             unambiguous name rule (the ITF category is in the event's official
             name — `M25 …`, `W35 …` — team and UTR events are named as such,
             and the Slam junior draws and exhibitions are their own event
-            type); `wikipedia` = the season's schedule page, used only where
+            type); `wikipedia` = a published season schedule, used only where
             the official calendar could not state the level for that season
             (Eastbourne 2023–2025); `resolver` = resolved after the seed
             dataset, by the same rules, from the event's name, tour and dates
@@ -7673,8 +7668,9 @@ components:
               description: Always 0 — no row here was watched live.
             point_source_detail:
               type: string
-              description: 'Always `reconstruction from public record`. Stated in the
-                payload so the provenance travels with the data rather than living only
+              description: 'Always `reconstruction from public record`, the fixed label
+                for reconstructed point sequences with no capture timestamps. Stated in the
+                payload so the label travels with the data rather than living only
                 in a customer''s memory of these docs.'
             sequence:
               type: string
@@ -7761,7 +7757,7 @@ components:
           type: [integer, "null"]
           description: >-
             OUR match id, when the charted match is also one we hold. Null
-            otherwise — most charted matches predate our own collection.
+            otherwise — most charted matches are older than our match table.
         date: { type: [string, "null"], format: date }
         tournament: { type: [string, "null"] }
         round: { type: [string, "null"] }
