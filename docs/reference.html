@@ -207,7 +207,7 @@
 
 <header>
 <h1>Live Tennis API — Full Reference</h1>
-<p class="meta">Version 1.13.77 &middot; OpenAPI 3.1.0</p>
+<p class="meta">Version 1.13.78 &middot; OpenAPI 3.1.0</p>
 <nav class="pagenav" aria-label="Related pages">
 <a href="./">Interactive reference</a>
 <a href="./openapi.yaml">OpenAPI spec</a>
@@ -2278,7 +2278,7 @@ THREE-VALUED, and <code>null</code> is NOT <code>false</code>. <code>true</code>
 EVERY FIELD IS OPTIONAL AND AN ABSENT FIELD IS OMITTED, never zero-filled — absent means NOT MEASURED, and a present 0 is a real measured zero. Do not assume a fixed shape; read the keys you are given. Measured over 24,552 stored payloads (2026-07-31), coverage falls into three tiers:
 TIER 1 — present on 98.6-100% of payloads, on every tour including ITF: aces, double faults, points won, service and return points won, break points won, service games won, longest point and game runs, return points.
 TIER 2 — present on essentially all ATP, WTA and Challenger matches and on NO ITF singles match: the first and second serve split, break points saved, tiebreaks won, games won, service games played.
-TIER 3 — the winners / unforced-errors / forced-errors family, in total and by shot type. Historically delivered on ~43% of ATP singles, ~24% of WTA singles and ~47% of tour doubles, and on NONE of Challenger, ITF or juniors — those zeros are hard, not sampling noise. This group has NOT BEEN AVAILABLE at all since 2026-07-12 (measured 2026-08-17: 0 of 4,513 August payloads carry it, live ATP Masters included), so expect it absent on current matches until it returns.
+TIER 3 — the winners / unforced-errors / forced-errors family, in total and by shot type. Present where the statistics source counts it: the 2026 Grand Slam main draws (Wimbledon and the US Open near complete; the Australian Open and Roland Garros filling as the completed-match statistics fetch walks back) and the odd regular-tour match (two at Basel 2026). On NONE of Challenger, ITF or juniors, and on almost no regular-tour match since 2026-07-12. Nothing is promised for a future event: the family appears when the source states it. A family the source filled with zeros is withheld (2026-10-29): a side that won 20 points or more with every by-shot winner and error at 0 is not measured, and the whole family is omitted, totals included.
 A <code>_of</code> suffix is the denominator of its base field and a <code>_pct</code> suffix is the percentage, recomputed from the two counts rather than read as a rounded figure.</td></tr>
 <tr><td><code>service_games_played</code></td><td>integer</td><td></td></tr>
 <tr><td><code>service_games_won</code></td><td>integer</td><td></td></tr>
@@ -2307,7 +2307,7 @@ A <code>_of</code> suffix is the denominator of its base field and a <code>_pct<
 EVERY FIELD IS OPTIONAL AND AN ABSENT FIELD IS OMITTED, never zero-filled — absent means NOT MEASURED, and a present 0 is a real measured zero. Do not assume a fixed shape; read the keys you are given. Measured over 24,552 stored payloads (2026-07-31), coverage falls into three tiers:
 TIER 1 — present on 98.6-100% of payloads, on every tour including ITF: aces, double faults, points won, service and return points won, break points won, service games won, longest point and game runs, return points.
 TIER 2 — present on essentially all ATP, WTA and Challenger matches and on NO ITF singles match: the first and second serve split, break points saved, tiebreaks won, games won, service games played.
-TIER 3 — the winners / unforced-errors / forced-errors family, in total and by shot type. Historically delivered on ~43% of ATP singles, ~24% of WTA singles and ~47% of tour doubles, and on NONE of Challenger, ITF or juniors — those zeros are hard, not sampling noise. This group has NOT BEEN AVAILABLE at all since 2026-07-12 (measured 2026-08-17: 0 of 4,513 August payloads carry it, live ATP Masters included), so expect it absent on current matches until it returns.
+TIER 3 — the winners / unforced-errors / forced-errors family, in total and by shot type. Present where the statistics source counts it: the 2026 Grand Slam main draws (Wimbledon and the US Open near complete; the Australian Open and Roland Garros filling as the completed-match statistics fetch walks back) and the odd regular-tour match (two at Basel 2026). On NONE of Challenger, ITF or juniors, and on almost no regular-tour match since 2026-07-12. Nothing is promised for a future event: the family appears when the source states it. A family the source filled with zeros is withheld (2026-10-29): a side that won 20 points or more with every by-shot winner and error at 0 is not measured, and the whole family is omitted, totals included.
 A <code>_of</code> suffix is the denominator of its base field and a <code>_pct</code> suffix is the percentage, recomputed from the two counts rather than read as a rounded figure.</p>
 <div class="scrollx" tabindex="0" role="region" aria-label="MatchStatisticsMeasured fields"><table><caption class="vh">MatchStatisticsMeasured schema — fields</caption><thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
 <tbody><tr><td><code>aces</code></td><td>integer or null</td><td></td></tr>
