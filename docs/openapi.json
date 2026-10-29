@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.76",
+  "version": "1.13.77",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -2450,6 +2450,7 @@
   "/fixtures": {
    "get": {
     "summary": "Upcoming scheduled fixtures, earliest first (FREE)",
+    "description": "One row per schedule entry, keyed on the schedule's own event key. A fixture bound to a match (`match_id` set) is served with the MATCH's `status` (mapped onto the fixture vocabulary: `upcoming` is `scheduled`, `completed` is `finished`) and `start_time`, read at request time (2026-10-29). The match row is the fresher record: the ingest moves it within minutes of the schedule changing, while the fixture row follows the 6-hourly refresher. A fixture whose own `status` is `cancelled` or `postponed` keeps it, since its `reason` carries the stated word. A fixture whose `is_qualifying` is null takes the match's value when the match states one; null is never turned into false without a source. A fixture with no `match_id` is served as stored. Before this, `/fixtures` and `/matches` could disagree on the same match for up to six hours.",
     "operationId": "listFixtures",
     "parameters": [
      {
@@ -6502,7 +6503,7 @@
        "null"
       ],
       "format": "date-time",
-      "description": "Scheduled start (UTC). Null until the order of play assigns a time — a date-only fixture is a real state, and rows written before 2026-08-03 stay null."
+      "description": "Scheduled start (UTC). Null until the order of play assigns a time — a date-only fixture is a real state, and rows written before 2026-08-03 stay null. On a fixture bound to a match this is the match's `scheduled_time` (2026-10-29)."
      },
      "player1_id": {
       "type": [
@@ -6584,7 +6585,16 @@
       "type": [
        "string",
        "null"
-      ]
+      ],
+      "enum": [
+       "scheduled",
+       "live",
+       "finished",
+       "cancelled",
+       "postponed",
+       null
+      ],
+      "description": "A closed set. On a fixture bound to a match it is the match's status in this vocabulary (2026-10-29); a vendor-stated `cancelled` or `postponed` on the fixture itself is kept. A bare digit in the schedule's status field is `live` only when the schedule's own in-play flag says so; before 2026-10-29 it read as a set in play on matches that had not started."
      }
     }
    },
