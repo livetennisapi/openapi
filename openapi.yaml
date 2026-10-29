@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.77"
+  version: "1.13.78"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -6521,13 +6521,16 @@ components:
         saved, tiebreaks won, games won, service games played.
 
         TIER 3 — the winners / unforced-errors / forced-errors family, in
-        total and by shot type. Historically delivered on ~43% of ATP singles,
-        ~24% of WTA singles and ~47% of tour doubles, and on NONE of
-        Challenger, ITF or juniors — those zeros are hard, not sampling noise.
-        This group has NOT BEEN AVAILABLE at all since 2026-07-12
-        (measured 2026-08-17: 0 of 4,513 August payloads carry it, live ATP
-        Masters included), so expect it absent on current matches until it
-        returns.
+        total and by shot type. Present where the statistics source counts
+        it: the 2026 Grand Slam main draws (Wimbledon and the US Open near
+        complete; the Australian Open and Roland Garros filling as the
+        completed-match statistics fetch walks back) and the odd regular-tour
+        match (two at Basel 2026). On NONE of Challenger, ITF or juniors, and
+        on almost no regular-tour match since 2026-07-12. Nothing is promised
+        for a future event: the family appears when the source states it.
+        A family the source filled with zeros is withheld (2026-10-29): a side
+        that won 20 points or more with every by-shot winner and error at 0 is
+        not measured, and the whole family is omitted, totals included.
 
         A `_of` suffix is the denominator of its base field and a `_pct` suffix
         is the percentage, recomputed from the two counts rather than read

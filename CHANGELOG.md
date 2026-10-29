@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.78] - 2026-10-29
+
+### Changed
+- **Shot-level winners and errors: where they are and when they are withheld.** The family is present where the statistics source counts it: the 2026 Grand Slam main draws (Wimbledon and the US Open near complete, the Australian Open and Roland Garros filling as the completed-match statistics fetch walks back) and the odd regular-tour match. The earlier note that it had not been available since 2026-07-12 described live payloads of the regular tour and is replaced. A family the source filled with zeros is now withheld: a side that won 20 points or more with every by-shot winner and error at 0 is not measured, and the whole family is omitted, totals included. 33 of 33 Roland Garros 2026 qualifying payloads carried such zeros.
+
 ## [1.13.77] - 2026-10-29
 
 ### Fixed
