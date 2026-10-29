@@ -5,6 +5,12 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.77] - 2026-10-29
+
+### Fixed
+- **`/fixtures` and `/matches` tell one story.** A fixture bound to a match (`match_id` set) is served with the match's `status`, in the fixture vocabulary, and the match's `start_time`, read at request time. The match row moves within minutes of a schedule change; the fixture row followed the 6-hourly refresher, so the two endpoints could disagree on the same match for hours. A customer found a Vienna match `live` at 09:00Z on one and `upcoming` at 12:30Z on the other. A vendor-stated `cancelled` or `postponed` on the fixture is kept. A null `is_qualifying` on the fixture takes the match's value when the match states one.
+- **A bare digit in the schedule's status field is no longer a match in play.** The day-ahead listing carries `1` on matches that have not started. It was read as a set in play, so 298 fixtures for 29 October were published as `live`. The digit is `live` only when the schedule's own in-play flag says so. The stored rows were restated the same day.
+
 ## [1.13.76] - 2026-10-28
 
 ### Added
