@@ -9,6 +9,7 @@
 Base URL: https://api.livetennisapi.com/api/public/v1
 Full text reference: https://docs.livetennisapi.com/reference.html
 Changelog (dated, versioned): https://docs.livetennisapi.com/changelog.html
+Changelog feeds: https://docs.livetennisapi.com/changelog.atom (Atom), https://docs.livetennisapi.com/changelog.json (JSON Feed)
 OpenAPI spec: https://docs.livetennisapi.com/openapi.yaml
 OpenAPI spec (JSON): https://docs.livetennisapi.com/openapi.json
 Website: https://livetennisapi.com
