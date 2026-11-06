@@ -15,7 +15,7 @@
     "Tournament.tier",
     "GET /tournaments?tier="
    ],
-   "about": "The level a tournament was played at in the match's own season, as the tour publishes it. A tournament keeps one id while its level changes between seasons, so the tier is read per season. Null means the level is unknown.",
+   "about": "The level a tournament was played at in the match's own season, as the tour publishes it. A tournament keeps one id while its level changes between seasons, so the tier is read per season. On a tournament the field carries the current season's level. Null means the level is unknown.",
    "values": [
     {
      "code": "grand_slam",
@@ -313,7 +313,7 @@
     "Match.round_code",
     "GET /history/archive/matches?round="
    ],
-   "about": "The round in one controlled vocabulary, shared by live matches and the results archive. It is relative to the draw: a qualifying semi-final also reads SF, so read it together with is_qualifying. Null when the round label is not recognised.",
+   "about": "The round in one controlled vocabulary, shared by live matches and the results archive. It is relative to the draw: a qualifying semi-final also reads SF, so read it together with is_qualifying. Null when the round label is not recognised. Q appears on matches only: the archive's round filter does not accept it.",
    "values": [
     {
      "code": "F",
@@ -387,7 +387,7 @@
     },
     {
      "code": "ER",
-     "meaning": "Archive round code, kept as the archive publishes it",
+     "meaning": "Unnumbered round",
      "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-er"
     }
    ]
@@ -398,7 +398,7 @@
    "fields": [
     "GET /history/archive/matches?level="
    ],
-   "about": "The results archive keeps the level codes it was published with. ITF events carry their category number as published, for example 15 or 25.",
+   "about": "Level codes used by the results archive. ITF events carry their category number instead of a letter, for example 15 or 25.",
    "values": [
     {
      "code": "G",
@@ -524,7 +524,7 @@
     },
     {
      "code": "completed",
-     "meaning": "Observed being played to an end, or its match-winner market settled decisively",
+     "meaning": "Played to a result",
      "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#status-completed"
     },
     {
@@ -614,7 +614,7 @@
     },
     {
      "code": "Unresolved",
-     "meaning": "Every source lost the match before a result",
+     "meaning": "Closed before a result could be confirmed",
      "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#event-status-unresolved"
     }
    ]
@@ -627,7 +627,7 @@
     "GET /matches/{matchId}/events",
     "GET /events"
    ],
-   "about": "The timeline of a match. Medical timeouts, trainer calls and toilet breaks are stated by the scorer or chair umpire and name the player concerned.",
+   "about": "The timeline of a match. Medical timeouts, trainer calls and toilet breaks are stated by the scorer or chair umpire. The player field names the player where the feed carries one and is null otherwise.",
    "values": [
     {
      "code": "break",
@@ -927,7 +927,7 @@
     },
     {
      "code": "unknown",
-     "meaning": "Not charted",
+     "meaning": "Shot type not recorded",
      "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-unknown"
     }
    ]

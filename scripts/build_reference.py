@@ -1988,6 +1988,19 @@ def _schema_enum(spec: dict[str, Any], schema: str, *path: str) -> list[str]:
     return [str(v) for v in node["enum"] if v is not None]
 
 
+def _archive_level_codes(spec: dict[str, Any]) -> list[str]:
+    """The letter codes the archive's ?level= parameter describes. The parameter has no enum, so
+    the codes are read from its description: a new code there fails the build until it has a
+    meaning below, the same as every enum."""
+    for prm in spec["paths"]["/history/archive/matches"]["get"].get("parameters", []):
+        if isinstance(prm, dict) and prm.get("name") == "level":
+            codes = re.findall(r"\b([A-Z])=", prm.get("description", ""))
+            if not codes:
+                raise SystemExit("vocabulary: no level codes found in /history/archive/matches?level=")
+            return codes
+    raise SystemExit("vocabulary: /history/archive/matches has no level parameter")
+
+
 def _param_enum(spec: dict[str, Any], route: str, name: str) -> list[str]:
     for prm in spec["paths"][route]["get"].get("parameters", []):
         if isinstance(prm, dict) and prm.get("name") == name:
@@ -2004,7 +2017,8 @@ VOCABULARIES: list[dict[str, Any]] = [
         "fields": ["Match.tier", "Tournament.tier", "GET /tournaments?tier="],
         "about": ("The level a tournament was played at in the match's own season, as the tour "
                   "publishes it. A tournament keeps one id while its level changes between seasons, "
-                  "so the tier is read per season. Null means the level is unknown."),
+                  "so the tier is read per season. On a tournament the field carries the current "
+                  "season's level. Null means the level is unknown."),
         "codes": lambda s: _schema_enum(s, "Match", "tier"),
         "labels": {
             "grand_slam": "Grand Slam",
@@ -2089,7 +2103,8 @@ VOCABULARIES: list[dict[str, Any]] = [
         "fields": ["Match.round_code", "GET /history/archive/matches?round="],
         "about": ("The round in one controlled vocabulary, shared by live matches and the results "
                   "archive. It is relative to the draw: a qualifying semi-final also reads SF, so "
-                  "read it together with is_qualifying. Null when the round label is not recognised."),
+                  "read it together with is_qualifying. Null when the round label is not recognised. "
+                  "Q appears on matches only: the archive's round filter does not accept it."),
         "codes": lambda s: _schema_enum(s, "Match", "round_code"),
         "labels": {
             "F": "Final",
@@ -2106,16 +2121,16 @@ VOCABULARIES: list[dict[str, Any]] = [
             "Q2": "Second qualifying round",
             "Q3": "Third qualifying round",
             "Q4": "Fourth qualifying round",
-            "ER": "Archive round code, kept as the archive publishes it",
+            "ER": "Unnumbered round",
         },
     },
     {
         "id": "archive-level",
         "title": "Archive level code",
         "fields": ["GET /history/archive/matches?level="],
-        "about": ("The results archive keeps the level codes it was published with. ITF events "
-                  "carry their category number as published, for example 15 or 25."),
-        "codes": lambda s: ["G", "M", "A", "F", "D", "C", "O"],
+        "about": ("Level codes used by the results archive. ITF events carry their category "
+                  "number instead of a letter, for example 15 or 25."),
+        "codes": lambda s: _archive_level_codes(s),
         "labels": {
             "G": "Grand Slam",
             "M": "Masters",
@@ -2162,7 +2177,7 @@ VOCABULARIES: list[dict[str, Any]] = [
         "labels": {
             "upcoming": "Scheduled and not yet started",
             "live": "In play",
-            "completed": "Observed being played to an end, or its match-winner market settled decisively",
+            "completed": "Played to a result",
             "cancelled": "Not played as scheduled",
         },
     },
@@ -2195,7 +2210,7 @@ VOCABULARIES: list[dict[str, Any]] = [
             "Walk Over": "Walkover",
             "Postponed": "Stated as postponed",
             "Interrupted": "Suspended in play, for example rain, darkness or a medical stop",
-            "Unresolved": "Every source lost the match before a result",
+            "Unresolved": "Closed before a result could be confirmed",
         },
     },
     {
@@ -2203,7 +2218,8 @@ VOCABULARIES: list[dict[str, Any]] = [
         "title": "Match event type",
         "fields": ["Event.type", "GET /matches/{matchId}/events", "GET /events"],
         "about": ("The timeline of a match. Medical timeouts, trainer calls and toilet breaks are "
-                  "stated by the scorer or chair umpire and name the player concerned."),
+                  "stated by the scorer or chair umpire. The player field names the player where "
+                  "the feed carries one and is null otherwise."),
         "codes": lambda s: _schema_enum(s, "Event", "type"),
         "labels": {
             "break": "A break of serve",
@@ -2295,7 +2311,7 @@ VOCABULARIES: list[dict[str, Any]] = [
             "serve": "Serve", "groundstroke": "Groundstroke", "slice": "Slice", "volley": "Volley",
             "half_volley": "Half volley", "swinging_volley": "Swinging volley",
             "overhead": "Overhead", "drop_shot": "Drop shot", "lob": "Lob", "trick": "Trick shot",
-            "unknown": "Not charted",
+            "unknown": "Shot type not recorded",
         },
     },
     {
@@ -2405,9 +2421,10 @@ def _vocabulary_body(spec: dict[str, Any]) -> str:
         )
     return (
         "<h2 id=\"use\">How to use these codes</h2>\n"
-        "<p>Every code on this page is a closed value: the API returns one of the listed codes or "
-        "null, and null means the value is not known. Each code has its own link, so a schema, a "
-        "README or a column note can point at one meaning. The same table is published as "
+        "<p>Each code on this page is one the API can return. Where a field can be null, null "
+        "means the value is not known. The match outcome list can grow within v1, so treat a "
+        "value you do not recognise as unknown. Each code has its own link, so a schema or a "
+        "column note can point at one meaning. The same table is published as "
         f'<a href="./{VOCAB_JSON}">{VOCAB_JSON}</a> for code that validates or labels the values.</p>\n'
         f'<nav aria-label="Vocabularies on this page"><ul>{"".join(toc)}</ul></nav>\n'
         + "\n".join(sections)
