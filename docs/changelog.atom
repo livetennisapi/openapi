@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <id>https://docs.livetennisapi.com/changelog.atom</id>
+  <title>Live Tennis API changelog</title>
+  <subtitle>Every change to the Live Tennis API specification, dated and versioned.</subtitle>
+  <updated>2026-10-29T00:00:00Z</updated>
+  <link rel="self" type="application/atom+xml" href="https://docs.livetennisapi.com/changelog.atom"/>
+  <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html"/>
+  <author><name>Live Tennis API</name><uri>https://livetennisapi.com</uri></author>
+  <icon>https://docs.livetennisapi.com/icon-256.png</icon>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.78</id>
+    <title>Live Tennis API 1.13.78</title>
+    <updated>2026-10-29T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.78"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Shot-level winners and errors: where they are and when they are withheld.&lt;/strong&gt; The family is present where the statistics source counts it: the 2026 Grand Slam main draws (Wimbledon and the US Open near complete, the Australian Open and Roland Garros filling as the completed-match statistics fetch walks back) and the odd regular-tour match. The earlier note that it had not been available since 2026-07-12 described live payloads of the regular tour and is replaced. A family the source filled with zeros is now withheld: a side that won 20 points or more with every by-shot winner and error at 0 is not measured, and the whole family is omitted, totals included. 33 of 33 Roland Garros 2026 qualifying payloads carried such zeros.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.77</id>
+    <title>Live Tennis API 1.13.77</title>
+    <updated>2026-10-29T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.77"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;/fixtures&lt;/code&gt; and &lt;code&gt;/matches&lt;/code&gt; tell one story.&lt;/strong&gt; A fixture bound to a match (&lt;code&gt;match_id&lt;/code&gt; set) is served with the match&amp;#x27;s &lt;code&gt;status&lt;/code&gt;, in the fixture vocabulary, and the match&amp;#x27;s &lt;code&gt;start_time&lt;/code&gt;, read at request time. The match row moves within minutes of a schedule change; the fixture row followed the 6-hourly refresher, so the two endpoints could disagree on the same match for hours. A customer found a Vienna match &lt;code&gt;live&lt;/code&gt; at 09:00Z on one and &lt;code&gt;upcoming&lt;/code&gt; at 12:30Z on the other. A vendor-stated &lt;code&gt;cancelled&lt;/code&gt; or &lt;code&gt;postponed&lt;/code&gt; on the fixture is kept. A null &lt;code&gt;is_qualifying&lt;/code&gt; on the fixture takes the match&amp;#x27;s value when the match states one.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A bare digit in the schedule&amp;#x27;s status field is no longer a match in play.&lt;/strong&gt; The day-ahead listing carries &lt;code&gt;1&lt;/code&gt; on matches that have not started. It was read as a set in play, so 298 fixtures for 29 October were published as &lt;code&gt;live&lt;/code&gt;. The digit is &lt;code&gt;live&lt;/code&gt; only when the schedule&amp;#x27;s own in-play flag says so. The stored rows were restated the same day.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.76</id>
+    <title>Live Tennis API 1.13.76</title>
+    <updated>2026-10-28T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.76"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;X-LTAPI-Signature-V1&lt;/code&gt; on every webhook delivery.&lt;/strong&gt; The value is &lt;code&gt;t=&amp;lt;unix seconds&amp;gt;,v1=&amp;lt;hex&amp;gt;&lt;/code&gt;, and the hex is HMAC-SHA256 of &lt;code&gt;&amp;lt;t&amp;gt;.&amp;lt;raw request body&amp;gt;&lt;/code&gt; with your webhook secret. The timestamp is inside the signed string, so a captured delivery re-sent later under a new time no longer verifies. Each body also carries a top-level &lt;code&gt;delivery_id&lt;/code&gt;, unique per delivery, to dedupe on. The &lt;code&gt;POST /webhooks&lt;/code&gt; description lists the receiver checks: a 5-minute timestamp window, a constant-time compare and a dedupe on &lt;code&gt;delivery_id&lt;/code&gt;. It also lists &lt;code&gt;score_withdrawn&lt;/code&gt; among the &lt;code&gt;X-LTAPI-Event&lt;/code&gt; values, which it had left out.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The webhook &lt;code&gt;events&lt;/code&gt; enum matches what registration accepts.&lt;/strong&gt; &lt;code&gt;POST /webhooks&lt;/code&gt; listed &lt;code&gt;stoppages&lt;/code&gt;, which registration refuses with a 400, and the &lt;code&gt;Webhook&lt;/code&gt; schema listed only &lt;code&gt;score&lt;/code&gt; and &lt;code&gt;break_point&lt;/code&gt;. Both now read &lt;code&gt;score&lt;/code&gt;, &lt;code&gt;break_point&lt;/code&gt;, &lt;code&gt;point&lt;/code&gt;, &lt;code&gt;status&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Deprecated&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;X-LTAPI-Signature&lt;/code&gt;, the body-only webhook signature.&lt;/strong&gt; It does not cover the timestamp. We keep sending it unchanged until 2027-02-01, and deliveries sent from 00:00 UTC on that date do not carry it. Both headers use the same secret, so moving to the new header needs no re-registration.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.75</id>
+    <title>Live Tennis API 1.13.75</title>
+    <updated>2026-10-28T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.75"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Fields are described by what they hold.&lt;/strong&gt; Rounds, stoppages, per-point tags, statistics and surfaces now say what each value means and when it is null. Earlier entries in this changelog were reworded the same way. The 2013 to 2022 archive tape is described as reconstructed point sequences with no capture timestamps. Its &lt;code&gt;point_source_detail&lt;/code&gt; value is unchanged. The charting endpoints describe the charted corpus by its coverage. Nothing on the wire changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.74</id>
+    <title>Live Tennis API 1.13.74</title>
+    <updated>2026-10-26T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.74"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The point-by-point page describes the tape by what it holds.&lt;/strong&gt; The tape is the ordered score states we hold for a completed match, with coverage declared per match. The model&amp;#x27;s win probability sits only on rows that were observed live.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.73</id>
+    <title>Live Tennis API 1.13.73</title>
+    <updated>2026-10-26T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.73"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Source links point at GitHub again.&lt;/strong&gt; The github.com/livetennisapi organisation is public again, so every page, the README and llms.txt link each package&amp;#x27;s repository on GitHub beside its registry page. The Organization&amp;#x27;s sameAs names the GitHub org instead of the GitLab mirror.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.72</id>
+    <title>Live Tennis API 1.13.72</title>
+    <updated>2026-10-26T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.72"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;duplicates_collapsed&lt;/code&gt; on &lt;code&gt;GET /matches/{matchId}/points&lt;/code&gt;.&lt;/strong&gt; How many rows of the page repeated a point the match had already published and were left out. The writer no longer stores such repeats; the count covers rows written before that. &lt;code&gt;last_seq&lt;/code&gt; still advances past them.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.71</id>
+    <title>Live Tennis API 1.13.71</title>
+    <updated>2026-10-26T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.71"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Every docs page head carries the X (Twitter) card tag.&lt;/strong&gt; The 2026-10-25 Ahrefs crawl listed twelve docs pages under &amp;quot;X card missing&amp;quot;. The heads already carried the Open Graph tags, so the card tag names the card type and the rest falls back to Open Graph.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.70</id>
+    <title>Live Tennis API 1.13.70</title>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.70"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;index.html&amp;#x27;s JSON-LD description is its meta description.&lt;/strong&gt; The hub page&amp;#x27;s &lt;code&gt;TechArticle&lt;/code&gt; carried a different sentence from its meta tag. The meta text is the one that fits the result-page budget, so the JSON-LD now repeats it. The generator&amp;#x27;s JSON-LD check covers index.html as well as the generated pages.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.69</id>
+    <title>Live Tennis API 1.13.69</title>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.69"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;JSON-LD carries raw text, not HTML entities.&lt;/strong&gt; The players page&amp;#x27;s &lt;code&gt;TechArticle&lt;/code&gt; description read &lt;code&gt;player&amp;amp;#x27;s&lt;/code&gt; inside its JSON-LD while the meta tag decoded to &lt;code&gt;player&amp;#x27;s&lt;/code&gt;: the topic, reference and changelog templates formatted the block with the HTML escaper, and a script element&amp;#x27;s text is never decoded. Every JSON-LD block is now built as a dict and serialized once with &lt;code&gt;json.dumps&lt;/code&gt;, &lt;code&gt;&amp;lt;/&lt;/code&gt; escaped as &lt;code&gt;&amp;lt;\/&lt;/code&gt;. The reference and changelog descriptions in JSON-LD are the same text as their meta descriptions. The generator refuses a page whose JSON-LD does not parse, contains an entity, or whose &lt;code&gt;TechArticle&lt;/code&gt; description differs from the decoded meta description.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.68</id>
+    <title>Live Tennis API 1.13.68</title>
+    <updated>2026-10-23T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.68"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The docs&amp;#x27; Organization node matches the apex page&amp;#x27;s.&lt;/strong&gt; Every docs page publishes the same &lt;code&gt;Organization&lt;/code&gt; as livetennisapi.com: &lt;code&gt;alternateName&lt;/code&gt; and the ten &lt;code&gt;sameAs&lt;/code&gt; profiles (RapidAPI, Apify, API.market, Postman, GitLab, PyPI, the two npm packages, the docs site and X). Ahrefs flagged the docs node as incomplete while it carried only the name, url and logo.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Titles fit 60 characters and descriptions 110 to 155.&lt;/strong&gt; Three topic pages carry a shorter head title than their h1, the authentication page&amp;#x27;s description says what &lt;code&gt;GET /usage&lt;/code&gt; is for, and a description the budget cuts no longer ends on a connective. The generator refuses a page outside these budgets, index.html included.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.67</id>
+    <title>Live Tennis API 1.13.67</title>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.67"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;/players/{playerId}/stats&lt;/code&gt; keeps a UTC instant as given.&lt;/strong&gt; &lt;code&gt;from&lt;/code&gt; and &lt;code&gt;to&lt;/code&gt; are compared as instants, and &lt;code&gt;window&lt;/code&gt; echoes what was applied. An instant inside a repeated daylight-saving hour was read through a local wall clock. &lt;code&gt;to=2025-10-25T22:30:00Z&lt;/code&gt; came back as 23:30Z with &lt;code&gt;from&lt;/code&gt; an hour late, &lt;code&gt;from=22:30Z&amp;amp;to=23:15Z&lt;/code&gt; was refused and the reversed window was accepted. The same ordering applies to &lt;code&gt;from&lt;/code&gt; and &lt;code&gt;to&lt;/code&gt; on &lt;code&gt;GET /matches&lt;/code&gt; and &lt;code&gt;GET /history/matches&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;An omitted &lt;code&gt;to&lt;/code&gt; is the request instant.&lt;/strong&gt; It used to be rounded down to the minute, so a &lt;code&gt;from&lt;/code&gt; a few seconds earlier answered 400 &lt;code&gt;bad_date&lt;/code&gt;. Polls without &lt;code&gt;to&lt;/code&gt; inside one minute still share a cached response, and its &lt;code&gt;window.to&lt;/code&gt; is the first poll&amp;#x27;s instant.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;freshness.measured.complete&lt;/code&gt; and &lt;code&gt;serve_return.matches_with_stats&lt;/code&gt; are one judgement.&lt;/strong&gt; A deciding match tiebreak written as its points in the stamp and as one game in the served final, or the other way round, is the same finished set. The statistics endpoint compared the totals first and answered &lt;code&gt;null&lt;/code&gt; one way and &lt;code&gt;false&lt;/code&gt; the other, while the player aggregate counted the match complete. The field text now says what the judgement is.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;PlayerRecentMatch.score.games&lt;/code&gt; are the games the match object publishes.&lt;/strong&gt; The recent scores go through the same projection as &lt;code&gt;GET /matches/{matchId}&lt;/code&gt;, so a deciding match tiebreak the row keeps in &lt;code&gt;points&lt;/code&gt; is rendered into the deciding-set games slot. Before this, the stored lists were read raw and a match that ended in the breaker showed one set fewer.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.66</id>
+    <title>Live Tennis API 1.13.66</title>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.66"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;Player.tour&lt;/code&gt; describes a doubles team the way the API decides it.&lt;/strong&gt; A team filed under a circuit of its own carries that circuit. Only a team filed under a level word or nothing falls back to the circuit both its members share, and it is &lt;code&gt;null&lt;/code&gt; when they disagree or either is unknown. The 1.13.63 text put the fallback first. The field for singles or doubles is the match&amp;#x27;s &lt;code&gt;draw&lt;/code&gt;, not its &lt;code&gt;gender&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Parameter tables show numeric bounds.&lt;/strong&gt; Every parameter with a &lt;code&gt;minimum&lt;/code&gt; or &lt;code&gt;maximum&lt;/code&gt; now says so next to its default. &lt;code&gt;/players/{playerId}/stats?last=&lt;/code&gt; reads as 1 to 50, where it used to show only the default of 20.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The AI SDK guide says how &lt;code&gt;check_api_status&lt;/code&gt; detects the plan.&lt;/strong&gt; livetennisapi-ai 1.3.0 reads &lt;code&gt;/usage&lt;/code&gt; and reports the key&amp;#x27;s own tier, so a FREE key with History access reports as FREE. The BASIC estimate applies only to the fallback probe, used when &lt;code&gt;/usage&lt;/code&gt; cannot be read.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.65</id>
+    <title>Live Tennis API 1.13.65</title>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.65"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;The AI SDK guide now pins livetennisapi-ai 1.3.0, which adds &lt;code&gt;player_stats&lt;/code&gt; (PRO, with &lt;code&gt;serve_return&lt;/code&gt; on ULTRA). The guide and llms.txt now say 25 tools, the same set as livetennisapi-mcp 1.6.1.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.64</id>
+    <title>Live Tennis API 1.13.64</title>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.64"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;The AI SDK guide now pins livetennisapi-ai 1.2.1. That release fixes &lt;code&gt;check_api_status&lt;/code&gt; for FREE keys, so the known-issue note and its workaround are gone.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.63</id>
+    <title>Live Tennis API 1.13.63</title>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.63"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;serve_return.matches_incomplete&lt;/code&gt; is documented.&lt;/strong&gt; The API already returns it. It counts matches whose measured statistics stop short of the final. Those matches are left out of every sum.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;serve_return.matches_with_stats&lt;/code&gt; says what it counts.&lt;/strong&gt; It counts only matches whose measured statistics reach the final, and only those are summed.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;GET /players&lt;/code&gt; documents its 400 response.&lt;/strong&gt; A &lt;code&gt;restated_since&lt;/code&gt; that is not an ISO-8601 instant answers &lt;code&gt;bad_restated_since&lt;/code&gt; with the &lt;code&gt;Error&lt;/code&gt; body.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;Player.tour&lt;/code&gt; lists the values the API sends.&lt;/strong&gt; They are &lt;code&gt;atp&lt;/code&gt;, &lt;code&gt;wta&lt;/code&gt; and &lt;code&gt;null&lt;/code&gt;. The old text described capitalised and level values that have not been served since 2026-09-24.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Field tables show nested fields.&lt;/strong&gt; Inline objects are spelled out as dotted paths, such as &lt;code&gt;sets.tiebreaks&lt;/code&gt; and &lt;code&gt;serve.first_serve_in&lt;/code&gt;. A field typed by a named schema links to that schema&amp;#x27;s table.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Changelog list items keep their continuation lines.&lt;/strong&gt; An unindented line under a bullet rendered as a paragraph inside the list. That is invalid HTML.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The AI SDK guide states a known issue with FREE keys.&lt;/strong&gt; In livetennisapi-ai 1.1.0, &lt;code&gt;check_api_status&lt;/code&gt; reports a FREE key as unreachable. The guide names the workaround until 1.2.1 is on npm.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.62</id>
+    <title>Live Tennis API 1.13.62</title>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.62"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;PlayerRecentMatch.opponent&lt;/code&gt; is nullable.&lt;/strong&gt; The endpoint returns &lt;code&gt;null&lt;/code&gt; when the match row holds no opponent id. The schema said it was always an object.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;PlayerRecentMatch.score.games&lt;/code&gt; values are nullable integers.&lt;/strong&gt; The per-set lists are passed through from the stored row as &lt;code&gt;GET /matches/{matchId}&lt;/code&gt; serves them, and nothing on that path coerces the values.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;records.last_12_months&lt;/code&gt; now says what window it covers.&lt;/strong&gt; It is the 365 days ending at &lt;code&gt;to&lt;/code&gt;, whatever &lt;code&gt;from&lt;/code&gt; says. With the default window it equals &lt;code&gt;overall&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The &lt;code&gt;/players/{playerId}/stats&lt;/code&gt; 400 response references the &lt;code&gt;Error&lt;/code&gt; schema.&lt;/strong&gt; It names the five codes and says that &lt;code&gt;bad_surface&lt;/code&gt; and &lt;code&gt;bad_level&lt;/code&gt; list the accepted values in &lt;code&gt;allowed&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The &lt;code&gt;Player&lt;/code&gt; schema gains seven fields the API already returns.&lt;/strong&gt; They are &lt;code&gt;ranking_status&lt;/code&gt;, &lt;code&gt;ranking_checked_at&lt;/code&gt;, &lt;code&gt;itf_ranking&lt;/code&gt;, &lt;code&gt;profile_restated_at&lt;/code&gt;, &lt;code&gt;profile_version&lt;/code&gt;, &lt;code&gt;archive_player_id&lt;/code&gt; and &lt;code&gt;itf_id&lt;/code&gt; (ULTRA only). &lt;code&gt;GET /players&lt;/code&gt; gains the &lt;code&gt;restated_since&lt;/code&gt; parameter that &lt;code&gt;profile_restated_at&lt;/code&gt; points to. Nothing changed on the wire.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;llms.txt&lt;/code&gt; and the plans table name the new endpoint.&lt;/strong&gt; &lt;code&gt;/players/{playerId}/stats&lt;/code&gt; is listed under PRO and its &lt;code&gt;serve_return&lt;/code&gt; block under ULTRA.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The players topic page no longer says &lt;code&gt;/rankings&lt;/code&gt; per-player as-of records are PRO.&lt;/strong&gt; The rank-ordered listing is PRO, and the as-of records are ULTRA.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.61</id>
+    <title>Live Tennis API 1.13.61</title>
+    <updated>2026-10-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.61"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;GET /players/{playerId}/stats&lt;/code&gt; (PRO; &lt;code&gt;serve_return&lt;/code&gt; ULTRA).&lt;/strong&gt; One player&amp;#x27;s record over our own completed singles matches, 2023 onward. The default window is the 365 days ending now, and &lt;code&gt;?from=&lt;/code&gt;, &lt;code&gt;?to=&lt;/code&gt;, &lt;code&gt;?surface=&lt;/code&gt;, &lt;code&gt;?level=&lt;/code&gt; and &lt;code&gt;?last=&lt;/code&gt; narrow it. PRO gets &lt;code&gt;records&lt;/code&gt;: W/L overall, over the last 12 months, and by surface, venue, level and season. It also carries the set-based record (tiebreaks, deciding sets, after winning or losing the first set, comebacks, sets won and lost), withdrawals given and received, and the last N matches with the score turned round to the player. Every count carries its sample size, and a percentage on an empty sample is &lt;code&gt;null&lt;/code&gt;, not 0. Winners and scores are read the same way the match object publishes them, so this endpoint cannot disagree with &lt;code&gt;GET /matches/{matchId}&lt;/code&gt;. ULTRA adds &lt;code&gt;serve_return&lt;/code&gt;, the per-match statistics of &lt;code&gt;/matches/{matchId}/statistics&lt;/code&gt; summed over the window. Each ratio is published as numerator, denominator and pct, with the number of matches behind it. Below ULTRA the key is absent. A doubles-team id answers 400 &lt;code&gt;doubles_not_supported&lt;/code&gt;, and a merged or retired id answers 410 as &lt;code&gt;/players/{playerId}&lt;/code&gt; does. For 1968–2022, &lt;code&gt;/history/archive/career&lt;/code&gt; remains the endpoint.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;height_cm&lt;/code&gt; and &lt;code&gt;doubles_ranking&lt;/code&gt; on &lt;code&gt;GET /players/{playerId}&lt;/code&gt;.&lt;/strong&gt; Both are on the single-player read only, on paid tiers, and null on a FREE key. &lt;code&gt;height_cm&lt;/code&gt; comes from the results archive&amp;#x27;s record of the same person and is never inferred. &lt;code&gt;doubles_ranking&lt;/code&gt; is &lt;code&gt;{rank, points, observed_on}&lt;/code&gt;, the current position on the official ATP/WTA doubles table. It is null when the player is off the table or was last seen there more than 21 days ago. It is never copied into &lt;code&gt;ranking&lt;/code&gt;, which stays the singles position. Nothing existing changed type or meaning.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The licence is named by its SPDX identifier.&lt;/strong&gt; &lt;code&gt;info.license&lt;/code&gt; now carries &lt;code&gt;identifier: MIT&lt;/code&gt; in place of a URL. The old URL pointed at a GitHub page that no longer loads. No endpoint, field or type changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.60</id>
+    <title>Live Tennis API 1.13.60</title>
+    <updated>2026-10-03T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.60"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The hosted MCP endpoint, which this reference had never mentioned.&lt;/strong&gt; A remote Streamable HTTP server has run at &lt;code&gt;https://mcp.livetennisapi.com/mcp&lt;/code&gt; for weeks. The only MCP line here named the self-run package, &lt;code&gt;npx livetennisapi-mcp&lt;/code&gt;. A reader who wanted an LLM agent over this API was therefore told to install and host one. The string &lt;code&gt;mcp.livetennisapi.com&lt;/code&gt; appeared zero times in the reference, zero times in &lt;code&gt;llms.txt&lt;/code&gt; and zero times in the README. An engineer evaluating the API found the endpoint by going looking for it, which is what prompted this. A new &lt;strong&gt;MCP server&lt;/strong&gt; section now sets the hosted and self-run routes side by side. The client-libraries table, &lt;code&gt;llms.txt&lt;/code&gt; and the README name the endpoint too. Everything in the section was read off the live server on 2026-10-03, not taken from a release note. &lt;code&gt;initialize&lt;/code&gt; reports &lt;code&gt;serverInfo&lt;/code&gt; version &lt;strong&gt;1.5.0&lt;/strong&gt;. &lt;code&gt;tools/list&lt;/code&gt; returns &lt;strong&gt;24&lt;/strong&gt; tools, set-identical to the 24 the section lists by name. Both documented auth headers were called and both work: &lt;code&gt;Authorization: Bearer twjp_...&lt;/code&gt; and &lt;code&gt;X-API-Key: twjp_...&lt;/code&gt;. The rate headers read &lt;code&gt;limit=300&lt;/code&gt; on a key and &lt;code&gt;limit=60&lt;/code&gt; without one. The section states both, and states that the caller&amp;#x27;s own plan limit still applies underneath. That second sentence is load-bearing. The hosted cap sits above a free key&amp;#x27;s 30 a minute, so publishing it alone would read as a quota raise. With no key at all only &lt;code&gt;check_api_status&lt;/code&gt; answers, and it returns the free-key URL. &lt;code&gt;GET /mcp&lt;/code&gt; answers 405 &lt;code&gt;&amp;quot;use POST&amp;quot;&lt;/code&gt;, so the section says POST only. &lt;code&gt;GET /health&lt;/code&gt; reports the running version. Every plan reaches MCP, free keys included, and each tool reaches exactly what that plan reaches. No price is quoted anywhere, because the endpoint takes the key a customer already has. No field, parameter or type changed, and no endpoint of the REST API changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.59</id>
+    <title>Live Tennis API 1.13.59</title>
+    <updated>2026-10-02T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.59"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;?is_qualifying=&lt;/code&gt; on &lt;code&gt;/matches&lt;/code&gt;, &lt;code&gt;/history/matches&lt;/code&gt; and &lt;code&gt;/fixtures&lt;/code&gt;, and &lt;code&gt;?gender=&lt;/code&gt; documented on the same three.&lt;/strong&gt; The &lt;code&gt;is_qualifying&lt;/code&gt; field has been published on every match and fixture since 2026-08-12 and this reference already called it &amp;quot;the only field that separates a qualifying draw from the main draw&amp;quot; and told callers to &amp;quot;filter accordingly&amp;quot; — while the parameter they would reach for did not exist and was accepted and ignored. Measured on prod before the change: &lt;code&gt;/matches?status=completed&amp;amp;limit=50&lt;/code&gt; returned the same fifty ids under &lt;code&gt;is_qualifying=true&lt;/code&gt;, &lt;code&gt;is_qualifying=false&lt;/code&gt; and no filter at all, every one of the fifty rows carrying &lt;code&gt;is_qualifying: false&lt;/code&gt;, while the &lt;code&gt;?draw=&lt;/code&gt; control changed the page. The filter is applied in SQL before the page limit on &lt;code&gt;status=live&lt;/code&gt;, &lt;code&gt;upcoming&lt;/code&gt;, &lt;code&gt;completed&lt;/code&gt; and &lt;code&gt;cancelled&lt;/code&gt; and on the archive listing, so a deep crawl can page a single draw rather than filtering a full corpus client-side. It is &lt;strong&gt;three-valued like the field&lt;/strong&gt;: a row whose flag is &lt;code&gt;null&lt;/code&gt; matches neither &lt;code&gt;true&lt;/code&gt; nor &lt;code&gt;false&lt;/code&gt; and is returned only when the filter is omitted, because returning it under &lt;code&gt;false&lt;/code&gt; would assert &amp;quot;main draw&amp;quot; on the strength of nothing. Coverage, measured 2026-10-02 over completed matches: the flag is stated on &lt;strong&gt;98.9%&lt;/strong&gt; of the last thirty days and &lt;strong&gt;98.3%&lt;/strong&gt; of 2026 outside the UTR circuit, which is where almost all unstated rows are (1,695 of the 1,831 in the last thirty days). Anything other than true/false is a 400 &lt;code&gt;bad_is_qualifying&lt;/code&gt;. Asked for by a customer splitting qualifying from main draw for a match-prediction model. &lt;code&gt;?gender=men|women&lt;/code&gt; has worked on the match and archive listings since 2026-09-09 and was never documented here; it is now, with the same null contract — a mixed-doubles or team-tie row matches neither value. No field or type changed.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;?gender=&lt;/code&gt; was accepted and ignored on &lt;code&gt;/matches?status=live&lt;/code&gt; and &lt;code&gt;?status=upcoming&lt;/code&gt;.&lt;/strong&gt; Those two statuses are served from a short-lived slate cache keyed only on the status, and the gate that decides whether a request may use it never learned about &lt;code&gt;gender&lt;/code&gt;, so a filtered request was answered with the whole slate under a 200. Measured on prod before the fix: &lt;code&gt;status=live&lt;/code&gt; returned the same twenty-five rows for &lt;code&gt;gender=men&lt;/code&gt;, &lt;code&gt;gender=women&lt;/code&gt; and no filter — six of them women&amp;#x27;s matches and seven with no gender stated — and &lt;code&gt;status=upcoming&lt;/code&gt; the same sixty rows of a hundred and forty-three under every value. &lt;code&gt;status=completed&lt;/code&gt; and &lt;code&gt;status=cancelled&lt;/code&gt; are not cached and answered correctly throughout (sixty of sixty, pure), so the filter itself was never wrong: the request did not reach it. The live listing is polled continuously, so the cache was effectively always warm and the filter was dropped on every call rather than occasionally. Present from 2026-09-09 to 2026-10-02. Callers who filtered the live or upcoming slate by gender and trusted the result were served the unfiltered slate and should re-read anything derived from it; every row carried a correct &lt;code&gt;gender&lt;/code&gt; field throughout, so a client that filtered on the field rather than the parameter was unaffected.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.58</id>
+    <title>Live Tennis API 1.13.58</title>
+    <updated>2026-10-01T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.58"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The archived tape&amp;#x27;s accept clock now begins 2026-08-11, six weeks earlier than 1.13.57 published, because the missing values were recovered rather than written off.&lt;/strong&gt; 1.13.57 measured the boundary honestly at 2026-09-23, the day &lt;code&gt;history_archived_scores.content_changed_at&lt;/code&gt; landed as a catalogue-only column with no backfill. What that measurement did not say is that the values were still reachable: for every archive row copied before the column existed, the live row it was copied from may still be inside the 90-day retention, and that row holds the value the archiver would itself have written. A backfill carried them across on 2026-10-01 in six bounded tranches, &lt;strong&gt;1,413,471 accept clocks and 1,393,458 accept counters, inside 1,538,176 rows over 14,491 matches&lt;/strong&gt;, and left &lt;code&gt;fillable=0&lt;/code&gt;. Nothing is derived, rounded or taken from a neighbouring row, and a row whose live row had already been trimmed stays null for good. Measured after the run: the archive carries the clock on &lt;strong&gt;100.0% of every day from 2026-08-11 to 2026-10-01&lt;/strong&gt;, 92.5% of 2026-08-10 (the live column&amp;#x27;s own first instant is &lt;code&gt;2026-08-10T08:07:42Z&lt;/code&gt;) and 0.0% of every day before it, which is &lt;strong&gt;1,721,102 of 4,663,181&lt;/strong&gt; archived observed rows against 307,631 before. &lt;code&gt;HistoryTapeRow.sequence&lt;/code&gt;, the accept counter, has its own later floor because &lt;code&gt;live_scores.match_seq&lt;/code&gt; landed after the clock: nothing to 2026-08-13, 68.2% of 08-14, 99.3% of 08-15, then 95.9% or more of every day from &lt;strong&gt;2026-08-16&lt;/strong&gt; and 100% from 2026-09-01. Two boundaries, not one. &lt;code&gt;received_at&lt;/code&gt; could not move at all and the reference now says so: its live column landed 2026-09-24, a day AFTER the archive column, so every live row carrying an arrival clock was archived with it and the recoverable count is zero. Wire-verified both sides: match 2168 (26 April 2026), before the boundary, still answers 131 observed rows with &lt;code&gt;timestamp&lt;/code&gt; on all 131 and &lt;code&gt;accepted_at&lt;/code&gt; on none; match 189679&amp;#x27;s archived copy carried the clock on 0 of its 171 observed rows before the run and on 171 of 171 after it. The practical consequence for a timing study is that the clock no longer disappears when a match ages out of live retention. No field, endpoint or type changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.57</id>
+    <title>Live Tennis API 1.13.57</title>
+    <updated>2026-10-01T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.57"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;HistoryTapeRow.accepted_at&lt;/code&gt; was documented as covering the whole observed corpus, and on an archived tape it begins 2026-09-23.&lt;/strong&gt; The field is the one this reference tells a timing study to use, and its description read &amp;quot;It rides the whole observed corpus, so a study that spans 2026-09-24 must use this one and not &lt;code&gt;received_at&lt;/code&gt;&amp;quot;, while &lt;code&gt;received_at&lt;/code&gt; said &amp;quot;THIS CLOCK HAS A START DATE AND THE OTHER TWO DO NOT&amp;quot;. Both sentences were wrong about &lt;code&gt;accepted_at&lt;/code&gt;. Measured over the whole archived observed corpus: &lt;strong&gt;307,512 of 4,659,024 rows carry it&lt;/strong&gt;, which is 0.0% of every month to August 2026 (286 rows in all of August), 27.3% of September and 100% of October. Wire-verified on match 2168 (26 April 2026), answered with &lt;code&gt;meta.from_archive: true&lt;/code&gt;: 131 observed rows, &lt;code&gt;timestamp&lt;/code&gt; on all 131 and &lt;code&gt;accepted_at&lt;/code&gt; on none. The measurement quoted in 1.13.5x — match 189679, &lt;code&gt;accepted_at&lt;/code&gt; on all 171 observed rows — is correct and does not generalise, because that match is still inside live retention and is answered from its live rows (&lt;code&gt;from_archive: false&lt;/code&gt;); its own archived copy carries the clock on &lt;strong&gt;0 of 367&lt;/strong&gt; rows. So coverage depends on which copy answers the read, &lt;code&gt;meta.from_archive&lt;/code&gt; is how you tell, and a null here is a boundary of the record rather than a missing value. &lt;code&gt;timestamp&lt;/code&gt; is the only one of the three clocks with no start date. Found while answering a customer who asked for &amp;quot;a timestamp precise enough to line up with exchange quotes&amp;quot; — the exact question the wrong sentence was there to answer. No field, endpoint or type changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.56</id>
+    <title>Live Tennis API 1.13.56</title>
+    <updated>2026-10-01T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.56"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;An exact player name that sat inside a longer name could not be asked about on any of the three name endpoints.&lt;/strong&gt; Every name lookup is a substring match, so there was no way to say &amp;quot;exactly this one&amp;quot;, and a person whose name is a prefix of somebody else&amp;#x27;s was unreachable: &lt;code&gt;GET /h2h?p1=Carlos%20Alcaraz&lt;/code&gt; answered &lt;code&gt;400 ambiguous_name&lt;/code&gt; listing &lt;code&gt;Carlos Alcaraz&lt;/code&gt; and &lt;code&gt;Carlos Alcaraz Gonzalez&lt;/code&gt;, with no string that could pick between them. Measured on the live roster and corpus: &lt;strong&gt;14 of the 1,177 ranked players&lt;/strong&gt; on &lt;code&gt;/h2h&lt;/code&gt;, &lt;strong&gt;21 of 1,500&lt;/strong&gt; distinct archive names on &lt;code&gt;/history/archive/career&lt;/code&gt; and &lt;strong&gt;4 of 1,739&lt;/strong&gt; charted names on &lt;code&gt;/charting/players&lt;/code&gt;, the men&amp;#x27;s world #2 and #3 among them. Passing a name exactly now selects that person on all three. A name given in part is still a fragment and still refuses with the candidate list, so &lt;code&gt;Sinner&lt;/code&gt; continues to list Jannik and Martin rather than guessing, and a single name charted under both genders on &lt;code&gt;/charting/players&lt;/code&gt; still needs &lt;code&gt;gender&lt;/code&gt;. The refusal also reports the candidates it would have shown before the exact match was applied, so a hint never gets shorter than it was. Verified on the wire: Alcaraz against Sinner returns 18 meetings 11-7 with the surface split and the ULTRA aggregates. No field, endpoint, parameter or error code changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.55</id>
+    <title>Live Tennis API 1.13.55</title>
+    <updated>2026-09-29T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.55"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;ITF World Tennis Tour doubles began stating &lt;code&gt;outcome&lt;/code&gt;, and the reference still said no doubles draw carries either field.&lt;/strong&gt; The 1.13.42 note measured 454 completed doubles matches and found no tagged row. That was true when it was written. The first doubles row carried a tag on 2026-09-23, and by 2026-09-29 &lt;code&gt;GET /matches/{id}/points&lt;/code&gt; published &lt;code&gt;outcome&lt;/code&gt; on &lt;strong&gt;104 of 596&lt;/strong&gt; completed ITF doubles matches, 17%, against &lt;strong&gt;0 of 371&lt;/strong&gt; for the ATP, WTA and Challenger doubles draws in the same window. The vocabulary is ace and double fault, as on the ITF singles draws. &lt;code&gt;serve&lt;/code&gt; is still unstated on every doubles draw, measured 0, and that sentence is unchanged. The cause sat before the tagger: a dedup change let a doubles fixture be adopted and oriented by its member sets instead of being refused, so the ITF per-point join reached rows it had never been able to match. 17% falls between &amp;quot;almost none&amp;quot; and &amp;quot;a clear majority&amp;quot;, so the description states it as a measured fraction and sends the reader to &lt;code&gt;enrichment&lt;/code&gt; per match instead of to the draw. WTA main-tour qualifying has carried that treatment since 1.13.42. Found by the every-sweep tag-coverage check. No field, endpoint or behaviour changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.54</id>
+    <title>Live Tennis API 1.13.54</title>
+    <updated>2026-09-28T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.54"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The two broadcast surfaces, live since 2026-09-24 and documented nowhere a customer could read.&lt;/strong&gt; &lt;code&gt;GET /broadcast/match/{matchId}&lt;/code&gt; and &lt;code&gt;GET /broadcast/live&lt;/code&gt; have served every ULTRA key for four days and appeared in no published reference: the write-up went into the tennis repository, which nothing serves. Both are now specified, with the 54-field &lt;code&gt;BroadcastObject&lt;/code&gt; schema in the same order the API returns it, verified field by field against a live response rather than transcribed from the source. The object exists because a graphics template binds each field to a fixed path, so three properties are contractual rather than incidental and are documented as such: it is FLAT, every key is PRESENT on every read (&lt;code&gt;null&lt;/code&gt;, never missing — a missing key breaks a binding), and the score is already in DISPLAY form (&lt;code&gt;p1_points&lt;/code&gt; reads &lt;code&gt;&amp;quot;40&amp;quot;&lt;/code&gt; or &lt;code&gt;&amp;quot;AD&amp;quot;&lt;/code&gt;, &lt;code&gt;set_line&lt;/code&gt; is one string, each set has its own column). It is a projection of what the API already publishes plus the break-, set- and match-point flags the scoring pipeline derives; nothing in it is a new fact and nothing is guessed.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The 1 Hz polling contract, which is the part a live scoreboard gets wrong.&lt;/strong&gt; Every response carries a strong &lt;code&gt;ETag&lt;/code&gt; and &lt;code&gt;Cache-Control: no-cache, max-age=1&lt;/code&gt;, so &lt;code&gt;If-None-Match&lt;/code&gt; turns an unchanged state into a 304 with no body; ULTRA&amp;#x27;s 600-a-minute burst window means ten single-match pollers at 1 Hz fit on one key, and &lt;code&gt;/broadcast/live&lt;/code&gt; stays one request however many matches are live. A new state is detected on &lt;code&gt;sequence&lt;/code&gt;, never on &lt;code&gt;served_at&lt;/code&gt;, which changes on every read — stated on both routes because polling on &lt;code&gt;served_at&lt;/code&gt; is the mistake that looks like it works.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.53</id>
+    <title>Live Tennis API 1.13.53</title>
+    <updated>2026-09-26T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.53"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The tape now publishes the accept counter the withdrawal ledger points at.&lt;/strong&gt; &lt;code&gt;GET /matches/{matchId}/withdrawals&lt;/code&gt; tells you a &lt;code&gt;sequence&lt;/code&gt; was withdrawn and to resume from &lt;code&gt;replaced_by_sequence&lt;/code&gt;, and until today no served history-tape row carried that number, so the pointer named a row nothing identified. &lt;code&gt;HistoryTapeRow.sequence&lt;/code&gt; is the same per-match accept counter as &lt;code&gt;Score.sequence&lt;/code&gt; on a live read. Because a withdrawn state never enters the record at all, a withdrawal now reads as a GAP in the tape&amp;#x27;s run of counters, which is what makes &amp;quot;resume from the predecessor&amp;quot; resolvable against the served history. Reported by an Ultra customer who verified three withdrawal records against the tape and wrote that &amp;quot;the history rows lack sequence IDs, so these responses alone cannot reconstruct exactly what a live client received&amp;quot;. Null, never fabricated, on a row archived before 2026-09-26 (the archive did not keep the counter, so it died with the live row at retention) and on the pre-2023 archive tape, which has no such counter. Unlike &lt;code&gt;accepted_at&lt;/code&gt; and &lt;code&gt;received_at&lt;/code&gt; it is NOT null on a reconstructed row: a counter is a fact about our own accept order.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;Score.sequence&lt;/code&gt; said the tape does not carry it, and the stated reason was the gap.&lt;/strong&gt; The description read &amp;quot;absent on history-tape rows, which are already served in order&amp;quot;. Being served in order does not resolve a &lt;code&gt;replaced_by_sequence&lt;/code&gt;, which is a pointer at a counter rather than a position in a list. Corrected, and it now points at &lt;code&gt;HistoryTapeRow.sequence&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.52</id>
+    <title>Live Tennis API 1.13.52</title>
+    <updated>2026-09-25T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.52"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The tape&amp;#x27;s two accept clocks are published.&lt;/strong&gt; &lt;code&gt;HistoryTapeRow.accepted_at&lt;/code&gt; and &lt;code&gt;HistoryTapeRow.received_at&lt;/code&gt; have ridden every observed row of &lt;code&gt;GET /history/matches/{matchId}&lt;/code&gt; since 2026-09-24 and were documented nowhere, so a customer doing timing research on a tape had no published field to read. &lt;code&gt;accepted_at&lt;/code&gt; is the instant our arbiter accepted the state, stamped once and never refreshed, which is the clock to difference against: &lt;code&gt;timestamp&lt;/code&gt; starts equal to it and is then refreshed while the owning source keeps re-asserting the unchanged state, so on most raw rows &lt;code&gt;timestamp&lt;/code&gt; is a later re-assertion instant (on match 189679, 164 of its 171 observed rows carry a &lt;code&gt;timestamp&lt;/code&gt; more than a second after &lt;code&gt;accepted_at&lt;/code&gt;). &lt;code&gt;received_at&lt;/code&gt; is the instant the state reached our edge before arbitration, so &lt;code&gt;accepted_at&lt;/code&gt; minus &lt;code&gt;received_at&lt;/code&gt; is our own arbitration step. Neither figure is a claim about speed before our edge and neither is the court&amp;#x27;s clock. Both are null on every reconstructed row, which never had a clock.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The arrival clock&amp;#x27;s start date, which is the part that bites.&lt;/strong&gt; &lt;code&gt;received_at&lt;/code&gt; is stamped only as a state arrives, so it can never be filled in afterwards. The earliest one we hold is &lt;code&gt;2026-09-24T02:00:26Z&lt;/code&gt;; on every observed row accepted before that instant it is null while &lt;code&gt;timestamp&lt;/code&gt; and &lt;code&gt;accepted_at&lt;/code&gt; are populated. A study that spans the boundary has to read &lt;code&gt;accepted_at&lt;/code&gt;, which rides the whole observed corpus. Measured on match 189679 (12 September) after a Basic customer reported it: 171 observed rows, &lt;code&gt;accepted_at&lt;/code&gt; on all 171, &lt;code&gt;received_at&lt;/code&gt; on none.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;What &lt;code&gt;server&lt;/code&gt; guarantees on a tiebreak row, and what it does not.&lt;/strong&gt; Tiebreak rows are never settled on either sequence. The server genuinely changes during a breaker, so there is no constant to take a majority of, and the field is the source&amp;#x27;s own assertion carried through. Where a breaker&amp;#x27;s rows skip points the rotation cannot be reconstructed from what is served: you have the server of a state, not of a numbered point, and &lt;code&gt;meta.points.transitions_legal&lt;/code&gt; against &lt;code&gt;transitions_total&lt;/code&gt; tells you whether that happened. On the set roll-up row carrying &lt;code&gt;tiebreak_final&lt;/code&gt;, &lt;code&gt;server&lt;/code&gt; is the value of that committed set-end state and is NOT a preserved copy of the final breaker point&amp;#x27;s server. Reported by a Basic customer who could not reconcile 21 tiebreak transitions against the standard rotation and was right not to.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;Score.accepted_at&lt;/code&gt; said &amp;quot;absent on history-tape rows&amp;quot;.&lt;/strong&gt; It has been present on them since 2026-09-24, so the description had been wrong for a day, on the one field a timing study is told to use. Corrected, and the tape row now documents its own copy.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.51</id>
+    <title>Live Tennis API 1.13.51</title>
+    <updated>2026-09-25T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.51"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The &lt;code&gt;score_withdrawn&lt;/code&gt; frame is documented on the push feed page, where a streaming consumer looks for it.&lt;/strong&gt; 1.13.50 put the record and the frame&amp;#x27;s fields on the score read and in the schema list, and the frame is a STREAM artifact: it arrives on the same channel as the &lt;code&gt;score&lt;/code&gt; frame it retracts. &lt;code&gt;GET /ws-token&lt;/code&gt; now carries the frame itself, the reason it exists (the feed publishes every accepted state and runs no trust deference, while the score read runs the legality gate and can serve an older state), what each &lt;code&gt;kind&lt;/code&gt; asks you to do, and the three reads that recover a judgement you were offline for. No spec surface changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.50</id>
+    <title>Live Tennis API 1.13.50</title>
+    <updated>2026-09-25T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.50"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;A withdrawn score state is now recoverable, and &lt;code&gt;GET /matches/{matchId}/withdrawals&lt;/code&gt; serves the record.&lt;/strong&gt; The &lt;code&gt;verdict&lt;/code&gt; object has told a stream consumer since 2026-09-23 that a state it holds was taken back, but it is recomputed on every read over the newest state, so it returned null again as soon as the next state was accepted. In a live match that is seconds. A consumer that disconnected and missed the &lt;code&gt;score_withdrawn&lt;/code&gt; frame had no way back to it: the publisher&amp;#x27;s duplicate ledgers live inside the publishing process, and nothing else recorded the judgement. Every withdrawal is now written down when the judgement is made, before the frame goes out. Three reads use it. &lt;code&gt;GET /matches/{matchId}/withdrawals&lt;/code&gt; (ULTRA, the tier that receives the frame) returns every refused &lt;code&gt;sequence&lt;/code&gt; on a match, oldest first, each with &lt;code&gt;kind&lt;/code&gt;, &lt;code&gt;reason&lt;/code&gt;, &lt;code&gt;withdrawn_at&lt;/code&gt;, &lt;code&gt;published_at&lt;/code&gt;, the &lt;code&gt;sequence&lt;/code&gt; served in its place, and the frame exactly as the feed sent it. &lt;code&gt;GET /matches?withdrawn_since=&amp;lt;instant&amp;gt;&lt;/code&gt; lists the match ids with a withdrawal since then, with a count per match, so a consumer coming back after a gap knows which matches to ask about. And &lt;code&gt;?sequence=N&lt;/code&gt; on &lt;code&gt;GET /matches/{matchId}/score&lt;/code&gt; makes &lt;code&gt;verdict&lt;/code&gt; answer for the one sequence you hold, even after later states have landed. Records are kept 90 days from the withdrawal.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The &lt;code&gt;score_withdrawn&lt;/code&gt; frame&amp;#x27;s own fields are published for the first time.&lt;/strong&gt; &lt;code&gt;type&lt;/code&gt;, &lt;code&gt;match_id&lt;/code&gt;, &lt;code&gt;kind&lt;/code&gt;, &lt;code&gt;superseded_sequence&lt;/code&gt;, &lt;code&gt;reason&lt;/code&gt;, &lt;code&gt;safe_to_resume&lt;/code&gt;, &lt;code&gt;ts&lt;/code&gt; and &lt;code&gt;published_at&lt;/code&gt;. It carries NO replacement score and no new sequence, which is the question a customer had to ask us: the state to resume from is the one on the next &lt;code&gt;score&lt;/code&gt; frame, or on a fresh &lt;code&gt;GET /matches/{matchId}/score&lt;/code&gt;, and the sequence served in the refused state&amp;#x27;s place is on the withdrawal record rather than on the frame. &lt;code&gt;ts&lt;/code&gt; is when the judgement was made, &lt;code&gt;published_at&lt;/code&gt; when the frame was handed to the feed.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Only a discarded withdrawal is re-asserted by &lt;code&gt;?sequence=&lt;/code&gt;.&lt;/strong&gt; A &lt;code&gt;deferred&lt;/code&gt; state may since have been corroborated and a &lt;code&gt;withheld&lt;/code&gt; read described that moment&amp;#x27;s scan, so neither answers from the record; a verdict the read produces itself always wins, because it describes the state actually being served. &lt;code&gt;?sequence=&lt;/code&gt; changes &lt;code&gt;verdict&lt;/code&gt; and nothing else on the object. A non-integer is &lt;code&gt;400 bad_sequence&lt;/code&gt; rather than an accepted-and-ignored filter, because a silently dropped lookup would read as &amp;quot;not withdrawn&amp;quot;. &lt;code&gt;?withdrawn_since=&lt;/code&gt; likewise takes only &lt;code&gt;limit&lt;/code&gt; and &lt;code&gt;offset&lt;/code&gt; beside it: any match filter, &lt;code&gt;status&lt;/code&gt; or &lt;code&gt;updated_since&lt;/code&gt; alongside it is &lt;code&gt;400 bad_withdrawn_since&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.49</id>
+    <title>Live Tennis API 1.13.49</title>
+    <updated>2026-09-24T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.49"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The tournament catalogue takes &lt;code&gt;?tier=&lt;/code&gt;, which it had been accepting and ignoring.&lt;/strong&gt; &lt;code&gt;GET /tournaments&lt;/code&gt; publishes each row&amp;#x27;s &lt;code&gt;tier&lt;/code&gt; and &lt;code&gt;tier_source&lt;/code&gt;, and the two match listings have filtered on the same vocabulary since 1.13.28. The catalogue did not: &lt;code&gt;?tier=atp_500&lt;/code&gt;, &lt;code&gt;?tier=laver_cup&lt;/code&gt; and an outright invalid value each returned the entire 10,302-row catalogue under a 200, byte-identical to no filter at all, because the level was attached to a page after it had already been selected. It now selects. The one difference from the match listings is the season, and it is stated on the parameter: a catalogue row has no season of its own, so &lt;code&gt;?tier=&lt;/code&gt; here reads the CURRENT season, the same season the row&amp;#x27;s own &lt;code&gt;tier&lt;/code&gt; field reports, while on &lt;code&gt;/matches&lt;/code&gt; and &lt;code&gt;/history/matches&lt;/code&gt; it reads each match&amp;#x27;s own season. A tournament with no row for the current season matches no value. An invalid value is now a 400 &lt;code&gt;bad_tier&lt;/code&gt; carrying the vocabulary, as it always was elsewhere.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.48</id>
+    <title>Live Tennis API 1.13.48</title>
+    <updated>2026-09-24T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.48"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;tiebreak_final&lt;/code&gt; on the history tape row is documented for the first time, and the page-first rule the reference stated is no longer true.&lt;/strong&gt; A PRO customer wired a bot to the closing score and reported that match 195134 served a &lt;code&gt;tiebreaks&lt;/code&gt; array of &lt;code&gt;{p1: 2, p2: 7}&lt;/code&gt; while no tape row carried &lt;code&gt;tiebreak_final&lt;/code&gt;, and that it stayed that way on every later read. Two things were wrong here. The field had never appeared in this reference on &lt;code&gt;HistoryTapeRow&lt;/code&gt; at all, though it is served on &lt;code&gt;GET /history/matches/{matchId}&lt;/code&gt; and a customer had been pointed at it in writing; it is now described beside &lt;code&gt;is_tiebreak&lt;/code&gt;. And the &lt;code&gt;MatchPoints&lt;/code&gt; text said a page that *starts* on a roll-up row &amp;quot;has no previous row to read and uses the recorded finals alone&amp;quot;, which was true when written and is not true now: since 2026-09-24 such a page reads the one row before it, so the value does not depend on where the page was cut. Both endpoints resolve the score the same way and agree with the response&amp;#x27;s own &lt;code&gt;tiebreaks&lt;/code&gt; array.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The row that closes a tiebreak set carries the score whichever row the set counter moves on.&lt;/strong&gt; The tape&amp;#x27;s set counter lags the games array by a row: the row that took 195134&amp;#x27;s first set to 6-7 still read &lt;code&gt;sets&lt;/code&gt; &lt;code&gt;[0, 0]&lt;/code&gt;, and the counter reached &lt;code&gt;[0, 1]&lt;/code&gt; on the row after it. The stamp only fired when the counter grew on that same row, so a set whose counter lagged was never stamped, and nothing revisits a tape. The games on the row now decide it, judged by the tournament&amp;#x27;s own set test so the Next Gen first-to-4 format is read by its own rule. Measured on the live endpoint before the change: of 9 live matches whose &lt;code&gt;tiebreaks&lt;/code&gt; array stated a final, 2 carried it on no row, both first-set breakers.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.47</id>
+    <title>Live Tennis API 1.13.47</title>
+    <updated>2026-09-24T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.47"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;A set completion that does not end the match is assigned a &lt;code&gt;sequence&lt;/code&gt; only once confirmed.&lt;/strong&gt; Live since 2026-09-24 and stated here for the first time. A live scoring display can render the set-ending frame ON set point, before the point is decided, and step back when the point is not won; a customer measured exactly that twice. A rise in &lt;code&gt;sets&lt;/code&gt; that does not end the match, arriving while the state we hold is set point for the side that would gain the set, is now held until the same source keeps presenting it for 10 s or more, a source at least as trusted presents it, or the same source shows play continuing inside the new set. The unconfirmed frame is never stored, so no &lt;code&gt;sequence&lt;/code&gt; ever carries it and nothing is published as provisional — a &lt;code&gt;sequence&lt;/code&gt; that carries a set completion is one that met the rule. Until then &lt;code&gt;GET /matches/{matchId}/score&lt;/code&gt;, the push feed and the WebSocket all keep serving the set-point state; a frame nobody confirms within 120 s is discarded. A set completion that &lt;strong&gt;ends&lt;/strong&gt; the match is exempt and follows the completion rules instead. Measured over the 30 days to 2026-09-24: a median 10 s added between the point and the published set-end, and on a feed that does not re-present states the set-end lands with the first point of the next set (90th percentile 133 s). It does not cover a set genuinely won and then corrected on court, which can still be published and rewound — read &lt;code&gt;corroborated&lt;/code&gt; beside it, and &lt;code&gt;verdict&lt;/code&gt; says so when a state is taken back.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.46</id>
+    <title>Live Tennis API 1.13.46</title>
+    <updated>2026-09-24T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.46"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;corroborated&lt;/code&gt; and &lt;code&gt;corroborated_age_seconds&lt;/code&gt; on the Score: has an independent source vouched for THIS EXACT state?&lt;/strong&gt; Raised by a customer who acted on a completed set that was taken back seconds later. &lt;code&gt;corroborated&lt;/code&gt; is &lt;code&gt;true&lt;/code&gt; when a source other than the one that wrote the state has since presented us the same state, &lt;code&gt;false&lt;/code&gt; when none has — including a brand-new state nobody has had a chance to agree with yet — and &lt;code&gt;null&lt;/code&gt; on the archive fallback of a retention-trimmed completed match, where &lt;code&gt;age_seconds&lt;/code&gt; and &lt;code&gt;sources_count&lt;/code&gt; are null too. &lt;code&gt;corroborated_age_seconds&lt;/code&gt; is the seconds since that vouch, null when there is none. &lt;strong&gt;This is the field to gate a set-end on.&lt;/strong&gt; &lt;code&gt;sources_count&lt;/code&gt; and &lt;code&gt;changing_sources_count&lt;/code&gt; are window measures over the match and say nothing about the state in front of you, so a set completion that only one source has announced can sit beside a perfectly healthy count — and a set-end is the one state whose correction changes a result rather than a number. It is evidence, not proof: a vouched state can still be corrected, so compare &lt;code&gt;corroborated_age_seconds&lt;/code&gt; with &lt;code&gt;age_seconds&lt;/code&gt; and treat a vouch younger than the state it vouches for as the weaker signal it is. When a state is taken back the &lt;code&gt;sequence&lt;/code&gt; goes down and &lt;code&gt;verdict&lt;/code&gt; says so. Present wherever &lt;code&gt;sources_count&lt;/code&gt; is; a yes/no, never a name.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;changing_sources_count&lt;/code&gt; on the Score is documented.&lt;/strong&gt; Live since 2026-09-24 and absent from this reference. How many distinct sources CHANGED the score in the last 300 seconds, counted on the content clock alone, so a source re-asserting an unchanged state is not counted — the difference from &lt;code&gt;sources_count&lt;/code&gt;, which a feed stuck re-sending its last state holds at 1 for as long as the echo lasts while this reads 0. The window is wider on purpose: a point lands every 30-60 s and a changeover is about 90 s. A cross-confirmation is agreement, not a change, so this can read below &lt;code&gt;sources_count&lt;/code&gt; and never above it.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.45</id>
+    <title>Live Tennis API 1.13.45</title>
+    <updated>2026-09-24T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.45"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;GET /history/incidents&lt;/code&gt; and &lt;code&gt;GET /history/incidents/{incidentId}/matches&lt;/code&gt; are documented for the first time.&lt;/strong&gt; Both have been live and neither appeared anywhere in this reference, so the register a customer is meant to reconcile against could not be found from the documentation. &lt;code&gt;/history/incidents&lt;/code&gt; returns the published data-quality incidents, oldest window first, each with its &lt;code&gt;window_utc&lt;/code&gt; (start, end and the &lt;code&gt;basis&lt;/code&gt; it was read from), &lt;code&gt;rule_before&lt;/code&gt;, &lt;code&gt;rule_after&lt;/code&gt;, &lt;code&gt;defect&lt;/code&gt;, &lt;code&gt;affected_surfaces&lt;/code&gt;, &lt;code&gt;how_to_tell&lt;/code&gt;, &lt;code&gt;corrections&lt;/code&gt; and &lt;code&gt;matches&lt;/code&gt;. The register is part of a release and is not inferred at read time, so a record does not change between releases. &lt;code&gt;/history/incidents/{incidentId}/matches&lt;/code&gt; streams one row per affected match as JSONL, or CSV with &lt;code&gt;?format=csv&lt;/code&gt;, with the columns &lt;code&gt;incident_id&lt;/code&gt;, &lt;code&gt;match_id&lt;/code&gt;, &lt;code&gt;tournament&lt;/code&gt;, &lt;code&gt;tour&lt;/code&gt;, &lt;code&gt;round&lt;/code&gt;, &lt;code&gt;draw_stage&lt;/code&gt;, &lt;code&gt;scheduled_time&lt;/code&gt;, &lt;code&gt;affected_field&lt;/code&gt;, &lt;code&gt;served&lt;/code&gt; and &lt;code&gt;expected&lt;/code&gt;. A match whose derivation would be a guess is left out and the incident&amp;#x27;s &lt;code&gt;matches.note&lt;/code&gt; says which, so the export is exact rather than complete. Measured on the live API 2026-09-24: five incidents across the kinds &lt;code&gt;pricing_rule&lt;/code&gt;, &lt;code&gt;version_stamp&lt;/code&gt;, &lt;code&gt;field_orientation&lt;/code&gt; and &lt;code&gt;field_repair&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The &lt;code&gt;verdict&lt;/code&gt; object on the Score is documented.&lt;/strong&gt; Live since 2026-09-23 and absent from this reference. It is null on an ordinary read. When the legality gate refuses a state a stream has already published, it carries &lt;code&gt;kind&lt;/code&gt; (&lt;code&gt;withdrawn&lt;/code&gt;, &lt;code&gt;deferred&lt;/code&gt; or &lt;code&gt;withheld&lt;/code&gt;), &lt;code&gt;superseded_sequence&lt;/code&gt; (the &lt;code&gt;sequence&lt;/code&gt; a stream consumer is holding), &lt;code&gt;reason&lt;/code&gt; and &lt;code&gt;safe_to_resume&lt;/code&gt;, which is true exactly when &lt;code&gt;kind&lt;/code&gt; is &lt;code&gt;withdrawn&lt;/code&gt;. The push feed, the WebSocket and webhooks announce the same judgement as a &lt;code&gt;score_withdrawn&lt;/code&gt; frame naming the same sequence, so a stream consumer learns a state was taken back without polling. &lt;code&gt;GET /matches/{matchId}/score&lt;/code&gt; now names the field and points at the incident register.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;No field, endpoint or behaviour changed by this release; both were already served.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.44</id>
+    <title>Live Tennis API 1.13.44</title>
+    <updated>2026-09-23T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.44"/>
+    <content type="html">&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;GET /matches/{matchId}/points&lt;/code&gt;: the row that closes a tiebreak set now carries &lt;code&gt;tiebreak_final&lt;/code&gt;, and the reference did not say so.&lt;/strong&gt; Raised by a Pro customer running trading bots, who reported that the tape stops one point short of every tiebreak and that a field filling once a day was no use to a decision taken while the match is live. A tiebreak&amp;#x27;s last point is carried, like every set-winning point, by the set roll-up row (&lt;code&gt;tiebreak&lt;/code&gt; false, the set banked 7-6, &lt;code&gt;score&lt;/code&gt; 0-0), and that row never stated the breaker&amp;#x27;s score at closure. It now carries &lt;code&gt;tiebreak_final: [p1, p2]&lt;/code&gt; in our player order, e.g. &lt;code&gt;[7, 5]&lt;/code&gt;. Exact when the previous row is the decided score or one point from it, so it is derived from the stream itself and is present as soon as the set closes; otherwise taken from the match&amp;#x27;s recorded tiebreak finals, the same finals &lt;code&gt;GET /history/matches/{matchId}&lt;/code&gt; publishes as &lt;code&gt;tiebreaks&lt;/code&gt;; &lt;code&gt;null&lt;/code&gt; when neither can state it, never guessed. Absent on every other row, including the breaker rows. A page that *starts* on a roll-up row has no previous row to read and uses the recorded finals alone. Measured at the endpoint over the 30 hours to 2026-09-23 20:30Z: 60 completed matches held 67 tiebreak sets and 36 of them served a closing score, only 7 of those matches having a recorded final at the time. Documentation of an already-served field; no behaviour changed by this release.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.43</id>
+    <title>Live Tennis API 1.13.43</title>
+    <updated>2026-09-23T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.43"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The reference said a FREE key is refused the history endpoints outright. It is not, and has not been since 2026-08-07: a FREE key is served 20 history calls per calendar month.&lt;/strong&gt; Three separate statements carried the wrong rule — the FREE tier summary (&amp;quot;No historical results&amp;quot;), the &lt;code&gt;/matches&lt;/code&gt; description (&amp;quot;requires BASIC ... and returns &lt;code&gt;403 upgrade_required&lt;/code&gt; on a FREE key&amp;quot;), and the &lt;code&gt;status&lt;/code&gt; parameter. Measured on the live API 2026-09-23 with a fresh FREE key: &lt;code&gt;GET /history/matches&lt;/code&gt; answered &lt;code&gt;200&lt;/code&gt; and kept answering until the monthly allowance was spent, after which it answered &lt;code&gt;403 upgrade_required&lt;/code&gt; carrying &lt;code&gt;free_history_taste: &amp;quot;used&amp;quot;&lt;/code&gt; and the detail &amp;quot;your 20 free history calls this month are used&amp;quot;. A reader planning against the old text would have concluded the endpoints were closed to them and either bought a tier they did not yet need or abandoned the evaluation; a reader who tried anyway got a &lt;code&gt;200&lt;/code&gt; the reference said was impossible and could not tell an allowance from a private grant. &lt;code&gt;/history/matches&lt;/code&gt;, &lt;code&gt;/history/coverage&lt;/code&gt;, &lt;code&gt;status=completed&lt;/code&gt; on &lt;code&gt;/matches&lt;/code&gt; and the FREE tier summary now all state the allowance and the refusal that follows it.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;No field, endpoint or behaviour changed; every correction is to a description.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.42</id>
+    <title>Live Tennis API 1.13.42</title>
+    <updated>2026-09-23T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.42"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Every per-point coverage count in this reference was measured in our own tables and published as though it described the API. It did not, and the gap is large.&lt;/strong&gt; &lt;code&gt;GET /matches/{id}/points&lt;/code&gt; serves a COMPLETED match&amp;#x27;s stored per-point stream only while that stream passes our quality bar. Where it does not, the endpoint serves a measured-complete RECONSTRUCTION instead, and a reconstruction carries no clock and no &lt;code&gt;serve&lt;/code&gt; / &lt;code&gt;outcome&lt;/code&gt; tags at all. So the share of matches whose tags a reader can fetch is lower, sometimes far lower, than the share of matches a source tagged. Re-measured 2026-09-23 on what the endpoint publishes, beside what the previous text claimed: &lt;strong&gt;Davis Cup World Group &lt;code&gt;serve&lt;/code&gt; 2 of 22 (published as 22 of 22), World Group I 1 of 42 (published as 41 of 42)&lt;/strong&gt;; WTA qualifying &lt;code&gt;serve&lt;/code&gt; &lt;strong&gt;18 of 48&lt;/strong&gt; (published as 48 of 48); ATP Challenger qualifying &lt;code&gt;serve&lt;/code&gt; &lt;strong&gt;137 of 197&lt;/strong&gt; (195 of 197) and &lt;code&gt;outcome&lt;/code&gt; &lt;strong&gt;134 of 197&lt;/strong&gt; (191 of 197); WTA 125 qualifying &lt;code&gt;serve&lt;/code&gt; &lt;strong&gt;47 of 63&lt;/strong&gt; (61 of 63) and &lt;code&gt;outcome&lt;/code&gt; &lt;strong&gt;30 of 63&lt;/strong&gt; (24 of 63); ITF qualifying &lt;code&gt;outcome&lt;/code&gt; &lt;strong&gt;181 of 215&lt;/strong&gt; men&amp;#x27;s and &lt;strong&gt;142 of 176&lt;/strong&gt; women&amp;#x27;s (189 of 209, 143 of 168); WTA main-tour qualifying &lt;code&gt;outcome&lt;/code&gt; &lt;strong&gt;5 of 48&lt;/strong&gt;, against 47 of 88 in the same events&amp;#x27; main draws (published as 3 of 48 against 82 of 88). Both descriptions now state which layer they count and name &lt;code&gt;basis&lt;/code&gt; as the per-response answer.&lt;/li&gt;
+&lt;li&gt;&lt;code&gt;enrichment&lt;/code&gt; per match was correct throughout, on every one of these matches, and &lt;code&gt;basis&lt;/code&gt; has always named which sequence you were given. Only the prose was wrong.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;No field, endpoint or behaviour changed; every correction is to a description.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.41</id>
+    <title>Live Tennis API 1.13.41</title>
+    <updated>2026-09-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.41"/>
+    <content type="html">&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The &lt;code&gt;outcome&lt;/code&gt; description named the wrong tour as the qualifying gap, and it was wrong in both directions.&lt;/strong&gt; It read &amp;quot;Qualifying draws follow their own tour, with one gap: ... Challenger (men) qualifying states no outcome at all.&amp;quot; Measured 2026-09-22 over completed matches carrying a per-point stream since 2026-09-12, &lt;strong&gt;ATP Challenger qualifying states &lt;code&gt;outcome&lt;/code&gt; on 191 of 197 matches, with the full five-value vocabulary&lt;/strong&gt; (6,881 unforced errors, 4,275 winners, 4,267 forced errors, 1,026 aces, 774 double faults) — a reader who segregated a corpus on that sentence discarded the single richest qualifying population in the product. The gap is on the &lt;strong&gt;WTA main tour&lt;/strong&gt;, which the old sentence implicitly cleared: WTA qualifying states &lt;code&gt;outcome&lt;/code&gt; on &lt;strong&gt;3 of 48&lt;/strong&gt;, against 82 of 88 in the same events&amp;#x27; main draws. ITF qualifying is unchanged in direction (189 of 209 men&amp;#x27;s, 143 of 168 women&amp;#x27;s) and WTA 125 qualifying is partial (24 of 63). &lt;code&gt;enrichment&lt;/code&gt; per match was correct on every one of these matches throughout — only the prose was wrong, and the prose is what a corpus is planned from.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;tour: challenger&lt;/code&gt; pools two populations with different &lt;code&gt;outcome&lt;/code&gt; coverage, and the reference described only one of them.&lt;/strong&gt; It read &amp;quot;Challenger: all five&amp;quot;. That is true of ATP Challenger (&lt;code&gt;tier: challenger_50&lt;/code&gt; … &lt;code&gt;challenger_175&lt;/code&gt;): 252 of 255 completed main-draw matches with a stream carry the full five. It is not true of the WTA 125 events, which are also served as &lt;code&gt;tour: challenger&lt;/code&gt; (&lt;code&gt;tier: wta_125&lt;/code&gt;) and state &lt;strong&gt;ace and double fault only&lt;/strong&gt; — 137 of 141 main-draw matches carry &lt;code&gt;outcome&lt;/code&gt;, none of them a winner, forced error or unforced error. Read &lt;code&gt;tier&lt;/code&gt;, not &lt;code&gt;tour&lt;/code&gt;, to tell the two apart. Both descriptions now say so.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The &lt;code&gt;serve&lt;/code&gt; qualifying denominators are re-measured&lt;/strong&gt; (WTA qualifying 48 of 48, ATP Challenger qualifying 195 of 197, WTA 125 qualifying 61 of 63) and name the populations by &lt;code&gt;tier&lt;/code&gt; rather than by &amp;quot;Challenger (men)&amp;quot; / &amp;quot;Challenger (women)&amp;quot;, which the served fields do not distinguish.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;No field, endpoint or behaviour changed; every correction is to a description.&lt;/p&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.40</id>
+    <title>Live Tennis API 1.13.40</title>
+    <updated>2026-09-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.40"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;tier&lt;/code&gt; and &lt;code&gt;tier_source&lt;/code&gt; on every match and tournament object, with &lt;code&gt;?tier=&lt;/code&gt; on &lt;code&gt;GET /matches&lt;/code&gt; and &lt;code&gt;GET /history/matches&lt;/code&gt;.&lt;/strong&gt; &lt;code&gt;tier&lt;/code&gt; is the level the tournament was played at in the season of the match — the official category as the tour publishes it — and answers the question &lt;code&gt;category&lt;/code&gt; cannot: is this a WTA 125, an ITF W35 or a Challenger 75? The vocabulary is closed: &lt;code&gt;grand_slam&lt;/code&gt;; the ATP levels (&lt;code&gt;atp_finals&lt;/code&gt;, &lt;code&gt;atp_1000&lt;/code&gt;, &lt;code&gt;atp_500&lt;/code&gt;, &lt;code&gt;atp_250&lt;/code&gt;, &lt;code&gt;next_gen_finals&lt;/code&gt;); the WTA levels (&lt;code&gt;wta_finals&lt;/code&gt;, &lt;code&gt;wta_elite_trophy&lt;/code&gt;, &lt;code&gt;wta_1000&lt;/code&gt;, &lt;code&gt;wta_500&lt;/code&gt;, &lt;code&gt;wta_250&lt;/code&gt;, &lt;code&gt;wta_125&lt;/code&gt;); &lt;code&gt;challenger_175&lt;/code&gt; … &lt;code&gt;challenger_50&lt;/code&gt;; the ITF World Tennis Tour categories (&lt;code&gt;itf_m15&lt;/code&gt;, &lt;code&gt;itf_m25&lt;/code&gt;, &lt;code&gt;itf_w15&lt;/code&gt; … &lt;code&gt;itf_w100&lt;/code&gt;, with the 2023 women&amp;#x27;s categories kept as printed that season); the team events (&lt;code&gt;united_cup&lt;/code&gt;, &lt;code&gt;davis_cup&lt;/code&gt;, &lt;code&gt;bjk_cup&lt;/code&gt;, &lt;code&gt;laver_cup&lt;/code&gt;, &lt;code&gt;olympics&lt;/code&gt;); &lt;code&gt;juniors&lt;/code&gt;; &lt;code&gt;utr&lt;/code&gt;; &lt;code&gt;exhibition&lt;/code&gt;; or &lt;code&gt;null&lt;/code&gt; — nothing we hold names the level, never guessed. The tier is per season and it moves under one &lt;code&gt;tournament_id&lt;/code&gt;: Dallas was &lt;code&gt;atp_250&lt;/code&gt; in 2023 and 2024 and &lt;code&gt;atp_500&lt;/code&gt; from 2025, so a 2024 Dallas match reads &lt;code&gt;atp_250&lt;/code&gt; and a 2025 one &lt;code&gt;atp_500&lt;/code&gt; under the same id. A match&amp;#x27;s tier is resolved by the calendar year of its &lt;code&gt;scheduled_time&lt;/code&gt;, never copied from the tournament row; &lt;code&gt;/tournaments&lt;/code&gt; rows carry the current season&amp;#x27;s, null when this season&amp;#x27;s calendar does not list the event. &lt;code&gt;tier_source&lt;/code&gt; says how the level was established — &lt;code&gt;calendar&lt;/code&gt; (the official per-season tour calendar), &lt;code&gt;name&lt;/code&gt; (an unambiguous name rule: the ITF category is in the event&amp;#x27;s official name, team and UTR events are named as such), &lt;code&gt;wikipedia&lt;/code&gt; (the season&amp;#x27;s schedule page, only where the official calendar could not state the level for that season), &lt;code&gt;resolver&lt;/code&gt; (resolved after the seed dataset by the same rules) — and is null exactly when &lt;code&gt;tier&lt;/code&gt; is null. The 2023–2026 seasons were verified event by event against the official calendars (99.1% of tournament-seasons resolved; the rest deliberately null). &lt;code&gt;?tier=&lt;/code&gt; takes comma-separated exact values, read from the same per-season table so filter and field cannot disagree; a null tier matches no value; an unknown value is a &lt;code&gt;400 bad_tier&lt;/code&gt; with the offending values in &lt;code&gt;bad&lt;/code&gt; and the full vocabulary in &lt;code&gt;allowed&lt;/code&gt;. &lt;code&gt;category&lt;/code&gt; is unchanged and remains the coarse class.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A correction to a published result is signalled, never a silent edit: &lt;code&gt;basis: restatement&lt;/code&gt; on the status history, &lt;code&gt;result_restated_at&lt;/code&gt; / &lt;code&gt;result_version&lt;/code&gt; on every match object, and &lt;code&gt;?restated_since=&lt;/code&gt; on &lt;code&gt;GET /history/matches&lt;/code&gt;.&lt;/strong&gt; Raised by a licensed results customer settling off our results. Once a match has been published as &lt;code&gt;completed&lt;/code&gt; (or as a cancelled walkover with a winner), any later change to &lt;code&gt;status&lt;/code&gt;, &lt;code&gt;event_status&lt;/code&gt;, &lt;code&gt;winner&lt;/code&gt; or the final score is appended to &lt;code&gt;GET /matches/{matchId}/status-history&lt;/code&gt; as a new row with &lt;code&gt;basis: restatement&lt;/code&gt;, at the instant we made the change: &lt;code&gt;status&lt;/code&gt; / &lt;code&gt;event_status&lt;/code&gt; carry before and after as usual (the same value twice when only the winner or the score moved) and &lt;code&gt;score&lt;/code&gt; is the result after the correction. This holds for every path that can change a result — a source&amp;#x27;s late final, a second authority&amp;#x27;s correction, an operator&amp;#x27;s repair, a completion reopened and re-closed — because it is enforced where the result is written, not by each path remembering to say so; a re-assertion of the same result, or a change to points alone, writes nothing. &lt;code&gt;result_restated_at&lt;/code&gt; is the instant of the newest such row (null while the result stands as first published); &lt;code&gt;result_version&lt;/code&gt; is &lt;code&gt;1&lt;/code&gt; plus the number of corrections — record it with the result you settle on, and a higher number on re-read means the one you hold was superseded. &lt;code&gt;?restated_since=&amp;lt;ISO instant&amp;gt;&lt;/code&gt; keeps only the matches corrected after that instant — the poll to run after each settlement pass; a &lt;code&gt;Z&lt;/code&gt; or an offset, a naive value read as UTC, and a bare date refused as &lt;code&gt;400 bad_restated_since&lt;/code&gt;, because a day is not an instant. Rows with this basis exist from 2026-09-22; earlier corrections were not signalled and nothing is reconstructed for them.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;winner&lt;/code&gt; on every row of every history tape: who won the point that produced the row.&lt;/strong&gt; Raised by a modelling customer initialising serve states from the tape — &lt;code&gt;server&lt;/code&gt; and &lt;code&gt;serve&lt;/code&gt; were stated per row, and the third fact a model needs was only implicit in the score step. &lt;code&gt;winner&lt;/code&gt; (&lt;code&gt;1&lt;/code&gt; | &lt;code&gt;2&lt;/code&gt; | null) is judged from the score step between the row and the previous served row (the previous raw row on the raw sequence, the previous clean row under &lt;code&gt;?sequence=clean&lt;/code&gt;), by the same rule the completeness ledger counts a legal transition with — and from nothing else: never the serve, the server, the outcome tag or the pattern of play. Null on the first row and wherever the step is not one attributable point: a re-sent row, a set opener, a backward correction, a multi-game jump. A step whose games total rises by exactly one attributes to the side whose count rose — the game point was theirs — whatever in-game points the step skipped, a missed poll or a game withheld whole (&lt;code&gt;meta.points.games_withheld&lt;/code&gt;). Present on the raw and clean sequences, on &lt;code&gt;?points=complete&lt;/code&gt; reads and on the pre-2023 archive tape; equal to &lt;code&gt;point_winner&lt;/code&gt; wherever that older key is present, which is kept unchanged for existing readers. Derived once per response, never stored.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;schema_version&lt;/code&gt; on the packages listing, and bulk tape rows carry the enriched tape.&lt;/strong&gt; Under &lt;code&gt;schema_version&lt;/code&gt; 2 a &lt;code&gt;kind=tape&lt;/code&gt; JSONL line is exactly what &lt;code&gt;GET /history/matches/{matchId}&lt;/code&gt; returns for that match on its default basis, produced by the same code — the same rows with &lt;code&gt;origin&lt;/code&gt;, &lt;code&gt;serve&lt;/code&gt;, &lt;code&gt;outcome&lt;/code&gt; and &lt;code&gt;winner&lt;/code&gt; beside the score columns, and the full &lt;code&gt;meta&lt;/code&gt; (&lt;code&gt;enrichment&lt;/code&gt;, &lt;code&gt;reconstructed_at&lt;/code&gt;, &lt;code&gt;observed_span&lt;/code&gt;, &lt;code&gt;meta.points&lt;/code&gt; where served) — so a model reads its serve states from the bulk file just as it would from the endpoint; the CSV appends &lt;code&gt;origin&lt;/code&gt;, &lt;code&gt;serve&lt;/code&gt;, &lt;code&gt;outcome&lt;/code&gt;, &lt;code&gt;winner&lt;/code&gt; after &lt;code&gt;danger&lt;/code&gt;, in that order, and its column order grows only at the end. &lt;code&gt;1&lt;/code&gt; is the shape every month built before 22 September 2026 carries: score columns only, no &lt;code&gt;meta.enrichment&lt;/code&gt;, and a CSV that ends at &lt;code&gt;danger&lt;/code&gt;. Months built before that date keep shape &lt;code&gt;1&lt;/code&gt; until they are rebuilt — newest month first, then backwards, &lt;code&gt;built_at&lt;/code&gt; and &lt;code&gt;sha256&lt;/code&gt; moving as each flips — so check the manifest rather than assuming; a consumer that needs the enriched fields should require &lt;code&gt;schema_version &amp;gt;= 2&lt;/code&gt; and, for a month still at &lt;code&gt;1&lt;/code&gt;, read the per-match endpoint for the matches it needs. &lt;code&gt;null&lt;/code&gt; on the non-tape kinds.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;A completed match on the tours with a complete per-point record is re-joined after the match against that complete sequence.&lt;/strong&gt; ATP 250/500/1000, ATP Challenger and WTA 1000/500/250/125: the live join paired &lt;code&gt;serve&lt;/code&gt; / &lt;code&gt;outcome&lt;/code&gt; onto points as they were captured, so a point tagged after our capture went untagged. A completed match is now re-joined against the complete sequence by the same exact-state rule, and its serve/outcome coverage exceeds what was captured live. The late tags arrive as &lt;code&gt;point_update&lt;/code&gt; frames and &lt;code&gt;tagged_at&lt;/code&gt; revisions like any other — collect them with &lt;code&gt;?changed_since=&lt;/code&gt;. Nothing is inferred; a point that is never stated stays null.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;The pre-2023 archive tape no longer claims &lt;code&gt;point_winner&lt;/code&gt; is null throughout a per-game tape.&lt;/strong&gt; On a per-game tape (556 matches, 555 of them 2013) consecutive rows differ by a whole game, and the reference said no point was attributable there. Each row in fact reads the side whose game count rose — the game point was theirs — and says nothing about the game&amp;#x27;s other points; &lt;code&gt;winner&lt;/code&gt; reads the same. No field changed shape or value.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.39</id>
+    <title>Live Tennis API 1.13.39</title>
+    <updated>2026-09-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.39"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;is_qualifying&lt;/code&gt; states the one case where a round label DOES decide the draw.&lt;/strong&gt; The field said it is &amp;quot;never inferred from the round label&amp;quot;, which is the right instinct and slightly too strong: main-draw vocabulary (&lt;code&gt;Semi-finals&lt;/code&gt;, &lt;code&gt;Final&lt;/code&gt;) is indeed never read that way, but a round label that itself reads &lt;code&gt;Qualification Round 1&lt;/code&gt; is STATING the draw, and it reads &lt;code&gt;true&lt;/code&gt; — a &lt;code&gt;false&lt;/code&gt; beside such a round is a payload contradicting itself rather than asserting main draw. Three matches (Chengdu, 22 Sep) were briefly served &lt;code&gt;is_qualifying: false&lt;/code&gt; with &lt;code&gt;round_code: &amp;quot;Q1&amp;quot;&lt;/code&gt; beside them and were repaired the same morning. Readers segregating a corpus by draw need to know which way that conflict resolves. No field changed shape or type.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.38</id>
+    <title>Live Tennis API 1.13.38</title>
+    <updated>2026-09-22T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.38"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;GET /markets&lt;/code&gt; states that the scope is MATCH-WINNER ONLY, and returns at most one market.&lt;/strong&gt; A prospect asked whether the odds endpoints carry game spreads / handicaps (&lt;code&gt;A -3.5 @ 1.90&lt;/code&gt;) in addition to match-winner prices. Every description in this reference already said &amp;quot;match-winner market&amp;quot;, but nowhere said what that EXCLUDES, and the endpoint&amp;#x27;s own summary said &amp;quot;market(s)&amp;quot;. Both are now explicit: no handicaps or game spreads, no totals, no set-winner books, no per-game or per-set derivative; &lt;code&gt;data&lt;/code&gt; holds at most one object and &lt;code&gt;meta.count&lt;/code&gt; is 0 when nothing is mapped. Venues do list tennis derivatives beside the match-winner book and this API publishes none of them — a derivative is refused at the mapping step. No field changed shape or value.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.37</id>
+    <title>Live Tennis API 1.13.37</title>
+    <updated>2026-09-21T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.37"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;is_qualifying&lt;/code&gt; is documented on the match object.&lt;/strong&gt; The field has been served on &lt;code&gt;GET /matches&lt;/code&gt;, &lt;code&gt;GET /matches/{matchId}&lt;/code&gt; and &lt;code&gt;GET /history/matches&lt;/code&gt; for some time and was absent from this reference entirely, which left the one field that separates a qualifying draw from the main draw invisible to anyone reading the docs. Three-valued: &lt;code&gt;true&lt;/code&gt;/&lt;code&gt;false&lt;/code&gt; are the source&amp;#x27;s own assertion, &lt;code&gt;null&lt;/code&gt; means no source has ever stated it, and &lt;code&gt;null&lt;/code&gt; is not &lt;code&gt;false&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;round&lt;/code&gt; and &lt;code&gt;round_code&lt;/code&gt; now state that they are DRAW-RELATIVE.&lt;/strong&gt; Both describe the round *within* the draw the match belongs to, and the draw is named by &lt;code&gt;is_qualifying&lt;/code&gt; — not by the round. A qualifying semi-final carries &lt;code&gt;round: &amp;quot;... - Semi-finals&amp;quot;&lt;/code&gt; and &lt;code&gt;round_code: SF&lt;/code&gt;, exactly as a main-draw semi-final does; &lt;code&gt;Q&lt;/code&gt;/&lt;code&gt;Q1&lt;/code&gt;..&lt;code&gt;Q4&lt;/code&gt; appear only where the label itself names the round as qualifying, which most labels do not. &lt;code&gt;round_code&lt;/code&gt; previously said &amp;quot;this is the field to branch on&amp;quot; without that limit, and two customers independently read a qualifying match as a main-draw one and reported it as a data fault. The data was correct in every case; the documentation was not. No field changed shape or value.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.36</id>
+    <title>Live Tennis API 1.13.36</title>
+    <updated>2026-09-21T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.36"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;GET /charting/players&lt;/code&gt; states a sample of 11,803 charted matches, not 11,646.&lt;/strong&gt; The charted corpus was refreshed on 2026-09-19 and 184 matches — 133 of them played after 2026-05-24, including the US Open women&amp;#x27;s draw to the quarter-finals — were loaded into the product on 2026-09-21. &lt;code&gt;matches_charted&lt;/code&gt; on every response has always been the true per-player denominator and was never affected; the curated-coverage note beside it was quoting an older total and understating the sample. &lt;code&gt;GET /rally/matches&lt;/code&gt; grew in the same load: 11,822 charted matches and 1,875,132 shot-by-shot points, with the newest women&amp;#x27;s chart now 2026-09-09. The men&amp;#x27;s corpus is unchanged because no men&amp;#x27;s match has been charted since 2026-05-21. No field changed shape.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.35</id>
+    <title>Live Tennis API 1.13.35</title>
+    <updated>2026-09-21T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.35"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;meta.points.games_short&lt;/code&gt; on &lt;code&gt;GET /history/matches/{matchId}&lt;/code&gt; counts the completed games the tape holds too few points for.&lt;/strong&gt; Raised by a prospect evaluating per-point histories. A game the tape skips whole is a legal &lt;code&gt;0-0 → 0-0&lt;/code&gt; boundary with the games counter up by one, and the transition test alone cannot see it — so a tape could read &lt;code&gt;complete: true&lt;/code&gt; with a whole game missing. The measurement now walks the sequence by game boundary and compares what is held for each completed game with the fewest points that game can have contained given the last state it shows (from 0-0 at least 4; from 15-30 at least 5; from 40-40 at least 8; a tiebreak at least 7) — a lower bound, never an estimate. A game the tape skips whole counts; so does a game that ended with no further rows after its last stored point. &lt;code&gt;&amp;gt; 0&lt;/code&gt; forces &lt;code&gt;complete&lt;/code&gt; to &lt;code&gt;false&lt;/code&gt;; nothing is inferred or repaired, and the game&amp;#x27;s boundary rows are still served exactly as stored. &lt;code&gt;null&lt;/code&gt; = nothing measured (an empty sequence).&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;basis_reason&lt;/code&gt; on &lt;code&gt;GET /matches/{matchId}/points&lt;/code&gt; says why a reconstruction was served instead of the stream.&lt;/strong&gt; Present on the &lt;code&gt;reconstruction&lt;/code&gt; basis only: &lt;code&gt;stream_absent&lt;/code&gt; (no stored stream rows), &lt;code&gt;stream_incomplete&lt;/code&gt; (the stream is legal but does not measure complete — it joined mid-match or stopped short — and carries no tags) or &lt;code&gt;stream_illegal&lt;/code&gt; (at least one transition is not attributable to one point: a gap or a torn row). A stream that is complete, or tagged and legal end to end, is always served on the &lt;code&gt;live&lt;/code&gt; basis and the key is absent. Additive; nothing else in the response changes shape.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;meta.points.complete&lt;/code&gt; now means the served sequence holds at least every point the score requires — not merely that consecutive rows are consistent with each other.&lt;/strong&gt; True only when the sequence opens at 0-0, every transition is a legal single-point step, it carries at least as many point transitions as the final scoreline implies the match contained, every completed game holds at least as many point transitions as it must have contained (&lt;code&gt;games_short&lt;/code&gt; is &lt;code&gt;0&lt;/code&gt;), it reaches a finished final scoreline at love (or the match ended early — retirement/walkover), it is not known-truncated, and no game was withheld (&lt;code&gt;games_withheld&lt;/code&gt;). &lt;code&gt;ends_at_final&lt;/code&gt; on the same object now also requires that the last row shows no game in progress — points at love or null, not a tiebreak in progress: a row carrying a finished spine with a game still underway (&lt;code&gt;[[6,6],[3,4]]&lt;/code&gt; at 15-0) reads &lt;code&gt;false&lt;/code&gt;, where before the spine alone decided. Some tapes that read &lt;code&gt;complete: true&lt;/code&gt; until now will read &lt;code&gt;false&lt;/code&gt;; no row is changed.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A recurring score state on the history tape pairs its &lt;code&gt;serve&lt;/code&gt;/&lt;code&gt;outcome&lt;/code&gt; by nearest clock, instead of reading null.&lt;/strong&gt; Tags on &lt;code&gt;GET /history/matches/{matchId}&lt;/code&gt; rows are joined from the match&amp;#x27;s per-point stream by exact score state, and a state the stream asserts more than once (a deuce cycle revisiting deuce) cannot be told apart by the score, so until now it read &lt;code&gt;null&lt;/code&gt; outright. Where a state recurs the join now pairs by nearest clock within 90 seconds — the tape row&amp;#x27;s observed clock against the stream point&amp;#x27;s, each stream point used at most once — and reads &lt;code&gt;null&lt;/code&gt; otherwise (no candidate within the window, or two at the same distance). Every tag is an observed pairing, state and where needed clock, never an inference from the pattern of play. Reconstructed rows and rows no stream point matches still read &lt;code&gt;null&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;A stored live stream that is complete, or tagged and legal end to end, is served on a completed match; a reconstruction is projected only when the stream falls short.&lt;/strong&gt; Until now a measured-complete recorded sequence displaced the stream unconditionally, so a completed match could lose its &lt;code&gt;serve&lt;/code&gt;/&lt;code&gt;outcome&lt;/code&gt; tags and every per-point clock the moment a reconstruction landed — a projection carries neither, so a complete tagged stream is strictly more information than any reconstruction of the same match. &lt;code&gt;GET /matches/{matchId}/points&lt;/code&gt; now keeps the &lt;code&gt;live&lt;/code&gt; basis whenever the stream is itself measured complete (match-closing point included) or carries tags and is legal end to end (every transition one attributable point, judged in playing order), and serves the projection only when the stream has no rows, is incomplete and untagged, or holds a transition nobody can attribute — &lt;code&gt;basis_reason&lt;/code&gt; says which. When the reconstruction serves it still serves wholesale; the two sequences are never interleaved. If a completed match reads &lt;code&gt;reconstruction&lt;/code&gt;, re-read from &lt;code&gt;after_seq=0&lt;/code&gt; rather than resuming a live cursor into it.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;A double fault stated on a first serve is a contradiction; the point is served untagged.&lt;/strong&gt; A source point whose serve number and outcome contradict each other — a double fault on serve 1 — was carried through as stated. &lt;code&gt;serve&lt;/code&gt; and &lt;code&gt;outcome&lt;/code&gt; on such a point now both read &lt;code&gt;null&lt;/code&gt; on &lt;code&gt;GET /matches/{matchId}/points&lt;/code&gt; and on the WebSocket frames rather than tagged wrongly; nothing is corrected to a second serve. Stored tags that carried the contradiction have been cleared.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.34</id>
+    <title>Live Tennis API 1.13.34</title>
+    <updated>2026-09-21T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.34"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The reference said Davis Cup and the Grand Slams &amp;quot;read null throughout&amp;quot; for the per-point tags; &lt;code&gt;serve&lt;/code&gt; is in fact stated on the top Davis Cup tiers.&lt;/strong&gt; &lt;code&gt;serve&lt;/code&gt; and &lt;code&gt;outcome&lt;/code&gt; are stated separately, and the old sentence excluded both on the strength of one of them: team ties and Slams carry no per-point outcome, so &lt;code&gt;outcome&lt;/code&gt; is genuinely &lt;code&gt;null&lt;/code&gt; there — but the serve number is stated on them. Measured over completed matches with a per-point stream since 2026-09-12: Davis Cup World Group states &lt;code&gt;serve&lt;/code&gt; on 22 of 22 matches and World Group I on 41 of 42, while World Group II states it on 0 of 38; &lt;code&gt;outcome&lt;/code&gt; is null on all of them, on every one of the 14,132 rows. The machine-readable authority was right throughout and is unchanged — a World Group I match answers &lt;code&gt;enrichment: {&amp;quot;serve&amp;quot;: &amp;quot;stated&amp;quot;, &amp;quot;outcome&amp;quot;: &amp;quot;none&amp;quot;}&lt;/code&gt; and a World Group II match answers &lt;code&gt;{&amp;quot;serve&amp;quot;: &amp;quot;none&amp;quot;, &amp;quot;outcome&amp;quot;: &amp;quot;none&amp;quot;}&lt;/code&gt; — so this corrects the prose to match what the API already returns, in the direction of more coverage, not less. The &lt;code&gt;serve&lt;/code&gt; description now names the Davis Cup tiers in its coverage list with the measurement; the &lt;code&gt;outcome&lt;/code&gt; description now treats the two fields separately instead of excluding a competition from both. No field, endpoint or behaviour change.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.33</id>
+    <title>Live Tennis API 1.13.33</title>
+    <updated>2026-09-21T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.33"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;serve&lt;/code&gt; and &lt;code&gt;outcome&lt;/code&gt; said nothing about qualifying or doubles draws, and the internal reference called both blanket-&lt;code&gt;null&lt;/code&gt;.&lt;/strong&gt; The per-point tags (added 2026-09-12) were documented tour by tour for main draws only. Measured over completed matches carrying a per-point stream since the source went live on 2026-09-12: WTA qualifying states &lt;code&gt;serve&lt;/code&gt; on 48 of 48, Challenger (men) qualifying on 153 of 155, Challenger (women) on 49 of 51; ITF qualifying states &lt;code&gt;outcome&lt;/code&gt; (aces and double faults) on 95 of 107 men&amp;#x27;s and 62 of 74 women&amp;#x27;s. Qualifying draws are covered like their own main draw, with exactly one real gap — &lt;code&gt;outcome&lt;/code&gt; on Challenger (men) qualifying, which no source states at all. The doubles half of the old claim is confirmed and now carries its denominator: across 454 completed doubles matches in the same window, not one row carries either field. Both descriptions now state where each field is stated, including the qualifying and doubles positions; &lt;code&gt;enrichment&lt;/code&gt; per match remains the authority and none of it is a promise about a match not yet played. Found by the every-sweep tag-coverage check, which reads 85 of 86 Challenger qualifying matches carrying &lt;code&gt;serve&lt;/code&gt; against a documented &lt;code&gt;null&lt;/code&gt;. No field, endpoint or behaviour change.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.32</id>
+    <title>Live Tennis API 1.13.32</title>
+    <updated>2026-09-21T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.32"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;A match that ends in a tiebreak closes with the set roll-up row after the decisive tiebreak score.&lt;/strong&gt; The match-closing row on &lt;code&gt;GET /matches/{matchId}/points&lt;/code&gt; was described as if the last point were always a game point one point short of the final, and a match decided in a tiebreak did not fit that shape. The docs now say what the stream actually holds: when a completed match ends in a tiebreak, the stream&amp;#x27;s last stored row is the decisive tiebreak score itself (7-3, or 8-6) and the closing row is the set roll-up after it — the next game number, &lt;code&gt;number&lt;/code&gt; 0, &lt;code&gt;tiebreak&lt;/code&gt; false, &lt;code&gt;sets&lt;/code&gt; incremented for the tiebreak winner, the set banked 7-6 in &lt;code&gt;games&lt;/code&gt;, &lt;code&gt;score&lt;/code&gt; 0-0, &lt;code&gt;server&lt;/code&gt; null, &lt;code&gt;winner&lt;/code&gt; the tiebreak winner — the same row the stream stores after every other set-ending tiebreak, so &lt;code&gt;ends_at_final&lt;/code&gt; reads &lt;code&gt;true&lt;/code&gt; there. A 10-point match tiebreak still cannot be stated as one point and is refused as before (&lt;code&gt;ends_at_final: false&lt;/code&gt;), as is a tape that never reached the final.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.31</id>
+    <title>Live Tennis API 1.13.31</title>
+    <updated>2026-09-20T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.31"/>
+    <content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;GET /matches/{matchId}/points&lt;/code&gt; now closes a completed match with the match-closing point, and &lt;code&gt;ends_at_final&lt;/code&gt; says whether it did.&lt;/strong&gt; Raised by a prospect evaluating per-point tapes, who asked where the point that wins the match is. Every row is the state *after* a point, so a game-winning point is carried by the next game&amp;#x27;s &lt;code&gt;number: 0&lt;/code&gt; opener — and the match-winning point had no next row to be carried by: the live stream never held it, and a serve statistic built off the stream was missing every match&amp;#x27;s last point. On a completed match served on the &lt;code&gt;live&lt;/code&gt; basis the page now ends with one terminal row: &lt;code&gt;seq&lt;/code&gt; = last + 1, &lt;code&gt;number&lt;/code&gt; 0, &lt;code&gt;sets&lt;/code&gt; / &lt;code&gt;games&lt;/code&gt; the final score, &lt;code&gt;score&lt;/code&gt; 0-0, &lt;code&gt;tiebreak&lt;/code&gt; false, &lt;code&gt;server&lt;/code&gt; null (nobody serves next), &lt;code&gt;winner&lt;/code&gt; the match winner, &lt;code&gt;ts&lt;/code&gt; the instant the final score was observed. It is built at read time from the stream&amp;#x27;s last row and the observed final score, and only when the two are one point apart; nothing is fabricated otherwise. &lt;code&gt;ends_at_final&lt;/code&gt; (boolean) on the response says whether the sequence served ends on that row: &lt;code&gt;false&lt;/code&gt; on a completed match whose stream stops short of it (a retirement or walkover, a capture that stopped two or more points short, a closer from deuce or from a match tiebreak that cannot be stated as one point), always &lt;code&gt;false&lt;/code&gt; on a live match, and on the &lt;code&gt;reconstruction&lt;/code&gt; basis judged from the projected sequence&amp;#x27;s last frame. &lt;code&gt;serve&lt;/code&gt; / &lt;code&gt;outcome&lt;/code&gt; on the terminal row are null: no source&amp;#x27;s tag for a match&amp;#x27;s last point is stored yet. WebSocket and push frames are unchanged.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;tagged_at&lt;/code&gt; on every point row, and &lt;code&gt;?changed_since=&lt;/code&gt; on the same endpoint, so late serve/outcome tags are collectable without a socket.&lt;/strong&gt; The same prospect asked how to pick up tags that land after a row was read. &lt;code&gt;after_seq&lt;/code&gt; is a cursor by &lt;code&gt;seq&lt;/code&gt;, so it can never return a row already held — and a &lt;code&gt;serve&lt;/code&gt; / &lt;code&gt;outcome&lt;/code&gt; tag that lands late lands on exactly such a row; until now the only way to see it was the &lt;code&gt;point_update&lt;/code&gt; frame on a WebSocket. Every row now carries &lt;code&gt;tagged_at&lt;/code&gt;, the UTC instant its tags landed (null while none has, and on every &lt;code&gt;reconstruction&lt;/code&gt;-basis frame), and &lt;code&gt;?changed_since=&amp;lt;ISO-8601 instant&amp;gt;&lt;/code&gt; (&lt;code&gt;2026-09-20T00:35:18Z&lt;/code&gt;; &lt;code&gt;Z&lt;/code&gt; or an offset, a naive value is read as UTC, a date alone is refused) returns only the rows whose &lt;code&gt;ts&lt;/code&gt; &lt;strong&gt;or&lt;/strong&gt; &lt;code&gt;tagged_at&lt;/code&gt; is later than that instant, in &lt;code&gt;seq&lt;/code&gt; order, paged as usual and composable with &lt;code&gt;after_seq&lt;/code&gt;. The post-match recipe: read the match, keep the instant, re-read with &lt;code&gt;changed_since=&amp;lt;that instant&amp;gt;&lt;/code&gt; and replace held rows by &lt;code&gt;seq&lt;/code&gt;. Anything that is not an ISO-8601 timestamp is a &lt;code&gt;400 bad_changed_since&lt;/code&gt;. On the &lt;code&gt;reconstruction&lt;/code&gt; basis no row carries a clock or a tag, so a &lt;code&gt;changed_since&lt;/code&gt; read of it is an empty page: that sequence is final at first read.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.30</id>
+    <title>Live Tennis API 1.13.30</title>
+    <updated>2026-09-20T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.30"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The ATP per-point outcome row said &amp;quot;full&amp;quot; as a projection, not a measurement.&lt;/strong&gt; In the 30 days since ATP per-point outcomes went live (2026-09-12), no ATP main-tour event was actually played — the only tour tennis in that window was a Grand Slam and Davis Cup, neither of which carries per-point outcomes — so every ATP main-tour match carried no outcome tags at all, while the docs asserted &lt;code&gt;full&lt;/code&gt; (ace, double fault, winner, forced error, unforced error) unconditionally. The row now names the tours covered (ATP 250 / 500 / 1000), states plainly that Grand Slams and Davis Cup are not on it and read null throughout (check &lt;code&gt;enrichment&lt;/code&gt; per match), and gives the first date the claim was actually measured against a played tour event: the week of 2026-09-22.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+  <entry>
+    <id>https://docs.livetennisapi.com/changelog.html#v1.13.29</id>
+    <title>Live Tennis API 1.13.29</title>
+    <updated>2026-09-20T00:00:00Z</updated>
+    <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.29"/>
+    <content type="html">&lt;h3&gt;Changed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;The &lt;code&gt;GET /history/matches&lt;/code&gt; listing&amp;#x27;s point-completeness ledger now judges the same raw sequence the per-match read serves, re-sent rows dropped — not the &lt;code&gt;clean&lt;/code&gt; collapse.&lt;/strong&gt; The ledger&amp;#x27;s previous default basis, &lt;code&gt;clean&lt;/code&gt;, collapses the tape to one row per distinct score state; that collapse can delete a real deuce point — two rows sitting at 40-40 with no advantage row between them is a legitimate rally, not a duplicate — and call the resulting, shorter tape point-complete when the tape actually served is not. The ledger now judges the raw sequence with provable re-sends dropped, the exact judgement the per-match read makes and publishes as &lt;code&gt;meta.points.complete&lt;/code&gt;, so &lt;code&gt;tape.points_complete_default&lt;/code&gt; on the listing and &lt;code&gt;meta.points.complete&lt;/code&gt; on a fetched match agree by construction instead of disagreeing on a sequence the read never served. Measured on 7,717 completed matches scored since 1 Sep: the &lt;code&gt;clean&lt;/code&gt; collapse called 70 of them point-complete whose served (raw) tape was not, and missed 810 whose served tape was. &lt;code&gt;clean&lt;/code&gt; remains available only as a request option (&lt;code&gt;?sequence=clean&lt;/code&gt;); rows scored before 2026-09-20 keep &lt;code&gt;points_basis: clean&lt;/code&gt; until the nightly re-score reaches them. &lt;code&gt;tape.points_basis&lt;/code&gt;, &lt;code&gt;tape.points_complete_default&lt;/code&gt; and &lt;code&gt;tape.points_complete&lt;/code&gt; descriptions updated to match.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h3&gt;Fixed&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;&lt;code&gt;tape.computed_at&lt;/code&gt; on the &lt;code&gt;GET /history/matches&lt;/code&gt; listing carried the serving host&amp;#x27;s UTC offset (&lt;code&gt;+03:00&lt;/code&gt; on prod) instead of a trailing &lt;code&gt;Z&lt;/code&gt;.&lt;/strong&gt; Same instant, valid ISO-8601, but every other timestamp in the payload — &lt;code&gt;meta.generated_at&lt;/code&gt;, each row&amp;#x27;s &lt;code&gt;timestamp&lt;/code&gt; — ends in &lt;code&gt;Z&lt;/code&gt;, so a consumer diffing &lt;code&gt;computed_at&lt;/code&gt; against either had to normalise it by hand first. Now projected to UTC with a trailing &lt;code&gt;Z&lt;/code&gt; like the rest of the surface.&lt;/li&gt;
+&lt;/ul&gt;</content>
+  </entry>
+</feed>
