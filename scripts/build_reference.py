@@ -1970,6 +1970,455 @@ wait time on to the user.</p>
 """
 
 
+# ------------------------------------------------------------------ vocabulary -----------------
+# One page and one JSON file that list every closed code the API returns for tournaments, rounds,
+# surfaces, results and shots, with what each code means. The codes are read from openapi.yaml at
+# build time and every code must have a label below, so a new code in the spec fails the build
+# until it is described here. The page and the JSON are written from the same table.
+VOCAB_SLUG = "tennis-data-vocabulary"
+VOCAB_JSON = "tennis-data-vocabulary.json"
+# The day the meanings below were last checked against the spec's own field descriptions.
+VOCAB_CHECKED = "2026-11-06"
+
+
+def _schema_enum(spec: dict[str, Any], schema: str, *path: str) -> list[str]:
+    node: Any = spec["components"]["schemas"][schema]
+    for key in path:
+        node = node["properties"][key] if key != "[]" else node["items"]
+    return [str(v) for v in node["enum"] if v is not None]
+
+
+def _param_enum(spec: dict[str, Any], route: str, name: str) -> list[str]:
+    for prm in spec["paths"][route]["get"].get("parameters", []):
+        if isinstance(prm, dict) and prm.get("name") == name:
+            return [str(v) for v in prm["schema"]["enum"]]
+    raise SystemExit(f"vocabulary: {route} has no parameter {name}")
+
+
+# (id, title, where it appears, how to read it, reader for the codes, {code: meaning}).
+# Meanings restate the spec's own definitions; nothing here adds a fact the spec does not hold.
+VOCABULARIES: list[dict[str, Any]] = [
+    {
+        "id": "tier",
+        "title": "Tournament tier",
+        "fields": ["Match.tier", "Tournament.tier", "GET /tournaments?tier="],
+        "about": ("The level a tournament was played at in the match's own season, as the tour "
+                  "publishes it. A tournament keeps one id while its level changes between seasons, "
+                  "so the tier is read per season. Null means the level is unknown."),
+        "codes": lambda s: _schema_enum(s, "Match", "tier"),
+        "labels": {
+            "grand_slam": "Grand Slam",
+            "atp_finals": "ATP Finals",
+            "atp_1000": "ATP Masters 1000",
+            "atp_500": "ATP 500",
+            "atp_250": "ATP 250",
+            "next_gen_finals": "Next Gen ATP Finals",
+            "united_cup": "United Cup, every group and stage",
+            "davis_cup": "Davis Cup, every group and stage",
+            "olympics": "Olympic tennis event",
+            "laver_cup": "Laver Cup",
+            "wta_finals": "WTA Finals",
+            "wta_elite_trophy": "WTA Elite Trophy, last held in 2023",
+            "wta_1000": "WTA 1000",
+            "wta_500": "WTA 500",
+            "wta_250": "WTA 250",
+            "wta_125": "WTA 125",
+            "bjk_cup": "Billie Jean King Cup, every group and stage",
+            "challenger_175": "ATP Challenger 175",
+            "challenger_125": "ATP Challenger 125",
+            "challenger_100": "ATP Challenger 100",
+            "challenger_75": "ATP Challenger 75",
+            "challenger_50": "ATP Challenger 50",
+            "itf_m15": "ITF World Tennis Tour, men's M15",
+            "itf_m25": "ITF World Tennis Tour, men's M25",
+            "itf_w15": "ITF World Tennis Tour, women's W15",
+            "itf_w25": "ITF women's W25, a 2023 category kept as printed that season",
+            "itf_w35": "ITF World Tennis Tour, women's W35",
+            "itf_w40": "ITF women's W40, a 2023 category kept as printed that season",
+            "itf_w50": "ITF World Tennis Tour, women's W50",
+            "itf_w60": "ITF women's W60, a 2023 category kept as printed that season",
+            "itf_w75": "ITF World Tennis Tour, women's W75",
+            "itf_w80": "ITF women's W80, a 2023 category kept as printed that season",
+            "itf_w100": "ITF World Tennis Tour, women's W100",
+            "juniors": "Junior events",
+            "utr": "UTR events",
+            "exhibition": "Exhibition with no ranking points",
+        },
+    },
+    {
+        "id": "category",
+        "title": "Tournament category",
+        "fields": ["Tournament.category"],
+        "about": ("The coarse class of a tournament. It is set only where the catalogues agree "
+                  "on an exact name, and is null otherwise. Read the tier for the level."),
+        "codes": lambda s: _schema_enum(s, "Tournament", "category"),
+        "labels": {
+            "grand_slam": "Grand Slam",
+            "masters_1000": "Masters 1000",
+            "tour_finals": "Season-ending tour finals",
+            "atp_500": "ATP 500",
+            "atp_250": "ATP 250",
+            "wta_1000": "WTA 1000",
+            "wta_500": "WTA 500",
+            "wta_250": "WTA 250",
+            "wta_125": "WTA 125",
+            "challenger": "ATP Challenger, any level",
+            "itf": "ITF World Tennis Tour, any category",
+            "juniors": "Junior events",
+        },
+    },
+    {
+        "id": "tour",
+        "title": "Tour",
+        "fields": ["Match.tour", "GET /broadcast/live?tour=", "GET /players/{playerId}/stats?level="],
+        "about": ("The tour a match belongs to. The field and the filter come from one registry, "
+                  "so a match selected with ?tour=X carries X. Exhibitions, team events and mixed "
+                  "events have no public tour name, so their tour is null."),
+        "codes": lambda s: _schema_enum(s, "Match", "tour"),
+        "labels": {
+            "atp": "ATP Tour",
+            "wta": "WTA Tour",
+            "challenger": "ATP Challenger Tour",
+            "itf": "ITF World Tennis Tour",
+            "juniors": "Junior events",
+        },
+    },
+    {
+        "id": "round",
+        "title": "Round code",
+        "fields": ["Match.round_code", "GET /history/archive/matches?round="],
+        "about": ("The round in one controlled vocabulary, shared by live matches and the results "
+                  "archive. It is relative to the draw: a qualifying semi-final also reads SF, so "
+                  "read it together with is_qualifying. Null when the round label is not recognised."),
+        "codes": lambda s: _schema_enum(s, "Match", "round_code"),
+        "labels": {
+            "F": "Final",
+            "SF": "Semi-final",
+            "QF": "Quarter-final",
+            "R16": "Round of 16",
+            "R32": "Round of 32",
+            "R64": "Round of 64",
+            "R128": "Round of 128",
+            "RR": "Round robin",
+            "BR": "Third-place or bronze-medal match",
+            "Q": "Qualifying round that the label does not number",
+            "Q1": "First qualifying round",
+            "Q2": "Second qualifying round",
+            "Q3": "Third qualifying round",
+            "Q4": "Fourth qualifying round",
+            "ER": "Archive round code, kept as the archive publishes it",
+        },
+    },
+    {
+        "id": "archive-level",
+        "title": "Archive level code",
+        "fields": ["GET /history/archive/matches?level="],
+        "about": ("The results archive keeps the level codes it was published with. ITF events "
+                  "carry their category number as published, for example 15 or 25."),
+        "codes": lambda s: ["G", "M", "A", "F", "D", "C", "O"],
+        "labels": {
+            "G": "Grand Slam",
+            "M": "Masters",
+            "A": "Other tour-level events",
+            "F": "Season-ending finals",
+            "D": "Davis Cup",
+            "C": "Challenger",
+            "O": "Olympics",
+        },
+    },
+    {
+        "id": "surface",
+        "title": "Court surface",
+        "fields": ["Match.surface", "Tournament.surface", "GET /players/{playerId}/stats?surface="],
+        "about": ("The court surface as stated for the event. It is never inferred from the "
+                  "surface a tournament used in other seasons. A Davis Cup, Billie Jean King Cup or "
+                  "Laver Cup match carries the surface of its own tie. The player stats filter also "
+                  "takes indoor, which keeps matches stated as played indoors on any surface."),
+        "codes": lambda s: _schema_enum(s, "Match", "surface"),
+        "labels": {"hard": "Hard court", "clay": "Clay court", "grass": "Grass court"},
+    },
+    {
+        "id": "draw",
+        "title": "Draw",
+        "fields": ["Match.draw"],
+        "about": "Singles or doubles. Null means nothing states which, and is not singles.",
+        "codes": lambda s: _schema_enum(s, "Match", "draw"),
+        "labels": {"singles": "Singles", "doubles": "Doubles"},
+    },
+    {
+        "id": "format",
+        "title": "Match format",
+        "fields": ["Match.format"],
+        "about": "The number of sets the match is played over.",
+        "codes": lambda s: _schema_enum(s, "Match", "format"),
+        "labels": {"BO3": "Best of three sets", "BO5": "Best of five sets"},
+    },
+    {
+        "id": "status",
+        "title": "Match status",
+        "fields": ["Match.status"],
+        "about": "Where the match is in its lifecycle.",
+        "codes": lambda s: _schema_enum(s, "Match", "status"),
+        "labels": {
+            "upcoming": "Scheduled and not yet started",
+            "live": "In play",
+            "completed": "Observed being played to an end, or its match-winner market settled decisively",
+            "cancelled": "Not played as scheduled",
+        },
+    },
+    {
+        "id": "outcome",
+        "title": "Match outcome",
+        "fields": ["Match.outcome"],
+        "about": "How a finished match was settled. Null while a match is upcoming or live.",
+        "codes": lambda s: _schema_enum(s, "Match", "outcome"),
+        "labels": {
+            "completed": "Ran its full course",
+            "retired": "A player retired during play",
+            "walkover": "Conceded before a ball was struck",
+            "default": "A player was defaulted",
+            "abandoned": "Called off unfinished, with no result awarded",
+            "unresolved": "Closed unfinished with no result asserted, until a result is confirmed",
+        },
+    },
+    {
+        "id": "event-status",
+        "title": "Event status",
+        "fields": ["Match.event_status"],
+        "about": ("The stated match state, published as written. Null means nothing was stated, "
+                  "not that the match finished normally."),
+        "codes": lambda s: _schema_enum(s, "Match", "event_status"),
+        "labels": {
+            "Finished": "Stated as finished",
+            "Retired": "Ended by a retirement",
+            "Cancelled": "Stated as cancelled",
+            "Walk Over": "Walkover",
+            "Postponed": "Stated as postponed",
+            "Interrupted": "Suspended in play, for example rain, darkness or a medical stop",
+            "Unresolved": "Every source lost the match before a result",
+        },
+    },
+    {
+        "id": "match-event",
+        "title": "Match event type",
+        "fields": ["Event.type", "GET /matches/{matchId}/events", "GET /events"],
+        "about": ("The timeline of a match. Medical timeouts, trainer calls and toilet breaks are "
+                  "stated by the scorer or chair umpire and name the player concerned."),
+        "codes": lambda s: _schema_enum(s, "Event", "type"),
+        "labels": {
+            "break": "A break of serve",
+            "set_won": "A set won",
+            "game_won": "A game won",
+            "momentum_run": "A momentum run",
+            "stoppage_start": "Play stopped",
+            "stoppage_end": "Play resumed after a stoppage",
+            "pause_start": "A pause began",
+            "pause_end": "A pause ended",
+            "medical_timeout_start": "A medical timeout began",
+            "medical_timeout_end": "A medical timeout ended",
+            "trainer_called": "The trainer was called",
+            "trainer_called_end": "The trainer visit ended",
+            "toilet_break_start": "A toilet break began",
+            "toilet_break_end": "A toilet break ended",
+        },
+    },
+    {
+        "id": "ranking-system",
+        "title": "Ranking system",
+        "fields": ["RankingRecord.system", "GET /rankings?system="],
+        "about": ("The ranking a row belongs to. Elo keeps four independent ladders, named by "
+                  "the surface field: all surfaces together, hard, clay and grass. ATP and WTA Elo "
+                  "are separate and never combined."),
+        "codes": lambda s: _schema_enum(s, "RankingRecord", "system"),
+        "labels": {
+            "atp": "ATP singles ranking",
+            "wta": "WTA singles ranking",
+            "atp_doubles": "ATP doubles ranking",
+            "wta_doubles": "WTA doubles ranking",
+            "itf_mt": "ITF men's World Tennis Tour ranking",
+            "itf_wt": "ITF women's World Tennis Tour ranking",
+            "itf_jt": "ITF junior ranking",
+            "utr": "UTR rating",
+            "elo": "Elo rating, by surface ladder",
+        },
+    },
+    {
+        "id": "point-outcome",
+        "title": "Point outcome",
+        "fields": ["HistoryTapeRow.outcome"],
+        "about": "How a point ended, as stated for that point in the point-by-point history.",
+        "codes": lambda s: _schema_enum(s, "HistoryTapeRow", "outcome"),
+        "labels": {
+            "ace": "Ace",
+            "double_fault": "Double fault",
+            "winner": "Winner",
+            "forced_error": "Forced error",
+            "unforced_error": "Unforced error",
+        },
+    },
+    {
+        "id": "rally-outcome",
+        "title": "Charted point outcome",
+        "fields": ["RallyPoint.outcome"],
+        "about": "How a charted point ended in the shot-level data.",
+        "codes": lambda s: _schema_enum(s, "RallyPoint", "outcome"),
+        "labels": {
+            "winner": "Winner",
+            "forced_error": "Forced error",
+            "unforced_error": "Unforced error",
+            "error": "A miss charted without saying whether it was forced",
+            "other": "Any other ending",
+        },
+    },
+    {
+        "id": "unreturned",
+        "title": "Unreturned serve",
+        "fields": ["RallyPoint.unreturned_kind"],
+        "about": "How a serve went unreturned. Null when the return was in play.",
+        "codes": lambda s: _schema_enum(s, "RallyPoint", "unreturned_kind"),
+        "labels": {
+            "ace": "Ace",
+            "serve_winner": "Serve winner charted without a direction, counted with aces",
+            "serve_forced_error": "The serve forced a return error",
+            "return_forced_error": "Forced return error",
+            "return_unforced_error": "Unforced return error",
+            "return_error": "Missed return, not charted as forced or unforced",
+        },
+    },
+    {
+        "id": "stroke",
+        "title": "Stroke",
+        "fields": ["RallyShot.stroke"],
+        "about": "The kind of shot in charted rally data.",
+        "codes": lambda s: _schema_enum(s, "RallyShot", "stroke"),
+        "labels": {
+            "serve": "Serve", "groundstroke": "Groundstroke", "slice": "Slice", "volley": "Volley",
+            "half_volley": "Half volley", "swinging_volley": "Swinging volley",
+            "overhead": "Overhead", "drop_shot": "Drop shot", "lob": "Lob", "trick": "Trick shot",
+            "unknown": "Not charted",
+        },
+    },
+    {
+        "id": "wing",
+        "title": "Wing",
+        "fields": ["RallyShot.wing"],
+        "about": "The side a shot was struck from.",
+        "codes": lambda s: _schema_enum(s, "RallyShot", "wing"),
+        "labels": {"forehand": "Forehand", "backhand": "Backhand"},
+    },
+    {
+        "id": "direction",
+        "title": "Shot direction",
+        "fields": ["RallyShot.direction"],
+        "about": "Where the ball was sent.",
+        "codes": lambda s: _schema_enum(s, "RallyShot", "direction"),
+        "labels": {"forehand_side": "To the forehand side", "middle": "Through the middle",
+                   "backhand_side": "To the backhand side"},
+    },
+    {
+        "id": "depth",
+        "title": "Shot depth",
+        "fields": ["RallyShot.depth"],
+        "about": "How deep the ball landed.",
+        "codes": lambda s: _schema_enum(s, "RallyShot", "depth"),
+        "labels": {"shallow": "Shallow", "mid": "Mid-court", "deep": "Deep"},
+    },
+    {
+        "id": "serve-direction",
+        "title": "Serve direction",
+        "fields": ["RallyPoint.serve_direction"],
+        "about": "Where the serve was aimed.",
+        "codes": lambda s: _schema_enum(s, "RallyPoint", "serve_direction"),
+        "labels": {"wide": "Out wide", "body": "At the body", "down_the_t": "Down the T"},
+    },
+    {
+        "id": "error-location",
+        "title": "Error location",
+        "fields": ["RallyPoint.error_location"],
+        "about": "Where a missed shot went.",
+        "codes": lambda s: _schema_enum(s, "RallyPoint", "error_location"),
+        "labels": {"net": "Into the net", "wide": "Wide", "deep": "Long",
+                   "wide_and_deep": "Wide and long"},
+    },
+]
+
+
+def vocabulary_table(spec: dict[str, Any]) -> list[dict[str, Any]]:
+    """The vocabularies with their codes read from the spec. Fails on a code with no label."""
+    out = []
+    for v in VOCABULARIES:
+        codes = v["codes"](spec)
+        missing = [c for c in codes if c not in v["labels"]]
+        extra = [c for c in v["labels"] if c not in codes]
+        if missing or extra:
+            raise SystemExit(
+                f"vocabulary {v['id']}: codes without a label {missing}, labels without a code {extra}."
+                "\n  Describe new codes in VOCABULARIES (scripts/build_reference.py)."
+            )
+        out.append({
+            "id": v["id"], "title": v["title"], "fields": v["fields"], "about": v["about"],
+            "values": [{"code": c, "meaning": v["labels"][c],
+                        "url": f"{DOCS_URL}/{VOCAB_SLUG}.html#{v['id']}-{_anchor(c)}"} for c in codes],
+        })
+    return out
+
+
+def _anchor(code: str) -> str:
+    return re.sub(r"[^a-z0-9_]+", "-", code.lower()).strip("-")
+
+
+def build_vocabulary_json(spec: dict[str, Any]) -> str:
+    doc = {
+        "name": "Live Tennis API tennis data vocabulary",
+        "description": ("Every closed code the Live Tennis API returns for tournaments, rounds, "
+                        "surfaces, results and charted shots, with its meaning."),
+        "url": f"{DOCS_URL}/{VOCAB_JSON}",
+        "page": f"{DOCS_URL}/{VOCAB_SLUG}.html",
+        "spec_version": spec["info"]["version"],
+        "license": "MIT, https://github.com/livetennisapi/openapi/blob/main/LICENSE",
+        "attribution": "Live Tennis API, https://livetennisapi.com",
+        "vocabularies": vocabulary_table(spec),
+    }
+    return json.dumps(doc, ensure_ascii=False, indent=1) + "\n"
+
+
+def _vocabulary_body(spec: dict[str, Any]) -> str:
+    sections = []
+    toc = []
+    for v in vocabulary_table(spec):
+        toc.append(f'<li><a href="#{v["id"]}">{E(v["title"])}</a></li>')
+        rows = "".join(
+            f'<tr id="{v["id"]}-{_anchor(x["code"])}"><td><code>{E(x["code"])}</code></td>'
+            f'<td>{E(x["meaning"])}</td></tr>'
+            for x in v["values"]
+        )
+        fields = ", ".join(f"<code>{E(f)}</code>" for f in v["fields"])
+        table = scrollx(
+            f"<table>{vh_caption(v['title'] + ' codes')}"
+            '<thead><tr><th scope="col">Code</th><th scope="col">Meaning</th></tr></thead>'
+            f"<tbody>{rows}</tbody></table>",
+            v["title"] + " codes",
+        )
+        sections.append(
+            f'<h2 id="{v["id"]}">{E(v["title"])}</h2>\n<p>{E(v["about"])}</p>\n'
+            f'<p class="meta">Appears in {fields}.</p>\n{table}'
+        )
+    return (
+        "<h2 id=\"use\">How to use these codes</h2>\n"
+        "<p>Every code on this page is a closed value: the API returns one of the listed codes or "
+        "null, and null means the value is not known. Each code has its own link, so a schema, a "
+        "README or a column note can point at one meaning. The same table is published as "
+        f'<a href="./{VOCAB_JSON}">{VOCAB_JSON}</a> for code that validates or labels the values.</p>\n'
+        f'<nav aria-label="Vocabularies on this page"><ul>{"".join(toc)}</ul></nav>\n'
+        + "\n".join(sections)
+        + "\n<h2 id=\"links\">Links</h2>\n<ul>\n"
+        f'<li><a href="./{VOCAB_JSON}">The vocabulary as JSON</a></li>\n'
+        '<li><a href="./reference.html">Full API reference</a></li>\n'
+        '<li><a href="./openapi.yaml">OpenAPI spec</a></li>\n'
+        f'<li><a href="{SITE}/subscribe/free">Free API key</a></li>\n</ul>\n'
+    )
+
+
 GUIDES: list[dict[str, Any]] = [
     {
         "slug": "ai-sdk",
@@ -2002,6 +2451,33 @@ GUIDES: list[dict[str, Any]] = [
             f'Written for <a href="{AI_SDK_NPM}">livetennisapi-ai</a> {AI_SDK_VERSION}. Package source in '
             f'<a href="{AI_SDK_REPO}">livetennisapi/livetennisapi-ai</a>, page source in '
             '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
+        ),
+    },
+    {
+        "slug": VOCAB_SLUG,
+        "title": "Tennis data vocabulary: tiers, rounds, surfaces and results",
+        "head_title": "Tennis data codes: tiers, rounds, surfaces | Live Tennis API",
+        "question": "What does each tennis data code mean?",
+        "description": (
+            "What does each tennis data code mean? Tournament tiers, round codes, surfaces, match "
+            "outcomes and shot types, with one link per code and a JSON copy."
+        ),
+        "lede": (
+            "This page lists every closed code the API returns for tournaments, rounds, surfaces, "
+            "results, rankings and charted shots, with its meaning. It is built from the OpenAPI "
+            "spec, so it lists exactly the codes the API can send."
+        ),
+        "meta": (
+            f'Meanings checked against the spec on <time datetime="{VOCAB_CHECKED}">{VOCAB_CHECKED}</time>. Machine-readable copy: <a href="./{VOCAB_JSON}">{VOCAB_JSON}</a>, '
+            "MIT licensed, like the spec."
+        ),
+        "body": lambda: _vocabulary_body(load_spec()),
+        "date": VOCAB_CHECKED,
+        "about": {"@type": "DefinedTermSet", "name": "Live Tennis API tennis data vocabulary",
+                  "url": f"{DOCS_URL}/{VOCAB_JSON}"},
+        "footer": (
+            'Page source in <a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>, '
+            "generated by scripts/build_reference.py."
         ),
     },
 ]
@@ -2174,6 +2650,8 @@ def main() -> int:
         # The same spec as JSON, for the agents and tools that only read JSON (GPT Actions,
         # Postman import, most MCP scaffolds). Both URLs are stable and both are advertised.
         DOCS / "openapi.json": json.dumps(spec, ensure_ascii=False, indent=1) + "\n",
+        # The vocabulary page's table as data, for validators and labelling code.
+        DOCS / VOCAB_JSON: build_vocabulary_json(spec),
     }
 
     # Heading levels must not skip. h1 -> h3 is a level a screen reader reports as missing and

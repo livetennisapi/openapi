@@ -29,6 +29,7 @@ endpoints, generated from the same spec as the reference:
 
 ## Guides
 - How do you give a Vercel AI SDK model live tennis data? https://docs.livetennisapi.com/ai-sdk.html
+- What does each tennis data code mean? https://docs.livetennisapi.com/tennis-data-vocabulary.html
 
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
