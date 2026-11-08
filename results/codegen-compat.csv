@@ -1,0 +1,12 @@
+run_date,generator,generator_version,target,attempt,generate,build,smoke,notes,spec_version
+2026-11-08,openapi-generator,7.27.0,python,as-generated,pass,pass,pass,"",1.13.78
+2026-11-08,openapi-generator,7.27.0,typescript-fetch,as-generated,pass,pass,pass,"",1.13.78
+2026-11-08,openapi-generator,7.27.0,go,as-generated,pass,fail,skipped,"has_analysis and has_market clash with generated HasAnalysis() and HasMarket()",1.13.78
+2026-11-08,openapi-generator,7.27.0,go,with-fix,pass,pass,pass,"--name-mappings has_analysis=HasAnalysisFlag,has_market=HasMarketFlag",1.13.78
+2026-11-08,openapi-generator,7.27.0,java,as-generated,pass,pass,pass,"",1.13.78
+2026-11-08,openapi-generator,7.27.0,csharp,as-generated,pass,fail,skipped,"model Match is ambiguous with System.Text.RegularExpressions.Match",1.13.78
+2026-11-08,openapi-generator,7.27.0,csharp,with-fix,pass,pass,pass,"--model-name-mappings Match=MatchModel. The client needs an ApiKeyToken as well as a BearerToken and then sends both headers",1.13.78
+2026-11-08,openapi-typescript,7.13.0,typescript,as-generated,pass,pass,pass,"types only. The smoke call uses openapi-fetch 0.17.0",1.13.78
+2026-11-08,oapi-codegen,v2.8.2,go,as-generated,fail,skipped,skipped,"duplicate Go type Player (the player parameter and the Player schema)",1.13.78
+2026-11-08,oapi-codegen,v2.8.2,go,rename-only,fail,skipped,skipped,"null listed in a nullable enum cannot become a Go constant",1.13.78
+2026-11-08,oapi-codegen,v2.8.2,go,with-fix,pass,pass,pass,"oapi_codegen_prep.py: x-go-name on the player parameter and null dropped from the nullable enums",1.13.78
