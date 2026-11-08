@@ -29,6 +29,9 @@ DOTNET_IMAGE="mcr.microsoft.com/dotnet/sdk:10.0"
 
 mkdir -p "$W"
 W="$(cd "$W" && pwd)"
+# Leftovers from an earlier run must not stand in for this run's tools or inputs.
+rm -rf "$W/bin" "$W/openapi.oapi.json" "$W/run.log"
+: > "$W/run.log"
 cp "$REPO/docs/openapi.json" "$W/openapi.json"
 RUN_DATE="$(date -u +%Y-%m-%d)"
 SPEC_VERSION="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["info"]["version"])' "$W/openapi.json")"
@@ -38,8 +41,16 @@ echo "run_date,generator,generator_version,target,attempt,generate,build,smoke,n
 # row GENERATOR VERSION TARGET ATTEMPT GENERATE BUILD SMOKE NOTES
 row() { echo "$RUN_DATE,$1,$2,$3,$4,$5,$6,$7,\"$8\",$SPEC_VERSION" >> "$CSV"; echo "== $1 $3 ($4): generate=$5 build=$6 smoke=$7 ${8:+[$8]}"; }
 ok() { if "$@" >> "$W/run.log" 2>&1; then echo pass; else echo fail; fi; }
-# why STATUS TEXT: the failure note, printed only when the step did fail.
-why() { if [ "$1" = fail ]; then echo "$2"; fi; }
+# mark: the current length of run.log, so a later check reads only what came after.
+mark() { wc -l < "$W/run.log" 2>/dev/null || echo 0; }
+# why STATUS FROM PATTERN TEXT: the failure note. TEXT is written only when the step
+# failed AND its own log lines (after line FROM) show PATTERN. Any other failure says so.
+why() {
+    [ "$1" = fail ] || return 0
+    if tail -n +"$(( $2 + 1 ))" "$W/run.log" | grep -qE "$3"; then echo "$4"; else echo "failed for another reason, see run.log"; fi
+}
+# need CMD...: a setup step. If it fails, the run stops rather than reuse old tools.
+need() { "$@" >> "$W/run.log" 2>&1 || { echo "setup failed: $*" >&2; exit 1; }; }
 
 python3 -I "$HERE/mock_server.py" "$PORT" 2>> "$W/mock.log" &
 MOCK=$!
@@ -65,9 +76,9 @@ row openapi-generator "$OAG_VERSION" python as-generated "$g" "$b" "$s" ""
 
 # --- toolchain for both TypeScript rows -----------------------------------
 mkdir -p "$W/tsenv"
-( cd "$W/tsenv" && [ -f package.json ] || npm init -y >/dev/null ) >> "$W/run.log" 2>&1
-( cd "$W/tsenv" && npm install --no-audit --no-fund "typescript@$TYPESCRIPT" \
-    "openapi-typescript@$OPENAPI_TS" "openapi-fetch@$OPENAPI_FETCH" "@types/node@$TYPES_NODE" ) >> "$W/run.log" 2>&1
+[ -f "$W/tsenv/package.json" ] || need sh -c "cd '$W/tsenv' && npm init -y"
+need sh -c "cd '$W/tsenv' && npm install --no-audit --no-fund typescript@$TYPESCRIPT \
+    openapi-typescript@$OPENAPI_TS openapi-fetch@$OPENAPI_FETCH @types/node@$TYPES_NODE"
 TSC="$W/tsenv/node_modules/.bin/tsc"
 
 # --- openapi-generator: typescript-fetch -----------------------------------
@@ -86,9 +97,10 @@ row openapi-generator "$OAG_VERSION" typescript-fetch as-generated "$g" "$b" "$s
 # --- openapi-generator: go ---------------------------------------------------
 # As generated, `has_analysis` and `has_market` collide with the HasAnalysis()
 # and HasMarket() presence methods made for `analysis` and `market`.
+L=$(mark)
 g=$(ok oag go out-go --git-user-id livetennisapi --git-repo-id gen-go --additional-properties=packageName=ltapi)
-b=$(ok sh -c "cd '$W/out-go' && go mod tidy && go build ./...")
-row openapi-generator "$OAG_VERSION" go as-generated "$g" "$b" "skipped" "$(why "$b" "has_analysis and has_market clash with generated HasAnalysis() and HasMarket()")"
+b=$(ok sh -c "cd '$W/out-go' && go mod tidy && go build ./... && go vet .")
+row openapi-generator "$OAG_VERSION" go as-generated "$g" "$b" "skipped" "$(why "$b" "$L" "field and method with the same name HasAnalysis" "has_analysis and has_market clash with generated HasAnalysis() and HasMarket()")"
 g=$(ok oag go out-go --git-user-id livetennisapi --git-repo-id gen-go --additional-properties=packageName=ltapi \
     --name-mappings has_analysis=HasAnalysisFlag,has_market=HasMarketFlag)
 b=$(ok sh -c "cd '$W/out-go' && go mod tidy && go build ./... && go vet .")
@@ -114,14 +126,20 @@ row openapi-generator "$OAG_VERSION" java as-generated "$g" "$b" "$s" ""
 dotnet() { docker run --rm -m 3g --network host -u "$U" -e HOME=/w/nuget -e DOTNET_CLI_TELEMETRY_OPTOUT=1 \
     -e NUGET_PACKAGES=/w/nuget/packages -e Logging__LogLevel__Default=Warning -v "$W:/w" -w /w "$DOTNET_IMAGE" dotnet "$@"; }
 mkdir -p "$W/nuget"
+L=$(mark)
 g=$(ok oag csharp out-csharp --additional-properties=packageName=livetennisapi_gen)
 b=$(ok dotnet build -nologo -v q out-csharp/src/livetennisapi_gen/livetennisapi_gen.csproj)
-row openapi-generator "$OAG_VERSION" csharp as-generated "$g" "$b" "skipped" "$(why "$b" "model Match is ambiguous with System.Text.RegularExpressions.Match")"
+row openapi-generator "$OAG_VERSION" csharp as-generated "$g" "$b" "skipped" "$(why "$b" "$L" "CS0104: 'Match' is an ambiguous reference" "model Match is ambiguous with System.Text.RegularExpressions.Match")"
 g=$(ok oag csharp out-csharp --additional-properties=packageName=livetennisapi_gen --model-name-mappings Match=MatchModel)
 b=$(ok dotnet build -nologo -v q out-csharp/src/livetennisapi_gen/livetennisapi_gen.csproj)
 rm -rf "$W/cs-smoke" && mkdir -p "$W/cs-smoke" && cp "$HERE/smoke/csharp/"* "$W/cs-smoke/"
+L=$(wc -l < "$W/mock.log" 2>/dev/null || echo 0)
 s=$(ok dotnet run -v q --project cs-smoke/Smoke.csproj "$BASE")
-row openapi-generator "$OAG_VERSION" csharp with-fix "$g" "$b" "$s" "--model-name-mappings Match=MatchModel. The client needs an ApiKeyToken as well as a BearerToken and then sends both headers"
+both=""
+if [ "$s" = pass ] && tail -n +"$(( L + 1 ))" "$W/mock.log" | grep -q "auth headers sent: Authorization,X-API-Key"; then
+    both=". With a BearerToken and an ApiKeyToken registered, it sent both headers"
+fi
+row openapi-generator "$OAG_VERSION" csharp with-fix "$g" "$b" "$s" "--model-name-mappings Match=MatchModel$both"
 
 # --- openapi-typescript (types) + openapi-fetch (runtime) ------------------
 rm -rf "$W/ots" && mkdir -p "$W/ots"
@@ -140,18 +158,20 @@ row openapi-typescript "$OPENAPI_TS" typescript as-generated "$g" "$b" "$s" "typ
 # --- oapi-codegen ----------------------------------------------------------
 # It reads OpenAPI 3.0 through kin-openapi. As given, generation stops on a
 # duplicate Go type name (the `player` parameter and the Player schema).
-GOBIN="$W/bin" go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$OAPI_CODEGEN" >> "$W/run.log" 2>&1
+need env GOBIN="$W/bin" go install "github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@$OAPI_CODEGEN"
 OC="$W/bin/oapi-codegen"
 oc() { # oc SPEC OUTDIR
     rm -rf "$W/$2" && mkdir -p "$W/$2"
     ( cd "$W/$2" && "$OC" -generate types,client -package ltapi -o ltapi.gen.go "$1" )
 }
+L=$(mark)
 g=$(ok oc "$W/openapi.json" out-oapi)
-row oapi-codegen "$OAPI_CODEGEN" go as-generated "$g" "skipped" "skipped" "$(why "$g" "duplicate Go type Player (the player parameter and the Player schema)")"
-python3 -I "$HERE/oapi_codegen_prep.py" --rename-only "$W/openapi.json" "$W/openapi.oapi.json" >> "$W/run.log" 2>&1
+row oapi-codegen "$OAPI_CODEGEN" go as-generated "$g" "skipped" "skipped" "$(why "$g" "$L" "duplicate typename 'Player'" "duplicate Go type Player (the player parameter and the Player schema)")"
+need python3 -I "$HERE/oapi_codegen_prep.py" --rename-only "$W/openapi.json" "$W/openapi.oapi.json"
+L=$(mark)
 g=$(ok oc "$W/openapi.oapi.json" out-oapi)
-row oapi-codegen "$OAPI_CODEGEN" go rename-only "$g" "skipped" "skipped" "$(why "$g" "null listed in a nullable enum cannot become a Go constant")"
-python3 -I "$HERE/oapi_codegen_prep.py" "$W/openapi.json" "$W/openapi.oapi.json" >> "$W/run.log" 2>&1
+row oapi-codegen "$OAPI_CODEGEN" go rename-only "$g" "skipped" "skipped" "$(why "$g" "$L" "enum value \"<nil>\"" "null listed in a nullable enum cannot become a Go constant")"
+need python3 -I "$HERE/oapi_codegen_prep.py" "$W/openapi.json" "$W/openapi.oapi.json"
 g=$(ok oc "$W/openapi.oapi.json" out-oapi)
 b=$(ok sh -c "cd '$W/out-oapi' && go mod init github.com/livetennisapi/gen-oapi && go mod tidy && go build ./... && go vet ./...")
 rm -rf "$W/oapi-smoke" && mkdir -p "$W/oapi-smoke" && cp "$HERE/smoke/go-oapi-codegen/main.go" "$W/oapi-smoke/"
@@ -159,8 +179,20 @@ s=$(ok sh -c "cd '$W/oapi-smoke' && go mod init smoke && go mod edit -require gi
     -replace github.com/livetennisapi/gen-oapi=../out-oapi && go mod tidy && go run . '$BASE'")
 row oapi-codegen "$OAPI_CODEGEN" go with-fix "$g" "$b" "$s" "oapi_codegen_prep.py: x-go-name on the player parameter and null dropped from the nullable enums"
 
+# The toolchain goes into a file beside the CSV, so the versions in the results have a record.
+TOOLS="${CSV%.csv}.toolchain.txt"
+{
+    echo "run_date: $RUN_DATE"
+    echo "spec: docs/openapi.json, info.version $SPEC_VERSION"
+    echo "python: $(python3 --version 2>&1 | awk '{print $2}')"
+    echo "node: $(node --version)"
+    echo "tsc: $("$TSC" --version | awk '{print $2}')"
+    echo "go: $(go version | awk '{print $3}')"
+    echo "openapi-generator image: $OAG_IMAGE"
+    echo "maven image: $MAVEN_IMAGE ($(docker run --rm --entrypoint "" "$MAVEN_IMAGE" java -version 2>&1 | head -1))"
+    echo "dotnet image: $DOTNET_IMAGE (SDK $(dotnet --version 2>/dev/null))"
+    echo "openapi-typescript: $OPENAPI_TS, openapi-fetch: $OPENAPI_FETCH, oapi-codegen: $OAPI_CODEGEN"
+} > "$TOOLS"
 echo
-echo "toolchain: $(python3 --version), node $(node --version), tsc $("$TSC" --version | awk '{print $2}'), $(go version | awk '{print $3}')"
-echo "images: $OAG_IMAGE, $MAVEN_IMAGE, $DOTNET_IMAGE ($(dotnet --version 2>/dev/null))"
-echo "spec: docs/openapi.json, info.version $SPEC_VERSION"
-echo "results: $CSV (log: $W/run.log)"
+cat "$TOOLS"
+echo "results: $CSV, $TOOLS (log: $W/run.log)"

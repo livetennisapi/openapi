@@ -32,7 +32,8 @@ support is in beta.
 Build depends on the language. Python is installed into a fresh venv, byte-compiled and
 imported. Both TypeScript outputs pass `tsc` 5.9.3 with `strict` on. Go runs `go build` and
 `go vet` on go1.27.3. Java runs `mvn package` in `maven:3.9.16-eclipse-temurin-21`, and C#
-runs `dotnet build` with SDK 10.0.403.
+runs `dotnet build` with SDK 10.0.403. Each version is recorded in
+[codegen-compat.toolchain.txt](codegen-compat.toolchain.txt).
 
 The smoke call is one `GET /fixtures?limit=3` with a dummy bearer key, against
 `scripts/codegen-compat/mock_server.py` on localhost. The mock serves a recorded API
@@ -60,9 +61,10 @@ model:
 --model-name-mappings Match=MatchModel
 ```
 
-The default `generichost` library also refuses to build `DefaultApi` until a token is
-registered for both of the spec's schemes, bearer and `X-API-Key`. With both registered it
-sends both headers. The API accepts either one.
+The default `generichost` library's `DefaultApi` constructor takes a token provider for
+each of the spec's two schemes, bearer and `X-API-Key`, so the smoke program registers both.
+With both registered, the client sent both headers to the mock. The spec lists the two
+schemes as alternatives.
 
 **oapi-codegen.** It reads OpenAPI 3.0 through kin-openapi and stops twice on our 3.1
 document. First, the `player` query parameter and the `Player` schema both become the Go
@@ -75,5 +77,5 @@ Go constant. `scripts/codegen-compat/oapi_codegen_prep.py` writes a copy of the 
 ## Limits
 
 One run on one machine, with the versions above. A pass means the client built and one
-read worked against a recorded response. It does not cover every endpoint, every model or
+read parsed a recorded response. The live API was not called. It does not cover every endpoint, every model or
 the push feed.
