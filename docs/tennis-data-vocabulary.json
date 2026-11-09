@@ -1,0 +1,1061 @@
+{
+ "name": "Live Tennis API tennis data vocabulary",
+ "description": "Every closed code the Live Tennis API returns for tournaments, rounds, surfaces, results and charted shots, with its meaning.",
+ "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.json",
+ "page": "https://docs.livetennisapi.com/tennis-data-vocabulary.html",
+ "spec_version": "1.13.78",
+ "license": "MIT, https://github.com/livetennisapi/openapi/blob/main/LICENSE",
+ "attribution": "Live Tennis API, https://livetennisapi.com",
+ "vocabularies": [
+  {
+   "id": "tier",
+   "title": "Tournament tier",
+   "fields": [
+    "Match.tier",
+    "Tournament.tier",
+    "GET /tournaments?tier="
+   ],
+   "about": "The level a tournament was played at in the match's own season, as the tour publishes it. A tournament keeps one id while its level changes between seasons, so the tier is read per season. On a tournament the field carries the current season's level. Null means the level is unknown.",
+   "values": [
+    {
+     "code": "grand_slam",
+     "meaning": "Grand Slam",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-grand_slam"
+    },
+    {
+     "code": "atp_finals",
+     "meaning": "ATP Finals",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-atp_finals"
+    },
+    {
+     "code": "atp_1000",
+     "meaning": "ATP Masters 1000",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-atp_1000"
+    },
+    {
+     "code": "atp_500",
+     "meaning": "ATP 500",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-atp_500"
+    },
+    {
+     "code": "atp_250",
+     "meaning": "ATP 250",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-atp_250"
+    },
+    {
+     "code": "next_gen_finals",
+     "meaning": "Next Gen ATP Finals",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-next_gen_finals"
+    },
+    {
+     "code": "united_cup",
+     "meaning": "United Cup, every group and stage",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-united_cup"
+    },
+    {
+     "code": "davis_cup",
+     "meaning": "Davis Cup, every group and stage",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-davis_cup"
+    },
+    {
+     "code": "olympics",
+     "meaning": "Olympic tennis event",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-olympics"
+    },
+    {
+     "code": "laver_cup",
+     "meaning": "Laver Cup",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-laver_cup"
+    },
+    {
+     "code": "wta_finals",
+     "meaning": "WTA Finals",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-wta_finals"
+    },
+    {
+     "code": "wta_elite_trophy",
+     "meaning": "WTA Elite Trophy, last held in 2023",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-wta_elite_trophy"
+    },
+    {
+     "code": "wta_1000",
+     "meaning": "WTA 1000",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-wta_1000"
+    },
+    {
+     "code": "wta_500",
+     "meaning": "WTA 500",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-wta_500"
+    },
+    {
+     "code": "wta_250",
+     "meaning": "WTA 250",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-wta_250"
+    },
+    {
+     "code": "wta_125",
+     "meaning": "WTA 125",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-wta_125"
+    },
+    {
+     "code": "bjk_cup",
+     "meaning": "Billie Jean King Cup, every group and stage",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-bjk_cup"
+    },
+    {
+     "code": "challenger_175",
+     "meaning": "ATP Challenger 175",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-challenger_175"
+    },
+    {
+     "code": "challenger_125",
+     "meaning": "ATP Challenger 125",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-challenger_125"
+    },
+    {
+     "code": "challenger_100",
+     "meaning": "ATP Challenger 100",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-challenger_100"
+    },
+    {
+     "code": "challenger_75",
+     "meaning": "ATP Challenger 75",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-challenger_75"
+    },
+    {
+     "code": "challenger_50",
+     "meaning": "ATP Challenger 50",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-challenger_50"
+    },
+    {
+     "code": "itf_m15",
+     "meaning": "ITF World Tennis Tour, men's M15",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_m15"
+    },
+    {
+     "code": "itf_m25",
+     "meaning": "ITF World Tennis Tour, men's M25",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_m25"
+    },
+    {
+     "code": "itf_w15",
+     "meaning": "ITF World Tennis Tour, women's W15",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w15"
+    },
+    {
+     "code": "itf_w25",
+     "meaning": "ITF women's W25, a 2023 category kept as printed that season",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w25"
+    },
+    {
+     "code": "itf_w35",
+     "meaning": "ITF World Tennis Tour, women's W35",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w35"
+    },
+    {
+     "code": "itf_w40",
+     "meaning": "ITF women's W40, a 2023 category kept as printed that season",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w40"
+    },
+    {
+     "code": "itf_w50",
+     "meaning": "ITF World Tennis Tour, women's W50",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w50"
+    },
+    {
+     "code": "itf_w60",
+     "meaning": "ITF women's W60, a 2023 category kept as printed that season",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w60"
+    },
+    {
+     "code": "itf_w75",
+     "meaning": "ITF World Tennis Tour, women's W75",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w75"
+    },
+    {
+     "code": "itf_w80",
+     "meaning": "ITF women's W80, a 2023 category kept as printed that season",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w80"
+    },
+    {
+     "code": "itf_w100",
+     "meaning": "ITF World Tennis Tour, women's W100",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-itf_w100"
+    },
+    {
+     "code": "juniors",
+     "meaning": "Junior events",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-juniors"
+    },
+    {
+     "code": "utr",
+     "meaning": "UTR events",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-utr"
+    },
+    {
+     "code": "exhibition",
+     "meaning": "Exhibition with no ranking points",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tier-exhibition"
+    }
+   ]
+  },
+  {
+   "id": "category",
+   "title": "Tournament category",
+   "fields": [
+    "Tournament.category"
+   ],
+   "about": "The coarse class of a tournament. It is set only where the catalogues agree on an exact name, and is null otherwise. Read the tier for the level.",
+   "values": [
+    {
+     "code": "grand_slam",
+     "meaning": "Grand Slam",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-grand_slam"
+    },
+    {
+     "code": "masters_1000",
+     "meaning": "Masters 1000",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-masters_1000"
+    },
+    {
+     "code": "tour_finals",
+     "meaning": "Season-ending tour finals",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-tour_finals"
+    },
+    {
+     "code": "atp_500",
+     "meaning": "ATP 500",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-atp_500"
+    },
+    {
+     "code": "atp_250",
+     "meaning": "ATP 250",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-atp_250"
+    },
+    {
+     "code": "wta_1000",
+     "meaning": "WTA 1000",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-wta_1000"
+    },
+    {
+     "code": "wta_500",
+     "meaning": "WTA 500",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-wta_500"
+    },
+    {
+     "code": "wta_250",
+     "meaning": "WTA 250",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-wta_250"
+    },
+    {
+     "code": "wta_125",
+     "meaning": "WTA 125",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-wta_125"
+    },
+    {
+     "code": "challenger",
+     "meaning": "ATP Challenger, any level",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-challenger"
+    },
+    {
+     "code": "itf",
+     "meaning": "ITF World Tennis Tour, any category",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-itf"
+    },
+    {
+     "code": "juniors",
+     "meaning": "Junior events",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#category-juniors"
+    }
+   ]
+  },
+  {
+   "id": "tour",
+   "title": "Tour",
+   "fields": [
+    "Match.tour",
+    "GET /broadcast/live?tour=",
+    "GET /players/{playerId}/stats?level="
+   ],
+   "about": "The tour a match belongs to. The field and the filter come from one registry, so a match selected with ?tour=X carries X. Exhibitions, team events and mixed events have no public tour name, so their tour is null.",
+   "values": [
+    {
+     "code": "atp",
+     "meaning": "ATP Tour",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tour-atp"
+    },
+    {
+     "code": "wta",
+     "meaning": "WTA Tour",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tour-wta"
+    },
+    {
+     "code": "challenger",
+     "meaning": "ATP Challenger Tour",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tour-challenger"
+    },
+    {
+     "code": "itf",
+     "meaning": "ITF World Tennis Tour",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tour-itf"
+    },
+    {
+     "code": "juniors",
+     "meaning": "Junior events",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#tour-juniors"
+    }
+   ]
+  },
+  {
+   "id": "round",
+   "title": "Round code",
+   "fields": [
+    "Match.round_code",
+    "GET /history/archive/matches?round="
+   ],
+   "about": "The round in one controlled vocabulary, shared by live matches and the results archive. It is relative to the draw: a qualifying semi-final also reads SF, so read it together with is_qualifying. Null when the round label is not recognised. Q appears on matches only: the archive's round filter does not accept it.",
+   "values": [
+    {
+     "code": "F",
+     "meaning": "Final",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-f"
+    },
+    {
+     "code": "SF",
+     "meaning": "Semi-final",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-sf"
+    },
+    {
+     "code": "QF",
+     "meaning": "Quarter-final",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-qf"
+    },
+    {
+     "code": "R16",
+     "meaning": "Round of 16",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-r16"
+    },
+    {
+     "code": "R32",
+     "meaning": "Round of 32",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-r32"
+    },
+    {
+     "code": "R64",
+     "meaning": "Round of 64",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-r64"
+    },
+    {
+     "code": "R128",
+     "meaning": "Round of 128",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-r128"
+    },
+    {
+     "code": "RR",
+     "meaning": "Round robin",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-rr"
+    },
+    {
+     "code": "BR",
+     "meaning": "Third-place or bronze-medal match",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-br"
+    },
+    {
+     "code": "Q",
+     "meaning": "Qualifying round that the label does not number",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-q"
+    },
+    {
+     "code": "Q1",
+     "meaning": "First qualifying round",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-q1"
+    },
+    {
+     "code": "Q2",
+     "meaning": "Second qualifying round",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-q2"
+    },
+    {
+     "code": "Q3",
+     "meaning": "Third qualifying round",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-q3"
+    },
+    {
+     "code": "Q4",
+     "meaning": "Fourth qualifying round",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-q4"
+    },
+    {
+     "code": "ER",
+     "meaning": "Unnumbered round",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#round-er"
+    }
+   ]
+  },
+  {
+   "id": "archive-level",
+   "title": "Archive level code",
+   "fields": [
+    "GET /history/archive/matches?level="
+   ],
+   "about": "Level codes used by the results archive. ITF events carry their category number instead of a letter, for example 15 or 25.",
+   "values": [
+    {
+     "code": "G",
+     "meaning": "Grand Slam",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#archive-level-g"
+    },
+    {
+     "code": "M",
+     "meaning": "Masters",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#archive-level-m"
+    },
+    {
+     "code": "A",
+     "meaning": "Other tour-level events",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#archive-level-a"
+    },
+    {
+     "code": "F",
+     "meaning": "Season-ending finals",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#archive-level-f"
+    },
+    {
+     "code": "D",
+     "meaning": "Davis Cup",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#archive-level-d"
+    },
+    {
+     "code": "C",
+     "meaning": "Challenger",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#archive-level-c"
+    },
+    {
+     "code": "O",
+     "meaning": "Olympics",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#archive-level-o"
+    }
+   ]
+  },
+  {
+   "id": "surface",
+   "title": "Court surface",
+   "fields": [
+    "Match.surface",
+    "Tournament.surface",
+    "GET /players/{playerId}/stats?surface="
+   ],
+   "about": "The court surface as stated for the event. It is never inferred from the surface a tournament used in other seasons. A Davis Cup, Billie Jean King Cup or Laver Cup match carries the surface of its own tie. The player stats filter also takes indoor, which keeps matches stated as played indoors on any surface.",
+   "values": [
+    {
+     "code": "hard",
+     "meaning": "Hard court",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#surface-hard"
+    },
+    {
+     "code": "clay",
+     "meaning": "Clay court",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#surface-clay"
+    },
+    {
+     "code": "grass",
+     "meaning": "Grass court",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#surface-grass"
+    }
+   ]
+  },
+  {
+   "id": "draw",
+   "title": "Draw",
+   "fields": [
+    "Match.draw"
+   ],
+   "about": "Singles or doubles. Null means nothing states which, and is not singles.",
+   "values": [
+    {
+     "code": "singles",
+     "meaning": "Singles",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#draw-singles"
+    },
+    {
+     "code": "doubles",
+     "meaning": "Doubles",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#draw-doubles"
+    }
+   ]
+  },
+  {
+   "id": "format",
+   "title": "Match format",
+   "fields": [
+    "Match.format"
+   ],
+   "about": "The number of sets the match is played over.",
+   "values": [
+    {
+     "code": "BO3",
+     "meaning": "Best of three sets",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#format-bo3"
+    },
+    {
+     "code": "BO5",
+     "meaning": "Best of five sets",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#format-bo5"
+    }
+   ]
+  },
+  {
+   "id": "status",
+   "title": "Match status",
+   "fields": [
+    "Match.status"
+   ],
+   "about": "Where the match is in its lifecycle.",
+   "values": [
+    {
+     "code": "upcoming",
+     "meaning": "Scheduled and not yet started",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#status-upcoming"
+    },
+    {
+     "code": "live",
+     "meaning": "In play",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#status-live"
+    },
+    {
+     "code": "completed",
+     "meaning": "Played to a result",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#status-completed"
+    },
+    {
+     "code": "cancelled",
+     "meaning": "Not played as scheduled",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#status-cancelled"
+    }
+   ]
+  },
+  {
+   "id": "outcome",
+   "title": "Match outcome",
+   "fields": [
+    "Match.outcome"
+   ],
+   "about": "How a finished match was settled. Null while a match is upcoming or live.",
+   "values": [
+    {
+     "code": "completed",
+     "meaning": "Ran its full course",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#outcome-completed"
+    },
+    {
+     "code": "retired",
+     "meaning": "A player retired during play",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#outcome-retired"
+    },
+    {
+     "code": "walkover",
+     "meaning": "Conceded before a ball was struck",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#outcome-walkover"
+    },
+    {
+     "code": "default",
+     "meaning": "A player was defaulted",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#outcome-default"
+    },
+    {
+     "code": "abandoned",
+     "meaning": "Called off unfinished, with no result awarded",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#outcome-abandoned"
+    },
+    {
+     "code": "unresolved",
+     "meaning": "Closed unfinished with no result asserted, until a result is confirmed",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#outcome-unresolved"
+    }
+   ]
+  },
+  {
+   "id": "event-status",
+   "title": "Event status",
+   "fields": [
+    "Match.event_status"
+   ],
+   "about": "The stated match state, published as written. Null means nothing was stated, not that the match finished normally.",
+   "values": [
+    {
+     "code": "Finished",
+     "meaning": "Stated as finished",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#event-status-finished"
+    },
+    {
+     "code": "Retired",
+     "meaning": "Ended by a retirement",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#event-status-retired"
+    },
+    {
+     "code": "Cancelled",
+     "meaning": "Stated as cancelled",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#event-status-cancelled"
+    },
+    {
+     "code": "Walk Over",
+     "meaning": "Walkover",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#event-status-walk-over"
+    },
+    {
+     "code": "Postponed",
+     "meaning": "Stated as postponed",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#event-status-postponed"
+    },
+    {
+     "code": "Interrupted",
+     "meaning": "Suspended in play, for example rain, darkness or a medical stop",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#event-status-interrupted"
+    },
+    {
+     "code": "Unresolved",
+     "meaning": "Closed before a result could be confirmed",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#event-status-unresolved"
+    }
+   ]
+  },
+  {
+   "id": "match-event",
+   "title": "Match event type",
+   "fields": [
+    "Event.type",
+    "GET /matches/{matchId}/events",
+    "GET /events"
+   ],
+   "about": "The timeline of a match. Medical timeouts, trainer calls and toilet breaks are stated by the scorer or chair umpire. The player field names the player where the feed carries one and is null otherwise.",
+   "values": [
+    {
+     "code": "break",
+     "meaning": "A break of serve",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-break"
+    },
+    {
+     "code": "set_won",
+     "meaning": "A set won",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-set_won"
+    },
+    {
+     "code": "game_won",
+     "meaning": "A game won",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-game_won"
+    },
+    {
+     "code": "momentum_run",
+     "meaning": "A momentum run",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-momentum_run"
+    },
+    {
+     "code": "stoppage_start",
+     "meaning": "Play stopped",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-stoppage_start"
+    },
+    {
+     "code": "stoppage_end",
+     "meaning": "Play resumed after a stoppage",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-stoppage_end"
+    },
+    {
+     "code": "pause_start",
+     "meaning": "A pause began",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-pause_start"
+    },
+    {
+     "code": "pause_end",
+     "meaning": "A pause ended",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-pause_end"
+    },
+    {
+     "code": "medical_timeout_start",
+     "meaning": "A medical timeout began",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-medical_timeout_start"
+    },
+    {
+     "code": "medical_timeout_end",
+     "meaning": "A medical timeout ended",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-medical_timeout_end"
+    },
+    {
+     "code": "trainer_called",
+     "meaning": "The trainer was called",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-trainer_called"
+    },
+    {
+     "code": "trainer_called_end",
+     "meaning": "The trainer visit ended",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-trainer_called_end"
+    },
+    {
+     "code": "toilet_break_start",
+     "meaning": "A toilet break began",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-toilet_break_start"
+    },
+    {
+     "code": "toilet_break_end",
+     "meaning": "A toilet break ended",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#match-event-toilet_break_end"
+    }
+   ]
+  },
+  {
+   "id": "ranking-system",
+   "title": "Ranking system",
+   "fields": [
+    "RankingRecord.system",
+    "GET /rankings?system="
+   ],
+   "about": "The ranking a row belongs to. Elo keeps four independent ladders, named by the surface field: all surfaces together, hard, clay and grass. ATP and WTA Elo are separate and never combined.",
+   "values": [
+    {
+     "code": "atp",
+     "meaning": "ATP singles ranking",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-atp"
+    },
+    {
+     "code": "wta",
+     "meaning": "WTA singles ranking",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-wta"
+    },
+    {
+     "code": "itf_jt",
+     "meaning": "ITF junior ranking",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-itf_jt"
+    },
+    {
+     "code": "itf_mt",
+     "meaning": "ITF men's World Tennis Tour ranking",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-itf_mt"
+    },
+    {
+     "code": "itf_wt",
+     "meaning": "ITF women's World Tennis Tour ranking",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-itf_wt"
+    },
+    {
+     "code": "utr",
+     "meaning": "UTR rating",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-utr"
+    },
+    {
+     "code": "elo",
+     "meaning": "Elo rating, by surface ladder",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-elo"
+    },
+    {
+     "code": "atp_doubles",
+     "meaning": "ATP doubles ranking",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-atp_doubles"
+    },
+    {
+     "code": "wta_doubles",
+     "meaning": "WTA doubles ranking",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#ranking-system-wta_doubles"
+    }
+   ]
+  },
+  {
+   "id": "point-outcome",
+   "title": "Point outcome",
+   "fields": [
+    "HistoryTapeRow.outcome"
+   ],
+   "about": "How a point ended, as stated for that point in the point-by-point history.",
+   "values": [
+    {
+     "code": "ace",
+     "meaning": "Ace",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#point-outcome-ace"
+    },
+    {
+     "code": "double_fault",
+     "meaning": "Double fault",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#point-outcome-double_fault"
+    },
+    {
+     "code": "winner",
+     "meaning": "Winner",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#point-outcome-winner"
+    },
+    {
+     "code": "forced_error",
+     "meaning": "Forced error",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#point-outcome-forced_error"
+    },
+    {
+     "code": "unforced_error",
+     "meaning": "Unforced error",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#point-outcome-unforced_error"
+    }
+   ]
+  },
+  {
+   "id": "rally-outcome",
+   "title": "Charted point outcome",
+   "fields": [
+    "RallyPoint.outcome"
+   ],
+   "about": "How a charted point ended in the shot-level data.",
+   "values": [
+    {
+     "code": "winner",
+     "meaning": "Winner",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#rally-outcome-winner"
+    },
+    {
+     "code": "forced_error",
+     "meaning": "Forced error",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#rally-outcome-forced_error"
+    },
+    {
+     "code": "unforced_error",
+     "meaning": "Unforced error",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#rally-outcome-unforced_error"
+    },
+    {
+     "code": "error",
+     "meaning": "A miss charted without saying whether it was forced",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#rally-outcome-error"
+    },
+    {
+     "code": "other",
+     "meaning": "Any other ending",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#rally-outcome-other"
+    }
+   ]
+  },
+  {
+   "id": "unreturned",
+   "title": "Unreturned serve",
+   "fields": [
+    "RallyPoint.unreturned_kind"
+   ],
+   "about": "How a serve went unreturned. Null when the return was in play.",
+   "values": [
+    {
+     "code": "ace",
+     "meaning": "Ace",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#unreturned-ace"
+    },
+    {
+     "code": "serve_winner",
+     "meaning": "Serve winner charted without a direction, counted with aces",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#unreturned-serve_winner"
+    },
+    {
+     "code": "serve_forced_error",
+     "meaning": "The serve forced a return error",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#unreturned-serve_forced_error"
+    },
+    {
+     "code": "return_forced_error",
+     "meaning": "Forced return error",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#unreturned-return_forced_error"
+    },
+    {
+     "code": "return_unforced_error",
+     "meaning": "Unforced return error",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#unreturned-return_unforced_error"
+    },
+    {
+     "code": "return_error",
+     "meaning": "Missed return, not charted as forced or unforced",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#unreturned-return_error"
+    }
+   ]
+  },
+  {
+   "id": "stroke",
+   "title": "Stroke",
+   "fields": [
+    "RallyShot.stroke"
+   ],
+   "about": "The kind of shot in charted rally data.",
+   "values": [
+    {
+     "code": "serve",
+     "meaning": "Serve",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-serve"
+    },
+    {
+     "code": "groundstroke",
+     "meaning": "Groundstroke",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-groundstroke"
+    },
+    {
+     "code": "slice",
+     "meaning": "Slice",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-slice"
+    },
+    {
+     "code": "volley",
+     "meaning": "Volley",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-volley"
+    },
+    {
+     "code": "half_volley",
+     "meaning": "Half volley",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-half_volley"
+    },
+    {
+     "code": "swinging_volley",
+     "meaning": "Swinging volley",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-swinging_volley"
+    },
+    {
+     "code": "overhead",
+     "meaning": "Overhead",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-overhead"
+    },
+    {
+     "code": "drop_shot",
+     "meaning": "Drop shot",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-drop_shot"
+    },
+    {
+     "code": "lob",
+     "meaning": "Lob",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-lob"
+    },
+    {
+     "code": "trick",
+     "meaning": "Trick shot",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-trick"
+    },
+    {
+     "code": "unknown",
+     "meaning": "Shot type not recorded",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#stroke-unknown"
+    }
+   ]
+  },
+  {
+   "id": "wing",
+   "title": "Wing",
+   "fields": [
+    "RallyShot.wing"
+   ],
+   "about": "The side a shot was struck from.",
+   "values": [
+    {
+     "code": "forehand",
+     "meaning": "Forehand",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#wing-forehand"
+    },
+    {
+     "code": "backhand",
+     "meaning": "Backhand",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#wing-backhand"
+    }
+   ]
+  },
+  {
+   "id": "direction",
+   "title": "Shot direction",
+   "fields": [
+    "RallyShot.direction"
+   ],
+   "about": "Where the ball was sent.",
+   "values": [
+    {
+     "code": "forehand_side",
+     "meaning": "To the forehand side",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#direction-forehand_side"
+    },
+    {
+     "code": "middle",
+     "meaning": "Through the middle",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#direction-middle"
+    },
+    {
+     "code": "backhand_side",
+     "meaning": "To the backhand side",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#direction-backhand_side"
+    }
+   ]
+  },
+  {
+   "id": "depth",
+   "title": "Shot depth",
+   "fields": [
+    "RallyShot.depth"
+   ],
+   "about": "How deep the ball landed.",
+   "values": [
+    {
+     "code": "shallow",
+     "meaning": "Shallow",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#depth-shallow"
+    },
+    {
+     "code": "mid",
+     "meaning": "Mid-court",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#depth-mid"
+    },
+    {
+     "code": "deep",
+     "meaning": "Deep",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#depth-deep"
+    }
+   ]
+  },
+  {
+   "id": "serve-direction",
+   "title": "Serve direction",
+   "fields": [
+    "RallyPoint.serve_direction"
+   ],
+   "about": "Where the serve was aimed.",
+   "values": [
+    {
+     "code": "wide",
+     "meaning": "Out wide",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#serve-direction-wide"
+    },
+    {
+     "code": "body",
+     "meaning": "At the body",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#serve-direction-body"
+    },
+    {
+     "code": "down_the_t",
+     "meaning": "Down the T",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#serve-direction-down_the_t"
+    }
+   ]
+  },
+  {
+   "id": "error-location",
+   "title": "Error location",
+   "fields": [
+    "RallyPoint.error_location"
+   ],
+   "about": "Where a missed shot went.",
+   "values": [
+    {
+     "code": "net",
+     "meaning": "Into the net",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#error-location-net"
+    },
+    {
+     "code": "wide",
+     "meaning": "Wide",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#error-location-wide"
+    },
+    {
+     "code": "deep",
+     "meaning": "Long",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#error-location-deep"
+    },
+    {
+     "code": "wide_and_deep",
+     "meaning": "Wide and long",
+     "url": "https://docs.livetennisapi.com/tennis-data-vocabulary.html#error-location-wide_and_deep"
+    }
+   ]
+  }
+ ]
+}
