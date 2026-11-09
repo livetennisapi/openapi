@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis API errors and rate limits | Live Tennis API</title>
+<meta name="description" content="Every Live Tennis API error code, what causes it and what to do. Retry only a per-minute 429 or a 5xx, after the Retry-After wait.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.livetennisapi.com/errors-and-rate-limits.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Errors and rate limits">
+<meta property="og:description" content="Every Live Tennis API error code, what causes it and what to do. Retry only a per-minute 429 or a 5xx, after the Retry-After wait.">
+<meta property="og:url" content="https://docs.livetennisapi.com/errors-and-rate-limits.html">
+<meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Errors and rate limits", "description": "Every Live Tennis API error code, what causes it and what to do. Retry only a per-minute 429 or a 5xx, after the Retry-After wait.", "url": "https://docs.livetennisapi.com/errors-and-rate-limits.html", "dateModified": "2026-11-09", "about": {"@type": "WebAPI", "name": "Live Tennis API", "url": "https://livetennisapi.com", "documentation": "https://docs.livetennisapi.com/reference.html"}, "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": "https://livetennisapi.com"}, "publisher": {"@type": "Organization", "@id": "https://livetennisapi.com/#org", "name": "JSB Holdings LLC", "alternateName": "Live Tennis API", "url": "https://livetennisapi.com", "logo": "https://docs.livetennisapi.com/icon-256.png", "sameAs": ["https://rapidapi.com/contact-whTqTESH5/api/tennis-data-analytics-api3", "https://apify.com/livetennisapi/tennis-data-analytics", "https://api.market/store/live-tennis-api/tennis-data-analytics", "https://www.postman.com/livetennisapi", "https://github.com/livetennisapi", "https://pypi.org/project/livetennisapi/", "https://www.npmjs.com/package/livetennisapi", "https://www.npmjs.com/package/livetennisapi-mcp", "https://docs.livetennisapi.com", "https://x.com/livetennisapi"]}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
+<link rel="preload" href="fonts/space-grotesk-latin-700.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
+<link rel="preload" href="fonts/jetbrains-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin fetchpriority="low">
+<style>
+/* Self-hosted webfonts (latin subsets), shared by index.html and reference.html.
+   Both pages previously shipped `document.fonts.size === 0` — reference.html
+   rendered entirely in the system UI stack and Space Grotesk, the product's
+   display face, appeared on neither page.
+
+   These are served from this origin, so the docs have no font dependency they
+   cannot verify: nothing is fetched from Google Fonts or any other third party,
+   and a blocked CDN cannot change how the page reads.
+
+   Family names must stay EXACTLY 'Inter' / 'Space Grotesk' / 'JetBrains Mono' —
+   they are the names the rest of the product's stylesheets use, and the ones
+   Scalar is handed via --scalar-font / --scalar-font-code.
+
+   Only the weights actually used are shipped (180 KB total):
+     Inter          400/500/600/700  body, UI, Scalar's semibold + bold
+     Space Grotesk  500/700          display: headings
+     JetBrains Mono 400/500          code, numerals */
+
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/inter-latin-400.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/inter-latin-500.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('fonts/inter-latin-600.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/inter-latin-700.woff2') format('woff2'); }
+
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/space-grotesk-latin-500.woff2') format('woff2'); }
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/space-grotesk-latin-700.woff2') format('woff2'); }
+
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-400.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-500.woff2') format('woff2'); }
+</style>
+
+<style>
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
+
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
+
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
+</style><style>
+/* Documentation shares the product palette while keeping reference content compact. */
+:root{--bg:#0b100e;--panel:#131c16;--struct:#2d3b31;--text:#f0f4ee;--muted:#afbeb2;--ours:#b7f875;--accent:#b7f875;--r:8px;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;margin:0}a{color:var(--accent);text-underline-offset:4px}a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid #d1ffa7;outline-offset:4px}img{max-width:100%}.docs-site-header{display:flex;align-items:center;gap:24px;justify-content:space-between;max-width:1280px;margin:auto;padding:22px 36px;border-bottom:1px solid var(--struct);position:relative;z-index:2}.docs-brand{font:700 17px/1.3 'Space Grotesk',Inter,sans-serif;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);white-space:nowrap}.docs-brand span{font:400 12px/1.5 Inter,sans-serif;color:var(--muted);border-left:1px solid var(--struct);padding-left:12px;margin-left:5px}.docs-desktop-nav{display:flex;gap:26px}.docs-desktop-nav a{font-size:13px;text-decoration:none;min-height:44px;display:flex;align-items:center;color:var(--muted)}.docs-desktop-nav a:hover,.docs-desktop-nav a[aria-current=page]{color:var(--accent)}.docs-key{display:inline-flex;align-items:center;gap:20px;min-height:44px;padding:8px 15px;background:var(--accent);color:var(--bg);font-size:12px;text-decoration:none;border-radius:7px}.docs-topic-menu{max-width:1208px;margin:0 auto;border-bottom:1px solid var(--struct);color:var(--muted)}.docs-topic-menu summary{cursor:pointer;min-height:44px;padding:14px 0;font-size:12px}.docs-topic-menu nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 24px;padding-bottom:16px}.docs-topic-menu a{display:flex;align-items:center;min-height:44px;font-size:12px;color:var(--muted);text-decoration:none}.docs-topic-menu a:hover,.docs-topic-menu a[aria-current]{color:var(--accent)}
+.docs-page .wrap{max-width:1120px;padding:58px 36px 80px;min-width:0}.docs-page .wrap>header{padding-bottom:28px;margin-bottom:32px;border-bottom:1px solid var(--struct)}.docs-page h1{font:700 clamp(34px,4.2vw,58px)/1.09 'Space Grotesk',Inter,sans-serif;letter-spacing:-.05em;max-width:22ch;margin:12px 0 24px;overflow-wrap:anywhere}.docs-page h2{font-size:26px;letter-spacing:-.03em;line-height:1.25;margin-top:48px}.docs-page h3{font-size:20px;letter-spacing:-.02em;line-height:1.4;overflow-wrap:anywhere}.docs-page h4{color:var(--muted);font-size:11px;letter-spacing:.12em;margin-top:28px}.docs-page .meta,.docs-page .eyebrow{color:var(--muted);font-size:13px}.docs-page .wrap>header>.meta:first-child,.docs-page .eyebrow{text-transform:uppercase;font-size:10px;letter-spacing:.15em;color:var(--accent)}.docs-page .wrap>header>p:not(.meta){max-width:76ch;line-height:1.8}.docs-page .pagenav{gap:8px 12px}.docs-page .pagenav a{padding:7px 12px;border:1px solid var(--struct);border-radius:6px;min-height:40px;font-size:12px;text-decoration:none}.docs-page .pagenav a:hover{background:var(--panel);border-color:#637958}.docs-page .banner{border-radius:8px;padding:18px 22px;background:var(--panel);border-color:var(--struct);border-left:3px solid var(--accent)}.docs-page .banner p{font-size:14px;margin:0;line-height:1.7}.docs-page .toc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}.docs-page .toc li{font-size:13px}.docs-page .toc li a{font-size:14px;min-height:46px}.docs-page .op{margin-top:42px;padding-top:4px;min-width:0}.docs-page pre{border-radius:10px;padding:22px;font-size:12px;line-height:1.8;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}.docs-page pre code{font-size:inherit}.docs-page code{overflow-wrap:anywhere;word-break:normal}.docs-page .scrollx{border:1px solid var(--struct);border-radius:8px;margin:14px 0 18px;max-width:100%;min-width:0}.docs-page .scrollx table{margin:0;min-width:540px}.docs-page table th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:var(--panel);padding:12px 14px}.docs-page table td{font-size:13px;padding:13px 14px}.docs-page table tr:last-child td{border-bottom:0}.docs-page .annot{border-radius:8px;padding:18px}.docs-page footer{margin-top:60px}.docs-page footer hr{border:0;border-top:1px solid var(--struct);margin:20px 0}.docs-changelog article{border-top:1px solid var(--struct);padding:24px 0;max-width:80ch}.docs-changelog article h2{border:0;margin-top:0;display:flex;align-items:baseline;gap:20px;flex-wrap:wrap}.docs-changelog time{font:400 12px/1.5 Inter,sans-serif;color:var(--muted)}
+/* A useful landing page stays visible before the optional explorer is loaded. */
+.docs-home #static-intro{position:relative;inset:auto;max-width:1208px;max-height:none;overflow:visible;min-height:0;padding:64px 0 48px;margin:auto;background:none;z-index:0}.docs-home #static-intro[hidden]{display:none}.docs-home .docs-hero{display:grid;grid-template-columns:1.2fr 1fr;gap:70px;align-items:center;margin-bottom:68px}.docs-home .docs-eyebrow{color:var(--accent);font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 22px}.docs-home #static-intro h1{font:700 clamp(40px,5vw,70px)/1.04 'Space Grotesk',Inter,sans-serif;letter-spacing:-.055em;color:var(--text);margin:0 0 24px}.docs-home .docs-lede{font-size:16px;line-height:1.8;color:var(--muted);max-width:55ch}.docs-home .docs-actions{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:28px 0 14px}.docs-home #open-explorer{padding:13px 18px;font:500 13px/1.5 Inter,sans-serif;border:0;border-radius:8px;background:var(--accent);color:var(--bg);min-height:48px;cursor:pointer}.docs-home .docs-actions>a{font-size:13px;min-height:44px;display:inline-flex;align-items:center}.docs-home .docs-code{padding:24px;background:var(--panel);border:1px solid #3b4d3e;border-radius:12px;min-width:0;box-shadow:0 24px 80px #0005}.docs-home .docs-code-label{font-size:10px;letter-spacing:.14em;color:var(--muted);display:flex;justify-content:space-between;text-transform:uppercase;border-bottom:1px solid var(--struct);padding-bottom:18px;margin-bottom:22px}.docs-home .docs-code pre{font:12px/1.9 'JetBrains Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;color:var(--text)}.docs-home .docs-code .code-accent{color:var(--accent)}.docs-home .docs-code>p{font-size:12px;line-height:1.7;color:var(--muted);border-top:1px solid var(--struct);padding-top:16px;margin:22px 0 0}.docs-home .docs-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin:0 0 20px}.docs-home #static-intro h2{font:700 27px/1.2 'Space Grotesk',Inter,sans-serif;letter-spacing:-.035em;margin:0}.docs-home .docs-section-title p{font-size:12px;color:var(--muted);margin:0}.docs-home .docs-topics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.docs-home .docs-topics>a{border:1px solid var(--struct);border-radius:9px;display:flex;flex-direction:column;gap:14px;padding:22px;text-decoration:none;min-width:0;color:var(--text);background:#0f1712}.docs-home .docs-topics>a:hover{background:var(--panel);border-color:#6c885c}.docs-home .docs-topics strong{font-size:14px;font-weight:500;line-height:1.4}.docs-home .docs-topics span{font-size:12px;line-height:1.7;color:var(--muted)}.docs-home .docs-topics small{font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace}.docs-home .docs-resources{display:flex;gap:20px;flex-wrap:wrap;border-top:1px solid var(--struct);padding:24px 0;margin-top:32px}.docs-home .docs-resources a{font-size:12px;min-height:32px;display:flex;align-items:center}.docs-home .docs-clients{display:flex;flex-wrap:wrap;gap:12px 24px;color:var(--muted);font-size:12px}.docs-home .docs-clients code{color:var(--text);font-size:11px}.docs-home .docs-corner{display:none}.docs-home #boot{position:relative;inset:auto;max-width:1208px;margin:0 auto;padding:20px;min-height:0;border-bottom:1px solid var(--struct);pointer-events:none}.docs-home #boot[hidden]{display:none}.docs-home #boot a{pointer-events:auto}.docs-home .skip-link{position:absolute;left:-9999px;z-index:20;background:var(--panel);padding:14px;color:var(--accent)}.docs-home .skip-link:focus{left:8px;top:8px}
+@media(max-width:1280px){.docs-topic-menu{margin:0 36px}.docs-home #static-intro{padding:52px 36px}.docs-home .docs-hero{gap:36px}}
+@media(max-width:900px){.docs-desktop-nav{gap:16px}.docs-home .docs-hero{grid-template-columns:1fr;gap:28px;margin-bottom:44px}.docs-home .docs-code{max-width:620px}.docs-home .docs-topics{grid-template-columns:repeat(2,minmax(0,1fr))}.docs-home .docs-section-title{display:block}.docs-home .docs-section-title p{margin-top:10px}.docs-page .wrap{padding-top:36px}}
+@media(max-width:640px){.docs-site-header{padding:16px 20px;gap:12px;flex-wrap:wrap}.docs-brand{font-size:14px;gap:8px}.docs-brand img{width:22px;height:22px}.docs-brand span{font-size:10px;padding-left:8px;margin-left:0}.docs-desktop-nav{display:none}.docs-key{font-size:10px;gap:8px;padding:7px 10px}.docs-topic-menu{margin:0 20px}.docs-topic-menu nav{grid-template-columns:1fr}.docs-page .wrap{padding:30px 20px 60px}.docs-page h1{font-size:36px}.docs-page .toc{grid-template-columns:1fr}.docs-page h3{font-size:18px}.docs-page .pagenav a{min-height:44px}.docs-page pre{padding:16px;font-size:11px}.docs-page .wrap>header>p:not(.meta){font-size:15px}.docs-home #static-intro{padding:38px 20px}.docs-home .docs-lede{font-size:15px}.docs-home .docs-code{padding:18px}.docs-home .docs-code pre{font-size:11px}.docs-home .docs-topics>a{padding:18px 15px}.docs-home .docs-resources{gap:8px 20px}.docs-home .docs-resources a{min-height:44px}.docs-home .docs-actions{gap:8px 18px}}
+@media(max-width:360px){.docs-brand span{display:none}.docs-home .docs-topics{grid-template-columns:1fr}.docs-page h1{font-size:32px}}
+@media(prefers-reduced-motion:no-preference){a,button{transition:color .15s,background .15s,border-color .15s}}
+
+.docs-page p,.docs-page li,.docs-page a,.docs-page td{overflow-wrap:anywhere}.docs-page .scrollx{width:100%;overflow-x:auto}
+</style>
+
+</head>
+<body class="docs-page docs-topic">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a><a href="./ai-sdk.html">Live Tennis API tools for the Vercel AI SDK</a><a href="./errors-and-rate-limits.html" aria-current="page">Errors and rate limits</a></nav></details>
+<div class="wrap">
+<header role="none">
+<p class="meta">Live Tennis API &middot; docs &middot; guide</p>
+<h1>Errors and rate limits</h1>
+<p><strong>What does each Live Tennis API error mean, and when should a client retry?</strong> Every error is JSON with a stable <code>error</code> code. Retry a per-minute 429 and any 5xx, waiting <code>Retry-After</code> when it is sent. Fix the request on a 400, the key on a 401 and the plan on a 403. The daily-quota 429 and <code>abuse_throttled</code> are never retried.</p>
+<p class="meta">Status codes and error codes are read from the OpenAPI spec when the page is built. Retry rules checked against livetennisapi 1.8.0 for Python and 1.10.2 for JS on <time datetime="2026-11-09">2026-11-09</time>.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference: all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="https://livetennisapi.com/pricing">Pricing</a>
+<a href="https://livetennisapi.com/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+<h2 id="body">What does an error response look like?</h2>
+<p>Every error is JSON. Most use the <code>Error</code> schema:</p>
+<ul>
+<li><code>error</code>: a stable machine-readable code. Branch on this, never on the text.</li>
+<li><code>detail</code>: a human-readable explanation, when one adds anything.</li>
+<li><code>allowed</code>: on a refused enumerated parameter, the values that would have been accepted.</li>
+</ul>
+<p>Two other shapes exist. A 410 carries <code>MatchMerged</code> or <code>PlayerMerged</code>:
+<code>error: "merged"</code>, <code>merged_into</code>, <code>merged_at</code> and <code>detail</code>.
+A 404 on <code>/players/{playerId}</code> and its stoppage and injury routes carries
+<code>PlayerNotFound</code>. It adds <code>detail</code> and <code>see</code> when the id belongs
+to the results archive. Some codes add their own fields, named in the tables below.</p>
+<pre><code>{&quot;error&quot;: &quot;upgrade_required&quot;}</code></pre>
+
+<h2 id="statuses">Which status codes can the API return?</h2>
+<p>These are all the non-2xx statuses in the OpenAPI spec, read from it when this page is built.
+Every endpoint except <code>/health</code>, which takes no key, documents 401.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="Status codes"><table><caption class="vh">Every non-2xx status the spec documents</caption><thead><tr><th scope="col">Status</th><th scope="col">Meaning</th><th scope="col">What to do</th><th scope="col">Clients retry</th><th scope="col">Defined in the spec</th></tr></thead><tbody>
+<tr><td><code>304</code></td><td>Not an error. The broadcast state is unchanged since the <code>ETag</code> you sent.</td><td>Keep the copy you have.</td><td>No</td><td>inline on <code>GET /broadcast/match/{matchId}</code><br>inline on <code>GET /broadcast/live</code></td></tr>
+<tr><td><code>400</code></td><td>A query parameter was refused. The <code>error</code> code names it.</td><td>Fix the request.</td><td>No</td><td><code>BadRequest</code> (18 operations)<br>inline on <code>GET /events</code><br>inline on <code>GET /players/{playerId}/stoppages</code><br>inline on <code>GET /players/{playerId}/injuries</code><br>inline on <code>GET /players</code><br>inline on <code>GET /players/{playerId}/stats</code><br>inline on <code>GET /history/incidents/{incidentId}/matches</code></td></tr>
+<tr><td><code>401</code></td><td>The key is missing, unknown or disabled.</td><td>Send a valid key. Re-authenticate.</td><td>No</td><td><code>Unauthorized</code> (48 operations)</td></tr>
+<tr><td><code>403</code></td><td>The key works and the plan does not include this data.</td><td>Upgrade the plan.</td><td>No</td><td><code>UpgradeRequired</code> (41 operations)</td></tr>
+<tr><td><code>404</code></td><td>No such resource, or no data for it yet.</td><td>Check the id, or use the availability flags.</td><td>No</td><td><code>NotFound</code> (18 operations)<br>inline on <code>GET /matches/{matchId}/score</code><br>inline on <code>GET /players/{playerId}/stoppages</code><br>inline on <code>GET /players/{playerId}/injuries</code><br>inline on <code>GET /matches/{matchId}/analysis</code><br>inline on <code>GET /players/{playerId}</code><br>inline on <code>GET /players/{playerId}/stats</code><br>inline on <code>GET /markets/{matchId}/prices</code><br>inline on <code>GET /history/incidents/{incidentId}/matches</code><br>inline on <code>GET /history/archive/matches/{archiveId}/tape</code></td></tr>
+<tr><td><code>409</code></td><td>The webhook limit is reached.</td><td>Delete a webhook first.</td><td>No</td><td>inline on <code>POST /webhooks</code></td></tr>
+<tr><td><code>410</code></td><td>The id was merged or retired. The body forwards you.</td><td>Re-point to <code>merged_into</code>.</td><td>No</td><td><code>MatchGone</code> (13 operations)<br><code>PlayerGone</code> (4 operations)</td></tr>
+<tr><td><code>429</code></td><td>A rate limit or quota was hit.</td><td>Depends on the body. See below.</td><td>Per-minute only</td><td><code>RateLimited</code> (48 operations)</td></tr>
+<tr><td><code>503</code></td><td><code>/history/coverage</code> is not built yet.</td><td>Try again later.</td><td>Yes</td><td>inline on <code>GET /history/coverage</code></td></tr>
+</tbody></table></div>
+<p>The spec documents no other 5xx. The official clients treat any 5xx they get as temporary and
+retry it.</p>
+
+<h2 id="bad-request">Which 400 codes are there?</h2>
+<p>A 400 is never retried. The request is wrong as sent and gets the same answer every time.
+The last column lists the operations whose spec text names the code.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="400 error codes"><table><caption class="vh">400 error codes</caption><thead><tr><th scope="col">Status</th><th scope="col"><code>error</code></th><th scope="col">Cause</th><th scope="col">What to do</th><th scope="col">Named in the spec on</th></tr></thead><tbody>
+<tr><td><code>400</code></td><td><code>bad_status</code></td><td><code>status</code> is not one of the accepted values.</td><td>Use a value from <code>allowed</code> in the body.</td><td><code>GET /matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_request</code></td><td>A non-integer <code>player</code> id, or <code>updated_since</code> sent with <code>status=cancelled</code>.</td><td>Fix the parameter.</td><td><code>GET /history/matches</code><br><code>GET /matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_updated_since</code></td><td><code>updated_since</code> sent together with <code>from</code> or <code>to</code>.</td><td>Send one or the other.</td><td><code>GET /matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_withdrawn_since</code></td><td><code>withdrawn_since</code> sent with any parameter other than <code>limit</code> and <code>offset</code>, or with an instant that does not parse.</td><td>Send it alone, as an ISO-8601 instant.</td><td><code>GET /matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_has_analysis</code><br><code>bad_has_market</code><br><code>bad_is_qualifying</code><br><code>bad_points_complete</code></td><td>The flag was something other than <code>true</code> or <code>false</code>.</td><td>Send <code>true</code> or <code>false</code>.</td><td><code>GET /fixtures</code><br><code>GET /history/matches</code><br><code>GET /matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_gender</code></td><td>A value other than <code>men</code> or <code>women</code>.</td><td>Fix the value.</td><td><code>GET /fixtures</code><br><code>GET /history/matches</code><br><code>GET /matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_country</code></td><td>A country value that is not 3 letters.</td><td>Send a 3-letter code.</td><td><code>GET /history/matches</code><br><code>GET /matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_draw</code><br><code>bad_coverage</code></td><td>An unknown value.</td><td>Use a value from <code>allowed</code> in the body.</td><td><code>GET /fixtures</code><br><code>GET /history/matches</code><br><code>GET /matches</code><br><code>GET /tournaments</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_tier</code></td><td>An unknown tier value. The body names the refused values in <code>bad</code>.</td><td>Use a value from <code>allowed</code> in the body.</td><td><code>GET /history/matches</code><br><code>GET /matches</code><br><code>GET /tournaments</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_tournament_id</code></td><td>A non-numeric <code>tournament_id</code>.</td><td>Send the numeric id.</td><td><code>GET /history/matches</code><br><code>GET /matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_restated_since</code><br><code>bad_changed_since</code></td><td>The value is not an ISO-8601 instant. A bare date is refused for <code>restated_since</code>, because a day is not an instant.</td><td>Send a full UTC timestamp.</td><td><code>GET /history/matches</code><br><code>GET /matches/{matchId}/points</code><br><code>GET /players</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_date</code><br><code>bad_surface</code><br><code>bad_level</code><br><code>bad_last</code></td><td>A rejected query on player stats. <code>bad_surface</code> and <code>bad_level</code> list the accepted values in <code>allowed</code>.</td><td>Fix the parameter named by the code.</td><td><code>GET /players/{playerId}/stats</code></td></tr>
+<tr><td><code>400</code></td><td><code>doubles_not_supported</code></td><td>A doubles-team id on player stats.</td><td>Ask for a singles player id.</td><td><code>GET /players/{playerId}/stats</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_sequence</code></td><td>On the tape, a <code>sequence</code> other than <code>raw</code> or <code>clean</code>. On the score endpoint, a <code>sequence</code> that is not an integer.</td><td>Fix the value.</td><td><code>GET /history/matches/{matchId}</code><br><code>GET /matches/{matchId}/score</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_points</code></td><td>An unknown <code>points</code> value.</td><td>Send <code>default</code> or <code>complete</code>.</td><td><code>GET /history/matches/{matchId}</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_combination</code></td><td><code>points=complete</code> together with <code>sequence=clean</code>.</td><td>Drop one of the two.</td><td><code>GET /history/matches/{matchId}</code></td></tr>
+<tr><td><code>400</code></td><td><code>points_read_disabled</code></td><td><code>points=complete</code> where that read is not enabled yet.</td><td>Use the default read. Repeating the same request gets the same answer.</td><td><code>GET /history/matches/{matchId}</code></td></tr>
+<tr><td><code>400</code></td><td><code>points_disabled</code></td><td>The per-point surface is switched off on the server.</td><td>Stop polling it. A retry gets the same answer while it is off.</td><td><code>GET /matches/{matchId}/points</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_after_seq</code></td><td><code>after_seq</code> is not a non-negative integer.</td><td>Send the <code>last_seq</code> of the previous page.</td><td><code>GET /history/matches/{matchId}/prices</code><br><code>GET /matches/{matchId}/points</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_cursor</code></td><td>A malformed cursor.</td><td>Send the cursor exactly as the previous page returned it.</td><td><code>GET /matches/{matchId}/prices</code><br><code>GET /players/{playerId}/injuries</code><br><code>GET /players/{playerId}/stoppages</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_type</code><br><code>bad_after_id</code></td><td>A refused <code>type</code> or <code>after_id</code> on the events feed.</td><td>Take <code>after_id</code> from <code>meta.next_cursor</code>. Send event types or <code>stoppages</code> as <code>type</code>.</td><td><code>GET /events</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_since</code><br><code>bad_until</code><br><code>bad_window</code><br><code>bad_kind</code></td><td>A refused time bound, window or kind.</td><td>Fix the parameter named by the code.</td><td><code>GET /events</code><br><code>GET /players/{playerId}/injuries</code><br><code>GET /players/{playerId}/stoppages</code></td></tr>
+<tr><td><code>400</code></td><td><code>window_too_long</code></td><td>A stoppage or injury window longer than 366 days.</td><td>Split the request into shorter windows.</td><td><code>GET /players/{playerId}/injuries</code><br><code>GET /players/{playerId}/stoppages</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_format</code></td><td><code>format</code> was neither <code>jsonl</code> nor <code>csv</code>.</td><td>Send <code>jsonl</code> or <code>csv</code>.</td><td><code>GET /history/incidents/{incidentId}/matches</code></td></tr>
+<tr><td><code>400</code></td><td><code>bad_period</code></td><td>The period is not <code>YYYY-MM</code>, or not <code>YYYY</code> for the yearly kinds (<code>rally</code>, <code>archive</code>, <code>elo</code>, <code>archive_tape</code>).</td><td>Fix the period format.</td><td><code>GET /history/packages/{period}</code></td></tr>
+<tr><td><code>400</code></td><td><code>ambiguous_name</code></td><td>A name fragment matched more than one player. The body lists the candidates.</td><td>Send a player id, or a longer name.</td><td><code>GET /h2h</code></td></tr>
+</tbody></table></div>
+<p>The <code>Error</code> schema also lists <code>bad_tour</code> and <code>bad_year</code>. The spec does not say which endpoint
+returns them.</p>
+
+<h2 id="auth-and-plan">401 or 403: is it the key or the plan?</h2>
+<p>A 401 means the key itself failed: it is missing, unknown or disabled. Send it as
+<code>Authorization: Bearer &lt;key&gt;</code>, <code>X-API-Key: &lt;key&gt;</code> or
+<code>?token=&lt;key&gt;</code>. A 403 means the key works and the plan stops short of the data.
+It is never a silent empty result.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="403 error codes"><table><caption class="vh">403 error codes</caption><thead><tr><th scope="col">Status</th><th scope="col"><code>error</code></th><th scope="col">Cause</th><th scope="col">What to do</th><th scope="col">Named in the spec on</th></tr></thead><tbody>
+<tr><td><code>403</code></td><td><code>upgrade_required</code></td><td>The key is valid and the plan does not include this data. <code>free_history_taste: "used"</code> means a FREE key has spent its 20 history calls for the calendar month. <code>capability: archive_tape</code> means a core BASIC or PRO key asked for the archive tape.</td><td>Upgrade the plan (<a href="https://livetennisapi.com/pricing">pricing</a>). Retrying does not help.</td><td><code>GET /history/archive/matches/{archiveId}/tape</code><br><code>GET /history/coverage</code><br><code>GET /history/matches</code><br><code>GET /history/packages</code><br>and 1 more<br>every <code>UpgradeRequired</code> response (41 operations)</td></tr>
+</tbody></table></div>
+<p>The 403 body names no tier. The Python client's <code>UpgradeRequired.required_tier</code> and
+the JS client's <code>requiredTier</code> work out the lowest tier from the endpoint you called.</p>
+
+<h2 id="not-found">What does a 404 or 410 mean for a stored id?</h2>
+<div class="scrollx" tabindex="0" role="region" aria-label="404, 409 and 410 error codes"><table><caption class="vh">404, 409 and 410 error codes</caption><thead><tr><th scope="col">Status</th><th scope="col"><code>error</code></th><th scope="col">Cause</th><th scope="col">What to do</th><th scope="col">Named in the spec on</th></tr></thead><tbody>
+<tr><td><code>404</code></td><td><code>not_found</code></td><td>No such id. On the player routes the body adds <code>detail</code> and <code>see</code> when the id belongs to the results archive.</td><td>Check the id. If <code>see</code> is present, read the archive lookup it names.</td><td><code>GET /history/incidents/{incidentId}/matches</code><br><code>GET /markets/{matchId}/prices</code><br><code>GET /matches/{matchId}/analysis</code><br><code>GET /matches/{matchId}/prices</code></td></tr>
+<tr><td><code>404</code></td><td><code>no_analysis</code></td><td>The match exists and nothing has been computed for it. The body carries <code>match_id</code> and <code>coverage: "none"</code>.</td><td>Filter the slate with <code>has_analysis=true</code> instead of probing each match.</td><td><code>GET /matches</code><br><code>GET /matches/{matchId}/analysis</code></td></tr>
+<tr><td><code>404</code></td><td><code>no_market</code></td><td>The match exists and no match-winner market is mapped to it.</td><td>Filter with <code>has_market=true</code> instead of probing each match.</td><td><code>GET /history/matches</code><br><code>GET /history/matches/{matchId}/prices</code><br><code>GET /markets/{matchId}/prices</code><br><code>GET /matches</code><br>and 1 more</td></tr>
+<tr><td><code>404</code></td><td><code>not_charted</code></td><td>We hold the match and nobody charted it.</td><td>Treat it as uncharted. Most matches are.</td><td><code>GET /history/matches/{matchId}/rally</code></td></tr>
+<tr><td><code>404</code></td><td><code>not_derivable</code></td><td>The incident has no exact per-match derivation. The body carries its <code>window_utc</code>, <code>affected_surfaces</code> and a note saying why.</td><td>Use the window and surfaces in the body.</td><td><code>GET /history/incidents/{incidentId}/matches</code></td></tr>
+<tr><td><code>409</code></td><td><code>webhook_limit</code></td><td>The key already has 3 webhooks.</td><td>Delete one before adding another.</td><td><code>POST /webhooks</code></td></tr>
+<tr><td><code>410</code></td><td><code>merged</code></td><td>The id was merged into another record, or a player id was retired.</td><td>Replace the stored id with <code>merged_into</code>. If it is null, drop the id.</td><td>every <code>MatchGone</code> response (13 operations)<br>every <code>PlayerGone</code> response (4 operations)</td></tr>
+</tbody></table></div>
+<p>Two 404s carry no code of their own. <code>GET /matches/{matchId}/score</code> answers 404
+for an unknown match or an upcoming match with no score yet. It does the same for a cancelled
+match that was never played, and for a settled match with nothing recorded.</p>
+<p>The archive tape answers a plain 404 for a result from 1968 to 2012. So does a 2013 to 2022
+result that was never reconstructed, or one whose reconstruction did not prove its binding.
+The three are not told apart.</p>
+<p>A 410 is only ever about an id that once existed. An id that was never issued stays a 404.</p>
+
+<h2 id="rate-limits">What does a 429 mean, and when do I retry it?</h2>
+<p>Every 429 carries a <code>Retry-After</code> header. The body tells you which of three limits
+you hit, and only the first is worth retrying.</p>
+<ol>
+<li><strong>Per-minute window.</strong> <code>error: "rate_limited"</code> with no <code>scope</code>.
+The body names the next tier up in <code>upgrade_url</code>, <code>tier</code> and
+<code>price</code>. Wait <code>Retry-After</code> seconds and send the request again.</li>
+<li><strong>Daily quota.</strong> <code>error: "rate_limited"</code> with <code>scope: "day"</code>,
+<code>limit_per_day</code> and <code>resets_at</code>, the ISO instant the daily window resets.
+Do not retry. Stop until <code>resets_at</code>, or upgrade.</li>
+<li><strong>Abuse throttle.</strong> <code>error: "abuse_throttled"</code> with
+<code>retry_at_epoch</code>. A 24-hour block for a client that keeps calling far past its cap.
+A retry loop that backs off never sees it. Fix the loop and wait until
+<code>retry_at_epoch</code>.</li>
+</ol>
+<div class="scrollx" tabindex="0" role="region" aria-label="429 and 503 error codes"><table><caption class="vh">429 and 503 error codes</caption><thead><tr><th scope="col">Status</th><th scope="col"><code>error</code></th><th scope="col">Cause</th><th scope="col">What to do</th><th scope="col">Named in the spec on</th></tr></thead><tbody>
+<tr><td><code>429</code></td><td><code>rate_limited</code></td><td>The per-minute window, or with <code>scope: "day"</code> the daily quota.</td><td>See <a href="#rate-limits">the 429 section</a>.</td><td>every <code>RateLimited</code> response (48 operations)</td></tr>
+<tr><td><code>429</code></td><td><code>abuse_throttled</code></td><td>A 24-hour block for a client that kept calling far past its cap.</td><td>Fix the retry loop. Do not retry until <code>retry_at_epoch</code>.</td><td>every <code>RateLimited</code> response (48 operations)</td></tr>
+<tr><td><code>503</code></td><td><code>coverage_unavailable</code></td><td>The coverage rollup has not been built yet, or cannot be read.</td><td>Try again after the nightly build.</td><td><code>GET /history/coverage</code></td></tr>
+</tbody></table></div>
+<p>The official clients retry a 503 like any 5xx and give up after 2 retries. The coverage
+rollup is built nightly, so for <code>coverage_unavailable</code> check again later.</p>
+
+<h2 id="clients">How do the official clients retry?</h2>
+<p>The <a href="https://github.com/livetennisapi/livetennisapi-python">Python client</a> (1.8.0) and the
+<a href="https://github.com/livetennisapi/livetennisapi-js">JS client</a> (1.10.2) follow the same rules. We read both from
+source and ran them against a local server on
+<time datetime="2026-11-09">2026-11-09</time>.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="Client retries"><table><caption class="vh">What the official clients retry</caption><thead><tr><th scope="col">The API answers</th><th scope="col">Retried</th><th scope="col">How</th></tr></thead><tbody>
+<tr><td>429 <code>rate_limited</code>, per-minute window</td><td>Yes</td><td>Waits <code>Retry-After</code> if sent, else exponential backoff</td></tr>
+<tr><td>Any 5xx</td><td>Yes</td><td>Waits <code>Retry-After</code> if sent, else exponential backoff</td></tr>
+<tr><td>Connection error or timeout</td><td>Yes</td><td>Exponential backoff</td></tr>
+<tr><td>429 <code>rate_limited</code> with <code>scope: "day"</code></td><td>No</td><td>Raises at once</td></tr>
+<tr><td>429 <code>abuse_throttled</code></td><td>No</td><td>Raises at once</td></tr>
+<tr><td>400, 401, 403, 404 and every other 4xx</td><td>No</td><td>Raises at once</td></tr>
+</tbody></table></div>
+<ul>
+<li>Up to 2 retries by default, so 3 attempts in all. Set <code>max_retries</code> in Python or
+<code>maxRetries</code> in JS. 0 turns retries off.</li>
+<li>With <code>Retry-After</code>, the wait is that many seconds, at most 60.</li>
+<li>Without it, the wait is 0.5 s doubled on each attempt plus up to 0.25 s of random jitter,
+at most 10 s. The jitter keeps many clients from retrying in step.</li>
+<li>When the retries run out, the client raises the error for the last answer.</li>
+</ul>
+<div class="scrollx" tabindex="0" role="region" aria-label="Client error classes"><table><caption class="vh">Error classes in both clients</caption><thead><tr><th scope="col">Status</th><th scope="col">Class (Python and JS)</th></tr></thead><tbody>
+<tr><td>400</td><td><code>BadRequest</code></td></tr>
+<tr><td>401</td><td><code>Unauthorized</code></td></tr>
+<tr><td>403</td><td><code>UpgradeRequired</code></td></tr>
+<tr><td>404</td><td><code>NotFound</code></td></tr>
+<tr><td>429</td><td><code>RateLimited</code></td></tr>
+<tr><td>429 <code>abuse_throttled</code></td><td><code>AbuseThrottled</code></td></tr>
+<tr><td>503</td><td><code>ServiceUnavailable</code></td></tr>
+<tr><td>Other 5xx</td><td><code>ServerError</code></td></tr>
+<tr><td>409, 410 and other statuses</td><td><code>APIStatusError</code></td></tr>
+</tbody></table></div>
+<p>In both clients <code>RateLimited</code> carries <code>retry_after</code> (Python) or
+<code>retryAfter</code> (JS), and <code>resets_at</code> or <code>resetsAt</code> on a daily 429.
+<code>AbuseThrottled</code> carries <code>retry_at_epoch</code> or <code>retryAtEpoch</code>.</p>
+
+<h2 id="own-client">How should my own client back off?</h2>
+<p>Do what the official clients do. Retry a 429 only when the body has no <code>scope: "day"</code>
+and the code is not <code>abuse_throttled</code>. Retry a 5xx or a dropped connection. Wait
+<code>Retry-After</code> when it is sent, and otherwise back off exponentially with jitter. Cap the
+number of retries. Never retry a 400, 401, 403, 404, 409 or 410 unchanged.</p>
+
+<h2 id="limits">What are the limits on each plan?</h2>
+<p>Read from the spec. Each plan includes everything in the plans below it.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="Rate limits by plan"><table><caption class="vh">Requests per minute and per day by plan</caption><thead><tr><th scope="col">Plan</th><th scope="col">Per minute</th><th scope="col">Per day</th></tr></thead><tbody>
+<tr><td>FREE</td><td>30</td><td>100</td></tr>
+<tr><td>BASIC</td><td>60</td><td>1,000</td></tr>
+<tr><td>PRO</td><td>300</td><td>10,000</td></tr>
+<tr><td>ULTRA</td><td>600</td><td>500,000</td></tr>
+</tbody></table></div>
+<p><code>GET /usage</code> returns your plan, your limits and today's calls, and calling it never
+uses quota. Refused requests do not spend the daily allowance, so <code>remaining_day</code> does
+not fall on a 429, 403 or 404. The per-minute window is on the <code>X-RateLimit-*</code> headers
+of every response. Plans and prices are on the <a href="https://livetennisapi.com/pricing">pricing page</a>.</p>
+
+<h2 id="websocket">What do the WebSocket close codes mean?</h2>
+<p>The WebSocket feed sends an <code>error</code> frame, then closes with a code that says what to
+do next. The close reason repeats the frame's <code>error</code>.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="WebSocket close codes"><table><caption class="vh">WebSocket close codes</caption><thead><tr><th scope="col">Close code</th><th scope="col">Reasons</th><th scope="col">What to do</th></tr></thead><tbody>
+<tr><td><code>1013</code></td><td><code>connection_limit</code><br><code>service_unavailable</code></td><td>Transient. Back off and reconnect. For <code>connection_limit:per_key</code>, close a connection first or move to the push feed.</td></tr>
+<tr><td><code>1008</code></td><td><code>unauthorized</code><br><code>upgrade_required</code><br><code>email_unverified</code><br><code>client_blocked</code><br><code>bad_json</code><br><code>no_topics</code></td><td>The request will never be accepted as sent. Fix it, do not retry unchanged.</td></tr>
+<tr><td><code>1012</code></td><td>None</td><td>The server is restarting. Reconnect with backoff and subscribe again.</td></tr>
+<tr><td><code>1000</code></td><td>None</td><td>Normal closure: you closed it, or the stream ended.</td></tr>
+</tbody></table></div>
+
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="./auth-quota-and-health.html">Authentication, quota and status</a></li>
+<li><a href="./reference.html">Full reference, every endpoint and response</a></li>
+<li><a href="https://github.com/livetennisapi/livetennisapi-python">livetennisapi for Python</a> and <a href="https://github.com/livetennisapi/livetennisapi-js">livetennisapi for JS</a></li>
+<li><a href="https://livetennisapi.com/subscribe/free">Free API key</a></li>
+</ul>
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+<a href="./live-scores.html">Live tennis scores API</a>
+<a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a>
+<a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a>
+<a href="./point-by-point-history.html">Point-by-point tennis data API</a>
+<a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a>
+<a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a>
+<a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a>
+<a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
+<a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
+<a href="./ai-sdk.html">Live Tennis API tools for the Vercel AI SDK</a>
+</nav>
+<p class="meta">Built from <a href="./openapi.yaml">openapi.yaml</a>. Page source in <a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.</p>
+<p class="meta">Built by <a href="https://synapsereality.io/work/live-tennis-api/">Synapse Research Ltd</a>.</p>
+</footer>
+</div>
+<script>
+(function(){try{navigator.sendBeacon('https://livetennisapi.com/collect',JSON.stringify({kind:'docs_view',path:location.pathname,host:location.host}))}catch(e){}})();
+</script>
+<script>
+(function(){var E={};"AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO".split(" ").forEach(function(c){E[c]=1});fetch("https://livetennisapi.com/cdn-cgi/trace").then(function(r){return r.text()}).then(function(t){var m=t.match(/loc=(\w+)/);if(!m||E[m[1]])return;(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","xotc2pctsp");try{clarity("set","user_state","docs")}catch(e){}}).catch(function(){})})();
+</script>
+</body>
+</html>

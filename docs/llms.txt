@@ -29,6 +29,7 @@ endpoints, generated from the same spec as the reference:
 
 ## Guides
 - How do you give a Vercel AI SDK model live tennis data? https://docs.livetennisapi.com/ai-sdk.html
+- What does each Live Tennis API error mean, and when should a client retry? https://docs.livetennisapi.com/errors-and-rate-limits.html
 
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
@@ -42,6 +43,20 @@ Send the API key as `Authorization: Bearer <key>`, `X-API-Key: <key>`, or `?toke
 in the query string. The query form is browser-friendly (clickable links, phones); prefer
 a header for anything automated, since URLs leak into logs, history and referrers.
 The /health endpoint requires no key.
+
+## Errors and retries
+Every error is JSON with a stable `error` code. Full table: https://docs.livetennisapi.com/errors-and-rate-limits.html
+- 400: ambiguous_name, bad_after_id, bad_after_seq, bad_changed_since, bad_combination, bad_country, bad_coverage, bad_cursor, bad_date, bad_draw, bad_format, bad_gender, bad_has_analysis, bad_has_market, bad_is_qualifying, bad_kind, bad_last, bad_level, bad_period, bad_points, bad_points_complete, bad_request, bad_restated_since, bad_sequence, bad_since, bad_status, bad_surface, bad_tier, bad_tournament_id, bad_type, bad_until, bad_updated_since, bad_window, bad_withdrawn_since, doubles_not_supported, points_disabled, points_read_disabled, window_too_long
+- 403: upgrade_required
+- 404: no_analysis, no_market, not_charted, not_derivable, not_found
+- 409: webhook_limit
+- 410: merged
+- 429: abuse_throttled, rate_limited
+- 503: coverage_unavailable
+Retry a per-minute 429 (rate_limited, no scope) and any 5xx, waiting Retry-After when it
+is sent. Never retry a daily 429 (scope: "day", wait until resets_at) or abuse_throttled
+(wait until retry_at_epoch). The official Python and JS clients do exactly this, 2 retries
+by default. 400, 401, 403, 404, 409 and 410 are fixed on the client side, not retried.
 
 ## Plans
 Every plan includes the plans below it. The concrete deltas:

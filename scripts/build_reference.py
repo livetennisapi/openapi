@@ -1239,6 +1239,15 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "a header for anything automated, since URLs leak into logs, history and referrers.",
         "The /health endpoint requires no key.",
         "",
+        "## Errors and retries",
+        f"Every error is JSON with a stable `error` code. Full table: {DOCS_URL}/errors-and-rate-limits.html",
+        *[f"- {status}: " + ", ".join(sorted({c for s, codes, _, _ in ERROR_CODES if s == status for c in codes}))
+          for status in sorted({s for s, _, _, _ in ERROR_CODES})],
+        "Retry a per-minute 429 (rate_limited, no scope) and any 5xx, waiting Retry-After when it",
+        "is sent. Never retry a daily 429 (scope: \"day\", wait until resets_at) or abuse_throttled",
+        "(wait until retry_at_epoch). The official Python and JS clients do exactly this, 2 retries",
+        "by default. 400, 401, 403, 404, 409 and 410 are fixed on the client side, not retried.",
+        "",
         "## Plans",
         "Every plan includes the plans below it. The concrete deltas:",
         "- FREE ($0, no card) — live & upcoming matches, current scores, players, fixtures,",
@@ -1888,7 +1897,7 @@ AI_SDK_REFUSAL = """{
 }"""
 
 
-def _ai_sdk_body() -> str:
+def _ai_sdk_body(_spec: dict[str, Any] | None = None) -> str:
     plan_label = {"BASIC": "BASIC or any History plan"}
     rows = "".join(
         f"<tr><td><code>{E(name)}</code></td><td><code>{E(export)}</code></td>"
@@ -1970,6 +1979,502 @@ wait time on to the user.</p>
 """
 
 
+# ----------------------------------------------------------------- errors and rate limits -------
+# The errors guide is half generated, half written. Generated from the spec at build time: which
+# status codes exist, which shared response each one uses, the operations that name each error
+# code, and the per-tier limits. Written here: what causes each code and what a client should do.
+# The build fails when the two drift apart (see _errors_drift).
+#
+# The retry section describes the official clients as published, read on ERRORS_CHECKED:
+# livetennisapi 1.8.0 on PyPI (_base.py _should_retry, _retryable, _backoff) and livetennisapi
+# 1.10.2 on npm (client.ts shouldRetry, backoff, request). Both were also run against a local
+# server answering each status in turn. Re-check them when either client changes its retry code.
+ERRORS_CHECKED = "2026-11-09"
+ERRORS_PY_VERSION = "1.8.0"
+ERRORS_JS_VERSION = "1.10.2"
+PY_REPO = "https://github.com/livetennisapi/livetennisapi-python"
+JS_REPO = "https://github.com/livetennisapi/livetennisapi-js"
+
+# Every code the REST spec names, by status: (codes, cause, what to do). Causes paraphrase the
+# spec text that defines the code. The operations column is not typed here: it is read from the
+# spec, so a code that moves to another endpoint moves on the page too.
+ERROR_CODES: list[tuple[int, tuple[str, ...], str, str]] = [
+    (400, ("bad_status",), "<code>status</code> is not one of the accepted values.",
+     "Use a value from <code>allowed</code> in the body."),
+    (400, ("bad_request",), "A non-integer <code>player</code> id, or <code>updated_since</code> sent "
+     "with <code>status=cancelled</code>.", "Fix the parameter."),
+    (400, ("bad_updated_since",), "<code>updated_since</code> sent together with <code>from</code> or "
+     "<code>to</code>.", "Send one or the other."),
+    (400, ("bad_withdrawn_since",), "<code>withdrawn_since</code> sent with any parameter other than "
+     "<code>limit</code> and <code>offset</code>, or with an instant that does not parse.",
+     "Send it alone, as an ISO-8601 instant."),
+    (400, ("bad_has_analysis", "bad_has_market", "bad_is_qualifying", "bad_points_complete"),
+     "The flag was something other than <code>true</code> or <code>false</code>.",
+     "Send <code>true</code> or <code>false</code>."),
+    (400, ("bad_gender",), "A value other than <code>men</code> or <code>women</code>.", "Fix the value."),
+    (400, ("bad_country",), "A country value that is not 3 letters.", "Send a 3-letter code."),
+    (400, ("bad_draw", "bad_coverage"), "An unknown value.",
+     "Use a value from <code>allowed</code> in the body."),
+    (400, ("bad_tier",), "An unknown tier value. The body names the refused values in <code>bad</code>.",
+     "Use a value from <code>allowed</code> in the body."),
+    (400, ("bad_tournament_id",), "A non-numeric <code>tournament_id</code>.", "Send the numeric id."),
+    (400, ("bad_restated_since", "bad_changed_since"), "The value is not an ISO-8601 instant. A bare date "
+     "is refused for <code>restated_since</code>, because a day is not an instant.",
+     "Send a full UTC timestamp."),
+    (400, ("bad_date", "bad_surface", "bad_level", "bad_last"), "A rejected query on player stats. "
+     "<code>bad_surface</code> and <code>bad_level</code> list the accepted values in "
+     "<code>allowed</code>.", "Fix the parameter named by the code."),
+    (400, ("doubles_not_supported",), "A doubles-team id on player stats.", "Ask for a singles player id."),
+    (400, ("bad_sequence",), "On the tape, a <code>sequence</code> other than <code>raw</code> or "
+     "<code>clean</code>. On the score endpoint, a <code>sequence</code> that is not an integer.",
+     "Fix the value."),
+    (400, ("bad_points",), "An unknown <code>points</code> value.",
+     "Send <code>default</code> or <code>complete</code>."),
+    (400, ("bad_combination",), "<code>points=complete</code> together with <code>sequence=clean</code>.",
+     "Drop one of the two."),
+    (400, ("points_read_disabled",), "<code>points=complete</code> where that read is not enabled yet.",
+     "Use the default read. Repeating the same request gets the same answer."),
+    (400, ("points_disabled",), "The per-point surface is switched off on the server.",
+     "Stop polling it. A retry gets the same answer while it is off."),
+    (400, ("bad_after_seq",), "<code>after_seq</code> is not a non-negative integer.",
+     "Send the <code>last_seq</code> of the previous page."),
+    (400, ("bad_cursor",), "A malformed cursor.",
+     "Send the cursor exactly as the previous page returned it."),
+    (400, ("bad_type", "bad_after_id"), "A refused <code>type</code> or <code>after_id</code> on the "
+     "events feed.", "Take <code>after_id</code> from <code>meta.next_cursor</code>. Send event "
+     "types or <code>stoppages</code> as <code>type</code>."),
+    (400, ("bad_since", "bad_until", "bad_window", "bad_kind"), "A refused time bound, window or kind.",
+     "Fix the parameter named by the code."),
+    (400, ("window_too_long",), "A stoppage or injury window longer than 366 days.",
+     "Split the request into shorter windows."),
+    (400, ("bad_format",), "<code>format</code> was neither <code>jsonl</code> nor <code>csv</code>.",
+     "Send <code>jsonl</code> or <code>csv</code>."),
+    (400, ("bad_period",), "The period is not <code>YYYY-MM</code>, or not <code>YYYY</code> for the "
+     "yearly kinds (<code>rally</code>, <code>archive</code>, <code>elo</code>, "
+     "<code>archive_tape</code>).", "Fix the period format."),
+    (400, ("ambiguous_name",), "A name fragment matched more than one player. The body lists the "
+     "candidates.", "Send a player id, or a longer name."),
+    (403, ("upgrade_required",), "The key is valid and the plan does not include this data. "
+     "<code>free_history_taste: \"used\"</code> means a FREE key has spent its 20 history calls for "
+     "the calendar month. <code>capability: archive_tape</code> means a core BASIC or PRO key asked "
+     "for the archive tape.", f'Upgrade the plan (<a href="{SITE}/pricing">pricing</a>). Retrying '
+     "does not help."),
+    (404, ("not_found",), "No such id. On the player routes the body adds <code>detail</code> and "
+     "<code>see</code> when the id belongs to the results archive.",
+     "Check the id. If <code>see</code> is present, read the archive lookup it names."),
+    (404, ("no_analysis",), "The match exists and nothing has been computed for it. The body carries "
+     "<code>match_id</code> and <code>coverage: \"none\"</code>.",
+     "Filter the slate with <code>has_analysis=true</code> instead of probing each match."),
+    (404, ("no_market",), "The match exists and no match-winner market is mapped to it.",
+     "Filter with <code>has_market=true</code> instead of probing each match."),
+    (404, ("not_charted",), "We hold the match and nobody charted it.",
+     "Treat it as uncharted. Most matches are."),
+    (404, ("not_derivable",), "The incident has no exact per-match derivation. The body carries its "
+     "<code>window_utc</code>, <code>affected_surfaces</code> and a note saying why.",
+     "Use the window and surfaces in the body."),
+    (409, ("webhook_limit",), "The key already has 3 webhooks.", "Delete one before adding another."),
+    (410, ("merged",), "The id was merged into another record, or a player id was retired.",
+     "Replace the stored id with <code>merged_into</code>. If it is null, drop the id."),
+    (429, ("rate_limited",), "The per-minute window, or with <code>scope: \"day\"</code> the daily quota.",
+     'See <a href="#rate-limits">the 429 section</a>.'),
+    (429, ("abuse_throttled",), "A 24-hour block for a client that kept calling far past its cap.",
+     "Fix the retry loop. Do not retry until <code>retry_at_epoch</code>."),
+    (503, ("coverage_unavailable",), "The coverage rollup has not been built yet, or cannot be read.",
+     "Try again after the nightly build."),
+]
+# Codes that come with a shared response: the page names the response and how many operations
+# use it, read from the spec, beside any operation that names the code in its own text.
+ERROR_CODE_RESPONSES = {
+    "upgrade_required": ("UpgradeRequired",),
+    "rate_limited": ("RateLimited",),
+    "abuse_throttled": ("RateLimited",),
+    "merged": ("MatchGone", "PlayerGone"),
+}
+# Named in the Error schema's code list with no endpoint or status attached to them.
+ERROR_CODES_UNPLACED = ("bad_tour", "bad_year")
+# WebSocket refusals, from the close-code section of info.description: (close code, codes, action).
+WS_CLOSE_CODES = [
+    ("1013", ("connection_limit", "service_unavailable"),
+     "Transient. Back off and reconnect. For <code>connection_limit:per_key</code>, close a connection "
+     "first or move to the push feed."),
+    ("1008", ("unauthorized", "upgrade_required", "email_unverified", "client_blocked", "bad_json",
+              "no_topics"), "The request will never be accepted as sent. Fix it, do not retry unchanged."),
+    ("1012", (), "The server is restarting. Reconnect with backoff and subscribe again."),
+    ("1000", (), "Normal closure: you closed it, or the stream ended."),
+]
+
+# What each status means and what to do. The "defined in" column is read from the spec.
+STATUS_ACTIONS: dict[int, tuple[str, str]] = {
+    304: ("Not an error. The broadcast state is unchanged since the <code>ETag</code> you sent.",
+          "Keep the copy you have."),
+    400: ("A query parameter was refused. The <code>error</code> code names it.", "Fix the request."),
+    401: ("The key is missing, unknown or disabled.", "Send a valid key. Re-authenticate."),
+    403: ("The key works and the plan does not include this data.", "Upgrade the plan."),
+    404: ("No such resource, or no data for it yet.", "Check the id, or use the availability flags."),
+    409: ("The webhook limit is reached.", "Delete a webhook first."),
+    410: ("The id was merged or retired. The body forwards you.", "Re-point to <code>merged_into</code>."),
+    429: ("A rate limit or quota was hit.", "Depends on the body. See below."),
+    503: ("<code>/history/coverage</code> is not built yet.", "Try again later."),
+}
+
+# Client retry behaviour, one row per answer the API can give. Python and JS behave the same.
+CLIENT_RETRY_ROWS = [
+    ("429 <code>rate_limited</code>, per-minute window", "Yes",
+     "Waits <code>Retry-After</code> if sent, else exponential backoff"),
+    ("Any 5xx", "Yes", "Waits <code>Retry-After</code> if sent, else exponential backoff"),
+    ("Connection error or timeout", "Yes", "Exponential backoff"),
+    ("429 <code>rate_limited</code> with <code>scope: \"day\"</code>", "No", "Raises at once"),
+    ("429 <code>abuse_throttled</code>", "No", "Raises at once"),
+    ("400, 401, 403, 404 and every other 4xx", "No", "Raises at once"),
+]
+CLIENT_EXCEPTIONS = [
+    ("400", "BadRequest"), ("401", "Unauthorized"), ("403", "UpgradeRequired"), ("404", "NotFound"),
+    ("429", "RateLimited"), ("429 <code>abuse_throttled</code>", "AbuseThrottled"),
+    ("503", "ServiceUnavailable"), ("Other 5xx", "ServerError"),
+    ("409, 410 and other statuses", "APIStatusError"),
+]
+
+_CODE_TOKEN = re.compile(
+    r"\b(bad_[a-z_]+|[a-z]+(?:_[a-z]+)*_(?:disabled|not_supported|unavailable|too_long|limit)"
+    r"|ambiguous_name|not_charted|not_found|no_analysis|no_market|not_derivable"
+    r"|upgrade_required|rate_limited|abuse_throttled)\b"
+)
+_HTTP_METHODS = ("get", "post", "put", "patch", "delete")
+
+
+def _texts(node: Any) -> list[str]:
+    if isinstance(node, dict):
+        return [t for v in node.values() for t in _texts(v)]
+    if isinstance(node, list):
+        return [t for v in node for t in _texts(v)]
+    return [node] if isinstance(node, str) else []
+
+
+def _op_texts(op: dict[str, Any], spec: dict[str, Any]) -> list[str]:
+    """The operation's own prose: description, parameters (shared ones resolved) and response
+    descriptions. Response schemas stay out: every error response embeds the Error schema, whose
+    description lists the whole code vocabulary, and would make every operation name every code."""
+    out = _texts({k: v for k, v in op.items() if k not in ("parameters", "responses", "requestBody")})
+    for item in op.get("parameters") or []:
+        out += _texts(resolve(item, spec))
+    for resp in (op.get("responses") or {}).values():
+        if "$ref" in resp:
+            resp = resolve({"$ref": resp["$ref"]}, spec)
+        out.append(resp.get("description", ""))
+    return out
+
+
+def error_code_sources(spec: dict[str, Any]) -> dict[str, list[str]]:
+    """{code: ["GET /path", ...]}: the operations whose own text names the code."""
+    found: dict[str, list[str]] = {}
+    for path, ops in spec["paths"].items():
+        for method, op in ops.items():
+            if method not in _HTTP_METHODS:
+                continue
+            codes = {c for t in _op_texts(op, spec) for c in _CODE_TOKEN.findall(t)}
+            for code in codes:
+                found.setdefault(code, []).append(f"{method.upper()} {path}")
+    return found
+
+
+def error_statuses(spec: dict[str, Any]) -> dict[int, dict[str, Any]]:
+    """{status: {"refs": {component: operation count}, "inline": [operations]}} for non-2xx."""
+    out: dict[int, dict[str, Any]] = {}
+    for path, ops in spec["paths"].items():
+        for method, op in ops.items():
+            if method not in _HTTP_METHODS:
+                continue
+            for code, resp in (op.get("responses") or {}).items():
+                status = int(code)
+                if 200 <= status < 300:
+                    continue
+                slot = out.setdefault(status, {"refs": {}, "inline": []})
+                ref = resp.get("$ref", "")
+                if ref:
+                    name = ref.rsplit("/", 1)[-1]
+                    slot["refs"][name] = slot["refs"].get(name, 0) + 1
+                else:
+                    slot["inline"].append(f"{method.upper()} {path}")
+    return dict(sorted(out.items()))
+
+
+_TIER_LIMIT_RX = re.compile(r"`(FREE|BASIC|PRO|ULTRA)`.*?([\d,]+) requests/minute, ([\d,]+)/day", re.S)
+
+
+def tier_limits(spec: dict[str, Any]) -> list[tuple[str, str, str]]:
+    """(tier, per minute, per day), read from info.description. Fails the build if one is missing."""
+    found = {}
+    for block in re.split(r"\n\s*\n", spec["info"]["description"]):
+        m = _TIER_LIMIT_RX.search(block)
+        if m and m.group(1) not in found:
+            found[m.group(1)] = (m.group(1), m.group(2), m.group(3))
+    missing = [t for t in TIER_ORDER_ALL if t not in found]
+    if missing:
+        raise SystemExit(f"errors guide: no per-minute/per-day limits found in info for {missing}")
+    return [found[t] for t in TIER_ORDER_ALL]
+
+
+TIER_ORDER_ALL = ("FREE", "BASIC", "PRO", "ULTRA")
+
+
+def _errors_drift(spec: dict[str, Any]) -> None:
+    """Fail the build when the written half of the errors guide disagrees with the spec."""
+    spec_text = "\n".join(_texts(spec))
+    tokens = set(re.findall(r"[a-z_]+", spec_text))
+    listed = {c for _, codes, _, _ in ERROR_CODES for c in codes}
+    problems = []
+    # Every code on the page is spelled exactly as the spec spells it.
+    for code in sorted(listed | set(ERROR_CODES_UNPLACED)):
+        if code not in tokens:
+            problems.append(f"{code} is on the page and nowhere in the spec")
+    ws_codes = {c for _, codes, _ in WS_CLOSE_CODES for c in codes}
+    info_tokens = set(re.findall(r"[a-z_]+", spec["info"]["description"]))
+    for code in sorted(ws_codes - info_tokens):
+        problems.append(f"WebSocket code {code} is not in info.description")
+    # Every code the REST surface names is on the page.
+    rest = _texts(spec["paths"]) + _texts(spec["components"])
+    named = {c for t in rest for c in _CODE_TOKEN.findall(t)}
+    for code in sorted(named - listed - set(ERROR_CODES_UNPLACED)):
+        problems.append(f"{code} is named in the spec and missing from ERROR_CODES")
+    # Every non-2xx status the spec documents has a row, and nothing else does.
+    statuses = set(error_statuses(spec))
+    for status in sorted(statuses ^ set(STATUS_ACTIONS)):
+        problems.append(f"status {status}: in the spec {status in statuses}, on the page "
+                        f"{status in STATUS_ACTIONS}")
+    for status in {s for s, _, _, _ in ERROR_CODES} - statuses:
+        problems.append(f"ERROR_CODES uses status {status}, which the spec does not document")
+    used = {name for slot in error_statuses(spec).values() for name in slot["refs"]}
+    for code, names in ERROR_CODE_RESPONSES.items():
+        for name in names:
+            if name not in used:
+                problems.append(f"{code}: no operation uses the response {name}")
+    if problems:
+        raise SystemExit("errors guide out of step with the spec:\n  " + "\n  ".join(problems))
+
+
+def _ops_cell(ops: list[str], limit: int = 4) -> str:
+    if len(ops) > 2 * limit:
+        return f"{len(ops)} operations"
+    shown = "<br>".join(f"<code>{E(o)}</code>" for o in ops[:limit])
+    if len(ops) > limit:
+        shown += f"<br>and {len(ops) - limit} more"
+    return shown
+
+
+def _errors_body(spec: dict[str, Any]) -> str:
+    _errors_drift(spec)
+    statuses = error_statuses(spec)
+    sources = error_code_sources(spec)
+    used = {name: n for slot in statuses.values() for name, n in slot["refs"].items()}
+
+    status_rows = []
+    for status, slot in statuses.items():
+        defined = [f"<code>{E(name)}</code> ({n} operation{'s' if n != 1 else ''})"
+                   for name, n in slot["refs"].items()]
+        defined += [f"inline on <code>{E(op)}</code>" for op in slot["inline"]]
+        meaning, action = STATUS_ACTIONS[status]
+        retried = "Yes" if status >= 500 else ("Per-minute only" if status == 429 else "No")
+        status_rows.append(
+            f"<tr><td><code>{status}</code></td><td>{meaning}</td><td>{action}</td>"
+            f"<td>{retried}</td><td>{'<br>'.join(defined)}</td></tr>\n"
+        )
+    status_table = scrollx(
+        f"<table>{vh_caption('Every non-2xx status the spec documents')}"
+        '<thead><tr><th scope="col">Status</th><th scope="col">Meaning</th>'
+        '<th scope="col">What to do</th><th scope="col">Clients retry</th>'
+        '<th scope="col">Defined in the spec</th></tr></thead>'
+        f"<tbody>\n{''.join(status_rows)}</tbody></table>",
+        "Status codes",
+    )
+
+    def code_table(wanted: set[int], caption: str) -> str:
+        rows = []
+        for status, codes, cause, action in ERROR_CODES:
+            if status not in wanted:
+                continue
+            ops = sorted({o for c in codes for o in sources.get(c, [])})
+            shared = [
+                f"every <code>{E(name)}</code> response ({used[name]} operations)"
+                for c in codes for name in ERROR_CODE_RESPONSES.get(c, ())
+            ]
+            if shared and len(ops) > 8:
+                ops = []  # every user of the shared response: the response line says it once
+            parts = ([_ops_cell(ops)] if ops else []) + shared
+            where = "<br>".join(parts) or "The <code>Error</code> schema"
+            rows.append(
+                f"<tr><td><code>{status}</code></td><td>"
+                + "<br>".join(f"<code>{E(c)}</code>" for c in codes)
+                + f"</td><td>{cause}</td><td>{action}</td><td>{where}</td></tr>\n"
+            )
+        return scrollx(
+            f"<table>{vh_caption(caption)}"
+            '<thead><tr><th scope="col">Status</th><th scope="col"><code>error</code></th>'
+            '<th scope="col">Cause</th><th scope="col">What to do</th>'
+            '<th scope="col">Named in the spec on</th></tr></thead>'
+            f"<tbody>\n{''.join(rows)}</tbody></table>",
+            caption,
+        )
+
+    limits = "".join(
+        f"<tr><td>{tier}</td><td>{minute}</td><td>{day}</td></tr>\n"
+        for tier, minute, day in tier_limits(spec)
+    )
+    limits_table = scrollx(
+        f"<table>{vh_caption('Requests per minute and per day by plan')}"
+        '<thead><tr><th scope="col">Plan</th><th scope="col">Per minute</th>'
+        '<th scope="col">Per day</th></tr></thead>'
+        f"<tbody>\n{limits}</tbody></table>",
+        "Rate limits by plan",
+    )
+    retry_rows = "".join(
+        f"<tr><td>{answer}</td><td>{retried}</td><td>{how}</td></tr>\n"
+        for answer, retried, how in CLIENT_RETRY_ROWS
+    )
+    retry_table = scrollx(
+        f"<table>{vh_caption('What the official clients retry')}"
+        '<thead><tr><th scope="col">The API answers</th><th scope="col">Retried</th>'
+        '<th scope="col">How</th></tr></thead>'
+        f"<tbody>\n{retry_rows}</tbody></table>",
+        "Client retries",
+    )
+    exc_rows = "".join(
+        f"<tr><td>{status}</td><td><code>{name}</code></td></tr>\n" for status, name in CLIENT_EXCEPTIONS
+    )
+    exc_table = scrollx(
+        f"<table>{vh_caption('Error classes in both clients')}"
+        '<thead><tr><th scope="col">Status</th><th scope="col">Class (Python and JS)</th></tr></thead>'
+        f"<tbody>\n{exc_rows}</tbody></table>",
+        "Client error classes",
+    )
+    ws_rows = "".join(
+        f"<tr><td><code>{code}</code></td><td>"
+        + ("<br>".join(f"<code>{c}</code>" for c in codes) or "None")
+        + f"</td><td>{action}</td></tr>\n"
+        for code, codes, action in WS_CLOSE_CODES
+    )
+    ws_table = scrollx(
+        f"<table>{vh_caption('WebSocket close codes')}"
+        '<thead><tr><th scope="col">Close code</th><th scope="col">Reasons</th>'
+        '<th scope="col">What to do</th></tr></thead>'
+        f"<tbody>\n{ws_rows}</tbody></table>",
+        "WebSocket close codes",
+    )
+    unplaced = " and ".join(f"<code>{c}</code>" for c in ERROR_CODES_UNPLACED)
+
+    return f"""<h2 id="body">What does an error response look like?</h2>
+<p>Every error is JSON. Most use the <code>Error</code> schema:</p>
+<ul>
+<li><code>error</code>: a stable machine-readable code. Branch on this, never on the text.</li>
+<li><code>detail</code>: a human-readable explanation, when one adds anything.</li>
+<li><code>allowed</code>: on a refused enumerated parameter, the values that would have been accepted.</li>
+</ul>
+<p>Two other shapes exist. A 410 carries <code>MatchMerged</code> or <code>PlayerMerged</code>:
+<code>error: "merged"</code>, <code>merged_into</code>, <code>merged_at</code> and <code>detail</code>.
+A 404 on <code>/players/{{playerId}}</code> and its stoppage and injury routes carries
+<code>PlayerNotFound</code>. It adds <code>detail</code> and <code>see</code> when the id belongs
+to the results archive. Some codes add their own fields, named in the tables below.</p>
+<pre><code>{E('{"error": "upgrade_required"}')}</code></pre>
+
+<h2 id="statuses">Which status codes can the API return?</h2>
+<p>These are all the non-2xx statuses in the OpenAPI spec, read from it when this page is built.
+Every endpoint except <code>/health</code>, which takes no key, documents 401.</p>
+{status_table}
+<p>The spec documents no other 5xx. The official clients treat any 5xx they get as temporary and
+retry it.</p>
+
+<h2 id="bad-request">Which 400 codes are there?</h2>
+<p>A 400 is never retried. The request is wrong as sent and gets the same answer every time.
+The last column lists the operations whose spec text names the code.</p>
+{code_table({400}, "400 error codes")}
+<p>The <code>Error</code> schema also lists {unplaced}. The spec does not say which endpoint
+returns them.</p>
+
+<h2 id="auth-and-plan">401 or 403: is it the key or the plan?</h2>
+<p>A 401 means the key itself failed: it is missing, unknown or disabled. Send it as
+<code>Authorization: Bearer &lt;key&gt;</code>, <code>X-API-Key: &lt;key&gt;</code> or
+<code>?token=&lt;key&gt;</code>. A 403 means the key works and the plan stops short of the data.
+It is never a silent empty result.</p>
+{code_table({403}, "403 error codes")}
+<p>The 403 body names no tier. The Python client's <code>UpgradeRequired.required_tier</code> and
+the JS client's <code>requiredTier</code> work out the lowest tier from the endpoint you called.</p>
+
+<h2 id="not-found">What does a 404 or 410 mean for a stored id?</h2>
+{code_table({404, 409, 410}, "404, 409 and 410 error codes")}
+<p>Two 404s carry no code of their own. <code>GET /matches/{{matchId}}/score</code> answers 404
+for an unknown match or an upcoming match with no score yet. It does the same for a cancelled
+match that was never played, and for a settled match with nothing recorded.</p>
+<p>The archive tape answers a plain 404 for a result from 1968 to 2012. So does a 2013 to 2022
+result that was never reconstructed, or one whose reconstruction did not prove its binding.
+The three are not told apart.</p>
+<p>A 410 is only ever about an id that once existed. An id that was never issued stays a 404.</p>
+
+<h2 id="rate-limits">What does a 429 mean, and when do I retry it?</h2>
+<p>Every 429 carries a <code>Retry-After</code> header. The body tells you which of three limits
+you hit, and only the first is worth retrying.</p>
+<ol>
+<li><strong>Per-minute window.</strong> <code>error: "rate_limited"</code> with no <code>scope</code>.
+The body names the next tier up in <code>upgrade_url</code>, <code>tier</code> and
+<code>price</code>. Wait <code>Retry-After</code> seconds and send the request again.</li>
+<li><strong>Daily quota.</strong> <code>error: "rate_limited"</code> with <code>scope: "day"</code>,
+<code>limit_per_day</code> and <code>resets_at</code>, the ISO instant the daily window resets.
+Do not retry. Stop until <code>resets_at</code>, or upgrade.</li>
+<li><strong>Abuse throttle.</strong> <code>error: "abuse_throttled"</code> with
+<code>retry_at_epoch</code>. A 24-hour block for a client that keeps calling far past its cap.
+A retry loop that backs off never sees it. Fix the loop and wait until
+<code>retry_at_epoch</code>.</li>
+</ol>
+{code_table({429, 503}, "429 and 503 error codes")}
+<p>The official clients retry a 503 like any 5xx and give up after 2 retries. The coverage
+rollup is built nightly, so for <code>coverage_unavailable</code> check again later.</p>
+
+<h2 id="clients">How do the official clients retry?</h2>
+<p>The <a href="{PY_REPO}">Python client</a> ({ERRORS_PY_VERSION}) and the
+<a href="{JS_REPO}">JS client</a> ({ERRORS_JS_VERSION}) follow the same rules. We read both from
+source and ran them against a local server on
+<time datetime="{ERRORS_CHECKED}">{ERRORS_CHECKED}</time>.</p>
+{retry_table}
+<ul>
+<li>Up to 2 retries by default, so 3 attempts in all. Set <code>max_retries</code> in Python or
+<code>maxRetries</code> in JS. 0 turns retries off.</li>
+<li>With <code>Retry-After</code>, the wait is that many seconds, at most 60.</li>
+<li>Without it, the wait is 0.5 s doubled on each attempt plus up to 0.25 s of random jitter,
+at most 10 s. The jitter keeps many clients from retrying in step.</li>
+<li>When the retries run out, the client raises the error for the last answer.</li>
+</ul>
+{exc_table}
+<p>In both clients <code>RateLimited</code> carries <code>retry_after</code> (Python) or
+<code>retryAfter</code> (JS), and <code>resets_at</code> or <code>resetsAt</code> on a daily 429.
+<code>AbuseThrottled</code> carries <code>retry_at_epoch</code> or <code>retryAtEpoch</code>.</p>
+
+<h2 id="own-client">How should my own client back off?</h2>
+<p>Do what the official clients do. Retry a 429 only when the body has no <code>scope: "day"</code>
+and the code is not <code>abuse_throttled</code>. Retry a 5xx or a dropped connection. Wait
+<code>Retry-After</code> when it is sent, and otherwise back off exponentially with jitter. Cap the
+number of retries. Never retry a 400, 401, 403, 404, 409 or 410 unchanged.</p>
+
+<h2 id="limits">What are the limits on each plan?</h2>
+<p>Read from the spec. Each plan includes everything in the plans below it.</p>
+{limits_table}
+<p><code>GET /usage</code> returns your plan, your limits and today's calls, and calling it never
+uses quota. Refused requests do not spend the daily allowance, so <code>remaining_day</code> does
+not fall on a 429, 403 or 404. The per-minute window is on the <code>X-RateLimit-*</code> headers
+of every response. Plans and prices are on the <a href="{SITE}/pricing">pricing page</a>.</p>
+
+<h2 id="websocket">What do the WebSocket close codes mean?</h2>
+<p>The WebSocket feed sends an <code>error</code> frame, then closes with a code that says what to
+do next. The close reason repeats the frame's <code>error</code>.</p>
+{ws_table}
+
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="./auth-quota-and-health.html">Authentication, quota and status</a></li>
+<li><a href="./reference.html">Full reference, every endpoint and response</a></li>
+<li><a href="{PY_REPO}">livetennisapi for Python</a> and <a href="{JS_REPO}">livetennisapi for JS</a></li>
+<li><a href="{SITE}/subscribe/free">Free API key</a></li>
+</ul>
+"""
+
+
 GUIDES: list[dict[str, Any]] = [
     {
         "slug": "ai-sdk",
@@ -2004,10 +2509,39 @@ GUIDES: list[dict[str, Any]] = [
             '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
         ),
     },
+    {
+        "slug": "errors-and-rate-limits",
+        "title": "Errors and rate limits",
+        "head_title": "Tennis API errors and rate limits | Live Tennis API",
+        "question": "What does each Live Tennis API error mean, and when should a client retry?",
+        "description": (
+            "Every Live Tennis API error code, what causes it and what to do. Retry only a "
+            "per-minute 429 or a 5xx, after the Retry-After wait."
+        ),
+        "lede": (
+            "Every error is JSON with a stable <code>error</code> code. Retry a per-minute 429 and "
+            "any 5xx, waiting <code>Retry-After</code> when it is sent. Fix the request on a 400, the "
+            "key on a 401 and the plan on a 403. The daily-quota 429 and <code>abuse_throttled</code> "
+            "are never retried."
+        ),
+        "meta": (
+            "Status codes and error codes are read from the OpenAPI spec when the page is built. "
+            f'Retry rules checked against livetennisapi {ERRORS_PY_VERSION} for Python and '
+            f'{ERRORS_JS_VERSION} for JS on <time datetime="{ERRORS_CHECKED}">{ERRORS_CHECKED}</time>.'
+        ),
+        "body": _errors_body,
+        "date": ERRORS_CHECKED,
+        "about": {"@type": "WebAPI", "name": "Live Tennis API", "url": SITE,
+                  "documentation": f"{DOCS_URL}/reference.html"},
+        "footer": (
+            'Built from <a href="./openapi.yaml">openapi.yaml</a>. Page source in '
+            '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
+        ),
+    },
 ]
 
 
-def build_guide_pages(reference_html: str) -> dict[str, str]:
+def build_guide_pages(spec: dict[str, Any], reference_html: str) -> dict[str, str]:
     """{slug: html} for GUIDES, in the topic pages' template."""
     style_html = reference_base_style(reference_html)
     pages = {}
@@ -2064,7 +2598,7 @@ def build_guide_pages(reference_html: str) -> dict[str, str]:
 </nav>
 </header>
 <main id="main">
-{guide['body']()}</main>
+{guide['body'](spec)}</main>
 <footer>
 <hr>
 <nav class="pagenav" aria-label="Other topics">
@@ -2162,7 +2696,7 @@ def main() -> int:
     reference = build_html(spec)
     changelog_html, changelog_date = build_changelog(spec, reference)
     topics = build_topic_pages(spec, reference)
-    guides = build_guide_pages(reference)
+    guides = build_guide_pages(spec, reference)
     outputs = {
         DOCS / "reference.html": reference,
         DOCS / "changelog.html": changelog_html,

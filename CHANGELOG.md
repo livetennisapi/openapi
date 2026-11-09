@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.80] - 2026-11-09
+
+### Added
+- **An errors and rate limits page.** `errors-and-rate-limits.html` lists every non-2xx status the spec documents and every `error` code. Each row says what causes it, what to do and which operations name it. It also covers the three 429 bodies and the WebSocket close codes. Statuses, codes and per-plan limits are read from the spec at build time, and the build fails when the written half disagrees with it. The retry section matches the official clients, Python 1.8.0 and JS 1.10.2. They retry a per-minute 429, any 5xx and dropped connections, and wait `Retry-After` when it is sent. They never retry a daily 429 or `abuse_throttled`. The docs menu, the docs home, the sitemap and llms.txt link the page. Nothing on the wire changed.
+
 ## [1.13.79] - 2026-11-09
 
 ### Fixed
