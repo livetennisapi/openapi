@@ -1,0 +1,10 @@
+run_date: 2026-11-08
+spec: docs/openapi.json, info.version 1.13.78
+python: 3.12.3
+node: v22.23.3
+tsc: 5.9.3
+go: go1.27.3
+openapi-generator image: openapitools/openapi-generator-cli:v7.27.0
+maven image: maven:3.9.16-eclipse-temurin-21 (openjdk version "21.0.12.1" 2026-08-18 LTS)
+dotnet image: mcr.microsoft.com/dotnet/sdk:10.0 (SDK 10.0.403)
+openapi-typescript: 7.13.0, openapi-fetch: 0.17.0, oapi-codegen: v2.8.2

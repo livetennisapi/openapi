@@ -42,8 +42,13 @@ Generate a client in your language of choice:
 # openapi-generator
 openapi-generator generate \
   -i https://raw.githubusercontent.com/livetennisapi/openapi/main/openapi.yaml \
-  -g go -o ./livetennis-go
+  -g go -o ./livetennis-go \
+  --name-mappings has_analysis=HasAnalysisFlag,has_market=HasMarketFlag
 ```
+
+The `--name-mappings` flag keeps two field names from clashing with generated Go methods.
+[results/codegen-compat.md](results/codegen-compat.md) lists which generators work with
+this spec as published, the fix each one needs and the versions tested.
 
 Or import it into Postman, Insomnia, Bruno, Hoppscotch, or Scalar directly.
 
