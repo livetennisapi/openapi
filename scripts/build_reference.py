@@ -1207,6 +1207,7 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"Base URL: {base}",
         f"Full text reference: {DOCS_URL}/reference.html",
         f"Changelog (dated, versioned): {DOCS_URL}/changelog.html",
+        f"Changelog feeds: {DOCS_URL}/{FEED_ATOM} (Atom), {DOCS_URL}/{FEED_JSON} (JSON Feed)",
         f"OpenAPI spec: {DOCS_URL}/openapi.yaml",
         f"OpenAPI spec (JSON): {DOCS_URL}/openapi.json",
         f"Website: {SITE}",
@@ -1453,6 +1454,76 @@ def _md_block(md: str) -> str:
     return "\n".join(html_parts)
 
 
+# ------------------------------------------------------------------ changelog feeds ------------
+# The changelog as Atom and as JSON Feed 1.1, so a developer can subscribe to API changes in a feed
+# reader instead of re-reading the page. Both are written from the same parsed entries as
+# changelog.html, newest first, and --check keeps them current.
+FEED_ATOM = "changelog.atom"
+FEED_JSON = "changelog.json"
+FEED_LIMIT = 50
+
+
+def _feed_entries() -> list[dict[str, Any]]:
+    return changelog_entries(CHANGELOG.read_text(encoding="utf-8"))[:FEED_LIMIT]
+
+
+def build_changelog_atom(spec: dict[str, Any]) -> str:
+    entries = _feed_entries()
+    updated = f"{entries[0]['date']}T00:00:00Z" if entries else "1970-01-01T00:00:00Z"
+    title = f"{spec['info']['title']} changelog"
+    items = []
+    for e in entries:
+        url = f"{DOCS_URL}/changelog.html#v{e['version']}"
+        items.append(
+            "  <entry>\n"
+            f"    <id>{E(url)}</id>\n"
+            f"    <title>{E(spec['info']['title'])} {E(e['version'])}</title>\n"
+            f"    <updated>{e['date']}T00:00:00Z</updated>\n"
+            f'    <link rel="alternate" type="text/html" href="{E(url)}"/>\n'
+            f'    <content type="html">{E(_md_block(e["body_md"]))}</content>\n'
+            "  </entry>"
+        )
+    return (
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<feed xmlns="http://www.w3.org/2005/Atom">\n'
+        f"  <id>{DOCS_URL}/{FEED_ATOM}</id>\n"
+        f"  <title>{E(title)}</title>\n"
+        "  <subtitle>Every change to the Live Tennis API specification, dated and versioned.</subtitle>\n"
+        f"  <updated>{updated}</updated>\n"
+        f'  <link rel="self" type="application/atom+xml" href="{DOCS_URL}/{FEED_ATOM}"/>\n'
+        f'  <link rel="alternate" type="text/html" href="{DOCS_URL}/changelog.html"/>\n'
+        "  <author><name>Live Tennis API</name><uri>https://livetennisapi.com</uri></author>\n"
+        f"  <icon>{DOCS_URL}/icon-256.png</icon>\n"
+        + "\n".join(items)
+        + "\n</feed>\n"
+    )
+
+
+def build_changelog_jsonfeed(spec: dict[str, Any]) -> str:
+    entries = _feed_entries()
+    feed = {
+        "version": "https://jsonfeed.org/version/1.1",
+        "title": f"{spec['info']['title']} changelog",
+        "home_page_url": f"{DOCS_URL}/changelog.html",
+        "feed_url": f"{DOCS_URL}/{FEED_JSON}",
+        "description": "Every change to the Live Tennis API specification, dated and versioned.",
+        "icon": f"{DOCS_URL}/icon-256.png",
+        "authors": [{"name": "Live Tennis API", "url": SITE}],
+        "language": "en",
+        "items": [
+            {
+                "id": f"{DOCS_URL}/changelog.html#v{e['version']}",
+                "url": f"{DOCS_URL}/changelog.html#v{e['version']}",
+                "title": f"{spec['info']['title']} {e['version']}",
+                "content_html": _md_block(e["body_md"]),
+                "date_published": f"{e['date']}T00:00:00Z",
+            }
+            for e in entries
+        ],
+    }
+    return json.dumps(feed, ensure_ascii=False, indent=1) + "\n"
+
+
 def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str]:
     """(html, latest_date). Same head shape and stylesheet as the reference so it reads as one
     site; each entry is a dated <article> so an engine can quote 'as of' from the page itself.
@@ -1484,6 +1555,8 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 <meta property="og:image" content="{DOCS_URL}/banner.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="any">
+<link rel="alternate" type="application/atom+xml" title="Live Tennis API changelog (Atom)" href="{DOCS_URL}/{FEED_ATOM}">
+<link rel="alternate" type="application/feed+json" title="Live Tennis API changelog (JSON Feed)" href="{DOCS_URL}/{FEED_JSON}">
 <script type="application/ld+json">
 {ld_json}
 </script>
@@ -1498,6 +1571,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
 <p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>{E(info['version'])}</strong>, last change <time datetime="{latest}">{latest}</time>. Also as <a href="{DOCS_URL}/reference.html">the full reference</a>, <a href="{DOCS_URL}/openapi.yaml">OpenAPI YAML</a> / <a href="{DOCS_URL}/openapi.json">JSON</a>, and <a href="{SITE}/facts.json">the dated facts file</a>.</p>
+<p>Subscribe in a feed reader: <a href="{DOCS_URL}/{FEED_ATOM}">Atom</a> or <a href="{DOCS_URL}/{FEED_JSON}">JSON Feed</a>.</p>
 </header>
 {articles}
 </main>
@@ -2174,6 +2248,9 @@ def main() -> int:
         # The same spec as JSON, for the agents and tools that only read JSON (GPT Actions,
         # Postman import, most MCP scaffolds). Both URLs are stable and both are advertised.
         DOCS / "openapi.json": json.dumps(spec, ensure_ascii=False, indent=1) + "\n",
+        # The changelog as feeds, from the same entries as changelog.html.
+        DOCS / FEED_ATOM: build_changelog_atom(spec),
+        DOCS / FEED_JSON: build_changelog_jsonfeed(spec),
     }
 
     # Heading levels must not skip. h1 -> h3 is a level a screen reader reports as missing and
