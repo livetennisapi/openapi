@@ -5,6 +5,12 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.79] - 2026-11-09
+
+### Fixed
+- **The super-tiebreak example in `Score.games` reads right.** `[[6,4,10],[4,6,5]]` is `6-4 4-6 [10-5]`. The description said `6-4 3-6 [10-5]`, which does not match the array. Text only, the field is unchanged.
+- **The `gender` parameter description lost a stray line.** A run of error codes from another parameter had been pasted at its end. Text only, the parameter is unchanged.
+
 ## [1.13.78] - 2026-10-29
 
 ### Changed

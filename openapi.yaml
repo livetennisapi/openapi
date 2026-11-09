@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.78"
+  version: "1.13.79"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -3360,7 +3360,6 @@ components:
         125, and `itf` and `juniors` are both sexes — so without this there is no way to ask for
         men's Challenger at all. A row whose `gender` is `null` (mixed doubles, a team tie) matches
         NEITHER value, the same contract as `?draw=` and `?is_qualifying=`.
-            bad_points_complete, bad_combination, points_read_disabled, bad_after_seq, bad_has_market, no_market, points_disabled,
     country:
       name: country
       in: query
@@ -3577,7 +3576,7 @@ components:
             and an empty array is never used to mean "unknown".
             A deciding set played as a 10-point MATCH TIEBREAK (super-tiebreak) carries
             the BREAKER's score in its slot WHILE IT IS BEING PLAYED — `[[6,4,10],[4,6,5]]`
-            is `6-4 3-6 [10-5]`, not a 10-game set — and `is_tiebreak` is true then. Once
+            is `6-4 4-6 [10-5]`, not a 10-game set — and `is_tiebreak` is true then. Once
             the breaker is over that set is often published as a one-game `1-0`: take the
             match winner from `sets`, never from the deciding set's games.
           items:

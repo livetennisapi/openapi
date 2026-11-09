@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.78",
+  "version": "1.13.79",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -3575,7 +3575,7 @@
       "women"
      ]
     },
-    "description": "Return only men's or only women's matches, matching the `gender` field each row carries (added 2026-09-09, documented here 2026-10-02). Omit for both. Anything other than men/women is a 400 `bad_gender`, never a silently ignored filter.\nIt exists because `?tour=` deliberately collapses: `challenger` is ATP Challenger AND WTA 125, and `itf` and `juniors` are both sexes — so without this there is no way to ask for men's Challenger at all. A row whose `gender` is `null` (mixed doubles, a team tie) matches NEITHER value, the same contract as `?draw=` and `?is_qualifying=`.\n    bad_points_complete, bad_combination, points_read_disabled, bad_after_seq, bad_has_market, no_market, points_disabled,"
+    "description": "Return only men's or only women's matches, matching the `gender` field each row carries (added 2026-09-09, documented here 2026-10-02). Omit for both. Anything other than men/women is a 400 `bad_gender`, never a silently ignored filter.\nIt exists because `?tour=` deliberately collapses: `challenger` is ATP Challenger AND WTA 125, and `itf` and `juniors` are both sexes — so without this there is no way to ask for men's Challenger at all. A row whose `gender` is `null` (mixed doubles, a team tie) matches NEITHER value, the same contract as `?draw=` and `?is_qualifying=`."
    },
    "country": {
     "name": "country",
@@ -3812,7 +3812,7 @@
        "array",
        "null"
       ],
-      "description": "[games_p1, games_p2]; each a per-set list. NULL means WITHHELD — we hold no state for this match we can stand behind (see `detail`); it never means 0-0, and an empty array is never used to mean \"unknown\". A deciding set played as a 10-point MATCH TIEBREAK (super-tiebreak) carries the BREAKER's score in its slot WHILE IT IS BEING PLAYED — `[[6,4,10],[4,6,5]]` is `6-4 3-6 [10-5]`, not a 10-game set — and `is_tiebreak` is true then. Once the breaker is over that set is often published as a one-game `1-0`: take the match winner from `sets`, never from the deciding set's games.",
+      "description": "[games_p1, games_p2]; each a per-set list. NULL means WITHHELD — we hold no state for this match we can stand behind (see `detail`); it never means 0-0, and an empty array is never used to mean \"unknown\". A deciding set played as a 10-point MATCH TIEBREAK (super-tiebreak) carries the BREAKER's score in its slot WHILE IT IS BEING PLAYED — `[[6,4,10],[4,6,5]]` is `6-4 4-6 [10-5]`, not a 10-game set — and `is_tiebreak` is true then. Once the breaker is over that set is often published as a one-game `1-0`: take the match winner from `sets`, never from the deciding set's games.",
       "items": {
        "type": "array",
        "items": {
