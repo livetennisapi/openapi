@@ -134,6 +134,7 @@ Everything in the Live Tennis API developer surface:
 | JavaScript / TypeScript client | `npm install livetennisapi` | [repo](https://github.com/livetennisapi/livetennisapi-js) | [package](https://www.npmjs.com/package/livetennisapi) |
 | MCP server for LLM agents | hosted at `https://mcp.livetennisapi.com/mcp`, or `npx livetennisapi-mcp` | [repo](https://github.com/livetennisapi/livetennisapi-mcp) | [package](https://www.npmjs.com/package/livetennisapi-mcp) |
 | Vercel AI SDK tools | `npm install livetennisapi-ai` ([guide](https://docs.livetennisapi.com/ai-sdk.html)) | [repo](https://github.com/livetennisapi/livetennisapi-ai) | [package](https://www.npmjs.com/package/livetennisapi-ai) |
+| CSV, JSON Lines and Parquet export | `pip install livetennisapi-export` ([guide](https://docs.livetennisapi.com/export-formats.html)) | [repo](https://github.com/livetennisapi/livetennisapi-export) | [package](https://pypi.org/project/livetennisapi-export/) |
 
 - **API reference** — <https://docs.livetennisapi.com> ([plain-HTML version](https://docs.livetennisapi.com/reference.html), no JavaScript required)
 - **Website and plans** — <https://livetennisapi.com>

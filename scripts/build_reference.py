@@ -1369,6 +1369,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"- Vercel AI SDK tools: `npm install livetennisapi-ai`, package {AI_SDK_NPM}, source https://github.com/livetennisapi/livetennisapi-ai",
         f"  (guide: {DOCS_URL}/ai-sdk.html). The same 25 tools as the MCP server, as AI SDK tools.",
         "  Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7, which needs Node 22 or later.",
+        f"- CSV, JSON Lines and Parquet export: `pip install livetennisapi-export`, package {EXPORT_PYPI},",
+        f"  source {EXPORT_REPO} (guide: {DOCS_URL}/export-formats.html). Six datasets: matches,",
+        "  fixtures, players, player, rankings and tournaments. Reads the key from LIVETENNISAPI_KEY.",
         "",
         "## Affiliate programme",
         "- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime",
@@ -2475,6 +2478,330 @@ do next. The close reason repeats the frame's <code>error</code>.</p>
 """
 
 
+# ----------------------------------------------------------------- export formats ---------------
+# Every fact on the export page comes from the published package, livetennisapi-export 0.1.0 on
+# PyPI, read on EXPORT_CHECKED: datasets.py (the six datasets, their endpoints, plans and paging),
+# writers.py (flatten, the CSV and Parquet rules), cli.py (exit codes, the key variable) and the
+# tests. The read-back snippets were run on that day against files written by the package's own
+# writers: pandas 3.1.1 with pyarrow 26.0.1, DuckDB 2.0.0, and R 4.6.2 with arrow 26.0.1.
+# Re-check the page when the package changes its datasets or its writers.
+EXPORT_PACKAGE = "livetennisapi-export"
+EXPORT_VERSION = "0.1.0"
+EXPORT_CHECKED = "2026-11-11"
+EXPORT_PYPI = "https://pypi.org/project/livetennisapi-export/"
+EXPORT_REPO = "https://github.com/livetennisapi/livetennisapi-export"
+# The package's MAX_PAGE_SIZE. _export_drift holds it against the spec's `limit` maximum.
+EXPORT_PAGE_SIZE = 200
+
+# (dataset, spec path, how the page shows the endpoint, plan in the package's words, requests).
+EXPORT_DATASETS = [
+    ("matches", "/matches", "GET /matches",
+     "FREE for <code>live</code> and <code>upcoming</code>. <code>completed</code> and "
+     "<code>cancelled</code> are part of History and need BASIC or a History plan",
+     "One per page"),
+    ("fixtures", "/fixtures", "GET /fixtures", "FREE", "One per page"),
+    ("players", "/players", "GET /players?search=", "FREE", "One per page"),
+    ("player", "/players/{playerId}", "GET /players/{playerId}", "FREE", "One per player id"),
+    ("rankings", "/rankings", "GET /rankings",
+     "PRO. <code>--system elo</code> needs ULTRA", "One per page"),
+    ("tournaments", "/tournaments", "GET /tournaments", "FREE", "One per page"),
+]
+
+# (format, file names, what a row looks like, when it fits).
+EXPORT_FORMATS = [
+    ("CSV", "<code>.csv</code>",
+     "Flat columns, one header line, every value as text",
+     "You want to open the file in a spreadsheet or load it into a tool that reads nothing else."),
+    ("JSON Lines", "<code>.jsonl</code> or <code>.ndjson</code>",
+     "One JSON object per line, exactly as the API returned it, nested objects included",
+     "You want the record unchanged, for a pipeline, a document store or a later reshape."),
+    ("Parquet", "<code>.parquet</code> or <code>.pq</code>",
+     "Flat columns with a type per column",
+     "You analyse the data in pandas, DuckDB or R and want numbers and booleans to stay typed."),
+]
+
+EXPORT_COMMANDS = """# Upcoming fixtures on the ATP tour
+livetennisapi-export fixtures --tour atp -o fixtures.csv
+
+# Every match completed on one day, as Parquet
+livetennisapi-export matches --status completed --date 2026-11-08 -o results.parquet
+
+# The same day as JSON Lines, rows unchanged
+livetennisapi-export matches --status completed --date 2026-11-08 -o results.jsonl
+
+# Full profiles for a list of player ids
+livetennisapi-export player 101 202 303 -o players.csv
+
+# The current ATP ranking table
+livetennisapi-export rankings --system atp -o atp.csv
+
+# Player search, written to stdout
+livetennisapi-export players alcaraz -o - -f jsonl"""
+
+# A match row cut down to six fields. The values are the made-up ones from the package's tests.
+EXPORT_NESTED = """{"id": 5001, "tournament": "Example Open",
+ "players": {"p1": {"name": "Test Player A", "ranking": 12}},
+ "score": {"sets": [2, 0], "games": [[6, 6], [3, 4]]}}"""
+
+# (column, value in the CSV) for EXPORT_NESTED, as writers.flatten produces them.
+EXPORT_FLAT = [
+    ("id", "5001"),
+    ("tournament", "Example Open"),
+    ("players.p1.name", "Test Player A"),
+    ("players.p1.ranking", "12"),
+    ("score.sets", "[2, 0]"),
+    ("score.games", "[[6, 6], [3, 4]]"),
+]
+
+# (export, spec schema of a row, some of its columns). Every name is a field the spec documents
+# at that path. _export_drift resolves each one against the schema and fails the build otherwise.
+EXPORT_SEEN = [
+    ("fixtures, as CSV", "Fixture", ["id", "event_date", "start_time", "player1_id", "player1_name",
+                                     "player2_id", "player2_name", "tournament"]),
+    ("matches, completed, as Parquet", "Match", ["players.p1.itf_ranking.rank_date", "score.timestamp"]),
+    ("rankings, <code>--system atp</code>", "RankingRecord",
+     ["effective_date", "observed_at", "player_id", "player_name", "points", "previous_rank", "rank",
+      "rank_movement"]),
+]
+
+EXPORT_PANDAS = """import json
+import pandas as pd
+
+results = pd.read_parquet("results.parquet")
+print(results[["tournament", "round", "players.p1.name", "players.p2.name", "winner"]])
+
+# Lists are stored as JSON text. Decode a column when you need the values.
+results["sets"] = results["score.sets"].map(json.loads, na_action="ignore")
+
+fixtures = pd.read_csv("fixtures.csv", parse_dates=["event_date"])
+print(fixtures.groupby("tournament")["id"].count())"""
+
+EXPORT_DUCKDB = """-- A dotted column needs double quotes in CSV and Parquet files.
+SELECT tournament, "players.p1.name", "players.p2.name", winner
+FROM 'results.parquet'
+WHERE surface = 'hard';
+
+-- Lists are JSON text. Cast one to read it as a list.
+SELECT id, CAST("score.sets" AS INTEGER[]) AS sets
+FROM 'results.parquet';
+
+-- JSON Lines keeps the nesting, so the same field is a struct path.
+SELECT tournament, players.p1.name, score.sets
+FROM read_json_auto('results.jsonl');
+
+SELECT rank, player_name, points
+FROM 'atp.csv'
+ORDER BY rank;"""
+
+EXPORT_R = """fixtures <- read.csv("fixtures.csv")
+table(fixtures$tournament)
+
+library(arrow)
+results <- read_parquet("results.parquet")
+results[, c("tournament", "players.p1.name", "players.p2.name", "winner")]
+
+# Lists are stored as JSON text.
+library(jsonlite)
+sets <- lapply(results$score.sets, function(x) if (is.na(x)) NULL else fromJSON(x))"""
+
+EXPORT_PYTHON = """from livetennisapi_export import export, fetch, to_dataframe, write
+
+rows = fetch("fixtures", tour="atp")               # a list of dicts
+write(rows, "fixtures.jsonl")
+
+export("matches", "results.csv", status="completed", from_="2026-11-01", to="2026-11-07")
+
+df = to_dataframe(fetch("rankings", system="atp"))  # the same flat columns as the CSV"""
+
+
+def _export_drift(spec: dict[str, Any]) -> None:
+    """Fail the build when the page names an endpoint or a page size the spec no longer has."""
+    problems = []
+    for name, path, *_ in EXPORT_DATASETS:
+        if "get" not in spec["paths"].get(path, {}):
+            problems.append(f"dataset {name} reads GET {path}, which the spec does not define")
+    limit = spec["components"]["parameters"]["limit"]["schema"].get("maximum")
+    if limit != EXPORT_PAGE_SIZE:
+        problems.append(f"the page says pages hold {EXPORT_PAGE_SIZE} rows, the spec's limit maximum is {limit}")
+    schemas = spec["components"]["schemas"]
+
+    def props(node: Any) -> dict[str, Any]:
+        node = resolve(node, spec)
+        found: dict[str, Any] = {}
+        for key in ("allOf", "anyOf", "oneOf"):
+            for sub in node.get(key, []):
+                found.update(props(sub))
+        found.update(node.get("properties", {}))
+        return found
+
+    for _what, schema, columns in EXPORT_SEEN:
+        for column in columns:
+            node: Any = schemas[schema]
+            for part in column.split("."):
+                fields = props(node)
+                if part not in fields:
+                    problems.append(f"column {column} is not a field of the spec's {schema} schema")
+                    break
+                node = fields[part]
+    if problems:
+        raise SystemExit("export-formats.html disagrees with the spec:\n  " + "\n  ".join(problems))
+
+
+def _export_body(spec: dict[str, Any]) -> str:
+    _export_drift(spec)
+    format_table = scrollx(
+        f"<table>{vh_caption('The three export formats and when each fits')}"
+        '<thead><tr><th scope="col">Format</th><th scope="col">File name</th>'
+        '<th scope="col">What a row is</th><th scope="col">Pick it when</th></tr></thead><tbody>'
+        + "".join(f'<tr><td>{name}</td><td style="white-space:nowrap">{ext}</td><td>{shape}</td><td>{fits}</td></tr>\n'
+                  for name, ext, shape, fits in EXPORT_FORMATS)
+        + "</tbody></table>",
+        "Export formats",
+    )
+    dataset_table = scrollx(
+        f"<table>{vh_caption('The six datasets, the endpoint each reads and the plan it needs')}"
+        '<thead><tr><th scope="col">Dataset</th><th scope="col">Endpoint</th>'
+        '<th scope="col">Plan</th><th scope="col">Requests</th></tr></thead><tbody>'
+        # The dataset name is one short word. Without nowrap the page's overflow-wrap splits it.
+        + "".join(f'<tr><td style="white-space:nowrap"><code>{E(name)}</code></td><td><code>{E(shown)}</code></td>'
+                  f"<td>{plan}</td><td>{requests}</td></tr>\n"
+                  for name, _path, shown, plan, requests in EXPORT_DATASETS)
+        + "</tbody></table>",
+        "Datasets",
+    )
+    flat_table = scrollx(
+        f"<table>{vh_caption('The columns the example row becomes')}"
+        '<thead><tr><th scope="col">Column</th><th scope="col">Value in the CSV</th></tr></thead><tbody>'
+        + "".join(f"<tr><td><code>{E(col)}</code></td><td><code>{E(val)}</code></td></tr>\n"
+                  for col, val in EXPORT_FLAT)
+        + "</tbody></table>",
+        "Flattened columns",
+    )
+    seen_table = scrollx(
+        f"<table>{vh_caption('Some of the column names in each export')}"
+        '<thead><tr><th scope="col">Export</th><th scope="col">Some of its columns</th></tr></thead><tbody>'
+        + "".join(f"<tr><td>{what}</td><td>{', '.join(f'<code>{E(c)}</code>' for c in cols)}</td></tr>\n"
+                  for what, _schema, cols in EXPORT_SEEN)
+        + "</tbody></table>",
+        "Column names",
+    )
+    return f"""<h2 id="install">Install livetennisapi-export</h2>
+<p>The package is <a href="{EXPORT_PYPI}">{EXPORT_PACKAGE}</a> on PyPI. It needs Python 3.9 or later
+and installs the official Python client with it.</p>
+<pre><code>pip install livetennisapi-export
+pip install "livetennisapi-export[parquet]"</code></pre>
+<p>The second line adds Parquet support. The <code>parquet</code> extra brings in pandas and pyarrow.</p>
+
+<h2 id="api-key">Set the API key</h2>
+<p>The command reads your key from the <code>LIVETENNISAPI_KEY</code> environment variable.
+<a href="{SITE}/subscribe/free">Get a free key</a>.</p>
+<pre><code>export LIVETENNISAPI_KEY=twjp_...</code></pre>
+<p>There is no flag for the key, so the key is never part of the export command. Without the variable the
+command prints where to get a key and exits with status 2. It sends no request.</p>
+
+<h2 id="formats">Which format should I pick?</h2>
+<p>The file name picks the format. All three hold the same rows.</p>
+{format_table}
+<p>CSV is the one every tool opens. A reader has to work out the types again, because a CSV cell is text.
+JSON Lines is the only format that keeps nested objects as objects. Parquet keeps a type for
+each column, so a rank stays a number and a flag stays a boolean.</p>
+<p>Use <code>-o -</code> with <code>-f csv</code> or <code>-f jsonl</code> to write to stdout.
+Parquet is binary and needs a file name.</p>
+
+<h2 id="datasets">Which datasets can I export, and which plan does each need?</h2>
+<p>There are six datasets. Each one reads a single endpoint through the official Python client.
+The plans are the ones the package states.</p>
+{dataset_table}
+<p>If your plan does not cover a request, the API answers 403. The command then prints the refusal
+and exits with status 1. Plans and prices are on the <a href="{SITE}/pricing">pricing page</a>.
+The <a href="./errors-and-rate-limits.html">errors page</a> explains each status.</p>
+<p>The spec also gives a FREE key 20 history calls each calendar month, which <code>completed</code>
+matches can use.</p>
+<p><code>rankings</code> exports one ranking table in rank order, so it needs <code>--system</code>.
+The choices are <code>atp</code>, <code>wta</code>, <code>itf_jt</code>, <code>itf_mt</code>,
+<code>itf_wt</code>, <code>elo</code>, <code>atp_doubles</code> and <code>wta_doubles</code>.
+<code>elo</code> also needs <code>--tour atp</code> or <code>--tour wta</code>.
+<code>matches</code> takes <code>--status</code>, and it defaults to <code>upcoming</code>.</p>
+<pre><code>{E(EXPORT_COMMANDS)}</code></pre>
+<p><code>livetennisapi-export DATASET --help</code> lists every option for a dataset.</p>
+
+<h2 id="paging">How does paging work?</h2>
+<p>The command asks for pages of {EXPORT_PAGE_SIZE} rows, the largest page the API allows. It moves
+the offset forward by the rows it received and stops when <code>meta.has_more</code> is false.
+You never page by hand.</p>
+<ul>
+<li>Each page is one request against your quota. <code>--max-rows N</code> stops after N rows and
+sends no further request.</li>
+<li><code>--page-size</code> takes 1 to {EXPORT_PAGE_SIZE}. Smaller pages mean more requests for the same rows.</li>
+<li><code>player</code> is not paged. It sends one request for each player id you list.</li>
+</ul>
+<p>Quotas for each plan are on the
+<a href="./auth-quota-and-health.html">authentication, quota and status</a> page.</p>
+
+<h2 id="columns">How do nested fields become columns?</h2>
+<p>JSON Lines needs no change, so each line is the object the API returned. CSV and Parquet need flat
+columns. The writer applies the same rules to both.</p>
+<ul>
+<li>A nested object becomes one column for each field, named with dots.</li>
+<li>A list becomes JSON text in one column.</li>
+<li>An empty value is an empty cell in CSV and a null in Parquet.</li>
+<li>A boolean is <code>true</code> or <code>false</code> in CSV.</li>
+</ul>
+<p>Here is a match row cut down to a few fields. The values are made up.</p>
+<pre><code>{E(EXPORT_NESTED)}</code></pre>
+<p>It becomes six columns.</p>
+{flat_table}
+<p>The columns follow the fields the API sent, in the order they first appear. A field added to the
+API shows up as a new column with no upgrade. These are some of the columns each export has.
+Every name is a field the <a href="./reference.html">reference</a> documents.</p>
+{seen_table}
+<p>A match file is wide, because each player object and the score object spread into their own
+columns. In Parquet a whole-number column that has an empty value is stored as a decimal number.</p>
+
+<h2 id="writes">When is the file written?</h2>
+<p>Nothing is written until every page has arrived. A request that fails halfway leaves no
+half-written file. A file of the same name from an earlier run stays as it was.</p>
+<ul>
+<li>A refused API key writes no file. The command prints the refusal and exits with status 1.</li>
+<li>A missing key, an unknown file extension with no <code>-f</code> and Parquet to stdout are caught before any
+request is sent.
+The command exits with status 2.</li>
+<li>On success the command exits with status 0. When it writes a file, it prints the row count and the
+file name to stderr.</li>
+<li>A request that matches no rows still writes the file. The CSV is then empty, with no header line.</li>
+</ul>
+
+<h2 id="pandas">How do I read an export in pandas?</h2>
+<p>A dotted name is an ordinary column label in pandas.</p>
+<pre><code>{E(EXPORT_PANDAS)}</code></pre>
+
+<h2 id="duckdb">How do I query an export in DuckDB?</h2>
+<p>DuckDB reads all three formats from the file name.</p>
+<pre><code>{E(EXPORT_DUCKDB)}</code></pre>
+
+<h2 id="r">How do I read an export in R?</h2>
+<p>Base R reads the CSV. The <code>arrow</code> package reads the Parquet file.</p>
+<pre><code>{E(EXPORT_R)}</code></pre>
+
+<h2 id="python">Can I export from Python code?</h2>
+<p>The same package is a small Python API. <code>fetch</code> returns the rows, <code>write</code>
+writes them and <code>export</code> does both.</p>
+<pre><code>{E(EXPORT_PYTHON)}</code></pre>
+<p><code>from_</code> is the <code>from</code> parameter, renamed because <code>from</code> is a Python keyword.
+<code>fetch</code> and <code>export</code> take <code>api_key=</code> or read <code>LIVETENNISAPI_KEY</code>.
+<code>to_dataframe</code> needs the <code>parquet</code> extra.</p>
+
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="{EXPORT_PYPI}">livetennisapi-export on PyPI</a></li>
+<li><a href="{EXPORT_REPO}">Source on GitHub</a></li>
+<li><a href="{SITE}/subscribe/free">Free API key</a></li>
+<li><a href="./live-scores.html">Live scores</a>, the <code>/matches</code> endpoint</li>
+<li><a href="./players-and-tournaments.html">Players, tournaments and rankings</a></li>
+</ul>
+"""
+
+
 GUIDES: list[dict[str, Any]] = [
     {
         "slug": "ai-sdk",
@@ -2535,6 +2862,37 @@ GUIDES: list[dict[str, Any]] = [
                   "documentation": f"{DOCS_URL}/reference.html"},
         "footer": (
             'Built from <a href="./openapi.yaml">openapi.yaml</a>. Page source in '
+            '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
+        ),
+    },
+    {
+        "slug": "export-formats",
+        "title": "Export tennis data to CSV, JSON Lines or Parquet",
+        "head_title": "Export tennis data: CSV, JSONL or Parquet | Live Tennis API",
+        "question": "How do you export tennis data to CSV, JSON Lines or Parquet?",
+        "description": (
+            "Export tennis matches, fixtures, players and rankings to CSV, JSON Lines or Parquet "
+            "with livetennisapi-export. Read the files in pandas, DuckDB or R."
+        ),
+        "lede": (
+            f'Install <a href="{EXPORT_PYPI}"><code>livetennisapi-export</code></a>, set '
+            "<code>LIVETENNISAPI_KEY</code> and name an output file. The file extension picks the "
+            "format. The command pages through every result and writes matches, fixtures, players, "
+            "rankings or tournaments."
+        ),
+        "meta": (
+            f'Package <a href="{EXPORT_PYPI}">livetennisapi-export</a> {EXPORT_VERSION}, for Python 3.9 or later. '
+            f'Read-back examples run on <time datetime="{EXPORT_CHECKED}">{EXPORT_CHECKED}</time> '
+            "with pandas 3.1.1, DuckDB 2.0.0 and R 4.6.2."
+        ),
+        "body": _export_body,
+        "date": EXPORT_CHECKED,
+        "about": {"@type": "SoftwareSourceCode", "name": EXPORT_PACKAGE, "url": EXPORT_PYPI,
+                  "version": EXPORT_VERSION, "codeRepository": EXPORT_REPO,
+                  "programmingLanguage": "Python"},
+        "footer": (
+            f'Written for <a href="{EXPORT_PYPI}">livetennisapi-export</a> {EXPORT_VERSION}. Package source in '
+            f'<a href="{EXPORT_REPO}">livetennisapi/livetennisapi-export</a>, page source in '
             '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
         ),
     },
