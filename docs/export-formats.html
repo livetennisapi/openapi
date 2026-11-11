@@ -317,9 +317,9 @@ columns. The writer applies the same rules to both.</p>
 <tr><td><code>score.games</code></td><td><code>[[6, 6], [3, 4]]</code></td></tr>
 </tbody></table></div>
 <p>The columns follow the fields the API sent, in the order they first appear. A field added to the
-API shows up as a new column with no upgrade. These names come from files the command wrote on
-<time datetime="2026-11-11">2026-11-11</time>.</p>
-<div class="scrollx" tabindex="0" role="region" aria-label="Column names"><table><caption class="vh">Column names seen in exported files</caption><thead><tr><th scope="col">Export</th><th scope="col">Some of its columns</th></tr></thead><tbody><tr><td>fixtures, as CSV</td><td><code>created_at</code>, <code>event_date</code>, <code>gender</code>, <code>id</code>, <code>is_qualifying</code>, <code>match_id</code>, <code>player1_id</code>, <code>player1_name</code></td></tr>
+API shows up as a new column with no upgrade. These are some of the columns each export has.
+Every name is a field the <a href="./reference.html">reference</a> documents.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="Column names"><table><caption class="vh">Some of the column names in each export</caption><thead><tr><th scope="col">Export</th><th scope="col">Some of its columns</th></tr></thead><tbody><tr><td>fixtures, as CSV</td><td><code>id</code>, <code>event_date</code>, <code>start_time</code>, <code>player1_id</code>, <code>player1_name</code>, <code>player2_id</code>, <code>player2_name</code>, <code>tournament</code></td></tr>
 <tr><td>matches, completed, as Parquet</td><td><code>players.p1.itf_ranking.rank_date</code>, <code>score.timestamp</code></td></tr>
 <tr><td>rankings, <code>--system atp</code></td><td><code>effective_date</code>, <code>observed_at</code>, <code>player_id</code>, <code>player_name</code>, <code>points</code>, <code>previous_rank</code>, <code>rank</code>, <code>rank_movement</code></td></tr>
 </tbody></table></div>

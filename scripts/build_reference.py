@@ -2553,15 +2553,15 @@ EXPORT_FLAT = [
     ("score.games", "[[6, 6], [3, 4]]"),
 ]
 
-# Column names read from files the command wrote on EXPORT_CHECKED. The run was reported to
-# this build, not repeated by it. The fixtures names created_at, gender, is_qualifying and
-# match_id are not in the spec's Fixture schema, which is the spec's gap to close.
+# (export, spec schema of a row, some of its columns). Every name is a field the spec documents
+# at that path. _export_drift resolves each one against the schema and fails the build otherwise.
 EXPORT_SEEN = [
-    ("fixtures, as CSV", ["created_at", "event_date", "gender", "id", "is_qualifying", "match_id",
-                          "player1_id", "player1_name"]),
-    ("matches, completed, as Parquet", ["players.p1.itf_ranking.rank_date", "score.timestamp"]),
-    ("rankings, <code>--system atp</code>", ["effective_date", "observed_at", "player_id", "player_name",
-                                             "points", "previous_rank", "rank", "rank_movement"]),
+    ("fixtures, as CSV", "Fixture", ["id", "event_date", "start_time", "player1_id", "player1_name",
+                                     "player2_id", "player2_name", "tournament"]),
+    ("matches, completed, as Parquet", "Match", ["players.p1.itf_ranking.rank_date", "score.timestamp"]),
+    ("rankings, <code>--system atp</code>", "RankingRecord",
+     ["effective_date", "observed_at", "player_id", "player_name", "points", "previous_rank", "rank",
+      "rank_movement"]),
 ]
 
 EXPORT_PANDAS = """import json
@@ -2623,6 +2623,26 @@ def _export_drift(spec: dict[str, Any]) -> None:
     limit = spec["components"]["parameters"]["limit"]["schema"].get("maximum")
     if limit != EXPORT_PAGE_SIZE:
         problems.append(f"the page says pages hold {EXPORT_PAGE_SIZE} rows, the spec's limit maximum is {limit}")
+    schemas = spec["components"]["schemas"]
+
+    def props(node: Any) -> dict[str, Any]:
+        node = resolve(node, spec)
+        found: dict[str, Any] = {}
+        for key in ("allOf", "anyOf", "oneOf"):
+            for sub in node.get(key, []):
+                found.update(props(sub))
+        found.update(node.get("properties", {}))
+        return found
+
+    for _what, schema, columns in EXPORT_SEEN:
+        for column in columns:
+            node: Any = schemas[schema]
+            for part in column.split("."):
+                fields = props(node)
+                if part not in fields:
+                    problems.append(f"column {column} is not a field of the spec's {schema} schema")
+                    break
+                node = fields[part]
     if problems:
         raise SystemExit("export-formats.html disagrees with the spec:\n  " + "\n  ".join(problems))
 
@@ -2658,10 +2678,10 @@ def _export_body(spec: dict[str, Any]) -> str:
         "Flattened columns",
     )
     seen_table = scrollx(
-        f"<table>{vh_caption('Column names seen in exported files')}"
+        f"<table>{vh_caption('Some of the column names in each export')}"
         '<thead><tr><th scope="col">Export</th><th scope="col">Some of its columns</th></tr></thead><tbody>'
         + "".join(f"<tr><td>{what}</td><td>{', '.join(f'<code>{E(c)}</code>' for c in cols)}</td></tr>\n"
-                  for what, cols in EXPORT_SEEN)
+                  for what, _schema, cols in EXPORT_SEEN)
         + "</tbody></table>",
         "Column names",
     )
@@ -2732,8 +2752,8 @@ columns. The writer applies the same rules to both.</p>
 <p>It becomes six columns.</p>
 {flat_table}
 <p>The columns follow the fields the API sent, in the order they first appear. A field added to the
-API shows up as a new column with no upgrade. These names come from files the command wrote on
-<time datetime="{EXPORT_CHECKED}">{EXPORT_CHECKED}</time>.</p>
+API shows up as a new column with no upgrade. These are some of the columns each export has.
+Every name is a field the <a href="./reference.html">reference</a> documents.</p>
 {seen_table}
 <p>A match file is wide, because each player object and the score object spread into their own
 columns. In Parquet a whole-number column that has an empty value is stored as a decimal number.</p>
