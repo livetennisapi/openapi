@@ -30,6 +30,7 @@ endpoints, generated from the same spec as the reference:
 ## Guides
 - How do you give a Vercel AI SDK model live tennis data? https://docs.livetennisapi.com/ai-sdk.html
 - What does each Live Tennis API error mean, and when should a client retry? https://docs.livetennisapi.com/errors-and-rate-limits.html
+- How do you export tennis data to CSV, JSON Lines or Parquet? https://docs.livetennisapi.com/export-formats.html
 
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
@@ -223,6 +224,9 @@ backtest.
 - Vercel AI SDK tools: `npm install livetennisapi-ai`, package https://www.npmjs.com/package/livetennisapi-ai, source https://github.com/livetennisapi/livetennisapi-ai
   (guide: https://docs.livetennisapi.com/ai-sdk.html). The same 25 tools as the MCP server, as AI SDK tools.
   Reads the key from LIVETENNISAPI_KEY. Needs `ai` v7, which needs Node 22 or later.
+- CSV, JSON Lines and Parquet export: `pip install livetennisapi-export`, package https://pypi.org/project/livetennisapi-export/,
+  source https://github.com/livetennisapi/livetennisapi-export (guide: https://docs.livetennisapi.com/export-formats.html). Six datasets: matches,
+  fixtures, players, player, rankings and tournaments. Reads the key from LIVETENNISAPI_KEY.
 
 ## Affiliate programme
 - https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime

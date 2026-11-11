@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.81] - 2026-11-11
+
+### Added
+- **An export formats page.** `export-formats.html` explains how to export matches, fixtures, players, rankings and tournaments to CSV, JSON Lines or Parquet with `livetennisapi-export` 0.1.0. It says when each format fits and lists the six datasets with the endpoint and the plan each needs. It also covers paging, how nested fields become dotted columns and when the file is written. The read-back examples for pandas, DuckDB and R were run against files the package wrote. The build fails when the page names an endpoint or a page size the spec no longer has. The docs menu, the docs home, the sitemap and llms.txt link the page. Nothing on the wire changed.
+
 ## [1.13.80] - 2026-11-09
 
 ### Added
