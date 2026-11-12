@@ -31,6 +31,7 @@ endpoints, generated from the same spec as the reference:
 - How do you give a Vercel AI SDK model live tennis data? https://docs.livetennisapi.com/ai-sdk.html
 - What does each Live Tennis API error mean, and when should a client retry? https://docs.livetennisapi.com/errors-and-rate-limits.html
 - How do you export tennis data to CSV, JSON Lines or Parquet? https://docs.livetennisapi.com/export-formats.html
+- Which client libraries does the Live Tennis API have? https://docs.livetennisapi.com/client-libraries.html
 
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
@@ -227,6 +228,17 @@ backtest.
 - CSV, JSON Lines and Parquet export: `pip install livetennisapi-export`, package https://pypi.org/project/livetennisapi-export/,
   source https://github.com/livetennisapi/livetennisapi-export (guide: https://docs.livetennisapi.com/export-formats.html). Six datasets: matches,
   fixtures, players, player, rankings and tournaments. Reads the key from LIVETENNISAPI_KEY.
+- Go client: `go get github.com/livetennisapi/livetennisapi-go`, package https://pkg.go.dev/github.com/livetennisapi/livetennisapi-go, source https://github.com/livetennisapi/livetennisapi-go
+- PHP client: `composer require livetennisapi/livetennisapi`, package https://packagist.org/packages/livetennisapi/livetennisapi, source https://github.com/livetennisapi/livetennisapi-php
+- .NET client: `dotnet add package LiveTennisApi`, package https://www.nuget.org/packages/LiveTennisApi, source https://github.com/livetennisapi/livetennisapi-dotnet
+- Dart and Flutter client: `dart pub add livetennisapi`, package https://pub.dev/packages/livetennisapi, source https://github.com/livetennisapi/livetennisapi-dart
+- Swift client: `.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.1.1")`, package https://github.com/livetennisapi/livetennisapi-swift/tags, source https://github.com/livetennisapi/livetennisapi-swift
+- R client: `install.packages("livetennisapi", repos = c("https://livetennisapi.r-universe.dev", "https://cloud.r-project.org"))`, package https://livetennisapi.r-universe.dev/livetennisapi, source https://github.com/livetennisapi/livetennisapi-r
+- Laravel package: `composer require livetennisapi/livetennisapi-laravel`, package https://packagist.org/packages/livetennisapi/livetennisapi-laravel, source https://github.com/livetennisapi/livetennisapi-laravel
+- Haystack integration: `pip install livetennisapi-haystack`, package https://pypi.org/project/livetennisapi-haystack/, source https://github.com/livetennisapi/livetennisapi-haystack
+- LangChain integration: `pip install -U langchain-livetennis`, package https://pypi.org/project/langchain-livetennis/, source https://github.com/livetennisapi/langchain-livetennis
+- LlamaIndex tools: `pip install llama-index-tools-livetennisapi`, package https://pypi.org/project/llama-index-tools-livetennisapi/, source https://github.com/livetennisapi/llama-index-tools-livetennisapi
+- Every library with its latest version, minimum runtime and endpoint coverage: https://docs.livetennisapi.com/client-libraries.html
 
 ## Affiliate programme
 - https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime

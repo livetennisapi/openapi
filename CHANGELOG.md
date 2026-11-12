@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.83] - 2026-11-12
+
+### Added
+- **A client libraries page.** `client-libraries.html` lists the eight official language clients and seven packages built on them. Each row has the install command, the latest published version, the minimum runtime, the licence and the source repository. A second table says whether each package covers REST, the live stream, file export and MCP. A third shows which endpoint groups each language client reaches, read from the source of each published version. The page ends with the smallest working call in each language, copied from that library's README. `scripts/check_client_versions.py` reads the registries again and names any row that is behind. The build fails when the page names an operation the spec does not define. The docs menu, the docs home, the sitemap, llms.txt and the README link the page. Nothing on the wire changed.
+
 ## [1.13.82] - 2026-11-12
 
 ### Fixed

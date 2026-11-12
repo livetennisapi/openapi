@@ -136,6 +136,8 @@ Everything in the Live Tennis API developer surface:
 | Vercel AI SDK tools | `npm install livetennisapi-ai` ([guide](https://docs.livetennisapi.com/ai-sdk.html)) | [repo](https://github.com/livetennisapi/livetennisapi-ai) | [package](https://www.npmjs.com/package/livetennisapi-ai) |
 | CSV, JSON Lines and Parquet export | `pip install livetennisapi-export` ([guide](https://docs.livetennisapi.com/export-formats.html)) | [repo](https://github.com/livetennisapi/livetennisapi-export) | [package](https://pypi.org/project/livetennisapi-export/) |
 
+The [client libraries page](https://docs.livetennisapi.com/client-libraries.html) lists every client library with its latest version and minimum runtime. It also shows which endpoints each language client covers.
+
 - **API reference** — <https://docs.livetennisapi.com> ([plain-HTML version](https://docs.livetennisapi.com/reference.html), no JavaScript required)
 - **Website and plans** — <https://livetennisapi.com>
 - **Get a free key** — <https://livetennisapi.com/subscribe/free>

@@ -1372,6 +1372,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"- CSV, JSON Lines and Parquet export: `pip install livetennisapi-export`, package {EXPORT_PYPI},",
         f"  source {EXPORT_REPO} (guide: {DOCS_URL}/export-formats.html). Six datasets: matches,",
         "  fixtures, players, player, rankings and tournaments. Reads the key from LIVETENNISAPI_KEY.",
+        *[f"- {c['name']}: `{c['install']}`, package {c['registry_url']}, source {c['repo']}"
+          for c in CLIENTS if c["key"] in CLIENTS_LLMS_EXTRA],
+        f"- Every library with its latest version, minimum runtime and endpoint coverage: {DOCS_URL}/client-libraries.html",
         "",
         "## Affiliate programme",
         "- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime",
@@ -2802,6 +2805,470 @@ writes them and <code>export</code> does both.</p>
 """
 
 
+# ----------------------------------------------------------------- client libraries -------------
+# Every cell on the client libraries page was read from a real source on CLIENTS_CHECKED.
+# Versions, licences and minimum runtimes come from the registry that publishes each package
+# (PyPI, npm, the Go module proxy, Packagist, NuGet, pub.dev, R-universe). The Swift client has
+# no registry, so its version is the newest Git tag. Coverage (the stream column and
+# CLIENT_ENDPOINT_GROUPS) was read from the source of each published version, not from the main
+# branch. Each quick-start snippet is copied from the README of that published version.
+# scripts/check_client_versions.py reads the registries again and fails when a row is behind.
+# After a release, update the row here, re-read its coverage and run that script.
+CLIENTS_CHECKED = "2026-11-12"
+CLIENTS_ORG = "https://github.com/livetennisapi"
+
+# One row per library. `source` is (registry kind, identifier) for check_client_versions.py.
+# `runtime_spec` is the registry's own minimum-runtime field, held next to the wording the page
+# shows so the check script can compare it. `stream`, `export` and `mcp` are the cell texts.
+CLIENTS: list[dict[str, Any]] = [
+    {"key": "python", "name": "Python client", "language": "Python", "package": "livetennisapi",
+     "registry": "PyPI", "registry_url": PYPI_URL, "source": ("pypi", "livetennisapi"),
+     "install": "pip install livetennisapi", "version": "1.8.0",
+     "runtime": "Python 3.9", "runtime_spec": ">=3.9",
+     "stream": "Yes", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-python"},
+    {"key": "js", "name": "JavaScript and TypeScript client", "language": "JavaScript, TypeScript",
+     "package": "livetennisapi", "registry": "npm", "registry_url": NPM_JS_URL,
+     "source": ("npm", "livetennisapi"),
+     "install": "npm install livetennisapi", "version": "1.10.2",
+     "runtime": "Node 18", "runtime_spec": ">=18",
+     "stream": "Yes", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-js"},
+    {"key": "go", "name": "Go client", "language": "Go",
+     "package": "github.com/livetennisapi/livetennisapi-go", "registry": "Go modules",
+     "registry_url": "https://pkg.go.dev/github.com/livetennisapi/livetennisapi-go",
+     "source": ("go", "github.com/livetennisapi/livetennisapi-go"),
+     "install": "go get github.com/livetennisapi/livetennisapi-go", "version": "1.2.1",
+     "runtime": "Go 1.25", "runtime_spec": "1.25",
+     "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-go"},
+    {"key": "php", "name": "PHP client", "language": "PHP", "package": "livetennisapi/livetennisapi",
+     "registry": "Packagist", "registry_url": "https://packagist.org/packages/livetennisapi/livetennisapi",
+     "source": ("packagist", "livetennisapi/livetennisapi"),
+     "install": "composer require livetennisapi/livetennisapi", "version": "1.1.1",
+     "runtime": "PHP 8.1", "runtime_spec": ">=8.1",
+     "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-php"},
+    {"key": "dotnet", "name": ".NET client", "language": "C#", "package": "LiveTennisApi",
+     "registry": "NuGet", "registry_url": "https://www.nuget.org/packages/LiveTennisApi",
+     "source": ("nuget", "livetennisapi"),
+     "install": "dotnet add package LiveTennisApi", "version": "1.2.1",
+     "runtime": ".NET Standard 2.0 or .NET 8", "runtime_spec": ".NETStandard2.0, net8.0",
+     "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-dotnet"},
+    {"key": "dart", "name": "Dart and Flutter client", "language": "Dart", "package": "livetennisapi",
+     "registry": "pub.dev", "registry_url": "https://pub.dev/packages/livetennisapi",
+     "source": ("pub", "livetennisapi"),
+     "install": "dart pub add livetennisapi", "version": "1.2.1",
+     "runtime": "Dart 3.5", "runtime_spec": "^3.5.0",
+     "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-dart"},
+    {"key": "swift", "name": "Swift client", "language": "Swift", "package": "livetennisapi-swift",
+     "registry": "Git tag", "registry_url": f"{CLIENTS_ORG}/livetennisapi-swift/tags",
+     "source": ("github-tag", "livetennisapi/livetennisapi-swift"),
+     "install": '.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.1.1")',
+     "version": "1.1.1", "runtime": "Swift 5.9", "runtime_spec": "5.9",
+     "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-swift"},
+    {"key": "r", "name": "R client", "language": "R", "package": "livetennisapi",
+     "registry": "R-universe", "registry_url": "https://livetennisapi.r-universe.dev/livetennisapi",
+     "source": ("r-universe", "livetennisapi/livetennisapi"),
+     "install": 'install.packages("livetennisapi", repos = c("https://livetennisapi.r-universe.dev", '
+                '"https://cloud.r-project.org"))',
+     "version": "0.2.0", "runtime": "R 4.1", "runtime_spec": ">= 4.1",
+     "stream": "No", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-r"},
+    {"key": "mcp", "name": "MCP server", "language": "TypeScript", "package": "livetennisapi-mcp",
+     "registry": "npm", "registry_url": NPM_MCP_URL, "source": ("npm", "livetennisapi-mcp"),
+     "install": "npx -y livetennisapi-mcp", "version": "1.6.5",
+     "runtime": "Node 20", "runtime_spec": ">=20",
+     "stream": "No", "export": "No", "mcp": "Yes", "repo": f"{CLIENTS_ORG}/livetennisapi-mcp"},
+    {"key": "ai", "name": "Vercel AI SDK tools", "language": "TypeScript", "package": AI_SDK_PACKAGE,
+     "registry": "npm", "registry_url": AI_SDK_NPM, "source": ("npm", AI_SDK_PACKAGE),
+     "install": "npm install livetennisapi-ai", "version": AI_SDK_VERSION,
+     "runtime": "Node 22", "runtime_spec": ">=22",
+     "stream": "No", "export": "No", "mcp": "No", "repo": AI_SDK_REPO},
+    {"key": "export", "name": "Export command", "language": "Python", "package": EXPORT_PACKAGE,
+     "registry": "PyPI", "registry_url": EXPORT_PYPI, "source": ("pypi", EXPORT_PACKAGE),
+     "install": "pip install livetennisapi-export", "version": EXPORT_VERSION,
+     "runtime": "Python 3.9", "runtime_spec": ">=3.9",
+     "stream": "No", "export": "CSV, JSON Lines, Parquet", "mcp": "No", "repo": EXPORT_REPO},
+    {"key": "laravel", "name": "Laravel package", "language": "PHP",
+     "package": "livetennisapi/livetennisapi-laravel", "registry": "Packagist",
+     "registry_url": "https://packagist.org/packages/livetennisapi/livetennisapi-laravel",
+     "source": ("packagist", "livetennisapi/livetennisapi-laravel"),
+     "install": "composer require livetennisapi/livetennisapi-laravel", "version": "1.1.0",
+     "runtime": "PHP 8.2", "runtime_spec": ">=8.2",
+     "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-laravel"},
+    {"key": "haystack", "name": "Haystack integration", "language": "Python",
+     "package": "livetennisapi-haystack", "registry": "PyPI",
+     "registry_url": "https://pypi.org/project/livetennisapi-haystack/",
+     "source": ("pypi", "livetennisapi-haystack"),
+     "install": "pip install livetennisapi-haystack", "version": "0.2.0",
+     "runtime": "Python 3.10", "runtime_spec": ">=3.10",
+     "stream": "No", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-haystack"},
+    {"key": "langchain", "name": "LangChain integration", "language": "Python",
+     "package": "langchain-livetennis", "registry": "PyPI",
+     "registry_url": "https://pypi.org/project/langchain-livetennis/",
+     "source": ("pypi", "langchain-livetennis"),
+     "install": "pip install -U langchain-livetennis", "version": "0.2.0",
+     "runtime": "Python 3.10", "runtime_spec": "<4.0.0,>=3.10.0",
+     "stream": "No", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/langchain-livetennis"},
+    {"key": "llamaindex", "name": "LlamaIndex tools", "language": "Python",
+     "package": "llama-index-tools-livetennisapi", "registry": "PyPI",
+     "registry_url": "https://pypi.org/project/llama-index-tools-livetennisapi/",
+     "source": ("pypi", "llama-index-tools-livetennisapi"),
+     "install": "pip install llama-index-tools-livetennisapi", "version": "0.1.0",
+     "runtime": "Python 3.10", "runtime_spec": "<4.0,>=3.10",
+     "stream": "No", "export": "No", "mcp": "No",
+     "repo": f"{CLIENTS_ORG}/llama-index-tools-livetennisapi"},
+]
+# The rows llms.txt lists from this table. The other five have their own hand-written lines there.
+CLIENTS_LLMS_EXTRA = ("go", "php", "dotnet", "dart", "swift", "r", "laravel", "haystack", "langchain",
+                      "llamaindex")
+# Every listed package states the MIT licence on its registry or, for Swift, in its LICENSE file.
+CLIENTS_LICENCE = "MIT"
+
+# The eight language clients, in the column order of the endpoint table.
+CLIENT_LANGUAGES = ["python", "js", "go", "php", "dotnet", "dart", "swift", "r"]
+CLIENT_SHORT = {"python": "Python", "js": '<abbr title="JavaScript and TypeScript">JS</abbr>', "go": "Go", "php": "PHP", "dotnet": ".NET",
+                "dart": "Dart", "swift": "Swift", "r": "R"}
+
+# (group, the spec operations it stands for, one cell per CLIENT_LANGUAGES entry).
+# Y: the client has a method for every operation in the group. P: for some. N: for none.
+# _clients_drift fails the build when an operation here is no longer in the spec.
+CLIENT_ENDPOINT_GROUPS: list[tuple[str, list[tuple[str, str]], str]] = [
+    ("Matches and live scores",
+     [("get", "/matches"), ("get", "/matches/{matchId}"), ("get", "/matches/{matchId}/score")], "YYYYYYYY"),
+    ("Players, fixtures and tournaments",
+     [("get", "/players"), ("get", "/players/{playerId}"), ("get", "/fixtures"),
+      ("get", "/tournaments"), ("get", "/tournaments/{tournamentId}")], "YYYYYYYY"),
+    ("Player record", [("get", "/players/{playerId}/stats")], "NYNNNNNY"),
+    ("Rankings", [("get", "/rankings")], "YYYYYYYY"),
+    ("Results archive and head-to-head",
+     [("get", "/history/archive/matches"), ("get", "/history/archive/matches/{archiveId}"),
+      ("get", "/history/archive/players"), ("get", "/history/archive/career"), ("get", "/h2h")], "YYYYYYYP"),
+    ("Completed matches and the point-by-point tape",
+     [("get", "/history/matches"), ("get", "/history/matches/{matchId}")], "YYYYYYYN"),
+    ("History coverage report", [("get", "/history/coverage")], "YYNNNNNN"),
+    ("Match events, statistics and analysis",
+     [("get", "/matches/{matchId}/events"), ("get", "/matches/{matchId}/statistics"),
+      ("get", "/matches/{matchId}/analysis")], "YYYYYYYN"),
+    ("Per-point events over REST", [("get", "/matches/{matchId}/points")], "YYNNNNNN"),
+    ("Markets and prices", [("get", "/markets"), ("get", "/markets/{matchId}/prices")], "YYYYYYYN"),
+    ("Rally and charting data",
+     [("get", "/rally/matches"), ("get", "/rally/matches/{rallyMatchId}"),
+      ("get", "/history/matches/{matchId}/rally"), ("get", "/charting/players"),
+      ("get", "/charting/matches/{chartingMatchId}")], "YYYYYYYN"),
+    ("History packages",
+     [("get", "/history/packages"), ("get", "/history/packages/{period}")], "YYYYYYYN"),
+    ("Webhooks",
+     [("post", "/webhooks"), ("get", "/webhooks"), ("delete", "/webhooks/{webhookId}")], "NNYYYYYN"),
+    ("Push feed token", [("get", "/ws-token")], "YYYYYYYN"),
+    ("Usage and quota", [("get", "/usage")], "YNYYYYYY"),
+]
+CLIENT_CELL = {"Y": "Yes", "P": "Part", "N": "No"}
+
+# The quick-start block of each README, unchanged. Python 1.8.0, JavaScript 1.10.2, Go 1.2.1,
+# PHP 1.1.1, .NET 1.2.1, Dart 1.2.1, Swift 1.1.1 and R 0.2.0.
+CLIENT_SNIPPET_PYTHON = r"""from livetennisapi import LiveTennisAPI
+
+with LiveTennisAPI(api_key="twjp_…") as client:   # or set LIVETENNISAPI_KEY
+    for match in client.list_matches(status="live"):
+        print(match.tournament, match.p1.name, "vs", match.p2.name, match.score.sets)"""
+
+CLIENT_SNIPPET_JS = r"""import { LiveTennisAPI } from 'livetennisapi';
+
+const client = new LiveTennisAPI({ apiKey: 'twjp_…' });   // or $LIVETENNISAPI_KEY
+
+const { data } = await client.listMatches({ status: 'live' });
+for (const match of data) {
+  console.log(match.tournament, match.players?.p1?.name, 'vs', match.players?.p2?.name);
+}"""
+
+CLIENT_SNIPPET_GO = r"""package main
+
+import (
+	"context"
+	"fmt"
+	"log"
+	"os"
+
+	"github.com/livetennisapi/livetennisapi-go"
+)
+
+func main() {
+	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+
+	page, err := client.ListMatches(context.Background(), livetennisapi.ListMatchesParams{
+		Status:     livetennisapi.StatusLive,
+		ListParams: livetennisapi.ListParams{Limit: 10},
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, match := range page.Data {
+		fmt.Printf("%-28s %s vs %s — %s\n",
+			match.Tournament,
+			match.Players.P1.Name,
+			match.Players.P2.Name,
+			match.Score, // nil-safe: prints "-" before a match starts
+		)
+	}
+}"""
+
+CLIENT_SNIPPET_PHP = r"""use LiveTennisApi\LiveTennisApi;
+
+$client = new LiveTennisApi('twjp_…');      // or set LIVETENNISAPI_KEY
+
+foreach ($client->listMatches('live') as $match) {
+    echo $match->tournament, ' [', $match->tour, ']: ',
+         $match->p1()?->name, ' vs ', $match->p2()?->name, "\n";
+
+    // score is nullable — an upcoming match has none yet
+    if ($match->score !== null) {
+        // points are STRINGS ("40", "AD"); games are player-major per-set lists
+        echo '  ', implode('-', $match->score->points), "\n";
+    }
+}"""
+
+CLIENT_SNIPPET_DOTNET = r"""using LiveTennisApi;
+using LiveTennisApi.Models;
+
+using var client = new LiveTennisApiClient("twjp_your_key");
+
+var live = await client.ListMatchesAsync(MatchStatus.Live);
+foreach (var m in live.Data)
+{
+    Console.WriteLine($"{m.Tournament}: {m.Players?.P1?.Name} vs {m.Players?.P2?.Name}");
+}"""
+
+CLIENT_SNIPPET_DART = r"""import 'package:livetennisapi/livetennisapi.dart';
+
+Future<void> main() async {
+  final client = LiveTennisApi(apiKey: 'twjp_your_key');
+  try {
+    final page = await client.listMatches(status: MatchStatus.live);
+    for (final match in page.data) {
+      final s = match.score;
+      final (g1, g2) = s?.gamesForSet(0) ?? (null, null);
+      print('${match.tournament} [${match.tour}]: '
+          '${match.p1?.name} vs ${match.p2?.name} '
+          '(${g1 ?? '-'}-${g2 ?? '-'}, serving: ${s?.server ?? '—'})');
+    }
+  } on UpgradeRequiredException catch (e) {
+    print('Needs the ${e.requiredTier} tier');
+  } on RateLimitedException catch (e) {
+    print('Slow down; retry after ${e.retryAfter}s');
+  } finally {
+    client.close();
+  }
+}"""
+
+CLIENT_SNIPPET_SWIFT = r"""import LiveTennisApi
+
+let client = LiveTennisApiClient(apiKey: "twjp_your_key_here")
+
+let live = try await client.listMatches(status: .live, tour: .atp)
+for match in live.data {
+    let p1 = match.players?.p1?.name ?? "?"
+    let p2 = match.players?.p2?.name ?? "?"
+    print("\(match.tournament): \(p1) vs \(p2) — \(match.score?.description ?? "-")")
+}"""
+
+CLIENT_SNIPPET_R = r"""library(livetennisapi)
+
+live <- live_matches(tour = "atp")
+if (nrow(live) > 0) {
+  print(live[, c("id", "tournament", "players.p1.name", "players.p2.name")])
+  match_score(live$id[1])
+}
+
+search_players("sinner")
+list_fixtures(tour = "wta", limit = 20)"""
+
+# (client key, heading, install lines, snippet, a note the README or the registry supports).
+CLIENT_QUICKSTARTS = [
+    ("python", "Python", "pip install livetennisapi", CLIENT_SNIPPET_PYTHON,
+     "The client reads <code>LIVETENNISAPI_KEY</code> when you pass no key."),
+    ("js", "JavaScript and TypeScript", "npm install livetennisapi", CLIENT_SNIPPET_JS,
+     "The package has no runtime dependencies and ships its own types."),
+    ("go", "Go", "go get github.com/livetennisapi/livetennisapi-go", CLIENT_SNIPPET_GO,
+     "The module uses the standard library only."),
+    ("php", "PHP", "composer require livetennisapi/livetennisapi\ncomposer require guzzlehttp/guzzle",
+     CLIENT_SNIPPET_PHP,
+     "The client needs a PSR-18 HTTP client and PSR-17 factories. The second line installs Guzzle, "
+     "which provides both."),
+    ("dotnet", ".NET", "dotnet add package LiveTennisApi", CLIENT_SNIPPET_DOTNET,
+     "The package targets .NET Standard 2.0 and .NET 8."),
+    ("dart", "Dart and Flutter", "dart pub add livetennisapi", CLIENT_SNIPPET_DART,
+     "The package is pure Dart and depends only on <code>package:http</code>."),
+    ("swift", "Swift",
+     '.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.1.1")',
+     CLIENT_SNIPPET_SWIFT,
+     "Add the first line to the dependencies in <code>Package.swift</code>. The package supports "
+     "macOS 12, iOS 15, tvOS 15, watchOS 8 and Linux."),
+    ("r", "R",
+     'install.packages("livetennisapi", repos = c("https://livetennisapi.r-universe.dev", '
+     '"https://cloud.r-project.org"))',
+     CLIENT_SNIPPET_R,
+     "List functions return a tibble. Put the key in <code>~/.Renviron</code> as "
+     "<code>LIVETENNISAPI_KEY</code>."),
+]
+
+
+def _clients_drift(spec: dict[str, Any]) -> None:
+    """Fail the build when the page names an operation the spec no longer has, or a row is malformed."""
+    problems = []
+    for group, operations, cells in CLIENT_ENDPOINT_GROUPS:
+        for method, path in operations:
+            if method not in spec["paths"].get(path, {}):
+                problems.append(f"group {group!r} names {method.upper()} {path}, which the spec does not define")
+        if len(cells) != len(CLIENT_LANGUAGES) or set(cells) - set(CLIENT_CELL):
+            problems.append(f"group {group!r} needs one of Y, P or N for each of {len(CLIENT_LANGUAGES)} clients")
+    keys = [c["key"] for c in CLIENTS]
+    if len(set(keys)) != len(keys):
+        problems.append("two rows share a key")
+    for key in CLIENT_LANGUAGES + [q[0] for q in CLIENT_QUICKSTARTS]:
+        if key not in keys:
+            problems.append(f"no row for the client {key!r}")
+    by_key = {c["key"]: c for c in CLIENTS}
+    for key, _heading, install, _snippet, _note in CLIENT_QUICKSTARTS:
+        if key in by_key and by_key[key]["install"] not in install:
+            problems.append(f"the {key} quick start does not use the install command in its row")
+    # The prose states these counts and names. A changed row must change the sentence too.
+    if len(CLIENT_LANGUAGES) != 8 or len(CLIENTS) - len(CLIENT_LANGUAGES) != 7:
+        problems.append("the lede and the title say eight language clients and seven more packages")
+    if [c["key"] for c in CLIENTS if c["stream"] == "Yes"] != ["python", "js"]:
+        problems.append("the page says the Python and JavaScript clients open the live stream, and only they")
+    if [c["key"] for c in CLIENTS if c["export"] != "No"] != ["export"]:
+        problems.append("the page says one package writes files")
+    if [c["key"] for c in CLIENTS if c["mcp"] == "Yes"] != ["mcp"]:
+        problems.append("the page says one package is an MCP server")
+    part = [(group, CLIENT_LANGUAGES[i]) for group, _ops, cells in CLIENT_ENDPOINT_GROUPS
+            for i, cell in enumerate(cells) if cell == "P"]
+    if part != [("Results archive and head-to-head", "r")]:
+        problems.append("the page explains Part for the R client's archive row only")
+    swift = by_key.get("swift")
+    if swift and f'from: "{swift["version"]}"' not in swift["install"]:
+        problems.append("the Swift install line does not name the Swift row's version")
+    if "get" not in spec["paths"].get("/ws-token", {}):
+        problems.append("the page explains Token only with GET /ws-token, which the spec does not define")
+    if problems:
+        raise SystemExit("client-libraries.html disagrees with the spec or itself:\n  " + "\n  ".join(problems))
+
+
+def _clients_body(spec: dict[str, Any]) -> str:
+    _clients_drift(spec)
+    by_key = {c["key"]: c for c in CLIENTS}
+
+    # The page's overflow-wrap splits a short word mid-letter in a narrow column. These cells
+    # wrap at spaces only, and a short command or a package name stays on one line.
+    words = ' style="overflow-wrap:normal"'
+    nowrap = ' style="white-space:nowrap"'
+
+    def install_cell(c: dict[str, Any]) -> str:
+        style = nowrap if len(c["install"]) <= 52 else ""
+        return (f'<td><span{style}><code>{E(c["install"])}</code></span><br>'
+                f'<span{nowrap}><a href="{c["registry_url"]}">{E(c["package"])}</a> on {E(c["registry"])}</span></td>')
+
+    rows = "".join(
+        # Version and runtime sit next to the name, so a phone shows all three before any scrolling.
+        f'<tr><td{nowrap}>{E(c["name"])}</td><td>{E(c["version"])}</td><td{words}>{E(c["runtime"])}</td>'
+        + install_cell(c)
+        + f'<td{words}>{E(c["language"])}</td>'
+        f'<td>{CLIENTS_LICENCE}</td><td><a href="{c["repo"]}">GitHub</a></td></tr>\n'
+        for c in CLIENTS
+    )
+    matrix = scrollx(
+        f"<table>{vh_caption('Every official client library and tool, with its install command and version')}"
+        '<thead><tr><th scope="col">Library</th><th scope="col">Latest version</th>'
+        '<th scope="col">Minimum runtime</th><th scope="col">Install and package</th>'
+        '<th scope="col">Language</th><th scope="col">Licence</th><th scope="col">Source</th>'
+        "</tr></thead><tbody>" + rows + "</tbody></table>",
+        "Client libraries",
+    )
+    cover_rows = "".join(
+        f'<tr><td{nowrap}>{E(c["name"])}</td><td>Yes</td><td{nowrap}>{E(c["stream"])}</td>'
+        f'<td{words}>{E(c["export"])}</td><td>{E(c["mcp"])}</td></tr>\n'
+        for c in CLIENTS
+    )
+    coverage = scrollx(
+        f"<table>{vh_caption('Which parts of the API each library covers')}"
+        '<thead><tr><th scope="col">Library</th><th scope="col">REST</th><th scope="col">Live stream</th>'
+        '<th scope="col">File export</th><th scope="col">MCP</th></tr></thead><tbody>'
+        + cover_rows + "</tbody></table>",
+        "API coverage",
+    )
+    group_rows = "".join(
+        f"<tr><td{words}>{E(group)}</td>"
+        + "".join(f"<td{nowrap}>{CLIENT_CELL[cell]}</td>" for cell in cells)
+        # One path to a line, each unbroken: in a narrow column the page's overflow-wrap cuts a path
+        # into four-letter pieces. Paths come last so a phone shows the first clients beside the name.
+        + f"<td{nowrap}>"
+        + "<br>".join(f"<code>{E((m.upper() + ' ' if m != 'get' else '') + p)}</code>" for m, p in operations)
+        + "</td></tr>\n"
+        for group, operations, cells in CLIENT_ENDPOINT_GROUPS
+    )
+    groups = scrollx(
+        f"<table>{vh_caption('Endpoint groups and the language clients that cover them')}"
+        '<thead><tr><th scope="col">Endpoints</th>'
+        + "".join(f'<th scope="col">{CLIENT_SHORT[k]}</th>' for k in CLIENT_LANGUAGES)
+        + '<th scope="col">Paths</th></tr></thead><tbody>' + group_rows + "</tbody></table>",
+        "Endpoint coverage",
+    )
+    quickstarts = "".join(
+        f'<h3 id="{key}">{E(heading)}</h3>\n'
+        f"<pre><code>{E(install)}</code></pre>\n"
+        # The Go README indents with tabs. At the default width of 8 a phone wraps every line.
+        f'<pre style="tab-size:4"><code>{E(snippet)}</code></pre>\n'
+        f'<p>{note} The example is from the <a href="{by_key[key]["repo"]}#readme">README</a> of '
+        f'version {E(by_key[key]["version"])}.</p>\n'
+        for key, heading, install, snippet, note in CLIENT_QUICKSTARTS
+    )
+    return f"""<h2 id="matrix">Which client library should I use?</h2>
+<p>Pick the row for your language. Every package calls the same REST API with the same key.
+The version is the newest release on the registry named under each install command.
+These client libraries are the official SDKs for the API.</p>
+{matrix}
+<p>Every package is MIT licensed. Plugins for apps and automation platforms are not in this table.
+They live in the <a href="{CLIENTS_ORG}">GitHub organisation</a>.</p>
+
+<h2 id="coverage">Which libraries support REST, the live stream, file export and MCP?</h2>
+<p>Every library reads the REST API. Two open the live stream, one writes files and one is an MCP server.</p>
+{coverage}
+<p><strong>Live stream</strong> says whether the package opens the WebSocket feed for you. The Python and
+JavaScript clients do. In Python, <code>pip install "livetennisapi[all]"</code> adds the WebSocket feed.</p>
+<p><strong>Token only</strong> means the client calls <code>GET /ws-token</code> for a push feed token.
+You open the socket with your own WebSocket library. The
+<a href="./push-feed-and-webhooks.html">push feed and webhooks page</a> describes the frames.</p>
+<p>The MCP server also runs hosted at <code>https://mcp.livetennisapi.com/mcp</code>, with nothing to install.
+The <a href="./ai-sdk.html">AI SDK guide</a> and the <a href="./export-formats.html">export guide</a>
+cover those two packages in full.</p>
+<h2 id="endpoints">Which endpoints does each client cover?</h2>
+<p>The eight language clients do not all reach the same endpoints. Each cell was read from the source
+of the published version in the first table.</p>
+{groups}
+<p><strong>Part</strong> for R means it lists archive results, players, careers and head-to-head records.
+It has no call for a single archive result.</p>
+<p>An endpoint with no method in your client is still one HTTP request away. The
+<a href="./reference.html">reference</a> lists every path. The
+<a href="./errors-and-rate-limits.html">errors page</a> says when to retry.</p>
+
+<h2 id="quickstart">What is the smallest working call in each language?</h2>
+<p>Each example lists live matches. Every call needs an API key, and
+<a href="{SITE}/subscribe/free">a free key</a> is enough for these. The free plan has 100 requests a day.</p>
+{quickstarts}
+<h2 id="versions">How do I check that a version here is current?</h2>
+<p>The versions were read from the registries on
+<time datetime="{CLIENTS_CHECKED}">{CLIENTS_CHECKED}</time>. The registry link under each
+install command always shows the newest release.</p>
+<p>The docs repository has a script, <code>scripts/check_client_versions.py</code>. It reads every
+registry again and names each row that is behind.</p>
+
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="{CLIENTS_ORG}">Every repository in the GitHub organisation</a></li>
+<li><a href="./openapi.yaml">The OpenAPI spec</a>, for generating a client in another language</li>
+<li><a href="{SITE}/subscribe/free">Free API key</a></li>
+<li><a href="./auth-quota-and-health.html">Authentication, quota and status</a></li>
+</ul>
+"""
+
+
 GUIDES: list[dict[str, Any]] = [
     {
         "slug": "ai-sdk",
@@ -2893,6 +3360,40 @@ GUIDES: list[dict[str, Any]] = [
         "footer": (
             f'Written for <a href="{EXPORT_PYPI}">livetennisapi-export</a> {EXPORT_VERSION}. Package source in '
             f'<a href="{EXPORT_REPO}">livetennisapi/livetennisapi-export</a>, page source in '
+            '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
+        ),
+    },
+    {
+        "slug": "client-libraries",
+        "title": "Live Tennis API client libraries",
+        "head_title": "Tennis API client libraries and SDKs | Live Tennis API",
+        "question": "Which client libraries does the Live Tennis API have?",
+        "description": (
+            "Official Live Tennis API client libraries for Python, JavaScript, Go, PHP, .NET, Dart, "
+            "R and Swift, with install commands, versions and coverage."
+        ),
+        "lede": (
+            "There are official clients for Python, JavaScript and TypeScript, Go, PHP, .NET, Dart, "
+            "R and Swift. Seven more packages build on them, among them an MCP server and an export "
+            "command. The tables list the install command, the latest version and the coverage of each."
+        ),
+        "meta": (
+            f'Versions read from each registry on <time datetime="{CLIENTS_CHECKED}">{CLIENTS_CHECKED}</time>. '
+            "Coverage read from the source of each published version."
+        ),
+        "body": _clients_body,
+        "date": CLIENTS_CHECKED,
+        "about": [
+            {"@type": "SoftwareSourceCode", "name": f'Live Tennis API {c["name"]}',
+             "alternateName": c["package"], "url": c["registry_url"], "version": c["version"],
+             "codeRepository": c["repo"],
+             "programmingLanguage": c["language"].split(", ") if ", " in c["language"] else c["language"],
+             "license": "https://opensource.org/license/mit"}
+            for c in CLIENTS
+        ],
+        "footer": (
+            f"Versions and coverage checked on {CLIENTS_CHECKED}. Library source in the "
+            f'<a href="{CLIENTS_ORG}">livetennisapi</a> organisation, page source in '
             '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
         ),
     },
