@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.81",
+  "version": "1.13.82",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -5390,6 +5390,13 @@
      "has_market": {
       "type": "boolean",
       "description": "Whether a match-winner market is mapped to this match (every tier, since 2026-09-02). Same role for `/markets/{matchId}/prices` (`404 no_market`)."
+     },
+     "pregame_forecasts": {
+      "type": "array",
+      "description": "ULTRA only, on `status=upcoming` list rows (2026-09-24). The field is absent below ULTRA and on other statuses. The match's `stage: pregame` forecasts, oldest first, each in the `Analysis.profile` shape. `[]` when none has been written yet. The same field is on every Fixture row bound to a match.",
+      "items": {
+       "type": "object"
+      }
      }
     }
    },
@@ -6595,6 +6602,70 @@
        null
       ],
       "description": "A closed set. On a fixture bound to a match it is the match's status in this vocabulary (2026-10-29); a vendor-stated `cancelled` or `postponed` on the fixture itself is kept. A bare digit in the schedule's status field is `live` only when the schedule's own in-play flag says so; before 2026-10-29 it read as a set in play on matches that had not started."
+     },
+     "reason": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "enum": [
+       "walkover",
+       "retired",
+       "cancelled",
+       "default",
+       "postponed",
+       null
+      ],
+      "description": "Why a fixture ended without being played out (2026-08-18). `status` folds a walkover, a retirement, a default and a plain cancellation into `cancelled`; this field names which one. Null on a scheduled, live or finished fixture, and on a row whose stated status this vocabulary does not name."
+     },
+     "match_id": {
+      "type": [
+       "integer",
+       "null"
+      ],
+      "description": "The `id` of the match this fixture became, which every match route accepts. Null while no match row exists yet (a fixture can publish days before its match) and when the schedule entry names more than one match. Set when found and never cleared."
+     },
+     "gender": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "enum": [
+       "men",
+       "women",
+       null
+      ],
+      "description": "The sex of the event (2026-09-09), in the vocabulary of the `gender` filter. Null for mixed doubles and mixed team events."
+     },
+     "is_qualifying": {
+      "type": [
+       "boolean",
+       "null"
+      ],
+      "description": "Whether the fixture is in the qualifying draw, as the schedule states it. Same three values as `Match.is_qualifying`: null means never stated, and null is not false. A null here takes the bound match's value when the match states one. The qualifying draw is published under the main draw's tournament name, so group a schedule on `round_code` and this flag together."
+     },
+     "created_at": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "format": "date-time",
+      "description": "When this row first existed with us, UTC (2026-09-23). A `created_at` inside your polling window is a new row. A moved `updated_at` with `created_at` unchanged is a change to a row you already hold, such as a re-listed start time."
+     },
+     "updated_at": {
+      "type": [
+       "string",
+       "null"
+      ],
+      "format": "date-time",
+      "description": "When this row last changed, UTC. It moves when any stored column changes, including columns this API does not publish, so it can report a change you cannot see. It never misses a change to a field you can see."
+     },
+     "pregame_forecasts": {
+      "type": "array",
+      "description": "ULTRA only (2026-09-24). The field is absent below ULTRA. The bound match's `stage: pregame` forecasts, oldest first, each in the `Analysis.profile` shape. `[]` when the fixture has no `match_id` yet or no forecast has been written.",
+      "items": {
+       "type": "object"
+      }
      }
     }
    },
