@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.82] - 2026-11-12
+
+### Fixed
+- **The `Fixture` schema lists every field a fixture row carries.** `reason`, `match_id`, `gender`, `is_qualifying`, `created_at`, `updated_at` and `pregame_forecasts` have been on `/fixtures` rows since the dates in their descriptions. The schema named 13 of the 20 fields, so a generated client dropped the other seven. `Match` gains `pregame_forecasts` for the same reason. Schema only, the responses are unchanged.
+
 ## [1.13.81] - 2026-11-11
 
 ### Added
