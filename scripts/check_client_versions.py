@@ -55,26 +55,29 @@ def fetch_json(url: str) -> Any:
 
 
 def version_key(version: str) -> tuple[int, ...]:
-    return tuple(int(part) for part in re.findall(r"\d+", version))
+    return tuple(int(part) for part in re.findall(r"\d+", version.split("+")[0]))
 
 
 def is_stable(version: str) -> bool:
-    return re.fullmatch(r"v?\d+(\.\d+)*", version) is not None
+    # Build metadata after "+" does not make a release a pre-release. A "-" suffix does.
+    return re.fullmatch(r"v?\d+(\.\d+)*(\+[0-9A-Za-z.-]+)?", version) is not None
 
 
 def newest(versions: list[str]) -> str:
     stable = [v for v in versions if is_stable(v)]
     if not stable:
         raise ValueError("the registry lists no stable version")
-    return max(stable, key=version_key).lstrip("v")
+    return max(stable, key=version_key).lstrip("v").split("+")[0]
 
 
 def read_pypi(name: str) -> dict[str, str | None]:
     info = fetch_json(f"https://pypi.org/pypi/{name}/json")["info"]
-    licence = info.get("license_expression") or info.get("license") or None
-    if licence and len(licence) > 40:
-        # An old package can carry its whole licence text here. That is not a name to compare.
-        licence = None
+    # `license_expression` is an SPDX expression and is always compared. The older free-text
+    # `license` field can hold a whole licence text, which is not a name to compare.
+    licence = info.get("license_expression")
+    if not licence:
+        legacy = (info.get("license") or "").strip()
+        licence = legacy if legacy and len(legacy) <= 40 and "\n" not in legacy else None
     return {"version": info["version"], "runtime": info.get("requires_python"), "licence": licence}
 
 
@@ -106,7 +109,7 @@ def read_packagist(name: str) -> dict[str, str | None]:
             full.append(current)
         releases = full
     version = newest([r["version"] for r in releases])
-    release = next(r for r in releases if r["version"].lstrip("v") == version)
+    release = next(r for r in releases if is_stable(r["version"]) and r["version"].lstrip("v").split("+")[0] == version)
     licence = release.get("license") or []
     return {"version": version, "runtime": (release.get("require") or {}).get("php"),
             "licence": licence[0] if licence else None}
@@ -140,7 +143,7 @@ def read_r_universe(identifier: str) -> dict[str, str | None]:
 def read_github_tag(repo: str) -> dict[str, str | None]:
     tags = [t["name"] for t in fetch_json(f"https://api.github.com/repos/{repo}/tags?per_page=100")]
     version = newest(tags)
-    tag = next(t for t in tags if t.lstrip("v") == version)
+    tag = next(t for t in tags if is_stable(t) and t.lstrip("v").split("+")[0] == version)
     manifest = fetch(f"https://raw.githubusercontent.com/{repo}/{tag}/Package.swift").decode()
     tools = re.search(r"swift-tools-version:\s*(\S+)", manifest)
     return {"version": version, "runtime": tools.group(1) if tools else None, "licence": None}

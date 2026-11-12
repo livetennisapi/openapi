@@ -3083,7 +3083,8 @@ list_fixtures(tour = "wta", limit = 20)"""
 # (client key, heading, install lines, snippet, a note the README or the registry supports).
 CLIENT_QUICKSTARTS = [
     ("python", "Python", "pip install livetennisapi", CLIENT_SNIPPET_PYTHON,
-     "The client reads <code>LIVETENNISAPI_KEY</code> when you pass no key."),
+     "The client reads <code>LIVETENNISAPI_KEY</code> when you pass no key. The spec lets "
+     "<code>score</code> be null, so check it before you read <code>sets</code>."),
     ("js", "JavaScript and TypeScript", "npm install livetennisapi", CLIENT_SNIPPET_JS,
      "The package has no runtime dependencies and ships its own types."),
     ("go", "Go", "go get github.com/livetennisapi/livetennisapi-go", CLIENT_SNIPPET_GO,
@@ -3159,6 +3160,11 @@ def _clients_body(spec: dict[str, Any]) -> str:
     # wrap at spaces only, and a short command or a package name stays on one line.
     words = ' style="overflow-wrap:normal"'
     nowrap = ' style="white-space:nowrap"'
+    # The first cell of a row names the row, so it is a row header: a screen reader then says
+    # "Go client, Token only" and not a bare "Token only". The site styles <th> as a small
+    # uppercase column label, and these declarations give the row header the look of a data cell.
+    rowhead = ('font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;'
+               'text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top')
 
     def install_cell(c: dict[str, Any]) -> str:
         style = nowrap if len(c["install"]) <= 52 else ""
@@ -3167,7 +3173,7 @@ def _clients_body(spec: dict[str, Any]) -> str:
 
     rows = "".join(
         # Version and runtime sit next to the name, so a phone shows all three before any scrolling.
-        f'<tr><td{nowrap}>{E(c["name"])}</td><td>{E(c["version"])}</td><td{words}>{E(c["runtime"])}</td>'
+        f'<tr><th scope="row" style="{rowhead};white-space:nowrap">{E(c["name"])}</th><td>{E(c["version"])}</td><td{words}>{E(c["runtime"])}</td>'
         + install_cell(c)
         + f'<td{words}>{E(c["language"])}</td>'
         f'<td>{CLIENTS_LICENCE}</td><td><a href="{c["repo"]}">GitHub</a></td></tr>\n'
@@ -3182,7 +3188,7 @@ def _clients_body(spec: dict[str, Any]) -> str:
         "Client libraries",
     )
     cover_rows = "".join(
-        f'<tr><td{nowrap}>{E(c["name"])}</td><td>Yes</td><td{nowrap}>{E(c["stream"])}</td>'
+        f'<tr><th scope="row" style="{rowhead};white-space:nowrap">{E(c["name"])}</th><td>Yes</td><td{nowrap}>{E(c["stream"])}</td>'
         f'<td{words}>{E(c["export"])}</td><td>{E(c["mcp"])}</td></tr>\n'
         for c in CLIENTS
     )
@@ -3194,7 +3200,7 @@ def _clients_body(spec: dict[str, Any]) -> str:
         "API coverage",
     )
     group_rows = "".join(
-        f"<tr><td{words}>{E(group)}</td>"
+        f'<tr><th scope="row" style="{rowhead};overflow-wrap:normal">{E(group)}</th>'
         + "".join(f"<td{nowrap}>{CLIENT_CELL[cell]}</td>" for cell in cells)
         # One path to a line, each unbroken: in a narrow column the page's overflow-wrap cuts a path
         # into four-letter pieces. Paths come last so a phone shows the first clients beside the name.
