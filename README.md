@@ -138,6 +138,8 @@ Everything in the Live Tennis API developer surface:
 
 The [client libraries page](https://docs.livetennisapi.com/client-libraries.html) lists every client library with its latest version and minimum runtime. It also shows which endpoints each language client covers.
 
+The [SportsML page](https://docs.livetennisapi.com/sportsml.html) maps the score object to IPTC SportsML 3.1. Its synthetic test fixtures are in [examples/sportsml](examples/sportsml).
+
 - **API reference** — <https://docs.livetennisapi.com> ([plain-HTML version](https://docs.livetennisapi.com/reference.html), no JavaScript required)
 - **Website and plans** — <https://livetennisapi.com>
 - **Get a free key** — <https://livetennisapi.com/subscribe/free>

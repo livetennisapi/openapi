@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC tennis scoring fixture. No real players, matches or results.
+     Fixture: 05-walkover. Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+     From the Live Tennis API SportsML fixtures, https://github.com/livetennisapi/openapi/tree/main/examples/sportsml -->
+<sports-content xmlns="http://iptc.org/std/nar/2006-10-01/">
+  <sports-metadata doc-id="ltapi-synthetic-05-walkover" date-time="2026-01-05T10:00:00Z" language="en">
+    <sports-title>Synthetic fixture: walkover</sports-title>
+  </sports-metadata>
+  <sports-event>
+    <event-metadata event-status="speventstatus:forfeited" event-status-reason="speventstatusreason:withdrawal" event-status-note="walkover">
+      <event-metadata-tennis number-of-sets="3"/>
+    </event-metadata>
+    <player id="p1">
+      <player-metadata><name>Player A (synthetic)</name></player-metadata>
+      <player-stats event-outcome="speventoutcome:loss"/>
+    </player>
+    <player id="p2">
+      <player-metadata><name>Player B (synthetic)</name></player-metadata>
+      <player-stats event-outcome="speventoutcome:win"/>
+    </player>
+  </sports-event>
+</sports-content>

@@ -1,0 +1,34 @@
+{
+  "fixture": "04-retirement",
+  "synthetic": true,
+  "title": "Synthetic fixture: retirement",
+  "description": "Best of three sets. Player B retires while serving at 15-30 in the fourth game of the second set. Player A wins.",
+  "license": "CC-BY-4.0",
+  "rules": {
+    "best_of": 3,
+    "no_ad": false,
+    "set_tiebreak_at": 6,
+    "final_set": "tiebreak"
+  },
+  "match": {
+    "format": "BO3",
+    "status": "completed",
+    "outcome": "retired",
+    "winner": 1,
+    "withdrew": 2,
+    "players": {
+      "p1": {
+        "name": "Player A (synthetic)"
+      },
+      "p2": {
+        "name": "Player B (synthetic)"
+      }
+    }
+  },
+  "states": [
+    {"sets": [1, 0], "games": [[6, 2], [3, 1]], "points": ["0", "0"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:00:00Z", "accepted_at": "2026-01-05T10:00:00Z", "sequence": 501},
+    {"sets": [1, 0], "games": [[6, 2], [3, 1]], "points": ["15", "0"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:00:40Z", "accepted_at": "2026-01-05T10:00:40Z", "sequence": 502},
+    {"sets": [1, 0], "games": [[6, 2], [3, 1]], "points": ["15", "15"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:01:20Z", "accepted_at": "2026-01-05T10:01:20Z", "sequence": 503},
+    {"sets": [1, 0], "games": [[6, 2], [3, 1]], "points": ["30", "15"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:02:00Z", "accepted_at": "2026-01-05T10:02:00Z", "sequence": 504}
+  ]
+}

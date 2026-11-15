@@ -1,0 +1,35 @@
+{
+  "fixture": "06-default",
+  "synthetic": true,
+  "title": "Synthetic fixture: default",
+  "description": "Best of three sets. Player A is defaulted at 30-40 in the fourth game of the second set. Player B wins.",
+  "license": "CC-BY-4.0",
+  "rules": {
+    "best_of": 3,
+    "no_ad": false,
+    "set_tiebreak_at": 6,
+    "final_set": "tiebreak"
+  },
+  "match": {
+    "format": "BO3",
+    "status": "completed",
+    "outcome": "default",
+    "winner": 2,
+    "players": {
+      "p1": {
+        "name": "Player A (synthetic)"
+      },
+      "p2": {
+        "name": "Player B (synthetic)"
+      }
+    }
+  },
+  "states": [
+    {"sets": [0, 1], "games": [[5, 1], [7, 2]], "points": ["0", "0"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:00:00Z", "accepted_at": "2026-01-05T10:00:00Z", "sequence": 601},
+    {"sets": [0, 1], "games": [[5, 1], [7, 2]], "points": ["0", "15"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:00:40Z", "accepted_at": "2026-01-05T10:00:40Z", "sequence": 602},
+    {"sets": [0, 1], "games": [[5, 1], [7, 2]], "points": ["15", "15"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:01:20Z", "accepted_at": "2026-01-05T10:01:20Z", "sequence": 603},
+    {"sets": [0, 1], "games": [[5, 1], [7, 2]], "points": ["15", "30"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:02:00Z", "accepted_at": "2026-01-05T10:02:00Z", "sequence": 604},
+    {"sets": [0, 1], "games": [[5, 1], [7, 2]], "points": ["30", "30"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:02:40Z", "accepted_at": "2026-01-05T10:02:40Z", "sequence": 605},
+    {"sets": [0, 1], "games": [[5, 1], [7, 2]], "points": ["30", "40"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:03:20Z", "accepted_at": "2026-01-05T10:03:20Z", "sequence": 606}
+  ]
+}

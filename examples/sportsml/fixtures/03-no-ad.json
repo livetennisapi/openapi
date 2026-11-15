@@ -1,0 +1,44 @@
+{
+  "fixture": "03-no-ad",
+  "synthetic": true,
+  "title": "Synthetic fixture: no-ad games",
+  "description": "Best of three sets with no-ad scoring. Two games reach 40-40 and one deciding point settles each. Player A breaks on the first and serves out the match on the second.",
+  "license": "CC-BY-4.0",
+  "rules": {
+    "best_of": 3,
+    "no_ad": true,
+    "set_tiebreak_at": 6,
+    "final_set": "match_tiebreak"
+  },
+  "match": {
+    "format": "BO3",
+    "status": "completed",
+    "outcome": "completed",
+    "winner": 1,
+    "players": {
+      "p1": {
+        "name": "Player A (synthetic)"
+      },
+      "p2": {
+        "name": "Player B (synthetic)"
+      }
+    }
+  },
+  "states": [
+    {"sets": [1, 0], "games": [[6, 4], [3, 4]], "points": ["0", "0"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:00:00Z", "accepted_at": "2026-01-05T10:00:00Z", "sequence": 401},
+    {"sets": [1, 0], "games": [[6, 4], [3, 4]], "points": ["15", "0"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:00:40Z", "accepted_at": "2026-01-05T10:00:40Z", "sequence": 402},
+    {"sets": [1, 0], "games": [[6, 4], [3, 4]], "points": ["15", "15"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:01:20Z", "accepted_at": "2026-01-05T10:01:20Z", "sequence": 403},
+    {"sets": [1, 0], "games": [[6, 4], [3, 4]], "points": ["30", "15"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:02:00Z", "accepted_at": "2026-01-05T10:02:00Z", "sequence": 404},
+    {"sets": [1, 0], "games": [[6, 4], [3, 4]], "points": ["30", "30"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:02:40Z", "accepted_at": "2026-01-05T10:02:40Z", "sequence": 405},
+    {"sets": [1, 0], "games": [[6, 4], [3, 4]], "points": ["40", "30"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:03:20Z", "accepted_at": "2026-01-05T10:03:20Z", "sequence": 406},
+    {"sets": [1, 0], "games": [[6, 4], [3, 4]], "points": ["40", "40"], "server": 2, "is_tiebreak": false, "timestamp": "2026-01-05T10:04:00Z", "accepted_at": "2026-01-05T10:04:00Z", "sequence": 407},
+    {"sets": [1, 0], "games": [[6, 5], [3, 4]], "points": ["0", "0"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:04:40Z", "accepted_at": "2026-01-05T10:04:40Z", "sequence": 408},
+    {"sets": [1, 0], "games": [[6, 5], [3, 4]], "points": ["0", "15"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:05:20Z", "accepted_at": "2026-01-05T10:05:20Z", "sequence": 409},
+    {"sets": [1, 0], "games": [[6, 5], [3, 4]], "points": ["15", "15"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:06:00Z", "accepted_at": "2026-01-05T10:06:00Z", "sequence": 410},
+    {"sets": [1, 0], "games": [[6, 5], [3, 4]], "points": ["15", "30"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:06:40Z", "accepted_at": "2026-01-05T10:06:40Z", "sequence": 411},
+    {"sets": [1, 0], "games": [[6, 5], [3, 4]], "points": ["30", "30"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:07:20Z", "accepted_at": "2026-01-05T10:07:20Z", "sequence": 412},
+    {"sets": [1, 0], "games": [[6, 5], [3, 4]], "points": ["30", "40"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:08:00Z", "accepted_at": "2026-01-05T10:08:00Z", "sequence": 413},
+    {"sets": [1, 0], "games": [[6, 5], [3, 4]], "points": ["40", "40"], "server": 1, "is_tiebreak": false, "timestamp": "2026-01-05T10:08:40Z", "accepted_at": "2026-01-05T10:08:40Z", "sequence": 414},
+    {"sets": [2, 0], "games": [[6, 6], [3, 4]], "points": ["0", "0"], "server": null, "is_tiebreak": false, "timestamp": "2026-01-05T10:09:20Z", "accepted_at": "2026-01-05T10:09:20Z", "sequence": 415}
+  ]
+}

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC tennis scoring fixture. No real players, matches or results.
+     Fixture: 03-no-ad. Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+     From the Live Tennis API SportsML fixtures, https://github.com/livetennisapi/openapi/tree/main/examples/sportsml -->
+<sports-content xmlns="http://iptc.org/std/nar/2006-10-01/">
+  <sports-metadata doc-id="ltapi-synthetic-03-no-ad" date-time="2026-01-05T10:09:20Z" language="en">
+    <sports-title>Synthetic fixture: no-ad games</sports-title>
+  </sports-metadata>
+  <sports-event>
+    <event-metadata event-status="speventstatus:post-event">
+      <event-metadata-tennis number-of-sets="3"/>
+    </event-metadata>
+    <player id="p1">
+      <player-metadata><name>Player A (synthetic)</name></player-metadata>
+      <player-stats score="2" event-outcome="speventoutcome:win">
+        <player-stats-tennis>
+          <stats-tennis-set set-number="1" score="6"/>
+          <stats-tennis-set set-number="2" score="6"/>
+        </player-stats-tennis>
+      </player-stats>
+    </player>
+    <player id="p2">
+      <player-metadata><name>Player B (synthetic)</name></player-metadata>
+      <player-stats score="0" event-outcome="speventoutcome:loss">
+        <player-stats-tennis>
+          <stats-tennis-set set-number="1" score="3"/>
+          <stats-tennis-set set-number="2" score="4"/>
+        </player-stats-tennis>
+      </player-stats>
+    </player>
+    <actions>
+      <action type="sptenaction:point" sequence-number="402" created="2026-01-05T10:00:40Z" set="2" game="9" server-score="sptengameresult:love" receiver-score="sptengameresult:15">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="403" created="2026-01-05T10:01:20Z" set="2" game="9" server-score="sptengameresult:15" receiver-score="sptengameresult:15">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="404" created="2026-01-05T10:02:00Z" set="2" game="9" server-score="sptengameresult:15" receiver-score="sptengameresult:30">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="405" created="2026-01-05T10:02:40Z" set="2" game="9" server-score="sptengameresult:30" receiver-score="sptengameresult:30">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="406" created="2026-01-05T10:03:20Z" set="2" game="9" server-score="sptengameresult:30" receiver-score="sptengameresult:40">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="407" created="2026-01-05T10:04:00Z" set="2" game="9" server-score="sptengameresult:40" receiver-score="sptengameresult:40">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="408" created="2026-01-05T10:04:40Z" set="2" game="9" server-score="sptengameresult:40" receiver-score="sptengameresult:game">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="409" created="2026-01-05T10:05:20Z" set="2" game="10" server-score="sptengameresult:love" receiver-score="sptengameresult:15">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="410" created="2026-01-05T10:06:00Z" set="2" game="10" server-score="sptengameresult:15" receiver-score="sptengameresult:15">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="411" created="2026-01-05T10:06:40Z" set="2" game="10" server-score="sptengameresult:15" receiver-score="sptengameresult:30">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="412" created="2026-01-05T10:07:20Z" set="2" game="10" server-score="sptengameresult:30" receiver-score="sptengameresult:30">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="413" created="2026-01-05T10:08:00Z" set="2" game="10" server-score="sptengameresult:30" receiver-score="sptengameresult:40">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="414" created="2026-01-05T10:08:40Z" set="2" game="10" server-score="sptengameresult:40" receiver-score="sptengameresult:40">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="415" created="2026-01-05T10:09:20Z" set="2" game="10" server-score="sptengameresult:game" receiver-score="sptengameresult:40">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+    </actions>
+  </sports-event>
+</sports-content>
