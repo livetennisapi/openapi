@@ -148,8 +148,6 @@ class CheckFixturesTest(unittest.TestCase):
     def test_participants_must_be_players(self) -> None:
         self.edit("fixtures/04-retirement.xml", '<participant idref="p1" role="ltapirole:point-winner"/>',
                   '<participant idref="p2" role="ltapirole:point-winner"/>')
-        self.edit("fixtures/04-retirement.xml", '<participant idref="p2" role="ltapirole:server"/>',
-                  '<participant idref="p2" role="ltapirole:server"/><participant idref="p2" role="ltapirole:spare"/>')
         self.edit("fixtures/04-retirement.xml", 'set="2" game="4" server-score="sptengameresult:love"',
                   'id="x1" set="2" game="4" server-score="sptengameresult:love"')
         self.edit("fixtures/04-retirement.xml", '<participant idref="p2" role="ltapirole:point-winner"/>',
@@ -161,6 +159,27 @@ class CheckFixturesTest(unittest.TestCase):
         text = path.read_text(encoding="utf-8").replace("10:00:00Z", "10:00:40.900Z")
         path.write_text(text, encoding="utf-8")
         self.assert_fails("accepted_at must rise")
+
+    def test_walkover_states_no_score(self) -> None:
+        self.edit("fixtures/05-walkover.xml", '<event-metadata-tennis number-of-sets="3"/>',
+                  '<event-metadata-tennis server-score="15" receiver-score="love" number-of-sets="3"/>')
+        self.assert_fails("a walkover states no set")
+
+    def test_negative_games(self) -> None:
+        path = self.root / "fixtures" / "04-retirement.json"
+        path.write_text(path.read_text(encoding="utf-8").replace("[[6, 2], [3, 1]]", "[[6, 2], [-1, 1]]"),
+                        encoding="utf-8")
+        self.edit("fixtures/04-retirement.xml", 'set-number="1" score="3"', 'set-number="1" score="-1"')
+        self.assert_fails("whole numbers")
+
+    def test_boolean_winner(self) -> None:
+        self.edit("fixtures/04-retirement.json", '"winner": 1', '"winner": true')
+        self.assert_fails("winner must be 1 or 2")
+
+    def test_exactly_three_participants(self) -> None:
+        self.edit("fixtures/04-retirement.xml", '<participant idref="p2" role="ltapirole:server"/>',
+                  '<participant idref="p2" role="ltapirole:server"/><participant idref="p1" role="ltapirole:spare"/>')
+        self.assert_fails("exactly three participants")
 
     def test_missing_fixture(self) -> None:
         (self.root / "fixtures" / "05-walkover.json").unlink()

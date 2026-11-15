@@ -233,6 +233,9 @@ def check_start(rules: dict[str, Any], s: dict[str, Any]) -> None:
     """The first state is a legal score: finished sets won, the set in play open, legal points."""
     games, sets = s["games"], s["sets"]
     need = rules["best_of"] // 2 + 1
+    counts = list(sets) + [g for side in games for g in side]
+    if any(type(c) is not int or c < 0 for c in counts):
+        raise FixtureError("sets and games must be whole numbers, zero or more")
     if len(games) != 2 or len(games[0]) != len(games[1]) or len(sets) != 2:
         raise FixtureError("the first state needs two sets counts and two per-set games lists of one length")
     cur = len(games[0]) - 1
@@ -305,7 +308,7 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
     rules, match, states = fx["rules"], fx["match"], fx["states"]
     check_rules(rules)
     for state in states:
-        if list(state) != STATE_FIELDS or state["timestamp"] != state["accepted_at"]:
+        if set(state) != set(STATE_FIELDS) or state["timestamp"] != state["accepted_at"]:
             raise FixtureError(f"state {state.get('sequence')} needs the fields {STATE_FIELDS}, "
                                "with timestamp equal to accepted_at")
     event = root.find(f"{NS}sports-event")
@@ -335,7 +338,7 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
         raise FixtureError("every fixture is a finished match")
     if ("withdrew" in match) != (match["outcome"] in ("retired", "walkover")):
         raise FixtureError("withdrew is present exactly on a retirement or a walkover")
-    if match["winner"] not in (1, 2):
+    if type(match["winner"]) is not int or match["winner"] not in (1, 2):
         raise FixtureError("winner must be 1 or 2")
     if "withdrew" in match and match["withdrew"] != other(match["winner"]):
         raise FixtureError("the player who withdrew is the loser")
@@ -352,6 +355,8 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
     if not states:
         if match["outcome"] != "walkover" or actions:
             raise FixtureError("only a walkover has no score states, and it has no actions")
+        if set(tennis.attrib) != {"number-of-sets"}:
+            raise FixtureError("a walkover states no set, game, server or score")
         for pid in ("p1", "p2"):
             stats = players[pid].find(f"{NS}player-stats")
             if stats.get("score") is not None or len(stats):
@@ -367,8 +372,11 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
     over = False
     for i, action in enumerate(actions):
         before, after = states[i], states[i + 1]
-        roles = {}
-        for part in action.findall(f"{NS}participant"):
+        roles: dict[str, list[str]] = {}
+        parts = action.findall(f"{NS}participant")
+        if len(parts) != 3:
+            raise FixtureError(f"action {i + 1} needs exactly three participants")
+        for part in parts:
             roles.setdefault(part.get("role"), []).append(part.get("idref"))
         try:
             (srv,), (rcv,), (won,) = roles["ltapirole:server"], roles["ltapirole:receiver"], roles["ltapirole:point-winner"]

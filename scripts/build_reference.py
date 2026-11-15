@@ -3487,7 +3487,7 @@ def _sportsml_drift(spec: dict[str, Any]) -> None:
     if xml.count("      <action ") != len(fx["states"]) - 1:
         problems.append(f"{SPORTSML_EXAMPLE}: the worked example needs one action line per point")
     last_games = fx["states"][-1]["games"]
-    if not (fx["states"][-2]["is_tiebreak"] and [last_games[0][2], last_games[1][2]] == [10, 8]
+    if not (fx["states"][-2]["is_tiebreak"] and last_games == [[6, 4, 10], [4, 6, 8]]
             and fx["states"][-1]["sets"] == [2, 1]
             and 'score="1" score-tiebreaker="10"' in xml and 'score="0" score-tiebreaker="8"' in xml):
         problems.append(f"{SPORTSML_EXAMPLE}: the worked example text describes a 10-8 match tie-break")
