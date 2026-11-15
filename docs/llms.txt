@@ -32,6 +32,7 @@ endpoints, generated from the same spec as the reference:
 - What does each Live Tennis API error mean, and when should a client retry? https://docs.livetennisapi.com/errors-and-rate-limits.html
 - How do you export tennis data to CSV, JSON Lines or Parquet? https://docs.livetennisapi.com/export-formats.html
 - Which client libraries does the Live Tennis API have? https://docs.livetennisapi.com/client-libraries.html
+- How does the Live Tennis API score object map to IPTC SportsML? https://docs.livetennisapi.com/sportsml.html
 
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
@@ -251,3 +252,5 @@ backtest.
 - limit defaults to 50, maximum 200; paginate with offset.
 - Additive changes ship within v1: clients must ignore unknown fields.
 - Score `games` is player-major: [[6,3,2],[4,6,1]] reads 6-4, 3-6, 2-1.
+- The Score object mapped to IPTC SportsML 3.1, with six synthetic CC BY test fixtures:
+  https://docs.livetennisapi.com/sportsml.html and https://github.com/livetennisapi/openapi/tree/main/examples/sportsml

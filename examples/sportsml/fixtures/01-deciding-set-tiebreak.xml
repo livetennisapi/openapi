@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC tennis scoring fixture. No real players, matches or results.
+     Fixture: 01-deciding-set-tiebreak. Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+     From the Live Tennis API SportsML fixtures, https://github.com/livetennisapi/openapi/tree/main/examples/sportsml -->
+<sports-content xmlns="http://iptc.org/std/nar/2006-10-01/">
+  <sports-metadata doc-id="ltapi-synthetic-01-deciding-set-tiebreak" date-time="2026-01-05T10:10:40Z" language="en">
+    <catalogRef href="http://www.iptc.org/std/catalog/catalog.IPTC-Sports_1.xml"/>
+    <sports-title>Synthetic fixture: deciding-set tie-break at six all</sports-title>
+  </sports-metadata>
+  <sports-event>
+    <event-metadata event-status="speventstatus:post-event">
+      <event-metadata-tennis number-of-sets="3"/>
+    </event-metadata>
+    <player id="p1">
+      <player-metadata><name>Player A (synthetic)</name></player-metadata>
+      <player-stats score="2" event-outcome="speventoutcome:win">
+        <player-stats-tennis>
+          <stats-tennis-set set-number="1" score="6"/>
+          <stats-tennis-set set-number="2" score="4"/>
+          <stats-tennis-set set-number="3" score="7" score-tiebreaker="9"/>
+        </player-stats-tennis>
+      </player-stats>
+    </player>
+    <player id="p2">
+      <player-metadata><name>Player B (synthetic)</name></player-metadata>
+      <player-stats score="1" event-outcome="speventoutcome:loss">
+        <player-stats-tennis>
+          <stats-tennis-set set-number="1" score="4"/>
+          <stats-tennis-set set-number="2" score="6"/>
+          <stats-tennis-set set-number="3" score="6" score-tiebreaker="7"/>
+        </player-stats-tennis>
+      </player-stats>
+    </player>
+    <actions>
+      <action type="sptenaction:point" sequence-number="202" created="2026-01-05T10:00:40Z" set="3" game="13">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="203" created="2026-01-05T10:01:20Z" set="3" game="13">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="204" created="2026-01-05T10:02:00Z" set="3" game="13">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="205" created="2026-01-05T10:02:40Z" set="3" game="13">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="206" created="2026-01-05T10:03:20Z" set="3" game="13">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="207" created="2026-01-05T10:04:00Z" set="3" game="13">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="208" created="2026-01-05T10:04:40Z" set="3" game="13">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="209" created="2026-01-05T10:05:20Z" set="3" game="13">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="210" created="2026-01-05T10:06:00Z" set="3" game="13">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="211" created="2026-01-05T10:06:40Z" set="3" game="13">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="212" created="2026-01-05T10:07:20Z" set="3" game="13">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="213" created="2026-01-05T10:08:00Z" set="3" game="13">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="214" created="2026-01-05T10:08:40Z" set="3" game="13">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="215" created="2026-01-05T10:09:20Z" set="3" game="13">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="216" created="2026-01-05T10:10:00Z" set="3" game="13">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="217" created="2026-01-05T10:10:40Z" set="3" game="13">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+    </actions>
+  </sports-event>
+</sports-content>

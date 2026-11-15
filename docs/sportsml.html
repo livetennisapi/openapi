@@ -1,0 +1,410 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tennis score to IPTC SportsML 3.1 mapping | Live Tennis API</title>
+<meta name="description" content="Every field of the Live Tennis API score object mapped to IPTC SportsML 3.1, with a match tie-break example and six synthetic test fixtures.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://docs.livetennisapi.com/sportsml.html">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Tennis score mapping to IPTC SportsML">
+<meta property="og:description" content="Every field of the Live Tennis API score object mapped to IPTC SportsML 3.1, with a match tie-break example and six synthetic test fixtures.">
+<meta property="og:url" content="https://docs.livetennisapi.com/sportsml.html">
+<meta property="og:image" content="https://docs.livetennisapi.com/banner.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="favicon.ico" sizes="any">
+<script type="application/ld+json">
+{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Tennis score mapping to IPTC SportsML", "description": "Every field of the Live Tennis API score object mapped to IPTC SportsML 3.1, with a match tie-break example and six synthetic test fixtures.", "url": "https://docs.livetennisapi.com/sportsml.html", "dateModified": "2026-11-15", "about": [{"@type": "CreativeWork", "name": "IPTC SportsML", "version": "3.1", "url": "https://iptc.org/standards/sportsml-g2/", "license": "https://creativecommons.org/licenses/by/4.0/", "publisher": {"@type": "Organization", "name": "IPTC", "url": "https://iptc.org/"}}, {"@type": "Dataset", "name": "Synthetic tennis scoring fixtures in SportsML", "description": "Six synthetic tennis matches, each as Live Tennis API score states in JSON and as an IPTC SportsML 3.1 document: a deciding-set tie-break, a match tie-break, no-ad games, a retirement, a walkover and a default.", "url": "https://github.com/livetennisapi/openapi/tree/main/examples/sportsml", "license": "https://creativecommons.org/licenses/by/4.0/", "isAccessibleForFree": true, "creator": {"@id": "https://livetennisapi.com/#org"}, "encodingFormat": ["application/json", "application/xml"]}], "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": "https://livetennisapi.com"}, "publisher": {"@type": "Organization", "@id": "https://livetennisapi.com/#org", "name": "JSB Holdings LLC", "alternateName": "Live Tennis API", "url": "https://livetennisapi.com", "logo": "https://docs.livetennisapi.com/icon-256.png", "sameAs": ["https://rapidapi.com/contact-whTqTESH5/api/tennis-data-analytics-api3", "https://apify.com/livetennisapi/tennis-data-analytics", "https://api.market/store/live-tennis-api/tennis-data-analytics", "https://www.postman.com/livetennisapi", "https://github.com/livetennisapi", "https://pypi.org/project/livetennisapi/", "https://www.npmjs.com/package/livetennisapi", "https://www.npmjs.com/package/livetennisapi-mcp", "https://docs.livetennisapi.com", "https://x.com/livetennisapi"]}}
+</script>
+<link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
+<link rel="preload" href="fonts/space-grotesk-latin-700.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
+<link rel="preload" href="fonts/jetbrains-mono-latin-400.woff2" as="font" type="font/woff2" crossorigin fetchpriority="low">
+<style>
+/* Self-hosted webfonts (latin subsets), shared by index.html and reference.html.
+   Both pages previously shipped `document.fonts.size === 0` — reference.html
+   rendered entirely in the system UI stack and Space Grotesk, the product's
+   display face, appeared on neither page.
+
+   These are served from this origin, so the docs have no font dependency they
+   cannot verify: nothing is fetched from Google Fonts or any other third party,
+   and a blocked CDN cannot change how the page reads.
+
+   Family names must stay EXACTLY 'Inter' / 'Space Grotesk' / 'JetBrains Mono' —
+   they are the names the rest of the product's stylesheets use, and the ones
+   Scalar is handed via --scalar-font / --scalar-font-code.
+
+   Only the weights actually used are shipped (180 KB total):
+     Inter          400/500/600/700  body, UI, Scalar's semibold + bold
+     Space Grotesk  500/700          display: headings
+     JetBrains Mono 400/500          code, numerals */
+
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/inter-latin-400.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/inter-latin-500.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 600; font-display: swap;
+  src: url('fonts/inter-latin-600.woff2') format('woff2'); }
+@font-face { font-family: 'Inter'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/inter-latin-700.woff2') format('woff2'); }
+
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/space-grotesk-latin-500.woff2') format('woff2'); }
+@font-face { font-family: 'Space Grotesk'; font-style: normal; font-weight: 700; font-display: swap;
+  src: url('fonts/space-grotesk-latin-700.woff2') format('woff2'); }
+
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 400; font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-400.woff2') format('woff2'); }
+@font-face { font-family: 'JetBrains Mono'; font-style: normal; font-weight: 500; font-display: swap;
+  src: url('fonts/jetbrains-mono-latin-500.woff2') format('woff2'); }
+</style>
+
+<style>
+  /* Design tokens (app/services/design_tokens.py). This page used to carry the
+     legacy marketing palette — every one of its six dark hexes was an exact key
+     in design_tokens.LEGACY, i.e. a colour the token module exists to retire. */
+  :root {
+    --bg:#0e0e0e; --panel:#141414; --struct:#2a2a2a;
+    --text:#e4e2e1; --muted:#84967e; --accent:#00ff41;
+    --r:6px;           /* control radius; structure is square */
+    color-scheme: dark;        /* was "normal", which invites the UA to
+                                  render form controls and scrollbars light */
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text);
+         font:16px/1.65 'Inter',ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 80px; }
+
+  /* PROSE MEASURE. The wrap is 960px because the tables and code blocks need
+     it; running body text to that width gives ~110 characters a line, well past
+     the 45-75 the eye tracks comfortably. Only the prose is narrowed — tables,
+     pre and the endpoint sections keep the full width they need. */
+  main > p, main > ul:not(.toc), main > ol, .op > p, .banner > p, header > p { max-width:72ch; }
+
+  a { color:var(--accent); }
+  a:focus-visible, .scrollx:focus-visible, .skip-link:focus {
+    outline:2px solid var(--accent); outline-offset:2px; }
+  h1,h2,h3 { font-family:'Space Grotesk','Inter',ui-sans-serif,sans-serif; }
+  h1 { font-size:2rem; margin:0 0 .3em; }
+  h2 { margin-top:2.5em; padding-bottom:.3em; border-bottom:1px solid var(--struct); }
+  h3 { margin-top:2em; }
+  h4 { margin:1.4em 0 .4em; color:var(--muted); font-size:.85rem; text-transform:uppercase; letter-spacing:.08em; }
+  code { background:var(--panel); padding:.15em .4em; border-radius:var(--r); font-size:.9em;
+          font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre { background:var(--panel); border:1px solid var(--struct); padding:14px; border-radius:0;
+         overflow-x:auto; font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace; }
+  pre code { background:none; padding:0; }
+
+  /* A long URL is better wrapped than hidden behind a scrollbar: it stays
+     copyable and every character is on screen. */
+  pre.urls { white-space:pre-wrap; overflow-wrap:anywhere; }
+
+  /* An inline <code> cannot scroll — it is inline. A long token inside one
+     (the /ws URL) pushed the whole document 44px wider than the viewport at
+     390px, which is a horizontal scrollbar on the PAGE, not in a block. */
+  code { overflow-wrap:anywhere; }
+
+  /* Wide blocks scroll in a focusable region rather than in the table itself,
+     so a keyboard can reach them. */
+  .scrollx { overflow-x:auto; max-width:100%; }
+  table { width:100%; border-collapse:collapse; margin:.6em 0 1.2em; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--struct);
+           vertical-align:top; font-size:.92rem; }
+  th { color:var(--muted); font-weight:600; }
+
+  /* Visually hidden, still announced. */
+  .vh { position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+         overflow:hidden; clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap; border:0; }
+
+  .method { color:var(--accent); font-family:'JetBrains Mono',ui-monospace,monospace; }
+  .meta { color:var(--muted); font-size:.9rem; }
+  .summary { margin:.2em 0; }
+  .banner { background:var(--panel); border:1px solid var(--struct); border-left:3px solid var(--accent);
+             padding:14px 18px; border-radius:0; margin:1.5em 0; }
+  ul.toc { list-style:none; padding:0; }
+  ul.toc li { border-bottom:1px solid var(--struct); }
+
+  /* NAVIGATION TOUCH TARGETS. These stacked links were 19px tall and 11-12px
+     apart — the page's only chrome, and the hardest thing on it to hit. The two
+     inline links inside prose sentences are deliberately left alone: WCAG 2.5.8
+     exempts a link inline in a block of text, and padding them would break the
+     line box around them. */
+  ul.toc li a, .pagenav a, .footnav a {
+    display:flex; align-items:center; min-height:44px; padding:4px 2px; }
+  .pagenav, .footnav { display:flex; flex-wrap:wrap; gap:0 18px; margin:.4em 0; }
+  .skip-link { position:absolute; left:-9999px; top:0;
+                background:var(--panel); color:var(--accent); padding:12px 16px;
+                border:1px solid var(--struct); z-index:10; }
+  .skip-link:focus { left:8px; top:8px; }
+
+  /* THE TEACHING BLOCK. As a <pre> this was 62 columns wide and showed 35 of
+     them at 390px — every annotation sliced mid-word, which is precisely the
+     content a first-time reader needs most. As a two-column grid the alignment
+     that makes it teach survives on a wide screen, and on a narrow one the
+     explanation simply stacks under the code it explains. Nothing scrolls,
+     nothing is cut. */
+  .annot { display:grid; grid-template-columns:max-content 1fr; gap:2px 22px;
+            background:var(--panel); border:1px solid var(--struct);
+            padding:14px; margin:.6em 0 1.2em; overflow-x:auto; }
+  .annot dt { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:.9em;
+               white-space:pre; margin:0; }
+  .annot dd { margin:0; color:var(--muted); font-size:.9em; align-self:center; }
+  @media (max-width:600px) {
+    .annot { grid-template-columns:1fr; gap:0; }
+    .annot dt { margin-top:.7em; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .annot dt:first-child { margin-top:0; }
+    .annot dd { padding-bottom:.2em; }
+  }
+
+  /* Link-only table cells are targets, not prose, so they get the full 44px.
+     (The inline links inside sentences are left alone — see above.) */
+  .linkrow a { display:inline-flex; align-items:center; min-height:44px; }
+
+  /* SCROLL, OR WRAP. On a phone the code blocks showed as little as 54% of
+     their widest line, cut mid-token. Soft-wrapping them shows all of it, and
+     costs nothing on copy: a soft wrap is not a newline, so a copied curl
+     command is still byte-for-byte the command. Desktop has the room and keeps
+     the original hard lines. A table cannot wrap, so tables still scroll. */
+  @media (max-width:760px) {
+    pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+  }
+
+  /* A horizontal scrollbar is invisible on touch until you already know it is
+     there, and the design system has no gradients to fade an edge with. So the
+     regions that genuinely still scroll get a scrollbar that is always drawn,
+     in tokens, plus a note in words. */
+  .scrollnote { display:none; color:var(--muted); font-size:.8rem; margin:-.4em 0 1em; }
+  @media (max-width:760px) {
+    .scrollnote { display:block; }
+    .scrollx { scrollbar-width:thin; scrollbar-color:var(--muted) var(--panel); }
+    .scrollx::-webkit-scrollbar { height:6px; -webkit-appearance:none; }
+    .scrollx::-webkit-scrollbar-track { background:var(--panel); }
+    .scrollx::-webkit-scrollbar-thumb { background:var(--muted); }
+  }
+</style><style>
+/* Documentation shares the product palette while keeping reference content compact. */
+:root{--bg:#0b100e;--panel:#131c16;--struct:#2d3b31;--text:#f0f4ee;--muted:#afbeb2;--ours:#b7f875;--accent:#b7f875;--r:8px;color-scheme:dark}
+*{box-sizing:border-box}body{background:var(--bg);color:var(--text);font-family:Inter,system-ui,sans-serif;margin:0}a{color:var(--accent);text-underline-offset:4px}a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid #d1ffa7;outline-offset:4px}img{max-width:100%}.docs-site-header{display:flex;align-items:center;gap:24px;justify-content:space-between;max-width:1280px;margin:auto;padding:22px 36px;border-bottom:1px solid var(--struct);position:relative;z-index:2}.docs-brand{font:700 17px/1.3 'Space Grotesk',Inter,sans-serif;display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);white-space:nowrap}.docs-brand span{font:400 12px/1.5 Inter,sans-serif;color:var(--muted);border-left:1px solid var(--struct);padding-left:12px;margin-left:5px}.docs-desktop-nav{display:flex;gap:26px}.docs-desktop-nav a{font-size:13px;text-decoration:none;min-height:44px;display:flex;align-items:center;color:var(--muted)}.docs-desktop-nav a:hover,.docs-desktop-nav a[aria-current=page]{color:var(--accent)}.docs-key{display:inline-flex;align-items:center;gap:20px;min-height:44px;padding:8px 15px;background:var(--accent);color:var(--bg);font-size:12px;text-decoration:none;border-radius:7px}.docs-topic-menu{max-width:1208px;margin:0 auto;border-bottom:1px solid var(--struct);color:var(--muted)}.docs-topic-menu summary{cursor:pointer;min-height:44px;padding:14px 0;font-size:12px}.docs-topic-menu nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 24px;padding-bottom:16px}.docs-topic-menu a{display:flex;align-items:center;min-height:44px;font-size:12px;color:var(--muted);text-decoration:none}.docs-topic-menu a:hover,.docs-topic-menu a[aria-current]{color:var(--accent)}
+.docs-page .wrap{max-width:1120px;padding:58px 36px 80px;min-width:0}.docs-page .wrap>header{padding-bottom:28px;margin-bottom:32px;border-bottom:1px solid var(--struct)}.docs-page h1{font:700 clamp(34px,4.2vw,58px)/1.09 'Space Grotesk',Inter,sans-serif;letter-spacing:-.05em;max-width:22ch;margin:12px 0 24px;overflow-wrap:anywhere}.docs-page h2{font-size:26px;letter-spacing:-.03em;line-height:1.25;margin-top:48px}.docs-page h3{font-size:20px;letter-spacing:-.02em;line-height:1.4;overflow-wrap:anywhere}.docs-page h4{color:var(--muted);font-size:11px;letter-spacing:.12em;margin-top:28px}.docs-page .meta,.docs-page .eyebrow{color:var(--muted);font-size:13px}.docs-page .wrap>header>.meta:first-child,.docs-page .eyebrow{text-transform:uppercase;font-size:10px;letter-spacing:.15em;color:var(--accent)}.docs-page .wrap>header>p:not(.meta){max-width:76ch;line-height:1.8}.docs-page .pagenav{gap:8px 12px}.docs-page .pagenav a{padding:7px 12px;border:1px solid var(--struct);border-radius:6px;min-height:40px;font-size:12px;text-decoration:none}.docs-page .pagenav a:hover{background:var(--panel);border-color:#637958}.docs-page .banner{border-radius:8px;padding:18px 22px;background:var(--panel);border-color:var(--struct);border-left:3px solid var(--accent)}.docs-page .banner p{font-size:14px;margin:0;line-height:1.7}.docs-page .toc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 24px}.docs-page .toc li{font-size:13px}.docs-page .toc li a{font-size:14px;min-height:46px}.docs-page .op{margin-top:42px;padding-top:4px;min-width:0}.docs-page pre{border-radius:10px;padding:22px;font-size:12px;line-height:1.8;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere}.docs-page pre code{font-size:inherit}.docs-page code{overflow-wrap:anywhere;word-break:normal}.docs-page .scrollx{border:1px solid var(--struct);border-radius:8px;margin:14px 0 18px;max-width:100%;min-width:0}.docs-page .scrollx table{margin:0;min-width:540px}.docs-page table th{font-size:11px;text-transform:uppercase;letter-spacing:.06em;background:var(--panel);padding:12px 14px}.docs-page table td{font-size:13px;padding:13px 14px}.docs-page table tr:last-child td{border-bottom:0}.docs-page .annot{border-radius:8px;padding:18px}.docs-page footer{margin-top:60px}.docs-page footer hr{border:0;border-top:1px solid var(--struct);margin:20px 0}.docs-changelog article{border-top:1px solid var(--struct);padding:24px 0;max-width:80ch}.docs-changelog article h2{border:0;margin-top:0;display:flex;align-items:baseline;gap:20px;flex-wrap:wrap}.docs-changelog time{font:400 12px/1.5 Inter,sans-serif;color:var(--muted)}
+/* A useful landing page stays visible before the optional explorer is loaded. */
+.docs-home #static-intro{position:relative;inset:auto;max-width:1208px;max-height:none;overflow:visible;min-height:0;padding:64px 0 48px;margin:auto;background:none;z-index:0}.docs-home #static-intro[hidden]{display:none}.docs-home .docs-hero{display:grid;grid-template-columns:1.2fr 1fr;gap:70px;align-items:center;margin-bottom:68px}.docs-home .docs-eyebrow{color:var(--accent);font-size:10px;letter-spacing:.18em;text-transform:uppercase;margin:0 0 22px}.docs-home #static-intro h1{font:700 clamp(40px,5vw,70px)/1.04 'Space Grotesk',Inter,sans-serif;letter-spacing:-.055em;color:var(--text);margin:0 0 24px}.docs-home .docs-lede{font-size:16px;line-height:1.8;color:var(--muted);max-width:55ch}.docs-home .docs-actions{display:flex;gap:18px;align-items:center;flex-wrap:wrap;margin:28px 0 14px}.docs-home #open-explorer{padding:13px 18px;font:500 13px/1.5 Inter,sans-serif;border:0;border-radius:8px;background:var(--accent);color:var(--bg);min-height:48px;cursor:pointer}.docs-home .docs-actions>a{font-size:13px;min-height:44px;display:inline-flex;align-items:center}.docs-home .docs-code{padding:24px;background:var(--panel);border:1px solid #3b4d3e;border-radius:12px;min-width:0;box-shadow:0 24px 80px #0005}.docs-home .docs-code-label{font-size:10px;letter-spacing:.14em;color:var(--muted);display:flex;justify-content:space-between;text-transform:uppercase;border-bottom:1px solid var(--struct);padding-bottom:18px;margin-bottom:22px}.docs-home .docs-code pre{font:12px/1.9 'JetBrains Mono',monospace;white-space:pre-wrap;overflow-wrap:anywhere;margin:0;color:var(--text)}.docs-home .docs-code .code-accent{color:var(--accent)}.docs-home .docs-code>p{font-size:12px;line-height:1.7;color:var(--muted);border-top:1px solid var(--struct);padding-top:16px;margin:22px 0 0}.docs-home .docs-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:20px;margin:0 0 20px}.docs-home #static-intro h2{font:700 27px/1.2 'Space Grotesk',Inter,sans-serif;letter-spacing:-.035em;margin:0}.docs-home .docs-section-title p{font-size:12px;color:var(--muted);margin:0}.docs-home .docs-topics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.docs-home .docs-topics>a{border:1px solid var(--struct);border-radius:9px;display:flex;flex-direction:column;gap:14px;padding:22px;text-decoration:none;min-width:0;color:var(--text);background:#0f1712}.docs-home .docs-topics>a:hover{background:var(--panel);border-color:#6c885c}.docs-home .docs-topics strong{font-size:14px;font-weight:500;line-height:1.4}.docs-home .docs-topics span{font-size:12px;line-height:1.7;color:var(--muted)}.docs-home .docs-topics small{font-size:10px;color:var(--accent);font-family:'JetBrains Mono',monospace}.docs-home .docs-resources{display:flex;gap:20px;flex-wrap:wrap;border-top:1px solid var(--struct);padding:24px 0;margin-top:32px}.docs-home .docs-resources a{font-size:12px;min-height:32px;display:flex;align-items:center}.docs-home .docs-clients{display:flex;flex-wrap:wrap;gap:12px 24px;color:var(--muted);font-size:12px}.docs-home .docs-clients code{color:var(--text);font-size:11px}.docs-home .docs-corner{display:none}.docs-home #boot{position:relative;inset:auto;max-width:1208px;margin:0 auto;padding:20px;min-height:0;border-bottom:1px solid var(--struct);pointer-events:none}.docs-home #boot[hidden]{display:none}.docs-home #boot a{pointer-events:auto}.docs-home .skip-link{position:absolute;left:-9999px;z-index:20;background:var(--panel);padding:14px;color:var(--accent)}.docs-home .skip-link:focus{left:8px;top:8px}
+@media(max-width:1280px){.docs-topic-menu{margin:0 36px}.docs-home #static-intro{padding:52px 36px}.docs-home .docs-hero{gap:36px}}
+@media(max-width:900px){.docs-desktop-nav{gap:16px}.docs-home .docs-hero{grid-template-columns:1fr;gap:28px;margin-bottom:44px}.docs-home .docs-code{max-width:620px}.docs-home .docs-topics{grid-template-columns:repeat(2,minmax(0,1fr))}.docs-home .docs-section-title{display:block}.docs-home .docs-section-title p{margin-top:10px}.docs-page .wrap{padding-top:36px}}
+@media(max-width:640px){.docs-site-header{padding:16px 20px;gap:12px;flex-wrap:wrap}.docs-brand{font-size:14px;gap:8px}.docs-brand img{width:22px;height:22px}.docs-brand span{font-size:10px;padding-left:8px;margin-left:0}.docs-desktop-nav{display:none}.docs-key{font-size:10px;gap:8px;padding:7px 10px}.docs-topic-menu{margin:0 20px}.docs-topic-menu nav{grid-template-columns:1fr}.docs-page .wrap{padding:30px 20px 60px}.docs-page h1{font-size:36px}.docs-page .toc{grid-template-columns:1fr}.docs-page h3{font-size:18px}.docs-page .pagenav a{min-height:44px}.docs-page pre{padding:16px;font-size:11px}.docs-page .wrap>header>p:not(.meta){font-size:15px}.docs-home #static-intro{padding:38px 20px}.docs-home .docs-lede{font-size:15px}.docs-home .docs-code{padding:18px}.docs-home .docs-code pre{font-size:11px}.docs-home .docs-topics>a{padding:18px 15px}.docs-home .docs-resources{gap:8px 20px}.docs-home .docs-resources a{min-height:44px}.docs-home .docs-actions{gap:8px 18px}}
+@media(max-width:360px){.docs-brand span{display:none}.docs-home .docs-topics{grid-template-columns:1fr}.docs-page h1{font-size:32px}}
+@media(prefers-reduced-motion:no-preference){a,button{transition:color .15s,background .15s,border-color .15s}}
+
+.docs-page p,.docs-page li,.docs-page a,.docs-page td{overflow-wrap:anywhere}.docs-page .scrollx{width:100%;overflow-x:auto}
+</style>
+
+</head>
+<body class="docs-page docs-topic">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="docs-site-header"><a class="docs-brand" href="./"><img src="logo.svg" width="28" height="28" alt="">Live Tennis API <span>Docs</span></a><nav class="docs-desktop-nav" aria-label="Documentation"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html">Changelog</a></nav><a class="docs-key" href="https://livetennisapi.com/subscribe/free">Get a free key <span aria-hidden="true">↗</span></a></header><details class="docs-topic-menu"><summary>Explore the documentation</summary><nav aria-label="Documentation topics"><a href="./">Overview</a><a href="./reference.html">API reference</a><a href="./changelog.html">Changelog</a><a href="./live-scores.html">Live tennis scores API</a><a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a><a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a><a href="./point-by-point-history.html">Point-by-point tennis data API</a><a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a><a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a><a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a><a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a><a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a><a href="./ai-sdk.html">Live Tennis API tools for the Vercel AI SDK</a><a href="./errors-and-rate-limits.html">Errors and rate limits</a><a href="./export-formats.html">Export tennis data to CSV, JSON Lines or Parquet</a><a href="./client-libraries.html">Live Tennis API client libraries</a><a href="./sportsml.html" aria-current="page">Tennis score mapping to IPTC SportsML</a></nav></details>
+<div class="wrap">
+<header role="none">
+<p class="meta">Live Tennis API &middot; docs &middot; guide</p>
+<h1>Tennis score mapping to IPTC SportsML</h1>
+<p><strong>How does the Live Tennis API score object map to IPTC SportsML?</strong> Each field of the Score object is listed with the SportsML 3.1 element or attribute it becomes, or with no direct equivalent. Every SportsML name links to IPTC's documentation. A worked example and six synthetic fixtures show the mapping in real files.</p>
+<p class="meta">Mapped against IPTC SportsML 3.1 as published on iptc.org, read on <time datetime="2026-11-15">2026-11-15</time>. Fixtures under CC BY 4.0.</p>
+<nav class="pagenav" aria-label="Related pages">
+<a href="./reference.html">Full reference: all endpoints</a>
+<a href="./">Interactive reference</a>
+<a href="./openapi.yaml">OpenAPI spec</a>
+<a href="./changelog.html">Changelog</a>
+<a href="https://livetennisapi.com/pricing">Pricing</a>
+<a href="https://livetennisapi.com/subscribe/free">Free key</a>
+</nav>
+</header>
+<main id="main">
+<h2 id="version">Which SportsML version does this map to?</h2>
+<p>The mapping uses SportsML 3.1, the newest version on iptc.org. IPTC released it in June 2019. The tennis
+part of the standard is a plugin schema, <a href="https://www.iptc.org/std/SportsML/3.1/specification/sportsml-specific-tennis.xsd">sportsml-specific-tennis.xsd</a>,
+which the main schema includes. Both files carry IPTC's CC BY 4.0 notice.</p>
+<p>The mapping was read from the <a href="https://www.iptc.org/std/SportsML/3.1/specification/">schema files</a>, the
+<a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html">tennis plugin documentation</a>, the <a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html">core schema documentation</a>
+and IPTC's own <a href="https://www.iptc.org/std/SportsML/3.1/examples/tennis_davis_cup_tournament.xml">tennis example</a>. It is our reading. IPTC has not reviewed it.</p>
+<p>Our own comparison of <a href="https://livetennisapi.com/data/notation">tennis score notation formats</a> sets SportsML beside three
+other formats.</p>
+
+<h2 id="score-fields">How does each Score field map to SportsML?</h2>
+<p>The rows follow the <a href="./reference.html#schema-score">Score schema</a> in the spec, every field
+in its order. Each SportsML name links to the section of IPTC's documentation that defines it.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="Score fields in SportsML"><table><caption class="vh">Each Score field and the SportsML 3.1 element or attribute it maps to</caption><thead><tr><th scope="col">Score field</th><th scope="col">SportsML 3.1</th><th scope="col">Notes</th></tr></thead><tbody><tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>sets</code></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#statAttributes_score"><code><span style="white-space:nowrap">player-stats</span>/<wbr><span style="white-space:nowrap">@score</span></code></a></td><td style="min-width:220px">Sets won. Each player gets the value from their slot of the array. IPTC's Davis Cup example puts sets won in this attribute.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>games</code></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#tennisStatsSetComplexType_score"><code><span style="white-space:nowrap">stats-tennis-set</span>/<wbr><span style="white-space:nowrap">@score</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#tennisStatsSetComplexType_set-number"><code><span style="white-space:nowrap">stats-tennis-set</span>/<wbr><span style="white-space:nowrap">@set-number</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#subScoreComplexType_score"><code><span style="white-space:nowrap">sub-score</span>/<wbr><span style="white-space:nowrap">@score</span></code></a></td><td style="min-width:220px">One <code>stats-tennis-set</code> per set and player. IPTC's example also writes the same numbers as <code>sub-score</code>. SportsML has no match tie-break, so the fixtures write one as a set won 1-0, with its points in <code>score-tiebreaker</code>.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>points</code></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#tennisActionAttributes_server-score"><code><span style="white-space:nowrap">action</span>/<wbr><span style="white-space:nowrap">@server-score</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#tennisActionAttributes_receiver-score"><code><span style="white-space:nowrap">action</span>/<wbr><span style="white-space:nowrap">@receiver-score</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#eventStateTennis_server-score"><code><span style="white-space:nowrap">event-metadata-tennis</span>/<wbr><span style="white-space:nowrap">@server-score</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#eventStateTennis_receiver-score"><code><span style="white-space:nowrap">event-metadata-tennis</span>/<wbr><span style="white-space:nowrap">@receiver-score</span></code></a></td><td style="min-width:220px">On an action and on <code>event-metadata-tennis</code> the game score is ordered by server, and ours by player. 0 becomes love and AD becomes ad. The fixtures write 40-40 as 40 and 40, though the list also has deuce. A tie-break count has no code, so tie-break points carry no game score.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>server</code></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#eventStateTennis_server-idref"><code><span style="white-space:nowrap">event-metadata-tennis</span>/<wbr><span style="white-space:nowrap">@server-idref</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#eventStateTennis_receiver-idref"><code><span style="white-space:nowrap">event-metadata-tennis</span>/<wbr><span style="white-space:nowrap">@receiver-idref</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#commonParticipantAttributes_role"><code><span style="white-space:nowrap">participant</span>/<wbr><span style="white-space:nowrap">@role</span></code></a></td><td style="min-width:220px"><code>server-idref</code> exists only on <code>event-metadata-tennis</code>. On an action the server is a participant with a role. IPTC publishes no tennis role codes, so the fixtures use <code>ltapirole:server</code>. A null server leaves the attribute out.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>is_tiebreak</code></th><td>No direct equivalent</td><td style="min-width:220px">No attribute says the current game is a tie-break. <code>score-tiebreaker</code> gives a set's tie-break points, but not whether the breaker is still being played.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>win_probability_p1</code></th><td>No direct equivalent</td><td style="min-width:220px">A model output. SportsML has no field for it. <code>wagering-odds</code> holds a bookmaker's line, and the generic <code>stat</code> element would need a code of our own.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>danger</code></th><td>No direct equivalent</td><td style="min-width:220px">The value the <code>break_point</code> frame calls <code>prob_swing</code>.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>win_probability_p1_model</code></th><td>No direct equivalent</td><td style="min-width:220px">The same model read without the market-prior anchor.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>win_probability_meta</code></th><td>No direct equivalent</td><td style="min-width:220px">The model version and the time the two probabilities were made.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>timestamp</code></th><td>No direct equivalent</td><td style="min-width:220px">Our clock, refreshed while a source keeps sending the same state. <code>action/@date-time</code> is when the play took place on court, which this field never claims. <code>last-modified</code> is closest, but a state sent again is not a change to the record.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>accepted_at</code></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#actionAttributes_created"><code><span style="white-space:nowrap">action</span>/<wbr><span style="white-space:nowrap">@created</span></code></a></td><td style="min-width:220px">The instant we accepted the state, stamped once. IPTC describes <code>created</code> as the time the action record was made.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>sequence</code></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#actionAttributes_sequence-number"><code><span style="white-space:nowrap">action</span>/<wbr><span style="white-space:nowrap">@sequence-number</span></code></a></td><td style="min-width:220px">Our per-match accept counter. In the fixtures, the action for a point carries the sequence of the state that point produced.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>age_seconds</code></th><td>No direct equivalent</td><td style="min-width:220px">Seconds since the score last changed.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>stale</code></th><td>No direct equivalent</td><td style="min-width:220px">Our staleness verdict on a live match.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>observed_age_seconds</code></th><td>No direct equivalent</td><td style="min-width:220px">Seconds since any source last confirmed the state.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>sources_count</code></th><td>No direct equivalent</td><td style="min-width:220px">How many sources reported the match in the last 60 seconds.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>changing_sources_count</code></th><td>No direct equivalent</td><td style="min-width:220px">How many sources changed the score in the last 300 seconds.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>corroborated</code></th><td>No direct equivalent</td><td style="min-width:220px">Whether a second source sent this exact state.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>corroborated_age_seconds</code></th><td>No direct equivalent</td><td style="min-width:220px">Seconds since that second source confirmed it.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>detail</code></th><td>No direct equivalent</td><td style="min-width:220px">Why something is withheld, for example a null <code>games</code> array.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><code>verdict</code></th><td>No direct equivalent</td><td style="min-width:220px">Why a read is not the newest state we judged, for example a withdrawn state.</td></tr>
+</tbody></table></div>
+<p>Read the arrays the usual way. <code>sets</code>, <code>games</code> and <code>points</code> put
+player 1 first and player 2 second.</p>
+
+<h2 id="match-fields">Which match and point fields does SportsML cover?</h2>
+<p>A SportsML match document also says who played, how the match ended and what happened on each point.
+These fields come from the <code>Match</code>, <code>LivePoint</code> and <code>HistoryTapeRow</code>
+schemas.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="Match and point fields in SportsML"><table><caption class="vh">Match and point fields the fixtures also map</caption><thead><tr><th scope="col">Field</th><th scope="col">SportsML 3.1</th><th scope="col">Notes</th></tr></thead><tbody><tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-match"><code>Match.players</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#sportsEventComplexType_player"><code><span style="white-space:nowrap">player</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#baseEntityMetadataComplexType_name"><code><span style="white-space:nowrap">player-metadata</span>/<wbr><span style="white-space:nowrap">name</span></code></a></td><td style="min-width:220px">The fixtures give the two players the ids <code>p1</code> and <code>p2</code>.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-match"><code>Match.format</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#tennisEventMetadataComplexType_number-of-sets"><code><span style="white-space:nowrap">event-metadata-tennis</span>/<wbr><span style="white-space:nowrap">@number-of-sets</span></code></a></td><td style="min-width:220px">BO3 is 3 and BO5 is 5.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-match"><code>Match.status</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#baseEventMetadataComplexType_event-status"><code><span style="white-space:nowrap">event-metadata</span>/<wbr><span style="white-space:nowrap">@event-status</span></code></a></td><td style="min-width:220px">The codes come from <a href="https://cv.iptc.org/newscodes/speventstatus/">speventstatus</a>. An upcoming match is pre-event, live is mid-event and cancelled is canceled. A completed match is post-event unless its outcome says otherwise.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-match"><code>Match.outcome</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#baseEventMetadataComplexType_event-status"><code><span style="white-space:nowrap">event-metadata</span>/<wbr><span style="white-space:nowrap">@event-status</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#baseEventMetadataComplexType_event-status-reason"><code><span style="white-space:nowrap">event-metadata</span>/<wbr><span style="white-space:nowrap">@event-status-reason</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#baseEventMetadataComplexType_event-status-note"><code><span style="white-space:nowrap">event-metadata</span>/<wbr><span style="white-space:nowrap">@event-status-note</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#baseEventMetadataComplexType_event-outcome-type"><code><span style="white-space:nowrap">event-metadata</span>/<wbr><span style="white-space:nowrap">@event-outcome-type</span></code></a></td><td style="min-width:220px">IPTC has no code for a retirement or a default. The fixtures mark retired, walkover and default as forfeited and add the reason <a href="https://cv.iptc.org/newscodes/speventstatusreason/">withdrawal</a> to the first two. A default also gets the <a href="https://cv.iptc.org/newscodes/speventoutcometype/">outcome type</a> authority-decision. The note holds our outcome value. The fixtures do not cover abandoned or unresolved.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-match"><code>Match.winner</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#statAttributes_event-outcome"><code><span style="white-space:nowrap">player-stats</span>/<wbr><span style="white-space:nowrap">@event-outcome</span></code></a></td><td style="min-width:220px"><a href="https://cv.iptc.org/newscodes/speventoutcome/">speventoutcome</a> win for the winner, loss for the other player.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-match"><code>Match.withdrew</code></a></th><td>No direct equivalent</td><td style="min-width:220px">The fixtures show it only through the loser's loss and the note.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-livepoint"><code>LivePoint.winner</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#commonParticipantAttributes_role"><code><span style="white-space:nowrap">participant</span>/<wbr><span style="white-space:nowrap">@role</span></code></a></td><td style="min-width:220px">The point winner is a participant too. IPTC's Davis Cup example uses a vendor code, ball-winner. The fixtures use <code>ltapirole:point-winner</code>.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-livepoint"><code>LivePoint.set</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#tennisActionAttributes_set"><code><span style="white-space:nowrap">action</span>/<wbr><span style="white-space:nowrap">@set</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#eventStateTennis_set"><code><span style="white-space:nowrap">event-metadata-tennis</span>/<wbr><span style="white-space:nowrap">@set</span></code></a></td><td style="min-width:220px">The set the point was played in.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-livepoint"><code>LivePoint.game</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#tennisActionAttributes_game"><code><span style="white-space:nowrap">action</span>/<wbr><span style="white-space:nowrap">@game</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#eventStateTennis_game"><code><span style="white-space:nowrap">event-metadata-tennis</span>/<wbr><span style="white-space:nowrap">@game</span></code></a></td><td style="min-width:220px">13 is the game number of a tie-break at six all. The fixtures count a match tie-break as game 1.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-livepoint"><code>LivePoint.serve</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#tennisActionAttributes_serve-number"><code><span style="white-space:nowrap">action</span>/<wbr><span style="white-space:nowrap">@serve-number</span></code></a><br><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#eventStateTennis_serve-number"><code><span style="white-space:nowrap">event-metadata-tennis</span>/<wbr><span style="white-space:nowrap">@serve-number</span></code></a></td><td style="min-width:220px">It takes first or second on <code>event-metadata-tennis</code>. On an action it takes a code, and IPTC publishes no list for it. The fixtures leave it out.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap"><a href="./reference.html#schema-historytaperow"><code>HistoryTapeRow.tiebreak_final</code></a></th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml-specific-tennis_xsd.html#tennisStatsSetComplexType_score-tiebreaker"><code><span style="white-space:nowrap">stats-tennis-set</span>/<wbr><span style="white-space:nowrap">@score-tiebreaker</span></code></a></td><td style="min-width:220px">The breaker's closing score, on the row that closes a tie-break set.</td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top;white-space:nowrap">Court time of a point</th><td><a href="https://www.iptc.org/std/SportsML/3.1/documentation/sportsml_xsd.html#actionAttributes_date-time"><code><span style="white-space:nowrap">action</span>/<wbr><span style="white-space:nowrap">@date-time</span></code></a></td><td style="min-width:220px">We publish no court time. <code>LivePoint.ts</code> is when our pipeline committed the state.</td></tr>
+</tbody></table></div>
+
+<h2 id="example">Worked example: a match decided by a match tie-break</h2>
+<p>Player A and Player B are synthetic. They split the first two sets 6-4 and 4-6. A ten-point match
+tie-break replaces the third set and Player A wins it 10-8.</p>
+<p>These are the last two score states, at 9-8 in the breaker and after the match point. The deciding
+set's slot holds the breaker's points while it is played. The last state shows the match over.</p>
+<pre style="font-variant-ligatures:none"><code>[
+  {&quot;sets&quot;: [1, 1], &quot;games&quot;: [[6, 4, 9], [4, 6, 8]], &quot;points&quot;: [&quot;9&quot;, &quot;8&quot;], &quot;server&quot;: 1, &quot;is_tiebreak&quot;: true, &quot;timestamp&quot;: &quot;2026-01-05T10:11:20Z&quot;, &quot;accepted_at&quot;: &quot;2026-01-05T10:11:20Z&quot;, &quot;sequence&quot;: 318},
+  {&quot;sets&quot;: [2, 1], &quot;games&quot;: [[6, 4, 10], [4, 6, 8]], &quot;points&quot;: [&quot;0&quot;, &quot;0&quot;], &quot;server&quot;: null, &quot;is_tiebreak&quot;: false, &quot;timestamp&quot;: &quot;2026-01-05T10:12:00Z&quot;, &quot;accepted_at&quot;: &quot;2026-01-05T10:12:00Z&quot;, &quot;sequence&quot;: 319}
+]</code></pre>
+<p>The same match as a SportsML document. The third set is written as a set won 1-0, with the breaker's
+points in <code>score-tiebreaker</code>. The action is the match point.</p>
+<pre style="font-variant-ligatures:none"><code>&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+&lt;!-- SYNTHETIC tennis scoring fixture. No real players, matches or results.
+     Fixture: 02-match-tiebreak. Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+     From the Live Tennis API SportsML fixtures, https://github.com/livetennisapi/openapi/tree/main/examples/sportsml --&gt;
+&lt;sports-content xmlns=&quot;http://iptc.org/std/nar/2006-10-01/&quot;&gt;
+  &lt;sports-metadata doc-id=&quot;ltapi-synthetic-02-match-tiebreak&quot; date-time=&quot;2026-01-05T10:12:00Z&quot; language=&quot;en&quot;&gt;
+    &lt;catalogRef href=&quot;http://www.iptc.org/std/catalog/catalog.IPTC-Sports_1.xml&quot;/&gt;
+    &lt;sports-title&gt;Synthetic fixture: match tie-break to ten&lt;/sports-title&gt;
+  &lt;/sports-metadata&gt;
+  &lt;sports-event&gt;
+    &lt;event-metadata event-status=&quot;speventstatus:post-event&quot;&gt;
+      &lt;event-metadata-tennis number-of-sets=&quot;3&quot;/&gt;
+    &lt;/event-metadata&gt;
+    &lt;player id=&quot;p1&quot;&gt;
+      &lt;player-metadata&gt;&lt;name&gt;Player A (synthetic)&lt;/name&gt;&lt;/player-metadata&gt;
+      &lt;player-stats score=&quot;2&quot; event-outcome=&quot;speventoutcome:win&quot;&gt;
+        &lt;player-stats-tennis&gt;
+          &lt;stats-tennis-set set-number=&quot;1&quot; score=&quot;6&quot;/&gt;
+          &lt;stats-tennis-set set-number=&quot;2&quot; score=&quot;4&quot;/&gt;
+          &lt;stats-tennis-set set-number=&quot;3&quot; score=&quot;1&quot; score-tiebreaker=&quot;10&quot;/&gt;
+        &lt;/player-stats-tennis&gt;
+      &lt;/player-stats&gt;
+    &lt;/player&gt;
+    &lt;player id=&quot;p2&quot;&gt;
+      &lt;player-metadata&gt;&lt;name&gt;Player B (synthetic)&lt;/name&gt;&lt;/player-metadata&gt;
+      &lt;player-stats score=&quot;1&quot; event-outcome=&quot;speventoutcome:loss&quot;&gt;
+        &lt;player-stats-tennis&gt;
+          &lt;stats-tennis-set set-number=&quot;1&quot; score=&quot;4&quot;/&gt;
+          &lt;stats-tennis-set set-number=&quot;2&quot; score=&quot;6&quot;/&gt;
+          &lt;stats-tennis-set set-number=&quot;3&quot; score=&quot;0&quot; score-tiebreaker=&quot;8&quot;/&gt;
+        &lt;/player-stats-tennis&gt;
+      &lt;/player-stats&gt;
+    &lt;/player&gt;
+    &lt;actions&gt;
+      &lt;!-- 17 earlier points, one action each, are in the fixture file --&gt;
+      &lt;action type=&quot;sptenaction:point&quot; sequence-number=&quot;319&quot; created=&quot;2026-01-05T10:12:00Z&quot; set=&quot;3&quot; game=&quot;1&quot;&gt;
+        &lt;participant idref=&quot;p1&quot; role=&quot;ltapirole:server&quot;/&gt;
+        &lt;participant idref=&quot;p2&quot; role=&quot;ltapirole:receiver&quot;/&gt;
+        &lt;participant idref=&quot;p1&quot; role=&quot;ltapirole:point-winner&quot;/&gt;
+      &lt;/action&gt;
+    &lt;/actions&gt;
+  &lt;/sports-event&gt;
+&lt;/sports-content&gt;
+</code></pre>
+<p>The Score schema says a finished match tie-break is often published as a one-game set, 1-0. The
+fixture keeps the breaker's points in that slot instead. Take the winner from <code>sets</code> either way.</p>
+
+<h2 id="fixtures">Test fixtures for tennis scoring edge cases</h2>
+<p>The <a href="https://github.com/livetennisapi/openapi/tree/main/examples/sportsml">examples/sportsml</a> folder holds six synthetic matches. No player,
+match or result in them is real. Each fixture is two files. One is the sequence of score states as JSON.
+The other is the same match as a SportsML document. The fixtures are under CC BY 4.0.</p>
+<div class="scrollx" tabindex="0" role="region" aria-label="Fixtures"><table><caption class="vh">The six synthetic fixtures and what each covers</caption><thead><tr><th scope="col">Fixture</th><th scope="col">What it covers</th><th scope="col">States</th><th scope="col">Files</th></tr></thead><tbody><tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top">Deciding-set tie-break at six all</th><td>The third set reaches 6-6 and a seven-point tie-break decides it, 9-7.</td><td style="white-space:nowrap">17</td><td style="white-space:nowrap"><a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/01-deciding-set-tiebreak.json">JSON</a> <a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/01-deciding-set-tiebreak.xml">SportsML</a></td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top">Match tie-break to ten</th><td>A ten-point match tie-break replaces the third set and ends 10-8.</td><td style="white-space:nowrap">19</td><td style="white-space:nowrap"><a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/02-match-tiebreak.json">JSON</a> <a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/02-match-tiebreak.xml">SportsML</a></td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top">No-ad games</th><td>Two games reach 40-40. One deciding point is a break and the other wins the match.</td><td style="white-space:nowrap">15</td><td style="white-space:nowrap"><a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/03-no-ad.json">JSON</a> <a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/03-no-ad.xml">SportsML</a></td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top">Retirement</th><td>Player B retires serving at 15-30 in the second set.</td><td style="white-space:nowrap">4</td><td style="white-space:nowrap"><a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/04-retirement.json">JSON</a> <a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/04-retirement.xml">SportsML</a></td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top">Walkover</th><td>Player A withdraws before a ball is struck, so the fixture has no score states.</td><td style="white-space:nowrap">0</td><td style="white-space:nowrap"><a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/05-walkover.json">JSON</a> <a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/05-walkover.xml">SportsML</a></td></tr>
+<tr><th scope="row" style="font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top">Default</th><td>Player A is defaulted while serving at advantage Player B, after deuce, in the second set.</td><td style="white-space:nowrap">8</td><td style="white-space:nowrap"><a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/06-default.json">JSON</a> <a href="https://github.com/livetennisapi/openapi/blob/main/examples/sportsml/fixtures/06-default.xml">SportsML</a></td></tr>
+</tbody></table></div>
+<p>The folder's check script validates every SportsML document against the IPTC schema. It replays each
+point from the first JSON state with the rules of tennis and compares every state. It also compares the
+result and the way the match ended.</p>
+<pre><code>pip install lxml
+python examples/sportsml/check_fixtures.py</code></pre>
+<p>The IPTC schema files are vendored unchanged, with their CC BY 4.0 notice and source address. The script
+refuses to run if one differs from its pinned SHA-256.</p>
+
+<h2 id="gaps">Where does SportsML 3.1 leave tennis open?</h2>
+<p>Writing the fixtures needed a choice in each of these places. Each one is in the published files.</p>
+<ul>
+<li><strong>No match tie-break.</strong> <code>score-tiebreaker</code> is documented as an integer,
+generally 0 through 7. Nothing says how to write a ten-point breaker that replaces a set.</li>
+<li><strong>No scoring format.</strong> No attribute says a match uses no-ad games, a final-set tie-break
+or a match tie-break.</li>
+<li><strong>No code for a tie-break count.</strong> The <a href="https://cv.iptc.org/newscodes/sptengameresult/">sptengameresult</a>
+codes are love, 15, 30, 40, game, ad and deuce, so a tie-break point has no score.</li>
+<li><strong>No tennis role codes.</strong> An action names the server through a participant role, and
+IPTC's example uses vendor codes for it. <code>server-idref</code> exists only on
+<code>event-metadata-tennis</code>.</li>
+<li><strong>One score, two types.</strong> <code>server-score</code> takes a code on an action and a plain
+value on <code>event-metadata-tennis</code>. <code>set</code> and <code>game</code> are integers on an
+action and strings there.</li>
+<li><strong>No retirement or default.</strong> The event status list has forfeited, and the only status
+reason is withdrawal. The nearest outcome type for a default is authority-decision.</li>
+<li><strong>Set score wording.</strong> The annotation on <code>stats-tennis-set/@score</code> reads
+"Either love, 15, 30, 40, or game". IPTC's own example puts the games won there.</li>
+</ul>
+
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="https://github.com/livetennisapi/openapi/tree/main/examples/sportsml">The fixtures and the check script</a></li>
+<li><a href="https://iptc.org/standards/sportsml-g2/">SportsML at IPTC</a> and the <a href="https://www.iptc.org/std/SportsML/guidelines/">SportsML guidelines</a></li>
+<li><a href="https://livetennisapi.com/data/notation">Tennis score notation formats compared</a></li>
+<li><a href="./reference.html#schema-score">The Score schema</a> and the <a href="./live-scores.html">live scores page</a></li>
+</ul>
+</main>
+<footer>
+<hr>
+<nav class="pagenav" aria-label="Other topics">
+<a href="./live-scores.html">Live tennis scores API</a>
+<a href="./players-and-tournaments.html">Tennis players, tournaments and rankings API</a>
+<a href="./tennis-odds.html">Tennis odds API — markets and price ticks</a>
+<a href="./point-by-point-history.html">Point-by-point tennis data API</a>
+<a href="./historical-results-archive.html">Historical tennis results API — 1968 onward</a>
+<a href="./shot-level-rally-data.html">Shot-by-shot tennis rally and charting API</a>
+<a href="./broadcast-graphics.html">Tennis scores for on-air graphics</a>
+<a href="./push-feed-and-webhooks.html">Tennis WebSocket feed and webhooks</a>
+<a href="./auth-quota-and-health.html">Tennis API authentication, quota and status</a>
+<a href="./ai-sdk.html">Live Tennis API tools for the Vercel AI SDK</a>
+<a href="./errors-and-rate-limits.html">Errors and rate limits</a>
+<a href="./export-formats.html">Export tennis data to CSV, JSON Lines or Parquet</a>
+<a href="./client-libraries.html">Live Tennis API client libraries</a>
+</nav>
+<p class="meta">SportsML read on 2026-11-15. Fixtures and check script in <a href="https://github.com/livetennisapi/openapi/tree/main/examples/sportsml">examples/sportsml</a>, page source in <a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.</p>
+<p class="meta">Built by <a href="https://synapsereality.io/work/live-tennis-api/">Synapse Research Ltd</a>.</p>
+</footer>
+</div>
+<script>
+(function(){try{navigator.sendBeacon('https://livetennisapi.com/collect',JSON.stringify({kind:'docs_view',path:location.pathname,host:location.host}))}catch(e){}})();
+</script>
+<script>
+(function(){var E={};"AT BE BG HR CY CZ DK EE FI FR DE GR HU IE IT LV LT LU MT NL PL PT RO SK SI ES SE IS LI NO".split(" ").forEach(function(c){E[c]=1});fetch("https://livetennisapi.com/cdn-cgi/trace").then(function(r){return r.text()}).then(function(t){var m=t.match(/loc=(\w+)/);if(!m||E[m[1]])return;(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,"clarity","script","xotc2pctsp");try{clarity("set","user_state","docs")}catch(e){}}).catch(function(){})})();
+</script>
+</body>
+</html>

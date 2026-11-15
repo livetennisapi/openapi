@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SYNTHETIC tennis scoring fixture. No real players, matches or results.
+     Fixture: 04-retirement. Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+     From the Live Tennis API SportsML fixtures, https://github.com/livetennisapi/openapi/tree/main/examples/sportsml -->
+<sports-content xmlns="http://iptc.org/std/nar/2006-10-01/">
+  <sports-metadata doc-id="ltapi-synthetic-04-retirement" date-time="2026-01-05T10:02:00Z" language="en">
+    <catalogRef href="http://www.iptc.org/std/catalog/catalog.IPTC-Sports_1.xml"/>
+    <sports-title>Synthetic fixture: retirement</sports-title>
+  </sports-metadata>
+  <sports-event>
+    <event-metadata event-status="speventstatus:forfeited" event-status-reason="speventstatusreason:withdrawal" event-status-note="retired">
+      <event-metadata-tennis set="2" game="4" server-idref="p2" server-score="15" receiver-idref="p1" receiver-score="30" number-of-sets="3"/>
+    </event-metadata>
+    <player id="p1">
+      <player-metadata><name>Player A (synthetic)</name></player-metadata>
+      <player-stats score="1" event-outcome="speventoutcome:win">
+        <player-stats-tennis>
+          <stats-tennis-set set-number="1" score="6"/>
+          <stats-tennis-set set-number="2" score="2"/>
+        </player-stats-tennis>
+      </player-stats>
+    </player>
+    <player id="p2">
+      <player-metadata><name>Player B (synthetic)</name></player-metadata>
+      <player-stats score="0" event-outcome="speventoutcome:loss">
+        <player-stats-tennis>
+          <stats-tennis-set set-number="1" score="3"/>
+          <stats-tennis-set set-number="2" score="1"/>
+        </player-stats-tennis>
+      </player-stats>
+    </player>
+    <actions>
+      <action type="sptenaction:point" sequence-number="502" created="2026-01-05T10:00:40Z" set="2" game="4" server-score="sptengameresult:love" receiver-score="sptengameresult:15">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="503" created="2026-01-05T10:01:20Z" set="2" game="4" server-score="sptengameresult:15" receiver-score="sptengameresult:15">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="504" created="2026-01-05T10:02:00Z" set="2" game="4" server-score="sptengameresult:15" receiver-score="sptengameresult:30">
+        <participant idref="p2" role="ltapirole:server"/>
+        <participant idref="p1" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+    </actions>
+  </sports-event>
+</sports-content>

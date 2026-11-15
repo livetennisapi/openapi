@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.84] - 2026-11-15
+
+### Added
+- **A SportsML mapping page and test fixtures.** `sportsml.html` maps every field of the `Score` object to the IPTC SportsML 3.1 element or attribute it becomes. Where nothing fits, it says so. Each SportsML name links to IPTC's schema documentation. A worked example shows a match decided by a match tie-break as score states and as a SportsML document. `examples/sportsml/` holds six synthetic matches under CC BY 4.0: a deciding-set tie-break, a match tie-break, no-ad games, a retirement, a walkover and a default. `check_fixtures.py` validates each document against the vendored IPTC schema and replays every point against the JSON states. The build fails when the `Score` schema gains a field the page does not map. The docs menu, the docs home, the sitemap, llms.txt and the README link the page. Nothing on the wire changed.
+
 ## [1.13.83] - 2026-11-12
 
 ### Added

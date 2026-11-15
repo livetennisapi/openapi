@@ -1,0 +1,29 @@
+{
+  "fixture": "05-walkover",
+  "synthetic": true,
+  "title": "Synthetic fixture: walkover",
+  "description": "Player A withdraws before the match starts and Player B wins by walkover. No point is played, so there are no score states.",
+  "license": "CC-BY-4.0",
+  "rules": {
+    "best_of": 3,
+    "no_ad": false,
+    "set_tiebreak_at": 6,
+    "final_set": "tiebreak"
+  },
+  "match": {
+    "format": "BO3",
+    "status": "completed",
+    "outcome": "walkover",
+    "winner": 2,
+    "withdrew": 1,
+    "players": {
+      "p1": {
+        "name": "Player A (synthetic)"
+      },
+      "p2": {
+        "name": "Player B (synthetic)"
+      }
+    }
+  },
+  "states": []
+}

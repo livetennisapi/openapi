@@ -1388,6 +1388,8 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "- limit defaults to 50, maximum 200; paginate with offset.",
         "- Additive changes ship within v1: clients must ignore unknown fields.",
         "- Score `games` is player-major: [[6,3,2],[4,6,1]] reads 6-4, 3-6, 2-1.",
+        f"- The Score object mapped to IPTC SportsML {SPORTSML_VERSION}, with six synthetic CC BY test fixtures:",
+        f"  {DOCS_URL}/sportsml.html and {SPORTSML_REPO}",
         "",
     ]
     return "\n".join(lines)
@@ -3275,6 +3277,374 @@ registry again and names each row that is behind.</p>
 """
 
 
+# ----------------------------------------------------------------- SportsML mapping -------------
+# The Score object mapped to IPTC SportsML 3.1, read on SPORTSML_CHECKED. Every SportsML name below
+# was read from the schema files IPTC publishes at {IPTC_SPORTSML}/specification/ (vendored,
+# unchanged and SHA-256 pinned, in examples/sportsml/iptc-sportsml-3.1/). Each link goes to the
+# section of IPTC's own schema documentation that defines it. _sportsml_drift fails the build when
+# the Score schema gains or loses a field the table does not list, when a field in the second table
+# leaves the spec, or when a SportsML name is not in the vendored schema. The worked example and
+# the fixture list are read from examples/sportsml/fixtures at build time, so they cannot drift.
+SPORTSML_CHECKED = "2026-11-15"
+SPORTSML_VERSION = "3.1"
+IPTC_SPORTSML = "https://www.iptc.org/std/SportsML/3.1"
+IPTC_DOC = {"core": f"{IPTC_SPORTSML}/documentation/sportsml_xsd.html",
+            "tennis": f"{IPTC_SPORTSML}/documentation/sportsml-specific-tennis_xsd.html"}
+IPTC_XSD = {"core": "sportsml.xsd", "tennis": "sportsml-specific-tennis.xsd"}
+IPTC_TENNIS_XSD = f"{IPTC_SPORTSML}/specification/sportsml-specific-tennis.xsd"
+IPTC_EXAMPLE = f"{IPTC_SPORTSML}/examples/tennis_davis_cup_tournament.xml"
+IPTC_STANDARD = "https://iptc.org/standards/sportsml-g2/"
+IPTC_GUIDELINES = "https://www.iptc.org/std/SportsML/guidelines/"
+IPTC_CV = "https://cv.iptc.org/newscodes"
+SPORTSML_DIR = ROOT / "examples" / "sportsml"
+SPORTSML_REPO = "https://github.com/livetennisapi/openapi/tree/main/examples/sportsml"
+SPORTSML_BLOB = "https://github.com/livetennisapi/openapi/blob/main/examples/sportsml"
+NOTATION_URL = f"{SITE}/data/notation"
+
+# (label, schema file, anchor in IPTC's documentation of that file). The label names an element,
+# or an attribute after the @. The drift check finds the last name in the vendored schema file.
+SM = {
+    "sets": ("player-stats/@score", "core", "statAttributes_score"),
+    "set-score": ("stats-tennis-set/@score", "tennis", "tennisStatsSetComplexType_score"),
+    "set-number": ("stats-tennis-set/@set-number", "tennis", "tennisStatsSetComplexType_set-number"),
+    "tiebreaker": ("stats-tennis-set/@score-tiebreaker", "tennis", "tennisStatsSetComplexType_score-tiebreaker"),
+    "sub-score": ("sub-score/@score", "core", "subScoreComplexType_score"),
+    "action-server-score": ("action/@server-score", "core", "tennisActionAttributes_server-score"),
+    "action-receiver-score": ("action/@receiver-score", "core", "tennisActionAttributes_receiver-score"),
+    "meta-server-score": ("event-metadata-tennis/@server-score", "tennis", "eventStateTennis_server-score"),
+    "meta-receiver-score": ("event-metadata-tennis/@receiver-score", "tennis", "eventStateTennis_receiver-score"),
+    "server-idref": ("event-metadata-tennis/@server-idref", "tennis", "eventStateTennis_server-idref"),
+    "receiver-idref": ("event-metadata-tennis/@receiver-idref", "tennis", "eventStateTennis_receiver-idref"),
+    "role": ("participant/@role", "core", "commonParticipantAttributes_role"),
+    "created": ("action/@created", "core", "actionAttributes_created"),
+    "sequence-number": ("action/@sequence-number", "core", "actionAttributes_sequence-number"),
+    "date-time": ("action/@date-time", "core", "actionAttributes_date-time"),
+    "player-id": ("player", "core", "sportsEventComplexType_player"),
+    "player-name": ("player-metadata/name", "core", "baseEntityMetadataComplexType_name"),
+    "number-of-sets": ("event-metadata-tennis/@number-of-sets", "tennis", "tennisEventMetadataComplexType_number-of-sets"),
+    "event-status": ("event-metadata/@event-status", "core", "baseEventMetadataComplexType_event-status"),
+    "event-status-reason": ("event-metadata/@event-status-reason", "core", "baseEventMetadataComplexType_event-status-reason"),
+    "event-status-note": ("event-metadata/@event-status-note", "core", "baseEventMetadataComplexType_event-status-note"),
+    "event-outcome-type": ("event-metadata/@event-outcome-type", "core", "baseEventMetadataComplexType_event-outcome-type"),
+    "event-outcome": ("player-stats/@event-outcome", "core", "statAttributes_event-outcome"),
+    "action-set": ("action/@set", "core", "tennisActionAttributes_set"),
+    "action-game": ("action/@game", "core", "tennisActionAttributes_game"),
+    "meta-set": ("event-metadata-tennis/@set", "tennis", "eventStateTennis_set"),
+    "meta-game": ("event-metadata-tennis/@game", "tennis", "eventStateTennis_game"),
+    "action-serve-number": ("action/@serve-number", "core", "tennisActionAttributes_serve-number"),
+    "meta-serve-number": ("event-metadata-tennis/@serve-number", "tennis", "eventStateTennis_serve-number"),
+}
+
+# Every field of the Score schema, in the spec's order: (field, SportsML keys, note).
+# An empty key list renders as "No direct equivalent".
+SPORTSML_SCORE_MAP: list[tuple[str, list[str], str]] = [
+    ("sets", ["sets"],
+     "Sets won. Each player gets the value from their slot of the array. IPTC's Davis Cup example "
+     "puts sets won in this attribute."),
+    ("games", ["set-score", "set-number", "sub-score"],
+     "One <code>stats-tennis-set</code> per set and player. IPTC's example also writes the same "
+     "numbers as <code>sub-score</code>. SportsML has no match tie-break, so the fixtures write one "
+     "as a set won 1-0, with its points in <code>score-tiebreaker</code>."),
+    ("points", ["action-server-score", "action-receiver-score", "meta-server-score", "meta-receiver-score"],
+     "On an action and on <code>event-metadata-tennis</code> the game score is ordered by server, and "
+     "ours by player. 0 becomes love and AD becomes ad. The fixtures write 40-40 as 40 and 40, though "
+     "the list also has deuce. A tie-break count has no code, so tie-break points carry no game score."),
+    ("server", ["server-idref", "receiver-idref", "role"],
+     "<code>server-idref</code> exists only on <code>event-metadata-tennis</code>. On an action the "
+     "server is a participant with a role. IPTC publishes no tennis role codes, so the fixtures use "
+     "<code>ltapirole:server</code>. A null server leaves the attribute out."),
+    ("is_tiebreak", [],
+     "No attribute says the current game is a tie-break. <code>score-tiebreaker</code> gives a set's "
+     "tie-break points, but not whether the breaker is still being played."),
+    ("win_probability_p1", [],
+     "A model output. SportsML has no field for it. <code>wagering-odds</code> holds a bookmaker's line, "
+     "and the generic <code>stat</code> element would need a code of our own."),
+    ("danger", [], "The value the <code>break_point</code> frame calls <code>prob_swing</code>."),
+    ("win_probability_p1_model", [], "The same model read without the market-prior anchor."),
+    ("win_probability_meta", [], "The model version and the time the two probabilities were made."),
+    ("timestamp", [],
+     "Our clock, refreshed while a source keeps sending the same state. <code>action/@date-time</code> "
+     "is when the play took place on court, which this field never claims. <code>last-modified</code> "
+     "is closest, but a state sent again is not a change to the record."),
+    ("accepted_at", ["created"],
+     "The instant we accepted the state, stamped once. IPTC describes <code>created</code> as the "
+     "time the action record was made."),
+    ("sequence", ["sequence-number"],
+     "Our per-match accept counter. In the fixtures, the action for a point carries the sequence of "
+     "the state that point produced."),
+    ("age_seconds", [], "Seconds since the score last changed."),
+    ("stale", [], "Our staleness verdict on a live match."),
+    ("observed_age_seconds", [], "Seconds since any source last confirmed the state."),
+    ("sources_count", [], "How many sources reported the match in the last 60 seconds."),
+    ("changing_sources_count", [], "How many sources changed the score in the last 300 seconds."),
+    ("corroborated", [], "Whether a second source sent this exact state."),
+    ("corroborated_age_seconds", [], "Seconds since that second source confirmed it."),
+    ("detail", [], "Why something is withheld, for example a null <code>games</code> array."),
+    ("verdict", [], "Why a read is not the newest state we judged, for example a withdrawn state."),
+]
+
+# Fields outside the Score object that the fixtures also map: (schema, field, SportsML keys, note).
+# The field is a dotted path in that schema. None is a SportsML part with no field in the API.
+SPORTSML_MORE_MAP: list[tuple[str | None, str, list[str], str]] = [
+    ("Match", "players", ["player-id", "player-name"],
+     "The fixtures give the two players the ids <code>p1</code> and <code>p2</code>."),
+    ("Match", "format", ["number-of-sets"], "BO3 is 3 and BO5 is 5."),
+    ("Match", "status", ["event-status"],
+     f'The codes come from <a href="{IPTC_CV}/speventstatus/">speventstatus</a>. An upcoming match is '
+     "pre-event, live is mid-event and cancelled is canceled. A completed match is post-event unless "
+     "its outcome says otherwise."),
+    ("Match", "outcome", ["event-status", "event-status-reason", "event-status-note", "event-outcome-type"],
+     "IPTC has no code for a retirement or a default. The fixtures mark retired, walkover and default "
+     f'as forfeited and add the reason <a href="{IPTC_CV}/speventstatusreason/">withdrawal</a> to the '
+     f'first two. A default also gets the <a href="{IPTC_CV}/speventoutcometype/">outcome type</a> '
+     "authority-decision. The note holds our outcome value. The fixtures do not cover abandoned or "
+     "unresolved."),
+    ("Match", "winner", ["event-outcome"],
+     f'<a href="{IPTC_CV}/speventoutcome/">speventoutcome</a> win for the winner, loss for the other player.'),
+    ("Match", "withdrew", [], "The fixtures show it only through the loser's loss and the note."),
+    ("LivePoint", "winner", ["role"],
+     "The point winner is a participant too. IPTC's Davis Cup example uses a vendor code, "
+     "ball-winner. The fixtures use <code>ltapirole:point-winner</code>."),
+    ("LivePoint", "set", ["action-set", "meta-set"], "The set the point was played in."),
+    ("LivePoint", "game", ["action-game", "meta-game"],
+     "13 is the game number of a tie-break at six all. The fixtures count a match tie-break as game 1."),
+    ("LivePoint", "serve", ["action-serve-number", "meta-serve-number"],
+     "It takes first or second on <code>event-metadata-tennis</code>. On an action it takes a code, and "
+     "IPTC publishes no list for it. The fixtures leave it out."),
+    ("HistoryTapeRow", "tiebreak_final", ["tiebreaker"],
+     "The breaker's closing score, on the row that closes a tie-break set."),
+    (None, "court time of a point", ["date-time"],
+     "We publish no court time. <code>LivePoint.ts</code> is when our pipeline committed the state."),
+]
+
+# What each fixture covers, in file order. The checker in the folder holds the same six names.
+SPORTSML_FIXTURES = [
+    ("01-deciding-set-tiebreak", "Deciding-set tie-break at six all",
+     "The third set reaches 6-6 and a seven-point tie-break decides it, 9-7."),
+    ("02-match-tiebreak", "Match tie-break to ten",
+     "A ten-point match tie-break replaces the third set and ends 10-8."),
+    ("03-no-ad", "No-ad games",
+     "Two games reach 40-40. One deciding point is a break and the other wins the match."),
+    ("04-retirement", "Retirement",
+     "Player B retires serving at 15-30 in the second set."),
+    ("05-walkover", "Walkover",
+     "Player A withdraws before a ball is struck, so the fixture has no score states."),
+    ("06-default", "Default",
+     "Player A is defaulted while serving at advantage Player B, after deuce, in the second set."),
+]
+# The fixture shown in full as the worked example.
+SPORTSML_EXAMPLE = "02-match-tiebreak"
+
+
+def _sportsml_fixture(name: str) -> tuple[dict[str, Any], str]:
+    folder = SPORTSML_DIR / "fixtures"
+    return (json.loads((folder / f"{name}.json").read_text(encoding="utf-8")),
+            (folder / f"{name}.xml").read_text(encoding="utf-8"))
+
+
+def _sportsml_drift(spec: dict[str, Any]) -> None:
+    """Fail the build when the mapping, the spec, the vendored schema and the fixtures disagree."""
+    problems = []
+    schemas = spec["components"]["schemas"]
+    score_fields = list(schemas["Score"]["properties"])
+    mapped = [field for field, _keys, _note in SPORTSML_SCORE_MAP]
+    if mapped != score_fields:
+        problems.append(f"the Score table lists {mapped}, the Score schema has {score_fields}")
+    for schema, field, _keys, _note in SPORTSML_MORE_MAP:
+        if schema is not None and field not in schemas[schema]["properties"]:
+            problems.append(f"{schema}.{field} is not a field of the spec")
+    xsd_text = {kind: (SPORTSML_DIR / "iptc-sportsml-3.1" / name).read_text(encoding="utf-8")
+                for kind, name in IPTC_XSD.items()}
+    for key, (label, kind, anchor) in SM.items():
+        names = label.replace("@", "").split("/")
+        last = names[-1]
+        if not (anchor.endswith("_" + last) or anchor.endswith("Element_" + last)):
+            problems.append(f"{key}: the anchor {anchor} does not name {last}")
+        for name in names:
+            if f'name="{name}"' not in xsd_text["core"] + xsd_text["tennis"]:
+                problems.append(f"{key}: {name} is not in the vendored SportsML schema")
+        if f'name="{last}"' not in xsd_text[kind]:
+            problems.append(f"{key}: {last} is not defined in {IPTC_XSD[kind]}")
+    for _f, keys, _n in SPORTSML_SCORE_MAP:
+        problems += [f"unknown SportsML key {k}" for k in keys if k not in SM]
+    for _s, _f, keys, _n in SPORTSML_MORE_MAP:
+        problems += [f"unknown SportsML key {k}" for k in keys if k not in SM]
+    on_disk = sorted(p.stem for p in (SPORTSML_DIR / "fixtures").glob("*.json"))
+    if on_disk != [name for name, _t, _d in SPORTSML_FIXTURES]:
+        problems.append(f"the page lists {[n for n, _t, _d in SPORTSML_FIXTURES]}, the folder has {on_disk}")
+    # The outcome row says how the fixtures write each ending. Hold the files to it.
+    want_status = {"completed": 'event-status="speventstatus:post-event"',
+                   "retired": 'event-status="speventstatus:forfeited" event-status-reason="speventstatusreason:withdrawal" event-status-note="retired"',
+                   "walkover": 'event-status="speventstatus:forfeited" event-status-reason="speventstatusreason:withdrawal" event-status-note="walkover"',
+                   "default": 'event-status="speventstatus:forfeited" event-status-note="default" event-outcome-type="speventoutcometype:authority-decision"'}
+    for name, _t, _d in SPORTSML_FIXTURES:
+        fx, xml = _sportsml_fixture(name)
+        if fx.get("synthetic") is not True or "SYNTHETIC" not in xml:
+            problems.append(f"{name} is not labelled synthetic")
+        if want_status[fx["match"]["outcome"]] not in xml:
+            problems.append(f"{name} does not write outcome {fx['match']['outcome']} the way the table says")
+    fx, xml = _sportsml_fixture(SPORTSML_EXAMPLE)
+    if xml.count("      <action ") != len(fx["states"]) - 1:
+        problems.append(f"{SPORTSML_EXAMPLE}: the worked example needs one action line per point")
+    last_games = fx["states"][-1]["games"]
+    if not (fx["states"][-2]["is_tiebreak"] and last_games == [[6, 4, 10], [4, 6, 8]]
+            and fx["states"][-1]["sets"] == [2, 1]
+            and 'score="1" score-tiebreaker="10"' in xml and 'score="0" score-tiebreaker="8"' in xml):
+        problems.append(f"{SPORTSML_EXAMPLE}: the worked example text describes a 10-8 match tie-break")
+    if problems:
+        raise SystemExit("sportsml.html disagrees with the spec, the schema or the fixtures:\n  "
+                         + "\n  ".join(problems))
+
+
+def _sm_cell(keys: list[str]) -> str:
+    if not keys:
+        return "No direct equivalent"
+    # A long name such as event-metadata-tennis/@receiver-score may wrap after a slash only. The
+    # page's overflow-wrap would otherwise cut it mid-word, and nowrap on the whole name left the
+    # notes column a few letters wide on a phone.
+    def label(text: str) -> str:
+        return "/<wbr>".join(f'<span style="white-space:nowrap">{E(part)}</span>' for part in text.split("/"))
+    return "<br>".join(
+        f'<a href="{IPTC_DOC[SM[k][1]]}#{SM[k][2]}"><code>{label(SM[k][0])}</code></a>' for k in keys)
+
+
+def _sportsml_example_xml(xml: str) -> str:
+    """The example document with every action but the last folded into one comment."""
+    lines = xml.rstrip("\n").split("\n")
+    starts = [i for i, line in enumerate(lines) if line.startswith("      <action ")]
+    if len(starts) < 2:
+        return xml
+    keep_from = starts[-1]
+    folded = f"      <!-- {len(starts) - 1} earlier points, one action each, are in the fixture file -->"
+    return "\n".join(lines[:starts[0]] + [folded] + lines[keep_from:]) + "\n"
+
+
+def _sportsml_body(spec: dict[str, Any]) -> str:
+    _sportsml_drift(spec)
+    rowhead = ('font-size:13px;font-weight:400;padding:13px 14px;color:inherit;background:none;'
+               'text-align:left;text-transform:none;letter-spacing:normal;vertical-align:top')
+    score_rows = "".join(
+        f'<tr><th scope="row" style="{rowhead};white-space:nowrap"><code>{E(field)}</code></th>'
+        f'<td>{_sm_cell(keys)}</td><td style="min-width:220px">{note}</td></tr>\n'
+        for field, keys, note in SPORTSML_SCORE_MAP
+    )
+    score_table = scrollx(
+        f"<table>{vh_caption('Each Score field and the SportsML 3.1 element or attribute it maps to')}"
+        '<thead><tr><th scope="col">Score field</th><th scope="col">SportsML 3.1</th>'
+        '<th scope="col">Notes</th></tr></thead><tbody>' + score_rows + "</tbody></table>",
+        "Score fields in SportsML",
+    )
+    more_rows = "".join(
+        f'<tr><th scope="row" style="{rowhead};white-space:nowrap">'
+        + (f'<a href="./reference.html#schema-{schema.lower()}"><code>{E(schema)}.{E(field)}</code></a>'
+           if schema else E(field[:1].upper() + field[1:]))
+        + f'</th><td>{_sm_cell(keys)}</td><td style="min-width:220px">{note}</td></tr>\n'
+        for schema, field, keys, note in SPORTSML_MORE_MAP
+    )
+    more_table = scrollx(
+        f"<table>{vh_caption('Match and point fields the fixtures also map')}"
+        '<thead><tr><th scope="col">Field</th><th scope="col">SportsML 3.1</th>'
+        '<th scope="col">Notes</th></tr></thead><tbody>' + more_rows + "</tbody></table>",
+        "Match and point fields in SportsML",
+    )
+    fixture_rows = "".join(
+        f'<tr><th scope="row" style="{rowhead}">{E(title)}</th><td>{E(desc)}</td>'
+        f'<td style="white-space:nowrap">{len(_sportsml_fixture(name)[0]["states"])}</td>'
+        f'<td style="white-space:nowrap"><a href="{SPORTSML_BLOB}/fixtures/{name}.json">JSON</a> '
+        f'<a href="{SPORTSML_BLOB}/fixtures/{name}.xml">SportsML</a></td></tr>\n'
+        for name, title, desc in SPORTSML_FIXTURES
+    )
+    fixture_table = scrollx(
+        f"<table>{vh_caption('The six synthetic fixtures and what each covers')}"
+        '<thead><tr><th scope="col">Fixture</th><th scope="col">What it covers</th>'
+        '<th scope="col">States</th><th scope="col">Files</th></tr></thead><tbody>'
+        + fixture_rows + "</tbody></table>",
+        "Fixtures",
+    )
+    fx, xml = _sportsml_fixture(SPORTSML_EXAMPLE)
+    # The mono face draws <!-- and --> as arrows. The XML comment has to read as typed.
+    states_json = "[\n" + ",\n".join("  " + json.dumps(s) for s in fx["states"][-2:]) + "\n]"
+    example_xml = _sportsml_example_xml(xml)
+    core, tennis = IPTC_DOC["core"], IPTC_DOC["tennis"]
+    return f"""<h2 id="version">Which SportsML version does this map to?</h2>
+<p>The mapping uses SportsML {SPORTSML_VERSION}, the newest version on iptc.org. IPTC released it in June 2019. The tennis
+part of the standard is a plugin schema, <a href="{IPTC_TENNIS_XSD}">sportsml-specific-tennis.xsd</a>,
+which the main schema includes. Both files carry IPTC's CC BY 4.0 notice.</p>
+<p>The mapping was read from the <a href="{IPTC_SPORTSML}/specification/">schema files</a>, the
+<a href="{tennis}">tennis plugin documentation</a>, the <a href="{core}">core schema documentation</a>
+and IPTC's own <a href="{IPTC_EXAMPLE}">tennis example</a>. It is our reading. IPTC has not reviewed it.</p>
+<p>Our own comparison of <a href="{NOTATION_URL}">tennis score notation formats</a> sets SportsML beside three
+other formats.</p>
+
+<h2 id="score-fields">How does each Score field map to SportsML?</h2>
+<p>The rows follow the <a href="./reference.html#schema-score">Score schema</a> in the spec, every field
+in its order. Each SportsML name links to the section of IPTC's documentation that defines it.</p>
+{score_table}
+<p>Read the arrays the usual way. <code>sets</code>, <code>games</code> and <code>points</code> put
+player 1 first and player 2 second.</p>
+
+<h2 id="match-fields">Which match and point fields does SportsML cover?</h2>
+<p>A SportsML match document also says who played, how the match ended and what happened on each point.
+These fields come from the <code>Match</code>, <code>LivePoint</code> and <code>HistoryTapeRow</code>
+schemas.</p>
+{more_table}
+
+<h2 id="example">Worked example: a match decided by a match tie-break</h2>
+<p>Player A and Player B are synthetic. They split the first two sets 6-4 and 4-6. A ten-point match
+tie-break replaces the third set and Player A wins it 10-8.</p>
+<p>These are the last two score states, at 9-8 in the breaker and after the match point. The deciding
+set's slot holds the breaker's points while it is played. The last state shows the match over.</p>
+<pre style="font-variant-ligatures:none"><code>{E(states_json)}</code></pre>
+<p>The same match as a SportsML document. The third set is written as a set won 1-0, with the breaker's
+points in <code>score-tiebreaker</code>. The action is the match point.</p>
+<pre style="font-variant-ligatures:none"><code>{E(example_xml)}</code></pre>
+<p>The Score schema says a finished match tie-break is often published as a one-game set, 1-0. The
+fixture keeps the breaker's points in that slot instead. Take the winner from <code>sets</code> either way.</p>
+
+<h2 id="fixtures">Test fixtures for tennis scoring edge cases</h2>
+<p>The <a href="{SPORTSML_REPO}">examples/sportsml</a> folder holds six synthetic matches. No player,
+match or result in them is real. Each fixture is two files. One is the sequence of score states as JSON.
+The other is the same match as a SportsML document. The fixtures are under CC BY 4.0.</p>
+{fixture_table}
+<p>The folder's check script validates every SportsML document against the IPTC schema. It replays each
+point from the first JSON state with the rules of tennis and compares every state. It also compares the
+result and the way the match ended.</p>
+<pre><code>pip install lxml
+python examples/sportsml/check_fixtures.py</code></pre>
+<p>The IPTC schema files are vendored unchanged, with their CC BY 4.0 notice and source address. The script
+refuses to run if one differs from its pinned SHA-256.</p>
+
+<h2 id="gaps">Where does SportsML {SPORTSML_VERSION} leave tennis open?</h2>
+<p>Writing the fixtures needed a choice in each of these places. Each one is in the published files.</p>
+<ul>
+<li><strong>No match tie-break.</strong> <code>score-tiebreaker</code> is documented as an integer,
+generally 0 through 7. Nothing says how to write a ten-point breaker that replaces a set.</li>
+<li><strong>No scoring format.</strong> No attribute says a match uses no-ad games, a final-set tie-break
+or a match tie-break.</li>
+<li><strong>No code for a tie-break count.</strong> The <a href="{IPTC_CV}/sptengameresult/">sptengameresult</a>
+codes are love, 15, 30, 40, game, ad and deuce, so a tie-break point has no score.</li>
+<li><strong>No tennis role codes.</strong> An action names the server through a participant role, and
+IPTC's example uses vendor codes for it. <code>server-idref</code> exists only on
+<code>event-metadata-tennis</code>.</li>
+<li><strong>One score, two types.</strong> <code>server-score</code> takes a code on an action and a plain
+value on <code>event-metadata-tennis</code>. <code>set</code> and <code>game</code> are integers on an
+action and strings there.</li>
+<li><strong>No retirement or default.</strong> The event status list has forfeited, and the only status
+reason is withdrawal. The nearest outcome type for a default is authority-decision.</li>
+<li><strong>Set score wording.</strong> The annotation on <code>stats-tennis-set/@score</code> reads
+"Either love, 15, 30, 40, or game". IPTC's own example puts the games won there.</li>
+</ul>
+
+<h2 id="links">Links</h2>
+<ul>
+<li><a href="{SPORTSML_REPO}">The fixtures and the check script</a></li>
+<li><a href="{IPTC_STANDARD}">SportsML at IPTC</a> and the <a href="{IPTC_GUIDELINES}">SportsML guidelines</a></li>
+<li><a href="{NOTATION_URL}">Tennis score notation formats compared</a></li>
+<li><a href="./reference.html#schema-score">The Score schema</a> and the <a href="./live-scores.html">live scores page</a></li>
+</ul>
+"""
+
+
 GUIDES: list[dict[str, Any]] = [
     {
         "slug": "ai-sdk",
@@ -3400,6 +3770,45 @@ GUIDES: list[dict[str, Any]] = [
         "footer": (
             f"Versions and coverage checked on {CLIENTS_CHECKED}. Library source in the "
             f'<a href="{CLIENTS_ORG}">livetennisapi</a> organisation, page source in '
+            '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
+        ),
+    },
+    {
+        "slug": "sportsml",
+        "title": "Tennis score mapping to IPTC SportsML",
+        "head_title": "Tennis score to IPTC SportsML 3.1 mapping | Live Tennis API",
+        "question": "How does the Live Tennis API score object map to IPTC SportsML?",
+        "description": (
+            "Every field of the Live Tennis API score object mapped to IPTC SportsML 3.1, with a "
+            "match tie-break example and six synthetic test fixtures."
+        ),
+        "lede": (
+            "Each field of the Score object is listed with the SportsML 3.1 element or attribute it "
+            "becomes, or with no direct equivalent. Every SportsML name links to IPTC's documentation. "
+            "A worked example and six synthetic fixtures show the mapping in real files."
+        ),
+        "meta": (
+            f'Mapped against IPTC SportsML {SPORTSML_VERSION} as published on iptc.org, read on '
+            f'<time datetime="{SPORTSML_CHECKED}">{SPORTSML_CHECKED}</time>. Fixtures under CC BY 4.0.'
+        ),
+        "body": _sportsml_body,
+        "date": SPORTSML_CHECKED,
+        "about": [
+            {"@type": "CreativeWork", "name": "IPTC SportsML", "version": SPORTSML_VERSION,
+             "url": IPTC_STANDARD, "license": "https://creativecommons.org/licenses/by/4.0/",
+             "publisher": {"@type": "Organization", "name": "IPTC", "url": "https://iptc.org/"}},
+            {"@type": "Dataset", "name": "Synthetic tennis scoring fixtures in SportsML",
+             "description": (
+                 "Six synthetic tennis matches, each as Live Tennis API score states in JSON and as an "
+                 "IPTC SportsML 3.1 document: a deciding-set tie-break, a match tie-break, no-ad games, "
+                 "a retirement, a walkover and a default."),
+             "url": SPORTSML_REPO, "license": "https://creativecommons.org/licenses/by/4.0/",
+             "isAccessibleForFree": True, "creator": {"@id": f"{SITE}/#org"},
+             "encodingFormat": ["application/json", "application/xml"]},
+        ],
+        "footer": (
+            f'SportsML read on {SPORTSML_CHECKED}. Fixtures and check script in '
+            f'<a href="{SPORTSML_REPO}">examples/sportsml</a>, page source in '
             '<a href="https://github.com/livetennisapi/openapi">livetennisapi/openapi</a>.'
         ),
     },
