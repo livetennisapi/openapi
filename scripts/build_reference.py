@@ -3354,8 +3354,8 @@ SPORTSML_SCORE_MAP: list[tuple[str, list[str], str]] = [
      "server is a participant with a role. IPTC publishes no tennis role codes, so the fixtures use "
      "<code>ltapirole:server</code>. A null server leaves the attribute out."),
     ("is_tiebreak", [],
-     "No flag says a tie-break is in play. A set with <code>score-tiebreaker</code>, or game 13 of a "
-     "set, implies one."),
+     "No attribute says the current game is a tie-break. <code>score-tiebreaker</code> gives a set's "
+     "tie-break points, but not whether the breaker is still being played."),
     ("win_probability_p1", [],
      "A model output. SportsML has no field for it. <code>wagering-odds</code> holds a bookmaker's line, "
      "and the generic <code>stat</code> element would need a code of our own."),
@@ -3486,7 +3486,10 @@ def _sportsml_drift(spec: dict[str, Any]) -> None:
     fx, xml = _sportsml_fixture(SPORTSML_EXAMPLE)
     if xml.count("      <action ") != len(fx["states"]) - 1:
         problems.append(f"{SPORTSML_EXAMPLE}: the worked example needs one action line per point")
-    if not (fx["states"][-2]["is_tiebreak"] and fx["states"][-1]["games"][0][2] == 10):
+    last_games = fx["states"][-1]["games"]
+    if not (fx["states"][-2]["is_tiebreak"] and [last_games[0][2], last_games[1][2]] == [10, 8]
+            and fx["states"][-1]["sets"] == [2, 1]
+            and 'score="1" score-tiebreaker="10"' in xml and 'score="0" score-tiebreaker="8"' in xml):
         problems.append(f"{SPORTSML_EXAMPLE}: the worked example text describes a 10-8 match tie-break")
     if problems:
         raise SystemExit("sportsml.html disagrees with the spec, the schema or the fixtures:\n  "

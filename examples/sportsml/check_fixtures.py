@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime
 import sys
 from pathlib import Path
 from typing import Any
@@ -133,8 +134,10 @@ def tiebreak_first_server(state: dict[str, Any]) -> int:
 
 
 def set_won(rules: dict[str, Any], g1: int, g2: int) -> bool:
+    """A finished set: 6-0 to 6-4, 7-5, or 7-6 after the tie-break."""
     at = rules["set_tiebreak_at"]
-    return (max(g1, g2) >= at and abs(g1 - g2) >= 2) or max(g1, g2) == at + 1
+    high, low = max(g1, g2), min(g1, g2)
+    return (high == at and low <= at - 2) or (high == at + 1 and low in (at - 1, at))
 
 
 def play_point(rules: dict[str, Any], state: dict[str, Any], winner: int) -> tuple[dict[str, Any], dict[str, Any]]:
@@ -269,6 +272,13 @@ def check_start(rules: dict[str, Any], s: dict[str, Any]) -> None:
 # --------------------------------------------------------------------------- the two forms
 
 
+def instant(text: str) -> datetime:
+    """An RFC 3339 UTC time such as 2026-01-05T10:00:40Z, compared as a time and not as text."""
+    if not text.endswith("Z"):
+        raise FixtureError(f"{text!r} must be UTC with a Z")
+    return datetime.fromisoformat(text[:-1] + "+00:00")
+
+
 def attr(el: etree._Element | None, name: str) -> str | None:
     return None if el is None else el.get(name)
 
@@ -325,6 +335,8 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
         raise FixtureError("every fixture is a finished match")
     if ("withdrew" in match) != (match["outcome"] in ("retired", "walkover")):
         raise FixtureError("withdrew is present exactly on a retirement or a walkover")
+    if match["winner"] not in (1, 2):
+        raise FixtureError("winner must be 1 or 2")
     if "withdrew" in match and match["withdrew"] != other(match["winner"]):
         raise FixtureError("the player who withdrew is the loser")
     for pid, num in (("p1", 1), ("p2", 2)):
@@ -335,6 +347,8 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
                  + (f" + {outcome_type}" if outcome_type else "") + (f", note {note}" if note else ""))
 
     actions = event.findall(f"{NS}actions/{NS}action")
+    if match["outcome"] == "walkover" and states:
+        raise FixtureError("a walkover has no score states: no ball was struck")
     if not states:
         if match["outcome"] != "walkover" or actions:
             raise FixtureError("only a walkover has no score states, and it has no actions")
@@ -360,6 +374,8 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
             (srv,), (rcv,), (won,) = roles["ltapirole:server"], roles["ltapirole:receiver"], roles["ltapirole:point-winner"]
         except (KeyError, ValueError):
             raise FixtureError(f"action {i + 1} needs one server, one receiver and one point-winner") from None
+        if {srv, rcv, won} - {"p1", "p2"} or srv == rcv:
+            raise FixtureError(f"action {i + 1}: participants must be the players p1 and p2")
         winner = int(won[1:])
         expected, facts = play_point(rules, before, winner)
         where = f"action {i + 1} (sequence {after['sequence']})"
@@ -372,7 +388,7 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
             raise FixtureError(f"{where}: sequence-number disagrees with the state's sequence")
         if action.get("created") != after["accepted_at"]:
             raise FixtureError(f"{where}: created disagrees with accepted_at")
-        if not before["accepted_at"] < after["accepted_at"]:
+        if not instant(before["accepted_at"]) < instant(after["accepted_at"]):
             raise FixtureError(f"{where}: accepted_at must rise")
         if action.get("type") != "sptenaction:point":
             raise FixtureError(f"{where}: type must be sptenaction:point")

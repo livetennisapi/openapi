@@ -131,6 +131,37 @@ class CheckFixturesTest(unittest.TestCase):
         self.assertIn("FAIL 04-retirement", result.stdout)
         self.assertIn("ok   06-default", result.stdout)
 
+    def test_impossible_finished_set(self) -> None:
+        path = self.root / "fixtures" / "04-retirement.json"
+        path.write_text(path.read_text(encoding="utf-8").replace("[[6, 2], [3, 1]]", "[[7, 2], [3, 1]]"),
+                        encoding="utf-8")
+        self.edit("fixtures/04-retirement.xml", 'set-number="1" score="6"', 'set-number="1" score="7"')
+        self.assert_fails("is not a finished set")
+
+    def test_walkover_with_points(self) -> None:
+        path = self.root / "fixtures" / "04-retirement.json"
+        path.write_text(path.read_text(encoding="utf-8").replace('"outcome": "retired"', '"outcome": "walkover"'),
+                        encoding="utf-8")
+        self.edit("fixtures/04-retirement.xml", 'event-status-note="retired"', 'event-status-note="walkover"')
+        self.assert_fails("a walkover has no score states")
+
+    def test_participants_must_be_players(self) -> None:
+        self.edit("fixtures/04-retirement.xml", '<participant idref="p1" role="ltapirole:point-winner"/>',
+                  '<participant idref="p2" role="ltapirole:point-winner"/>')
+        self.edit("fixtures/04-retirement.xml", '<participant idref="p2" role="ltapirole:server"/>',
+                  '<participant idref="p2" role="ltapirole:server"/><participant idref="p2" role="ltapirole:spare"/>')
+        self.edit("fixtures/04-retirement.xml", 'set="2" game="4" server-score="sptengameresult:love"',
+                  'id="x1" set="2" game="4" server-score="sptengameresult:love"')
+        self.edit("fixtures/04-retirement.xml", '<participant idref="p2" role="ltapirole:point-winner"/>',
+                  '<participant idref="x1" role="ltapirole:point-winner"/>')
+        self.assert_fails("participants must be the players")
+
+    def test_time_must_rise(self) -> None:
+        path = self.root / "fixtures" / "04-retirement.json"
+        text = path.read_text(encoding="utf-8").replace("10:00:00Z", "10:00:40.900Z")
+        path.write_text(text, encoding="utf-8")
+        self.assert_fails("accepted_at must rise")
+
     def test_missing_fixture(self) -> None:
         (self.root / "fixtures" / "05-walkover.json").unlink()
         self.assert_fails("FAIL fixtures")
