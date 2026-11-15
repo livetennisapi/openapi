@@ -3319,12 +3319,13 @@ SM = {
     "created": ("action/@created", "core", "actionAttributes_created"),
     "sequence-number": ("action/@sequence-number", "core", "actionAttributes_sequence-number"),
     "date-time": ("action/@date-time", "core", "actionAttributes_date-time"),
-    "player-id": ("player", "core", "sportsml_xsd_Element_player"),
+    "player-id": ("player", "core", "sportsEventComplexType_player"),
     "player-name": ("player-metadata/name", "core", "baseEntityMetadataComplexType_name"),
     "number-of-sets": ("event-metadata-tennis/@number-of-sets", "tennis", "tennisEventMetadataComplexType_number-of-sets"),
     "event-status": ("event-metadata/@event-status", "core", "baseEventMetadataComplexType_event-status"),
     "event-status-reason": ("event-metadata/@event-status-reason", "core", "baseEventMetadataComplexType_event-status-reason"),
     "event-status-note": ("event-metadata/@event-status-note", "core", "baseEventMetadataComplexType_event-status-note"),
+    "event-outcome-type": ("event-metadata/@event-outcome-type", "core", "baseEventMetadataComplexType_event-outcome-type"),
     "event-outcome": ("player-stats/@event-outcome", "core", "statAttributes_event-outcome"),
     "action-set": ("action/@set", "core", "tennisActionAttributes_set"),
     "action-game": ("action/@game", "core", "tennisActionAttributes_game"),
@@ -3345,22 +3346,26 @@ SPORTSML_SCORE_MAP: list[tuple[str, list[str], str]] = [
      "numbers as <code>sub-score</code>. SportsML has no match tie-break, so the fixtures write one "
      "as a set won 1-0, with its points in <code>score-tiebreaker</code>."),
     ("points", ["action-server-score", "action-receiver-score", "meta-server-score", "meta-receiver-score"],
-     "SportsML orders the game score by server, and we order it by player. 0 becomes love and AD "
-     "becomes ad. A tie-break count has no code, so tie-break points carry no game score."),
+     "On an action and on <code>event-metadata-tennis</code> the game score is ordered by server, and "
+     "ours by player. 0 becomes love and AD becomes ad. The fixtures write 40-40 as 40 and 40, though "
+     "the list also has deuce. A tie-break count has no code, so tie-break points carry no game score."),
     ("server", ["server-idref", "receiver-idref", "role"],
      "<code>server-idref</code> exists only on <code>event-metadata-tennis</code>. On an action the "
      "server is a participant with a role. IPTC publishes no tennis role codes, so the fixtures use "
      "<code>ltapirole:server</code>. A null server leaves the attribute out."),
     ("is_tiebreak", [],
-     "A set that ended in a tie-break carries <code>score-tiebreaker</code>. Nothing marks a "
-     "tie-break while it is being played."),
-    ("win_probability_p1", [], "A model output. SportsML has no field for a win probability."),
+     "No flag says a tie-break is in play. A set with <code>score-tiebreaker</code>, or game 13 of a "
+     "set, implies one."),
+    ("win_probability_p1", [],
+     "A model output. SportsML has no field for it. <code>wagering-odds</code> holds a bookmaker's line, "
+     "and the generic <code>stat</code> element would need a code of our own."),
     ("danger", [], "The value the <code>break_point</code> frame calls <code>prob_swing</code>."),
     ("win_probability_p1_model", [], "The same model read without the market-prior anchor."),
     ("win_probability_meta", [], "The model version and the time the two probabilities were made."),
     ("timestamp", [],
      "Our clock, refreshed while a source keeps sending the same state. <code>action/@date-time</code> "
-     "is when the play took place on court, which this field never claims."),
+     "is when the play took place on court, which this field never claims. <code>last-modified</code> "
+     "is closest, but a state sent again is not a change to the record."),
     ("accepted_at", ["created"],
      "The instant we accepted the state, stamped once. IPTC describes <code>created</code> as the "
      "time the action record was made."),
@@ -3374,7 +3379,7 @@ SPORTSML_SCORE_MAP: list[tuple[str, list[str], str]] = [
     ("changing_sources_count", [], "How many sources changed the score in the last 300 seconds."),
     ("corroborated", [], "Whether a second source sent this exact state."),
     ("corroborated_age_seconds", [], "Seconds since that second source confirmed it."),
-    ("detail", [], "Why we withhold the games, when we do."),
+    ("detail", [], "Why something is withheld, for example a null <code>games</code> array."),
     ("verdict", [], "Why a read is not the newest state we judged, for example a withdrawn state."),
 ]
 
@@ -3386,18 +3391,21 @@ SPORTSML_MORE_MAP: list[tuple[str | None, str, list[str], str]] = [
     ("Match", "format", ["number-of-sets"], "BO3 is 3 and BO5 is 5."),
     ("Match", "status", ["event-status"],
      f'The codes come from <a href="{IPTC_CV}/speventstatus/">speventstatus</a>. An upcoming match is '
-     "pre-event, live is mid-event, completed is post-event and cancelled is canceled."),
-    ("Match", "outcome", ["event-status", "event-status-reason", "event-status-note"],
+     "pre-event, live is mid-event and cancelled is canceled. A completed match is post-event unless "
+     "its outcome says otherwise."),
+    ("Match", "outcome", ["event-status", "event-status-reason", "event-status-note", "event-outcome-type"],
      "IPTC has no code for a retirement or a default. The fixtures mark retired, walkover and default "
      f'as forfeited and add the reason <a href="{IPTC_CV}/speventstatusreason/">withdrawal</a> to the '
-     "first two. The note holds our outcome value."),
+     f'first two. A default also gets the <a href="{IPTC_CV}/speventoutcometype/">outcome type</a> '
+     "authority-decision. The note holds our outcome value. The fixtures do not cover abandoned or "
+     "unresolved."),
     ("Match", "winner", ["event-outcome"],
      f'<a href="{IPTC_CV}/speventoutcome/">speventoutcome</a> win for the winner, loss for the other player.'),
     ("Match", "withdrew", [], "The fixtures show it only through the loser's loss and the note."),
     ("LivePoint", "winner", ["role"],
      "The point winner is a participant too. IPTC's Davis Cup example uses a vendor code, "
      "ball-winner. The fixtures use <code>ltapirole:point-winner</code>."),
-    ("LivePoint", "set", ["action-set", "meta-set"], "The set the point was played in, from 1."),
+    ("LivePoint", "set", ["action-set", "meta-set"], "The set the point was played in."),
     ("LivePoint", "game", ["action-game", "meta-game"],
      "13 is the game number of a tie-break at six all. The fixtures count a match tie-break as game 1."),
     ("LivePoint", "serve", ["action-serve-number", "meta-serve-number"],
@@ -3422,7 +3430,7 @@ SPORTSML_FIXTURES = [
     ("05-walkover", "Walkover",
      "Player A withdraws before a ball is struck, so the fixture has no score states."),
     ("06-default", "Default",
-     "Player A is defaulted at 30-40 in the second set."),
+     "Player A is defaulted while serving at advantage Player B, after deuce, in the second set."),
 ]
 # The fixture shown in full as the worked example.
 SPORTSML_EXAMPLE = "02-match-tiebreak"
@@ -3468,7 +3476,7 @@ def _sportsml_drift(spec: dict[str, Any]) -> None:
     want_status = {"completed": 'event-status="speventstatus:post-event"',
                    "retired": 'event-status="speventstatus:forfeited" event-status-reason="speventstatusreason:withdrawal" event-status-note="retired"',
                    "walkover": 'event-status="speventstatus:forfeited" event-status-reason="speventstatusreason:withdrawal" event-status-note="walkover"',
-                   "default": 'event-status="speventstatus:forfeited" event-status-note="default"'}
+                   "default": 'event-status="speventstatus:forfeited" event-status-note="default" event-outcome-type="speventoutcometype:authority-decision"'}
     for name, _t, _d in SPORTSML_FIXTURES:
         fx, xml = _sportsml_fixture(name)
         if fx.get("synthetic") is not True or "SYNTHETIC" not in xml:
@@ -3551,6 +3559,7 @@ def _sportsml_body(spec: dict[str, Any]) -> str:
         "Fixtures",
     )
     fx, xml = _sportsml_fixture(SPORTSML_EXAMPLE)
+    # The mono face draws <!-- and --> as arrows. The XML comment has to read as typed.
     states_json = "[\n" + ",\n".join("  " + json.dumps(s) for s in fx["states"][-2:]) + "\n]"
     example_xml = _sportsml_example_xml(xml)
     core, tennis = IPTC_DOC["core"], IPTC_DOC["tennis"]
@@ -3582,10 +3591,10 @@ schemas.</p>
 tie-break replaces the third set and Player A wins it 10-8.</p>
 <p>These are the last two score states, at 9-8 in the breaker and after the match point. The deciding
 set's slot holds the breaker's points while it is played. The last state shows the match over.</p>
-<pre><code>{E(states_json)}</code></pre>
+<pre style="font-variant-ligatures:none"><code>{E(states_json)}</code></pre>
 <p>The same match as a SportsML document. The third set is written as a set won 1-0, with the breaker's
 points in <code>score-tiebreaker</code>. The action is the match point.</p>
-<pre><code>{E(example_xml)}</code></pre>
+<pre style="font-variant-ligatures:none"><code>{E(example_xml)}</code></pre>
 <p>The Score schema says a finished match tie-break is often published as a one-game set, 1-0. The
 fixture keeps the breaker's points in that slot instead. Take the winner from <code>sets</code> either way.</p>
 
@@ -3610,7 +3619,7 @@ generally 0 through 7. Nothing says how to write a ten-point breaker that replac
 <li><strong>No scoring format.</strong> No attribute says a match uses no-ad games, a final-set tie-break
 or a match tie-break.</li>
 <li><strong>No code for a tie-break count.</strong> The <a href="{IPTC_CV}/sptengameresult/">sptengameresult</a>
-codes run love, 15, 30, 40, ad, deuce and game, so a tie-break point has no score.</li>
+codes are love, 15, 30, 40, game, ad and deuce, so a tie-break point has no score.</li>
 <li><strong>No tennis role codes.</strong> An action names the server through a participant role, and
 IPTC's example uses vendor codes for it. <code>server-idref</code> exists only on
 <code>event-metadata-tennis</code>.</li>
@@ -3618,7 +3627,7 @@ IPTC's example uses vendor codes for it. <code>server-idref</code> exists only o
 value on <code>event-metadata-tennis</code>. <code>set</code> and <code>game</code> are integers on an
 action and strings there.</li>
 <li><strong>No retirement or default.</strong> The event status list has forfeited, and the only status
-reason is withdrawal.</li>
+reason is withdrawal. The nearest outcome type for a default is authority-decision.</li>
 <li><strong>Set score wording.</strong> The annotation on <code>stats-tennis-set/@score</code> reads
 "Either love, 15, 30, 40, or game". IPTC's own example puts the games won there.</li>
 </ul>

@@ -17,7 +17,7 @@ Six synthetic tennis matches, each written two ways. One is the score states of 
 | `03-no-ad` | Two no-ad games reach 40-40. One deciding point is a break and the other wins the match. |
 | `04-retirement` | Player B retires serving at 15-30 in the second set. |
 | `05-walkover` | Player A withdraws before a ball is struck. There are no score states. |
-| `06-default` | Player A is defaulted at 30-40 in the second set. |
+| `06-default` | Player A is defaulted while serving at advantage Player B, after deuce, in the second set. |
 
 Each name has a `.json` and a `.xml` file in `fixtures/`.
 
@@ -42,9 +42,9 @@ Each document is a standalone `sports-content` document, valid against `sportsml
 
 - `player-stats/@score` holds sets won. `stats-tennis-set` holds the games in each set, with `score-tiebreaker` for a tie-break set.
 - A match tie-break is written as a set won 1-0, with its points in `score-tiebreaker`.
-- Each `action` carries `sequence-number` and `created` from the state that point produced, the `set` and `game`, and three participants. Their roles are `ltapirole:server`, `ltapirole:receiver` and `ltapirole:point-winner`. These are our own codes, because IPTC publishes no tennis role codes. No IPTC catalog declares the `ltapirole` alias.
-- `server-score` and `receiver-score` use IPTC's `sptengameresult` codes. A tie-break point has none, as the list has no code for a tie-break count.
-- A retirement, a walkover and a default use the event status `forfeited`. The note holds our outcome value, and the first two add the reason `withdrawal`.
+- Each `action` carries `sequence-number` and `created` from the state that point produced, the `set` and `game`, and three participants. Their roles are `ltapirole:server`, `ltapirole:receiver` and `ltapirole:point-winner`. These are our own codes, because IPTC publishes no tennis role codes. Each document points to the IPTC sports catalog with `catalogRef`, which declares the `sp...` aliases it uses. No catalog declares `ltapirole`.
+- `server-score` and `receiver-score` use IPTC's `sptengameresult` codes, with 40-40 written as 40 and 40. A tie-break point has none, as the list has no code for a tie-break count.
+- A retirement, a walkover and a default use the event status `forfeited`. The note holds our outcome value. The first two add the reason `withdrawal`, and a default adds the outcome type `authority-decision`.
 - When play stops inside a game, `event-metadata-tennis` gives the set, game, server and score at that moment.
 
 ## Check the fixtures
@@ -54,7 +54,7 @@ pip install lxml
 python examples/sportsml/check_fixtures.py
 ```
 
-The script checks that the schema files in `iptc-sportsml-3.1/` match their pinned SHA-256. It validates every SportsML document against `sportsml.xsd`. It then replays every point in the document from the first JSON state with the rules of tennis. Each result must equal the next JSON state. Last, it compares sets, games, tie-breaks, the winner and the way the match ended. It reads only local files and refuses a document with a DOCTYPE.
+The script checks that the schema files in `iptc-sportsml-3.1/` match their pinned SHA-256. It validates every SportsML document against `sportsml.xsd`. It checks that the first JSON state is a legal score: finished sets won, the set in play still open and legal points. It then replays every point in the document from the first JSON state with the rules of tennis. Each result must equal the next JSON state. Last, it compares sets, games, tie-breaks, the winner and the way the match ended. It reads only local files and refuses a document with a DOCTYPE.
 
 `test_check_fixtures.py` breaks copies of the fixtures one way at a time and checks that the script fails:
 

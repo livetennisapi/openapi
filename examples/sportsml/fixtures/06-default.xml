@@ -3,12 +3,13 @@
      Fixture: 06-default. Licence: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
      From the Live Tennis API SportsML fixtures, https://github.com/livetennisapi/openapi/tree/main/examples/sportsml -->
 <sports-content xmlns="http://iptc.org/std/nar/2006-10-01/">
-  <sports-metadata doc-id="ltapi-synthetic-06-default" date-time="2026-01-05T10:03:20Z" language="en">
+  <sports-metadata doc-id="ltapi-synthetic-06-default" date-time="2026-01-05T10:04:40Z" language="en">
+    <catalogRef href="http://www.iptc.org/std/catalog/catalog.IPTC-Sports_1.xml"/>
     <sports-title>Synthetic fixture: default</sports-title>
   </sports-metadata>
   <sports-event>
-    <event-metadata event-status="speventstatus:forfeited" event-status-note="default">
-      <event-metadata-tennis set="2" game="4" server-idref="p1" server-score="30" receiver-idref="p2" receiver-score="40" number-of-sets="3"/>
+    <event-metadata event-status="speventstatus:forfeited" event-status-note="default" event-outcome-type="speventoutcometype:authority-decision">
+      <event-metadata-tennis set="2" game="4" server-idref="p1" server-score="40" receiver-idref="p2" receiver-score="ad" number-of-sets="3"/>
     </event-metadata>
     <player id="p1">
       <player-metadata><name>Player A (synthetic)</name></player-metadata>
@@ -50,6 +51,16 @@
         <participant idref="p1" role="ltapirole:point-winner"/>
       </action>
       <action type="sptenaction:point" sequence-number="606" created="2026-01-05T10:03:20Z" set="2" game="4" server-score="sptengameresult:30" receiver-score="sptengameresult:40">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p2" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="607" created="2026-01-05T10:04:00Z" set="2" game="4" server-score="sptengameresult:40" receiver-score="sptengameresult:40">
+        <participant idref="p1" role="ltapirole:server"/>
+        <participant idref="p2" role="ltapirole:receiver"/>
+        <participant idref="p1" role="ltapirole:point-winner"/>
+      </action>
+      <action type="sptenaction:point" sequence-number="608" created="2026-01-05T10:04:40Z" set="2" game="4" server-score="sptengameresult:40" receiver-score="sptengameresult:ad">
         <participant idref="p1" role="ltapirole:server"/>
         <participant idref="p2" role="ltapirole:receiver"/>
         <participant idref="p2" role="ltapirole:point-winner"/>

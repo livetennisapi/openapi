@@ -63,12 +63,13 @@ PINNED = {
 EXPECTED = ["01-deciding-set-tiebreak", "02-match-tiebreak", "03-no-ad", "04-retirement",
             "05-walkover", "06-default"]
 
-# Match.outcome -> (event-status, event-status-reason, event-status-note) in the SportsML document.
+# Match.outcome -> (event-status, event-status-reason, event-status-note, event-outcome-type) in the
+# SportsML document.
 OUTCOME_STATUS = {
-    "completed": ("speventstatus:post-event", None, None),
-    "retired": ("speventstatus:forfeited", "speventstatusreason:withdrawal", "retired"),
-    "walkover": ("speventstatus:forfeited", "speventstatusreason:withdrawal", "walkover"),
-    "default": ("speventstatus:forfeited", None, "default"),
+    "completed": ("speventstatus:post-event", None, None, None),
+    "retired": ("speventstatus:forfeited", "speventstatusreason:withdrawal", "retired", None),
+    "walkover": ("speventstatus:forfeited", "speventstatusreason:withdrawal", "walkover", None),
+    "default": ("speventstatus:forfeited", None, "default", "speventoutcometype:authority-decision"),
 }
 FORMAT_SETS = {"BO3": 3, "BO5": 5}
 # Our point strings -> the SportsML game score (sptengameresult on an action, gameResult.Tennis on
@@ -213,6 +214,58 @@ def play_point(rules: dict[str, Any], state: dict[str, Any], winner: int) -> tup
     return s, facts
 
 
+STATE_FIELDS = ["sets", "games", "points", "server", "is_tiebreak", "timestamp", "accepted_at", "sequence"]
+POINT_WORDS = ("0", "15", "30", "40", "AD")
+
+
+def check_rules(rules: dict[str, Any]) -> None:
+    if (rules.get("best_of") not in (3, 5) or not isinstance(rules.get("no_ad"), bool)
+            or rules.get("set_tiebreak_at") != 6
+            or rules.get("final_set") not in ("tiebreak", "match_tiebreak")):
+        raise FixtureError("rules need best_of 3 or 5, a boolean no_ad, set_tiebreak_at 6 and "
+                           "final_set tiebreak or match_tiebreak")
+
+
+def check_start(rules: dict[str, Any], s: dict[str, Any]) -> None:
+    """The first state is a legal score: finished sets won, the set in play open, legal points."""
+    games, sets = s["games"], s["sets"]
+    need = rules["best_of"] // 2 + 1
+    if len(games) != 2 or len(games[0]) != len(games[1]) or len(sets) != 2:
+        raise FixtureError("the first state needs two sets counts and two per-set games lists of one length")
+    cur = len(games[0]) - 1
+    won = [0, 0]
+    for n in range(cur):
+        g1, g2 = games[0][n], games[1][n]
+        if is_match_tiebreak(rules, n) or not set_won(rules, g1, g2):
+            raise FixtureError(f"set {n + 1} of the first state, {g1}-{g2}, is not a finished set")
+        won[0 if g1 > g2 else 1] += 1
+    if won != sets or max(sets) >= need or cur >= rules["best_of"]:
+        raise FixtureError("the first state's sets disagree with its finished sets, or the match is over")
+    g1, g2 = games[0][cur], games[1][cur]
+    if s["server"] not in (1, 2):
+        raise FixtureError("the first state needs a server")
+    if is_match_tiebreak(rules, cur):
+        tb_expected = True
+    else:
+        if set_won(rules, g1, g2) or max(g1, g2) > rules["set_tiebreak_at"]:
+            raise FixtureError(f"the set in play, {g1}-{g2}, is already over")
+        tb_expected = g1 == g2 == rules["set_tiebreak_at"]
+    if s["is_tiebreak"] != tb_expected:
+        raise FixtureError("is_tiebreak disagrees with the games in the set in play")
+    a, b = s["points"]
+    if tb_expected:
+        if not (a.isdigit() and b.isdigit()):
+            raise FixtureError("tie-break points must be counts")
+        target = 10 if is_match_tiebreak(rules, cur) else 7
+        if max(int(a), int(b)) >= target and abs(int(a) - int(b)) >= 2:
+            raise FixtureError("the tie-break in the first state is already over")
+        if is_match_tiebreak(rules, cur) and [g1, g2] != [int(a), int(b)]:
+            raise FixtureError("a match tie-break's games slot must equal its points")
+    elif a not in POINT_WORDS or b not in POINT_WORDS or (
+            "AD" in (a, b) and (rules["no_ad"] or {a, b} != {"AD", "40"})):
+        raise FixtureError(f"{[a, b]} is not a legal game score")
+
+
 # --------------------------------------------------------------------------- the two forms
 
 
@@ -240,6 +293,11 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
         raise FixtureError("the SportsML document must open with the SYNTHETIC comment")
 
     rules, match, states = fx["rules"], fx["match"], fx["states"]
+    check_rules(rules)
+    for state in states:
+        if list(state) != STATE_FIELDS or state["timestamp"] != state["accepted_at"]:
+            raise FixtureError(f"state {state.get('sequence')} needs the fields {STATE_FIELDS}, "
+                               "with timestamp equal to accepted_at")
     event = root.find(f"{NS}sports-event")
     meta = event.find(f"{NS}event-metadata")
     tennis = meta.find(f"{NS}event-metadata-tennis")
@@ -257,10 +315,12 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
         raise FixtureError("number-of-sets disagrees with format")
     if FORMAT_SETS[match["format"]] != rules["best_of"]:
         raise FixtureError("format disagrees with the fixture rules")
-    status, reason, note = OUTCOME_STATUS[match["outcome"]]
-    got = (meta.get("event-status"), meta.get("event-status-reason"), meta.get("event-status-note"))
-    if got != (status, reason, note):
-        raise FixtureError(f"outcome {match['outcome']} should be {(status, reason, note)}, the document has {got}")
+    want_status = OUTCOME_STATUS[match["outcome"]]
+    status, reason, note, outcome_type = want_status
+    got = tuple(meta.get(a) for a in ("event-status", "event-status-reason", "event-status-note",
+                                      "event-outcome-type"))
+    if got != want_status:
+        raise FixtureError(f"outcome {match['outcome']} should be {want_status}, the document has {got}")
     if match["status"] != "completed":
         raise FixtureError("every fixture is a finished match")
     if ("withdrew" in match) != (match["outcome"] in ("retired", "walkover")):
@@ -272,7 +332,7 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
         if attr(players[pid].find(f"{NS}player-stats"), "event-outcome") != want:
             raise FixtureError(f"{pid} event-outcome should be {want}")
     notes.append(f"outcome {match['outcome']} = {status}" + (f" + {reason}" if reason else "")
-                 + (f", note {note}" if note else ""))
+                 + (f" + {outcome_type}" if outcome_type else "") + (f", note {note}" if note else ""))
 
     actions = event.findall(f"{NS}actions/{NS}action")
     if not states:
@@ -285,6 +345,7 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
         notes.append("no states and no actions, as a walkover has none")
         return notes
 
+    check_start(rules, states[0])
     # Replay every point from the first state and compare with the JSON states.
     if len(actions) != len(states) - 1:
         raise FixtureError(f"{len(states)} states need {len(states) - 1} actions, the document has {len(actions)}")
@@ -341,22 +402,26 @@ def check_fixture(name: str, schema: etree.XMLSchema) -> list[str]:
             raise FixtureError("a completed match must end on its last point")
         if match["winner"] != (1 if last["sets"][0] > last["sets"][1] else 2):
             raise FixtureError("winner disagrees with sets")
-        if tennis.get("set") is not None:
-            raise FixtureError("a finished match states no set in play")
+        if set(tennis.attrib) != {"number-of-sets"}:
+            raise FixtureError("a finished match states no set, game, server or score in play")
     else:
         if over:
             raise FixtureError(f"a {match['outcome']} ends before the match is decided")
         cur = current_set(last)
         srv = last["server"]
-        want = {"set": str(cur + 1), "game": str(last["games"][0][cur] + last["games"][1][cur] + 1),
-                "server-idref": f"p{srv}", "receiver-idref": f"p{other(srv)}",
-                "server-score": GAME_WORD[last["points"][srv - 1]],
-                "receiver-score": GAME_WORD[last["points"][other(srv) - 1]]}
-        got = {k: tennis.get(k) for k in want}
+        game = 1 if is_match_tiebreak(rules, cur) else last["games"][0][cur] + last["games"][1][cur] + 1
+        want = {"set": str(cur + 1), "game": str(game),
+                "server-idref": f"p{srv}", "receiver-idref": f"p{other(srv)}"}
+        if not last["is_tiebreak"]:
+            # A tie-break count has no gameResult.Tennis value, so a stop inside one has no score here.
+            want["server-score"] = GAME_WORD[last["points"][srv - 1]]
+            want["receiver-score"] = GAME_WORD[last["points"][other(srv) - 1]]
+        got = {k: v for k, v in tennis.attrib.items() if k != "number-of-sets"}
         if got != want:
             raise FixtureError(f"event-metadata-tennis should say where play stopped: {want}, has {got}")
-        notes.append(f"play stopped at set {want['set']}, game {want['game']}, "
-                     f"{want['server-score']}-{want['receiver-score']} on p{srv}'s serve")
+        score = (f"{want['server-score']}-{want['receiver-score']}" if "server-score" in want
+                 else "in a tie-break")
+        notes.append(f"play stopped at set {want['set']}, game {want['game']}, {score} on p{srv}'s serve")
     for num, pid in ((1, "p1"), (2, "p2")):
         stats = players[pid].find(f"{NS}player-stats")
         if stats.get("score") != str(last["sets"][num - 1]):
@@ -397,8 +462,12 @@ def main() -> int:
     for name in EXPECTED:
         try:
             notes = check_fixture(name, schema)
-        except (FixtureError, OSError, ValueError, KeyError, etree.XMLSyntaxError) as exc:
+        except FixtureError as exc:
             print(f"FAIL {name}: {exc}")
+            failed += 1
+            continue
+        except Exception as exc:  # a malformed fixture fails alone; the others are still checked
+            print(f"FAIL {name}: {type(exc).__name__}: {exc}")
             failed += 1
             continue
         print(f"ok   {name}")

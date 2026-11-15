@@ -91,6 +91,46 @@ class CheckFixturesTest(unittest.TestCase):
         self.edit("fixtures/02-match-tiebreak.xml", 'sequence-number="305"', 'sequence-number="350"')
         self.assert_fails("sequence-number disagrees")
 
+    def test_first_state_must_be_legal(self) -> None:
+        # Player A won the first set 6-3, so sets [0, 1] is wrong in every state. The replay alone
+        # would not notice, because each point still moves the score correctly.
+        path = self.root / "fixtures" / "04-retirement.json"
+        path.write_text(path.read_text(encoding="utf-8").replace('"sets": [1, 0]', '"sets": [0, 1]'),
+                        encoding="utf-8")
+        self.edit("fixtures/04-retirement.xml", '<player-stats score="1"', '<player-stats score="X"')
+        self.edit("fixtures/04-retirement.xml", '<player-stats score="0"', '<player-stats score="1"')
+        self.edit("fixtures/04-retirement.xml", '<player-stats score="X"', '<player-stats score="0"')
+        self.assert_fails("disagree with its finished sets")
+
+    def test_unfinished_first_set(self) -> None:
+        path = self.root / "fixtures" / "01-deciding-set-tiebreak.json"
+        path.write_text(path.read_text(encoding="utf-8").replace("[4, 6, 6]]", "[5, 6, 6]]"),
+                        encoding="utf-8")
+        self.assert_fails("is not a finished set")
+
+    def test_timestamp_must_equal_accepted_at(self) -> None:
+        self.edit("fixtures/02-match-tiebreak.json", '"timestamp": "2026-01-05T10:02:00Z"',
+                  '"timestamp": "1999-01-01T00:00:00Z"')
+        self.assert_fails("timestamp equal to accepted_at")
+
+    def test_finished_match_has_no_state_in_play(self) -> None:
+        self.edit("fixtures/01-deciding-set-tiebreak.xml", '<event-metadata-tennis number-of-sets="3"/>',
+                  '<event-metadata-tennis game="13" number-of-sets="3"/>')
+        self.assert_fails("states no set, game, server or score in play")
+
+    def test_rules_are_validated(self) -> None:
+        self.edit("fixtures/04-retirement.json", '"final_set": "tiebreak"', '"final_set": "advantage"')
+        self.assert_fails("rules need")
+
+    def test_a_broken_fixture_fails_alone(self) -> None:
+        path = self.root / "fixtures" / "04-retirement.json"
+        path.write_text(path.read_text(encoding="utf-8").replace('"games": [[6, 2], [3, 1]]', '"games": [[6, 2], [3]]', 1),
+                        encoding="utf-8")
+        result = self.run_check()
+        self.assertEqual(result.returncode, 1, result.stdout)
+        self.assertIn("FAIL 04-retirement", result.stdout)
+        self.assertIn("ok   06-default", result.stdout)
+
     def test_missing_fixture(self) -> None:
         (self.root / "fixtures" / "05-walkover.json").unlink()
         self.assert_fails("FAIL fixtures")
