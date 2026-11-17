@@ -340,6 +340,29 @@
       border-right: 1px solid var(--scalar-border-color);
     }
     .docs-home .scalar-app[hidden] { display: none; }
+
+    /* Sideways scrolling on phones. Measured at 360px with the language picker
+       open on each operation, the page was up to 895px wide, from three places.
+
+       1. Scalar's mobile header shows the current section title on one line,
+          as a flex item that cannot shrink below its text. Most operation
+          titles are wider than a phone. Let it shrink and end in an ellipsis.
+          The full title is still the section heading below it. */
+    .scalar-app .t-doc__header header > span {
+      min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    }
+    /* Below Scalar's 1000px desktop breakpoint, so desktop is untouched:
+       2. An operation's layout is a one-column grid sized to its widest
+          unbreakable word. "/players/{playerId}/stoppages" in a title made it
+          354px in a 312px column. `anywhere` lets that word wrap, and other
+          titles still break between words.
+       3. The heading's Copy link button sits just after the title's last word.
+          When that word ends at the right edge, the 30px button stuck out past
+          the page. The title keeps 30px free for it. */
+    @media (width < 1000px) {
+      .scalar-app .section-header-label { overflow-wrap: anywhere; }
+      .scalar-app .operation-title { padding-right: 30px; }
+    }
   </style>
   <link rel="stylesheet" href="docs-design-20260918.css">
 </head>
