@@ -2816,7 +2816,7 @@ writes them and <code>export</code> does both.</p>
 # branch. Each quick-start snippet is copied from the README of that published version.
 # scripts/check_client_versions.py reads the registries again and fails when a row is behind.
 # After a release, update the row here, re-read its coverage and run that script.
-CLIENTS_CHECKED = "2026-11-12"
+CLIENTS_CHECKED = "2026-11-17"
 CLIENTS_ORG = "https://github.com/livetennisapi"
 
 # One row per library. `source` is (registry kind, identifier) for check_client_versions.py.
@@ -2838,13 +2838,13 @@ CLIENTS: list[dict[str, Any]] = [
      "package": "github.com/livetennisapi/livetennisapi-go", "registry": "Go modules",
      "registry_url": "https://pkg.go.dev/github.com/livetennisapi/livetennisapi-go",
      "source": ("go", "github.com/livetennisapi/livetennisapi-go"),
-     "install": "go get github.com/livetennisapi/livetennisapi-go", "version": "1.2.1",
+     "install": "go get github.com/livetennisapi/livetennisapi-go", "version": "1.3.0",
      "runtime": "Go 1.25", "runtime_spec": "1.25",
      "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-go"},
     {"key": "php", "name": "PHP client", "language": "PHP", "package": "livetennisapi/livetennisapi",
      "registry": "Packagist", "registry_url": "https://packagist.org/packages/livetennisapi/livetennisapi",
      "source": ("packagist", "livetennisapi/livetennisapi"),
-     "install": "composer require livetennisapi/livetennisapi", "version": "1.1.1",
+     "install": "composer require livetennisapi/livetennisapi", "version": "1.2.0",
      "runtime": "PHP 8.1", "runtime_spec": ">=8.1",
      "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-php"},
     {"key": "dotnet", "name": ".NET client", "language": "C#", "package": "LiveTennisApi",
@@ -2963,8 +2963,8 @@ CLIENT_ENDPOINT_GROUPS: list[tuple[str, list[tuple[str, str]], str]] = [
 ]
 CLIENT_CELL = {"Y": "Yes", "P": "Part", "N": "No"}
 
-# The quick-start block of each README, unchanged. Python 1.8.0, JavaScript 1.10.2, Go 1.2.1,
-# PHP 1.1.1, .NET 1.2.1, Dart 1.2.1, Swift 1.1.1 and R 0.2.0.
+# The quick-start block of each README, unchanged. Python 1.8.0, JavaScript 1.10.2, Go 1.3.0,
+# PHP 1.2.0, .NET 1.2.1, Dart 1.2.1, Swift 1.1.1 and R 0.2.0.
 CLIENT_SNIPPET_PYTHON = r"""from livetennisapi import LiveTennisAPI
 
 with LiveTennisAPI(api_key="twjp_…") as client:   # or set LIVETENNISAPI_KEY
