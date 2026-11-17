@@ -2865,8 +2865,8 @@ CLIENTS: list[dict[str, Any]] = [
     {"key": "swift", "name": "Swift client", "language": "Swift", "package": "livetennisapi-swift",
      "registry": "Git tag", "registry_url": f"{CLIENTS_ORG}/livetennisapi-swift/tags",
      "source": ("github-tag", "livetennisapi/livetennisapi-swift"),
-     "install": '.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.1.1")',
-     "version": "1.1.1", "runtime": "Swift 5.9", "runtime_spec": "5.9",
+     "install": '.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.2.1")',
+     "version": "1.2.1", "runtime": "Swift 5.9", "runtime_spec": "5.9",
      "stream": "Token only", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-swift"},
     {"key": "r", "name": "R client", "language": "R", "package": "livetennisapi",
      "registry": "R-universe", "registry_url": "https://livetennisapi.r-universe.dev/livetennisapi",
@@ -2967,7 +2967,7 @@ CLIENT_ENDPOINT_GROUPS: list[tuple[str, list[tuple[str, str]], str]] = [
 CLIENT_CELL = {"Y": "Yes", "P": "Part", "N": "No"}
 
 # The quick-start block of each README, unchanged. Python 1.8.0, JavaScript 1.10.2, Go 1.3.0,
-# PHP 1.2.0, .NET 1.2.1, Dart 1.2.1, Swift 1.1.1 and R 0.2.0.
+# PHP 1.2.0, .NET 1.2.1, Dart 1.2.1, Swift 1.2.1 and R 0.2.0.
 CLIENT_SNIPPET_PYTHON = r"""from livetennisapi import LiveTennisAPI
 
 with LiveTennisAPI(api_key="twjp_…") as client:   # or set LIVETENNISAPI_KEY
@@ -3103,7 +3103,7 @@ CLIENT_QUICKSTARTS = [
     ("dart", "Dart and Flutter", "dart pub add livetennisapi", CLIENT_SNIPPET_DART,
      "The package is pure Dart and depends only on <code>package:http</code>."),
     ("swift", "Swift",
-     '.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.1.1")',
+     '.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.2.1")',
      CLIENT_SNIPPET_SWIFT,
      "Add the first line to the dependencies in <code>Package.swift</code>. The package supports "
      "macOS 12, iOS 15, tvOS 15, watchOS 8 and Linux."),
