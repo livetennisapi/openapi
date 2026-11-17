@@ -233,7 +233,7 @@ backtest.
 - PHP client: `composer require livetennisapi/livetennisapi`, package https://packagist.org/packages/livetennisapi/livetennisapi, source https://github.com/livetennisapi/livetennisapi-php
 - .NET client: `dotnet add package LiveTennisApi`, package https://www.nuget.org/packages/LiveTennisApi, source https://github.com/livetennisapi/livetennisapi-dotnet
 - Dart and Flutter client: `dart pub add livetennisapi`, package https://pub.dev/packages/livetennisapi, source https://github.com/livetennisapi/livetennisapi-dart
-- Swift client: `.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.1.1")`, package https://github.com/livetennisapi/livetennisapi-swift/tags, source https://github.com/livetennisapi/livetennisapi-swift
+- Swift client: `.package(url: "https://github.com/livetennisapi/livetennisapi-swift.git", from: "1.2.1")`, package https://github.com/livetennisapi/livetennisapi-swift/tags, source https://github.com/livetennisapi/livetennisapi-swift
 - R client: `install.packages("livetennisapi", repos = c("https://livetennisapi.r-universe.dev", "https://cloud.r-project.org"))`, package https://livetennisapi.r-universe.dev/livetennisapi, source https://github.com/livetennisapi/livetennisapi-r
 - Laravel package: `composer require livetennisapi/livetennisapi-laravel`, package https://packagist.org/packages/livetennisapi/livetennisapi-laravel, source https://github.com/livetennisapi/livetennisapi-laravel
 - Haystack integration: `pip install livetennisapi-haystack`, package https://pypi.org/project/livetennisapi-haystack/, source https://github.com/livetennisapi/livetennisapi-haystack

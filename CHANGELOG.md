@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.86] - 2026-11-17
+
+### Changed
+- **The client libraries page and the code samples name Swift 1.2.1.** It adds `Match.hasAnalysis`, `Match.hasMarket` and `Match.eventStatusUpdatedAt`. It also builds on Linux with Swift 5.10 again. No Swift method changed, so every Swift sample keeps its call. The Swift samples now link the source at the `v1.2.1` tag. Nothing on the wire changed.
+
 ## [1.13.85] - 2026-11-17
 
 ### Added
