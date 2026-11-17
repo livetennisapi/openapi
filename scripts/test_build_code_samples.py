@@ -90,6 +90,55 @@ class CheckTest(unittest.TestCase):
                 if oid != "healthCheck":  # /health takes no key
                     self.assertIn("LIVETENNISAPI_KEY", sample["source"], f"{oid} {sample['label']}")
 
+    def test_a_lookalike_block_in_a_description_is_kept(self) -> None:
+        # An example in info.description whose lines sit at the same indent as a real block.
+        anchor = "  description: |\n"
+        self.assertIn(anchor, self.spec_text)
+        example = "    ```yaml\n    get:\n      x-codeSamples:\n        - lang: shell\n    ```\n\n"
+        text = self.spec_text.replace(anchor, anchor + example, 1)
+        info = yaml.safe_load(text)["info"]["description"]
+        self.assertIn("x-codeSamples", info)
+        self.assertEqual(self.run_check(spec_text=text), [])
+        self.assertEqual(bcs.generate(text, self.methods), text)
+
+    def test_a_repeated_key_in_the_map_fails(self) -> None:
+        mapping = self.dir / "dup.yaml"
+        mapping.write_text("clients: {}\noperations:\n  getMatch: {result: a}\n  getMatch: {result: b}\n",
+                           encoding="utf-8")
+        with self.assertRaises(bcs.MapError) as ctx:
+            bcs.load_methods(mapping)
+        self.assertIn("appears twice", str(ctx.exception))
+
+    def test_a_malformed_map_is_reported_not_crashed(self) -> None:
+        self.methods["operations"] = ["getMatch"]
+        self.assertIn("must both be mappings", "\n".join(self.run_check()))
+
+    def test_a_boolean_or_null_parameter_value_fails(self) -> None:
+        self.methods["operations"]["listMatches"]["params"]["status"] = True
+        self.methods["operations"]["getMatch"]["params"]["matchId"] = None
+        found = "\n".join(self.run_check())
+        self.assertIn("params 'status' must be a string or an integer", found)
+        self.assertIn("params 'matchId' must be a string or an integer", found)
+
+    def test_a_multi_line_call_fails(self) -> None:
+        self.methods["operations"]["getMatch"]["python"] = "get_match(1)\nimport os\nf()"
+        self.assertIn("on one line", "\n".join(self.run_check()))
+
+    def test_a_quote_in_the_body_stays_inside_the_shell_quotes(self) -> None:
+        spec = yaml.safe_load(self.spec_text)
+        self.methods["operations"]["createWebhook"]["body"] = {"url": "https://example.com/o'brien"}
+        curl = bcs.build_samples(spec, self.methods)["createWebhook"][0]["source"]
+        self.assertIn("-d '{\"url\": \"https://example.com/o'\\''brien\"}'", curl)
+
+    def test_the_r_key_line_follows_the_call_whatever_the_spacing(self) -> None:
+        self.assertIn("Sys.getenv", bcs._r("get_match(18953, key=key)", "match", None, None))
+        self.assertNotIn("Sys.getenv", bcs._r("api_health()", "health", None, None))
+
+    def test_the_map_agrees_with_the_client_libraries_page(self) -> None:
+        import build_reference
+
+        self.assertEqual(build_reference._samples_match_clients_page(), [])
+
 
 if __name__ == "__main__":
     unittest.main()

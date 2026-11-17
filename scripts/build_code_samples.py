@@ -39,13 +39,22 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "openapi.yaml"
 METHODS = ROOT / "code-samples" / "sdk-methods.yaml"
 
-HTTP_METHODS = ("get", "post", "put", "patch", "delete")
+HTTP_METHODS = ("get", "put", "post", "delete", "options", "head", "patch", "trace")
 # The order of the tabs. curl first, then the clients in the order the client
 # libraries page lists them.
 CLIENT_ORDER = ("python", "js", "go", "php", "dotnet", "dart", "swift", "r")
 ENTRY_KEYS = {"call", "print", "returns"}
 OPERATION_KEYS = {"result", "params", "body", *CLIENT_ORDER}
 KEY_ENV = "LIVETENNISAPI_KEY"
+# A result name becomes a variable in every language, so it must not be a keyword in any of them.
+RESERVED = {
+    "as", "async", "await", "break", "case", "catch", "chan", "class", "const", "continue",
+    "default", "defer", "delete", "do", "else", "enum", "export", "extends", "false", "final",
+    "for", "func", "function", "go", "goto", "if", "import", "in", "interface", "is", "let",
+    "map", "new", "nil", "null", "object", "package", "private", "public", "range", "repeat",
+    "return", "select", "self", "static", "string", "struct", "super", "switch", "this", "throw",
+    "true", "try", "type", "var", "void", "while", "with", "yield",
+}
 
 # The block this script owns. It sits right under the operationId line, at the
 # same indent, and runs until the next line that is no deeper than that.
@@ -61,8 +70,28 @@ class MapError(Exception):
 # --------------------------------------------------------------------- loading
 
 
+class _UniqueKeyLoader(yaml.SafeLoader):
+    """A safe loader that refuses a repeated key instead of keeping the last one."""
+
+
+def _unique_mapping(loader: yaml.SafeLoader, node: yaml.MappingNode, deep: bool = False) -> dict[Any, Any]:
+    seen = set()
+    for key_node, _value in node.value:
+        key = loader.construct_object(key_node, deep=deep)
+        if key in seen:
+            raise MapError(f"line {key_node.start_mark.line + 1}: the key {key!r} appears twice")
+        seen.add(key)
+    return loader.construct_mapping(node, deep=deep)
+
+
+_UniqueKeyLoader.add_constructor(yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, _unique_mapping)
+
+
 def load_methods(path: Path = METHODS) -> dict[str, Any]:
-    data = yaml.safe_load(path.read_text(encoding="utf-8"))
+    try:
+        data = yaml.load(path.read_text(encoding="utf-8"), Loader=_UniqueKeyLoader)  # noqa: S506
+    except yaml.YAMLError as exc:
+        raise MapError(f"{path.name} is not valid YAML: {exc}") from exc
     if not isinstance(data, dict):
         raise MapError(f"{path.name} is not a mapping")
     return data
@@ -97,6 +126,8 @@ def problems(spec: dict[str, Any], methods: dict[str, Any]) -> list[str]:
     found: list[str] = []
     clients = methods.get("clients") or {}
     operations = methods.get("operations") or {}
+    if not isinstance(clients, dict) or not isinstance(operations, dict):
+        return [f"{METHODS.name}: clients and operations must both be mappings"]
     ops = spec_operations(spec)
 
     for key in clients:
@@ -127,20 +158,34 @@ def problems(spec: dict[str, Any], methods: dict[str, Any]) -> list[str]:
         result = entry.get("result")
         if not isinstance(result, str) or not re.fullmatch(r"[a-z][a-z0-9]*(_[a-z0-9]+)*", result):
             found.append(f"{oid}: result must be a snake_case name")
+        elif result in RESERVED or _camel(result) in RESERVED:
+            found.append(f"{oid}: result {result!r} is a keyword in one of the languages")
 
         params = entry.get("params") or {}
+        if not isinstance(params, dict):
+            found.append(f"{oid}: params must be a mapping")
+            params = {}
         declared = {p["name"]: p for p in _parameters(spec, path, op)}
-        for name in params:
+        for name, value in params.items():
             if name not in declared:
                 found.append(f"{oid}: params names {name!r}, which the operation does not declare")
+            elif declared[name].get("in") not in ("path", "query"):
+                found.append(f"{oid}: params names {name!r}, a {declared[name].get('in')} parameter. "
+                             "The curl sample sends only path and query parameters")
+            # bool is an int in Python, and YAML reads yes, no, on and off as booleans.
+            if isinstance(value, bool) or not isinstance(value, (str, int)):
+                found.append(f"{oid}: params {name!r} must be a string or an integer, not {value!r}")
         for name, p in declared.items():
             if (p.get("in") == "path" or p.get("required")) and name not in params:
                 found.append(f"{oid}: params has no value for the required parameter {name!r}")
+        body = entry.get("body")
         body_required = bool((op.get("requestBody") or {}).get("required"))
-        if body_required and not entry.get("body"):
+        if body_required and body is None:
             found.append(f"{oid}: the operation needs a request body and the entry has no body")
-        if entry.get("body") and "requestBody" not in op:
+        if body is not None and "requestBody" not in op:
             found.append(f"{oid}: the entry has a body and the operation takes none")
+        if body is not None and not isinstance(body, dict):
+            found.append(f"{oid}: body must be a mapping")
 
         for client in CLIENT_ORDER:
             if client not in entry:
@@ -155,8 +200,11 @@ def problems(spec: dict[str, Any], methods: dict[str, Any]) -> list[str]:
                     found.append(f"{oid}.{client}: returns may only be 'error', and only for go")
             else:
                 call = value
-            if not isinstance(call, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*\(.*\)", call, re.S):
-                found.append(f"{oid}.{client}: the call must look like name(arguments)")
+            # One line only: a newline would let a map edit put any code into a sample.
+            if not isinstance(call, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*\(.*\)", call):
+                found.append(f"{oid}.{client}: the call must look like name(arguments) on one line")
+            if isinstance(value, dict) and "\n" in str(value.get("print", "")):
+                found.append(f"{oid}.{client}: print must be one line")
     return found
 
 
@@ -201,7 +249,7 @@ def _go(call: str, var: str, shown: str | None, returns: str | None) -> str:
             f"\tif err := client.{call}; err != nil {{\n"
             "\t\tlog.Fatal(err)\n"
             "\t}\n"
-            f'\tfmt.Println("{shown or "done"}")'
+            f"\tfmt.Println({json.dumps(shown or 'done')})"
         )
     else:
         body = (
@@ -285,8 +333,9 @@ def _swift(call: str, var: str, shown: str | None, _returns: str | None) -> str:
 
 
 def _r(call: str, var: str, shown: str | None, _returns: str | None) -> str:
-    # The R functions take the key as an argument. api_health() needs none.
-    key = f'key <- Sys.getenv("{KEY_ENV}")\n' if "key = key" in call else ""
+    # Each R function reads LIVETENNISAPI_KEY by default. The samples pass it as `key` so the reader
+    # sees where the key comes from. api_health() takes no key.
+    key = f'key <- Sys.getenv("{KEY_ENV}")\n' if re.search(r"\bkey\s*=\s*key\b", call) else ""
     return (
         "library(livetennisapi)\n\n"
         f"{key}"
@@ -318,9 +367,11 @@ def _curl(spec: dict[str, Any], method: str, path: str, op: dict[str, Any], entr
     # An operation with `security: []` takes no key.
     if op.get("security", spec.get("security")):
         lines.append(f'-H "Authorization: Bearer ${KEY_ENV}"')
-    if entry.get("body"):
+    if entry.get("body") is not None:
         lines.append('-H "Content-Type: application/json"')
-        lines.append(f"-d '{json.dumps(entry['body'], separators=(', ', ': '))}'")
+        # The body sits in single quotes. A quote inside it closes them, so it is written as '\''.
+        body = json.dumps(entry["body"], separators=(", ", ": ")).replace("'", "'\\''")
+        lines.append(f"-d '{body}'")
     return " \\\n  ".join(lines)
 
 
@@ -356,12 +407,32 @@ def _block(samples: list[dict[str, str]]) -> list[str]:
     return lines
 
 
+def _in_paths(lines: list[str]) -> list[bool]:
+    """For each line, whether it sits inside the top-level `paths:` mapping."""
+    flags = []
+    inside = False
+    for line in lines:
+        if line[:1] not in ("", " ", "#"):
+            inside = line.rstrip() == "paths:"
+            flags.append(False)
+            continue
+        flags.append(inside)
+    return flags
+
+
 def strip_blocks(text: str) -> str:
-    """The spec text with every block this script wrote removed."""
+    """The spec text with every block this script wrote removed.
+
+    A block is removed only where this script puts one: inside `paths:`, on the
+    line right after an operationId line. The same text anywhere else, such as
+    an example inside a description, is left alone.
+    """
+    lines = text.split("\n")
+    in_paths = _in_paths(lines)
     out: list[str] = []
     blanks: list[str] = []
     skipping = False
-    for line in text.split("\n"):
+    for line, inside in zip(lines, in_paths):
         if skipping:
             if line == "":
                 # A blank line belongs to the block only when the block goes on after it.
@@ -373,7 +444,8 @@ def strip_blocks(text: str) -> str:
             skipping = False
             out.extend(blanks)
             blanks = []
-        if line == f"{OP_INDENT}{BLOCK_KEY}:":
+        if (inside and line == f"{OP_INDENT}{BLOCK_KEY}:" and out
+                and OPERATION_ID_LINE.match(out[-1])):
             skipping = True
             continue
         out.append(line)
@@ -385,9 +457,10 @@ def render_spec(text: str, samples: dict[str, list[dict[str, str]]]) -> str:
     """Put each operation's samples under its operationId line."""
     out: list[str] = []
     placed = set()
-    for line in strip_blocks(text).split("\n"):
+    lines = strip_blocks(text).split("\n")
+    for line, inside in zip(lines, _in_paths(lines)):
         out.append(line)
-        match = OPERATION_ID_LINE.match(line)
+        match = OPERATION_ID_LINE.match(line) if inside else None
         if match and match.group(1) in samples:
             oid = match.group(1)
             if oid in placed:
@@ -415,7 +488,11 @@ def generate(text: str, methods: dict[str, Any]) -> str:
         if op.get(BLOCK_KEY) != samples[oid]:
             raise MapError(f"{oid}: the written samples do not read back as generated")
         op.pop(BLOCK_KEY)
-    original = yaml.safe_load(strip_blocks(text))
+    # Compare with the spec as given, minus only the operations' own samples, so a line the
+    # strip removed by mistake shows up here.
+    original = yaml.safe_load(text)
+    for _oid, (_m, _p, op) in spec_operations(original).items():
+        op.pop(BLOCK_KEY, None)
     if reread != original:
         raise MapError("writing the samples changed something else in the spec")
     return new_text
