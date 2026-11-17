@@ -2,7 +2,7 @@
  "openapi": "3.1.0",
  "info": {
   "title": "Live Tennis API",
-  "version": "1.13.84",
+  "version": "1.13.85",
   "contact": {
    "name": "Live Tennis API",
    "url": "https://livetennisapi.com"
@@ -32,6 +32,53 @@
    "get": {
     "summary": "Liveness probe (no auth)",
     "operationId": "healthCheck",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/health\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    health = client.health()\n    print(health)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst health = await client.health();\nconsole.log(health);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\thealth, err := client.Health(ctx)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", health)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$health = $client->health();\nprint_r($health);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar health = await client.HealthAsync();\nConsole.WriteLine(JsonSerializer.Serialize(health));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final health = await client.health();\n    print(health);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet health = try await client.health()\nprint(health)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nhealth <- api_health()\nprint(health)"
+     }
+    ],
     "security": [],
     "responses": {
      "200": {
@@ -62,6 +109,53 @@
     "summary": "List matches by lifecycle status (FREE)",
     "description": "`status=live` and `status=upcoming` are the FREE current-state picture. `status=completed` pages historical results and is part of the paid History product — it requires BASIC (the same rule as `/history/matches`). A FREE key may spend its 20 free history calls per calendar month here; past that the answer is `403 upgrade_required` carrying `free_history_taste: \"used\"`. The `player`, `country`, `from`/`to`, `tour`, `draw`, `has_analysis` and `has_market` filters are optional, AND-composed, applied inside the query (before pagination), and work on every status — omitting them returns exactly what the endpoint returned before they existed. `has_analysis` and `has_market` are the two availability flags every row already carries: filter the slate with them and call `/matches/{matchId}/analysis` and `/matches/{matchId}/prices` only for the ids that have something, rather than probing per match for a 404.",
     "operationId": "listMatches",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches?status=live\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    page = client.list_matches(status=\"live\")\n    print(page)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst page = await client.listMatches({ status: 'live' });\nconsole.log(page);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpage, err := client.ListMatches(ctx, livetennisapi.ListMatchesParams{Status: livetennisapi.StatusLive})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", page)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$page = $client->listMatches('live');\nprint_r($page);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar page = await client.ListMatchesAsync(MatchStatus.Live);\nConsole.WriteLine(JsonSerializer.Serialize(page));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final page = await client.listMatches(status: MatchStatus.live);\n    print(page.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet page = try await client.listMatches(status: .live)\nprint(page)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\npage <- list_matches(status = \"live\", key = key)\nprint(page)"
+     }
+    ],
     "parameters": [
      {
       "name": "status",
@@ -171,6 +265,53 @@
    "get": {
     "summary": "Full match detail (FREE; +market PRO, +analysis ULTRA)",
     "operationId": "getMatch",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    match = client.get_match(18953)\n    print(match)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst match = await client.getMatch(18953);\nconsole.log(match);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tmatch, err := client.GetMatch(ctx, 18953)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", match)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$match = $client->getMatch(18953);\nprint_r($match);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar match = await client.GetMatchAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(match));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final match = await client.getMatch(18953);\n    print(match?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet match = try await client.getMatch(18953)\nprint(match)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\nmatch <- get_match(18953, key = key)\nprint(match)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -210,6 +351,53 @@
     "summary": "Current score only — lowest-latency REST read (FREE)",
     "description": "This is a POINT-IN-TIME SNAPSHOT: the single current state, overwritten on every score commit. It carries no history and no accumulated statistics. For the SEQUENCE of states — who served each game, hold/break, every score state in forward order — use `/history/matches/{matchId}?sequence=clean`, which works on a LIVE match, not only a completed one. For in-play statistics use `/matches/{matchId}/statistics` (ULTRA); they are deliberately not on this object, because they can be further behind the match than the score and must carry their own `as_of`. ARCHIVED FINALS (since 2026-09-20). The live-score rows behind this read are retired by a 90-day retention sweep, and a match recovered from an official day list may never have had one. When there is no live row at all, a SETTLED match — `outcome` non-null on the match object: completed, retired, walkover, default, abandoned, unresolved — is answered from its archived final: the same read `GET /matches?status=completed` already embeds, through the same serializer, so the listing and this endpoint can never disagree about whether a score exists. A live tape always outranks the archive — the fallback is reached only when no publishable live row exists, so a live match reads exactly what it did before. An archived final carries `age_seconds: null`, `observed_age_seconds: null`, `sources_count: null` and `accepted_at: null` — no clock is claimed for a state nobody watched — and `timestamp` is null where the archived row has none (a reconstructed final). The Score object carries no data-source label; whether that final was observed or reconstructed is what `GET /history/matches/{matchId}` reports once, in `meta.point_source`. 404 is kept for: an upcoming match with no row (nothing to serve yet), a cancelled match that was never played (nothing settled), and a settled match with nothing recorded anywhere — the fallback serves a final that exists, it never invents one. WITHDRAWN STATES (since 2026-09-23). When the legality gate behind this read refuses a state a stream has already published, the `verdict` object on the score says so: `kind`, `superseded_sequence`, `reason` and `safe_to_resume`. It is null on an ordinary read. The push feed, the WebSocket and webhooks carry the same judgement as a `score_withdrawn` frame naming the same sequence, so a stream consumer learns a state was taken back without polling. `GET /history/incidents` is the published register of data-quality incidents. THE RECOVERY PATH (since 2026-09-25). A consumer that missed the frame cannot get the live `verdict` back, because it is recomputed over the newest state and returns null as soon as the next state is accepted. Every withdrawal is now recorded durably when the judgement is made: pass `?sequence=N` here to have `verdict` answer for the sequence you hold, and read `GET /matches/{matchId}/withdrawals` for the whole record on a match, including the frame exactly as the feed sent it. Before 2026-09-20 every settled match older than the retention window answered 404 here (13,437 completed matches from the previous 180 days, 157,170 all time, measured at the change) while the completed listing served its score.",
     "operationId": "getMatchScore",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953/score\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    score = client.get_match_score(18953)\n    print(score)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst score = await client.getMatchScore(18953);\nconsole.log(score);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tscore, err := client.GetMatchScore(ctx, 18953)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", score)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$score = $client->getMatchScore(18953);\nprint_r($score);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar score = await client.GetMatchScoreAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(score));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final score = await client.getMatchScore(18953);\n    print(score?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet score = try await client.getMatchScore(18953)\nprint(score)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\nscore <- match_score(18953, key = key)\nprint(score)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -255,6 +443,48 @@
    "get": {
     "summary": "Match events, newest first (PRO)",
     "operationId": "listMatchEvents",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953/events\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    events = client.list_match_events(18953)\n    print(events)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst events = await client.listMatchEvents(18953);\nconsole.log(events);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tevents, err := client.ListMatchEvents(ctx, 18953, livetennisapi.ListParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", events)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$events = $client->listMatchEvents(18953);\nprint_r($events);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar events = await client.ListMatchEventsAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(events));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final events = await client.listMatchEvents(18953);\n    print(events.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet events = try await client.listMatchEvents(matchId: 18953)\nprint(events)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -307,6 +537,13 @@
    "get": {
     "summary": "Slate-wide events feed — every match's events in one call, oldest first, cursor by id (PRO)",
     "operationId": "listSlateEvents",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/events\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "description": "Added 2026-09-13. The rows of GET /matches/{matchId}/events for EVERY match in one request, so a poller watching the whole live slate spends one request per tick rather than one per match. `after_id` returns rows with id greater than the one passed, ascending, and `meta.next_cursor` names the last id served (null on a short page = caught up); `since` (UTC instant) is the first-call lower bound; with neither the newest page is served, still ascending. `type` narrows to a comma-separated list of event types or the family name `stoppages` (stoppage_*, pause_*, medical_timeout_*, trainer_called*, toilet_break_*). Rows carry `id` and `match_id` next to the per-match fields. Measured 2026-09-13: a scorer-stated stoppage reaches the API a median 8 s (p90 13 s) after the scorer's own instant; the WebSocket `stoppages` signal pushes the same row as it is written.",
     "parameters": [
      {
@@ -385,6 +622,13 @@
     "summary": "One player's in-match stoppages and did-not-finish outcomes, newest first over a window (PRO)",
     "description": "Added 2026-09-16. Medical timeouts and trainer calls on the player's matches (from the stoppage family of GET /matches/{matchId}/events), plus retirements and walkovers where THIS player is the non-winner, merged and sorted by `at` descending. Window: `since`/`until` (ISO date or UTC instant; default the last 180 days; at most 366 days, else 400 window_too_long). `kind` filters the seven row kinds (default medical_timeout,trainer_called,retirement,walkover); `before` pages by `meta.next_cursor`. `meta.latest_medical_timeout` and `previous_medical_timeout` are the two newest medical timeouts in the window whatever the page or the kind filter. `meta.record_starts` states how far back each family goes: stoppage rows exist from 2026-09-12 only; outcome rows from the oldest match with a stated winner. In-match stoppages and match outcomes only — no off-court injury record exists here. Same PRO capability as /events. `GET /players/{playerId}/injuries` serves the identical response.",
     "operationId": "listPlayerStoppages",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/players/1104/stoppages\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "parameters": [
      {
       "name": "playerId",
@@ -492,6 +736,13 @@
     "summary": "Alias of /players/{playerId}/stoppages — the identical response (PRO)",
     "description": "Added 2026-09-16. The same handler, parameters, rows and meta as /players/{playerId}/stoppages, under the word the request used. The honest name is `stoppages`: nothing here is a diagnosis, only what the scorer, umpire or result stated.",
     "operationId": "listPlayerInjuries",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/players/1104/injuries\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "parameters": [
      {
       "name": "playerId",
@@ -592,6 +843,13 @@
     "summary": "The per-match status ledger — every status / event_status transition with its UTC instant (BASIC, history)",
     "description": "Added 2026-09-12. Append-only, oldest first: one row per change of `status` and/or `event_status`, with the instant we published it, the value before and the effective value after, the derived `outcome`, and the newest score row at that instant. A correction is a new row, never an edit — a close published as `unresolved` and later confirmed shows the flip to `completed`; a completion that reopened shows `completed -> live`. `basis: observed` rows exist from 2026-09-11T22:45:48Z; `basis: backfill` rows (2026-09-12) were reconstructed from the one stamp per kind the match row kept before the ledger existed (last promotion to live from 2026-09-05, completion instant from 2026-08-21, last reopen, last event_status change) — one row per stamp, overwritten intermediate transitions are not recovered. A correction to a PUBLISHED result — `status`, `event_status`, winner or the final score changing after the match was first published as completed — is a new row with `basis: restatement` (from 2026-09-22), never a silent edit; `result_restated_at` / `result_version` on the match summarise them and `GET /history/matches?restated_since=` finds them. History capability (BASIC and the Historical Data plans), like the tape.",
     "operationId": "getMatchStatusHistory",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953/status-history\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -648,6 +906,13 @@
     "summary": "The durable record of every score state we withdrew on this match (ULTRA)",
     "description": "Added 2026-09-25. One row per refused `sequence`, oldest first, each carrying the `score_withdrawn` frame exactly as the push feed sent it.\n\nThis is the RECOVERY PATH for a missed frame. The `verdict` object on `GET /matches/{matchId}/score` is recomputed on every read over the newest state, so it returns null again as soon as the next state is accepted, which in a live match is seconds. The record here is written when the judgement is made, before the frame is delivered, so a consumer that was disconnected can still learn that a sequence it holds was taken back. `GET /matches?withdrawn_since=` says which matches to ask about; `?sequence=N` on the score read answers for one sequence without fetching the list.\n\nULTRA, the tier that receives the frame on the push feed and the native WebSocket. An empty `data` is the ordinary answer and means nothing was withdrawn on that match. Records are kept 90 days from the withdrawal.",
     "operationId": "getMatchWithdrawals",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953/withdrawals\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -698,6 +963,48 @@
     "summary": "Model analysis for a match (ULTRA)",
     "description": "The model's thesis and profile for one match.\n\nCOVERAGE IS NOT UNIVERSAL, and a polling client should plan for that. Analysis is produced per match by the model pipeline rather than emitted for every fixture: over the seven days to 2026-08-27, 1,225 of 2,863 matches that went live or completed carried one (42.8%). A match that has none yet returns `404 {\"error\":\"no_analysis\"}` (since 2026-09-02; before that the body was a bare `not_found`) — that is the documented absence, not a fault, and it can turn into a 200 later in the same match once the pipeline has run. Never treat this 404 as a reason to retry harder. The body names which absence it is: `not_found` is an id that does not exist; `no_analysis` carries `match_id` and `coverage: \"none\"` for a real match with nothing computed.\n\nFILTER THE SLATE FIRST. Every row of `GET /matches` and the detail carries `has_analysis` (every tier), the same fact this endpoint answers 404 about — read it there and call only the matches that carry one, instead of spending one 404 per match.\n\nONE CALL INSTEAD OF THREE. `GET /matches/{matchId}` carries the same thesis and profile in its `analysis` key on ULTRA, alongside `market` and `market_price` on PRO and above, next to the live score. It answers `200` whether or not analysis and a market exist — the keys are `null` instead — so a per-match poll built on the detail route replaces the score, analysis and prices calls with one request and never spends a call on a 404.",
     "operationId": "getMatchAnalysis",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953/analysis\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    analysis = client.get_match_analysis(18953)\n    print(analysis)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst analysis = await client.getMatchAnalysis(18953);\nconsole.log(analysis);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tanalysis, err := client.GetMatchAnalysis(ctx, 18953)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", analysis)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$analysis = $client->getMatchAnalysis(18953);\nprint_r($analysis);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar analysis = await client.GetMatchAnalysisAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(analysis));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final analysis = await client.getMatchAnalysis(18953);\n    print(analysis?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet analysis = try await client.getMatchAnalysis(18953)\nprint(analysis)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -744,6 +1051,48 @@
     "summary": "In-play statistics — aces, double faults, serve split, hold/break %, break points, service & return points (ULTRA)",
     "description": "In-play statistics for one match, in TWO families that are deliberately not merged.\n\nDERIVED (the top level of `players.pN`) are rebuilt from the point-by-point record: service and return games played and won, hold and break percentage, break points faced, saved and converted, service and return points.\n\nMEASURED (`players.pN.measured`) are match counts recorded as the match is played, so they include what no point record can yield — ACES AND DOUBLE FAULTS, the first- and second-serve split, winners and unforced errors. Both families name some of the same quantities, computed two entirely different ways; that is a cross-check, not a duplication to collapse.\n\nMeasured coverage is not uniform and every measured field is optional — an absent field is OMITTED, never zero-filled, so read the keys you are given. Aces and double faults are present across every tour. The serve split and break points saved are present on the main tours and absent on ITF singles. Winners and unforced errors historically appeared on a minority of main-tour matches and have not been available since 2026-07-12 (measured 2026-08-17).\n\n`freshness.derived` and `freshness.measured` each carry their own `coverage` (`live` | `final` | `stale` | `none` | `diverged`; `final` = the closing figures of a completed match — a finished match cannot be \"stale\", so its `age_seconds` is null), `as_of`, `age_seconds` and `describes` — the match state the numbers describe. On `diverged` the measured VALUES are withheld and `freshness.measured_divergence` says why; the top-level `coverage` only summarises the response. `none` on both returns 200 with null players, not 404 — the match exists and holding nothing for it is the honest answer.\n\nTHE TWO AGES USE DIFFERENT CLOCKS AND MUST NOT BE COMPARED. The derived age is measured against the newest SCORE row, because between points there is no new score either and wall-clock age would report staleness that does not exist. The measured age is wall clock, because those are fetched on a fixed cadence.\n\nTiebreak games are excluded from the DERIVED family and counted separately; the live record collapses a whole tiebreak onto one entry, so most of its points are lost.",
     "operationId": "getMatchStatistics",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953/statistics\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    statistics = client.get_match_statistics(18953)\n    print(statistics)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst statistics = await client.getMatchStatistics(18953);\nconsole.log(statistics);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tstatistics, err := client.GetMatchStatistics(ctx, 18953)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", statistics)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$statistics = $client->getMatchStatistics(18953);\nprint_r($statistics);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar statistics = await client.GetMatchStatisticsAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(statistics));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final statistics = await client.getMatchStatistics(18953);\n    print(statistics?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet statistics = try await client.getMatchStatistics(18953)\nprint(statistics)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -783,6 +1132,23 @@
     "summary": "Live per-point events in seq order — the REST catch-up for the WebSocket point stream (ULTRA)",
     "description": "The live per-point event stream of one match, in `seq` order. The WebSocket `point` frames are best-effort with NO replay, so this endpoint is how you join mid-match and how you recover a dropped connection: subscribe the WS first, then GET with `after_seq` set to the last seq you hold, then dedup everything by `seq` — it is per-match, monotonic and never skips a value, so it is the whole reconciliation key.\n\n`seq` IS ARRIVAL ORDER, NOT MATCH ORDER, ON THE LIVE BASIS. It is assigned in the order points are committed, and points of a live match arrive by more than one path at different speeds, so a point from a set that has just ended can be committed AFTER points from the set that follows it and carry the higher `seq`. Each row is self-consistent — its `set`, `game`, `number`, `score`, `sets` and `games` all describe the point that was played — but reading the tape in `seq` order can show the set or game counter step backwards. Measured over a recent seven-day window this affected a minority of live matches, and never the `reconstruction` basis. So `seq` is the right key for paging, dedup and resume (unique, stable, strictly increasing — all `after_seq` needs) and the wrong key for chronology: sort by `(set, game, number)` to replay in playing order. That tuple ORDERS points; it does not IDENTIFY them. `number` is null wherever we joined a game already in progress, and the same tuple can appear on more than one row — a game re-expanded by a second source re-asserts ordinals it already holds, which on the live basis is a normal re-statement rather than a correction. There is no revision id, superseded-seq or correction flag: rows are append-only and never rewritten, so `after_seq` never needs a refetch, and the page-level `quality` field reads `revised` when the page contains such a re-statement. On the `reconstruction` basis of a completed match, `seq` is contiguous 1..N in true match order and the two agree.\n\nREAD THE COVERAGE HONESTLY BEFORE YOU BUILD ON IT. A match's stream is per-point ONLY where a point-level feed covers it: `pbp_coverage: \"point\"` means a per-point stream has DELIVERED for this match — at least one played point past the `seq` 1 opener; `\"game\"` means no played point has arrived — only the snapshot score path covers it, or the stream holds only its opener so far (a listed match that has not started). An answer, not an error; it flips to `point` on the first played point. To admit a match as advancing, gate on `sequence > 1` (a seeded match is 1) together with `stale: false`. Per-point coverage is never promised slate-wide; ITF and qualifying coverage in particular is partial. `quality: \"revised\"` means the point record was rewritten over an already-served prefix at least once during this match; served rows are never edited (append-only).\n\nEach row is the state AFTER a played point: `score`/`sets`/`games` (tiebreaks carry the running count in `score` with `games` frozen at the pre-breaker score), its position (`set`/`game`/`number`), `server` (of the next point), the derived `winner` (null when not attributable to a single point — never guessed), and `ts` — CAPTURE time, when our pipeline committed the state, because no feed asserts a per-point clock and we fabricate none.\n\nUp to 500 rows per page; `after_seq=last_seq` fetches the next page while `has_more` is true. 404 unknown match; 400 `points_disabled` while the surface is switched off server-side.\n\nCOMPLETED MATCHES: the stored live stream is served on a completed match too, whenever it is itself measured complete (the match-closing point included) or carries `serve`/`outcome` tags and is legal end to end (every transition one attributable point, judged in playing order). A projection never carries a clock or a tag, so a complete tagged stream is strictly more information than any reconstruction of the same match. Only when the stream falls short — no rows at all, incomplete and untagged, or a transition nobody can attribute — and a measured-complete recorded point sequence of the finished match exists does this endpoint serve THAT instead: the complete sequence projected into the same point-frame shape, love-love opener through the match-closing point, `seq` contiguous 1..N. The response field `basis` says which base served the page: `live` (the persisted live stream rows) or `reconstruction` (the projected complete sequence; `quality` is `clean`, every transition measured legal), and on `reconstruction` `basis_reason` says why the stream was not served: `stream_absent` (no stored stream rows), `stream_incomplete` (the stream is legal but does not measure complete — it joined mid-match or stopped short — and carries no tags) or `stream_illegal` (at least one transition is not attributable to one point: a gap or a torn row). When the reconstruction serves it serves wholesale — the two sequences are never interleaved (they share no key, so any merge would fabricate an order). On projected frames `ts` is null on every row: the recorded sequence carries no per-point clock and we fabricate none. `after_seq` pagination and `seq` dedup work identically on either basis, but the two bases are different sequences: if a completed match reads `reconstruction`, re-read from `after_seq=0` rather than resuming a live cursor into it. Precedence fixed 2026-09-21: until then a measured-complete recorded sequence displaced the stream unconditionally, so a completed match could lose its tags the moment a reconstruction landed.\n\nTHE MATCH-CLOSING POINT (added 2026-09-20). Every row is the state AFTER a point, so the point that wins a game is carried by the next game's `number: 0` opener — and the point that wins the match had no next row to be carried by: the live stream never held it, and a serve statistic built off the stream was missing every match's last point. On a COMPLETED match served on the `live` basis the page now closes with ONE terminal row: `seq` = last + 1, `number` 0, `sets`/`games` the final score, `score` `{\"p1\":\"0\",\"p2\":\"0\"}`, `tiebreak` false, `server` null (nobody serves next), `winner` the match winner, `ts` the instant the final score was observed. It is built at read time from the stream's last row and the observed final score, and only when the two are one point apart — the winner held game point and the final is the decided score; nothing is fabricated otherwise. `serve`, `outcome` and `tagged_at` on that row are null: no source's tag for a match's last point is stored yet. When the match ends in a tiebreak (added 2026-09-21) the stream's last row is the decisive tiebreak score itself (7-3, 8-6) and the closing row is the set roll-up after it: the next game number, `number` 0, `tiebreak` false, `sets` incremented for the tiebreak winner, the set banked 7-6 in `games`, `score` 0-0, `server` null, the same `winner` — the same row the stream stores after every other set-ending tiebreak. The response field `ends_at_final` says whether the sequence served ends on the match-closing point: `false` on a completed match whose stream stops short of it — a retirement or walkover (no closing point was played), a capture that stopped two or more points short, or a closer that cannot be stated as one point (from deuce, or from a 10-point match tiebreak). Always `false` on a live match. On the `reconstruction` basis it is judged from the projected sequence's last frame (a complete recorded sequence of a retired match ends at the retirement, so it reads `false` there). WebSocket and push frames are unchanged.\n\nREVISIONS: `changed_since` (added 2026-09-20). `after_seq` is a cursor by `seq`, so it can never return a row you already hold — and a `serve`/`outcome` tag that lands late lands on exactly such a row. Every row now carries `tagged_at`, the UTC instant its tags landed (null while none has). Pass `changed_since=<ISO-8601 instant>` (e.g. `2026-09-20T00:35:18Z`; `Z` or an offset, a naive value is read as UTC, a date alone is refused) to get only the rows whose `ts` OR `tagged_at` is later than that instant, in `seq` order, paged like any other read and composable with `after_seq`. The post-match recipe: read the match, keep the instant, re-read with `changed_since=<that instant>` and replace the rows you hold by `seq` — no socket, no full re-fetch. Anything that is not an ISO-8601 timestamp is a 400 `bad_changed_since`. On the `reconstruction` basis no row carries a clock or a tag, so a `changed_since` read of it is an empty page: that sequence is final at first read.",
     "operationId": "getMatchPoints",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953/points\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    points = client.get_match_points(18953)\n    print(points)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst points = await client.getMatchPoints(18953);\nconsole.log(points);"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -845,6 +1211,53 @@
    "get": {
     "summary": "Search players by name (FREE)",
     "operationId": "searchPlayers",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/players?search=nadal\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    page = client.search_players(\"nadal\")\n    print(page)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst page = await client.searchPlayers('nadal');\nconsole.log(page);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpage, err := client.SearchPlayers(ctx, livetennisapi.SearchPlayersParams{Search: \"nadal\"})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", page)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$page = $client->searchPlayers('nadal');\nprint_r($page);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar page = await client.SearchPlayersAsync(\"nadal\");\nConsole.WriteLine(JsonSerializer.Serialize(page));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final page = await client.searchPlayers(search: 'nadal');\n    print(page.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet page = try await client.searchPlayers(search: \"nadal\")\nprint(page)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\npage <- search_players(\"nadal\", key = key)\nprint(page)"
+     }
+    ],
     "parameters": [
      {
       "name": "search",
@@ -916,6 +1329,53 @@
     "summary": "One player's bio + ranking + cached stats (FREE)",
     "description": "`playerId` is a ROSTER id — the live player registry, the id space `/players`, `/matches` and `/rankings` all speak.\nIt is NOT the archive corpus person id. The results archive (1968–2022) keeps its own person registry, and archive match rows publish those ids as `winner.player_id` / `loser.player_id`. The two spaces are disjoint: no corpus id resolves here, and since 2026-09-20 a 404 for one says so and points at `/history/archive/players?id={playerId}`, which is where that id is read. A 404 with no `see` field is simply an id we do not hold.",
     "operationId": "getPlayer",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/players/1104\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    player = client.get_player(1104)\n    print(player)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst player = await client.getPlayer(1104);\nconsole.log(player);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tplayer, err := client.GetPlayer(ctx, 1104)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", player)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$player = $client->getPlayer(1104);\nprint_r($player);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar player = await client.GetPlayerAsync(1104);\nConsole.WriteLine(JsonSerializer.Serialize(player));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final player = await client.getPlayer(1104);\n    print(player?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet player = try await client.getPlayer(1104)\nprint(player)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\nplayer <- get_player(1104, key = key)\nprint(player)"
+     }
+    ],
     "parameters": [
      {
       "name": "playerId",
@@ -964,6 +1424,23 @@
     "summary": "One player's record over our completed singles matches — W/L splits, set-based record, recent matches (PRO; +serve_return ULTRA)",
     "description": "Added 2026-10-22. Aggregates over OUR OWN completed singles matches (2023 onward); the default window is the 365 days ending now. For 1968–2022 use `/history/archive/career`.\n\nPRO returns `records`: W/L overall, `last_12_months`, `by_surface`, `by_venue` (indoor / outdoor / unknown), `by_level` (the match `tour` vocabulary) and `by_season` (UTC calendar year); the set-based record (tiebreaks, deciding sets, after winning or losing the first set, comebacks, sets won and lost) over completed matches whose final score is complete and legal; withdrawals given and received (retired, walkover, default); `excluded` counts by reason; and `recent`, the last N matches newest first with the opponent, the outcome and the final score turned round to this player.\n\nEvery count carries its sample size, and a percentage is `null`, never 0, on an empty sample. Winner, outcome and score are read exactly as the match object publishes them, so this endpoint cannot name a different winner than `GET /matches/{matchId}`.\n\nULTRA adds `serve_return`: the measured per-match statistics of `GET /matches/{matchId}/statistics` summed over the player's completed matches in the window. Each ratio is numerator / denominator / pct with the number of matches it was summed over, and `matches_with_stats` sits beside `matches`. A field no match carried is null with `matches` 0. Below ULTRA the key is absent, not null.\n\nA doubles-team id is refused with 400 `doubles_not_supported`; query each member's player id instead. A merged or retired id answers 410 like `GET /players/{playerId}`. Cached up to 60 seconds (`meta.generated_at`).",
     "operationId": "getPlayerStats",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/players/1104/stats\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst stats = await client.getPlayerStats(1104);\nconsole.log(stats);"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\nstats <- player_stats(1104, key = key)\nprint(stats)"
+     }
+    ],
     "parameters": [
      {
       "name": "playerId",
@@ -1088,6 +1565,53 @@
     "summary": "Tournament catalogue — the id space `Match.tournament_id` joins (FREE)",
     "description": "Stable tournament identity, one row per tournament × event type, stable across seasons. `city`/`country` come from a curated table and `category` only where our catalogues agree unambiguously on an exact-name join — each is null otherwise, never derived from the tournament name. Each row also carries the CURRENT season's `tier` / `tier_source` (added 2026-09-22) — the level in a closed vocabulary (`atp_500`, `challenger_125`, `wta_125`, `itf_w35` … | null); the tier is per season, so a match carries its own.",
     "operationId": "listTournaments",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/tournaments\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    page = client.list_tournaments()\n    print(page)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst page = await client.listTournaments();\nconsole.log(page);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpage, err := client.ListTournaments(ctx, livetennisapi.TournamentsParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", page)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$page = $client->listTournaments();\nprint_r($page);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar page = await client.ListTournamentsAsync();\nConsole.WriteLine(JsonSerializer.Serialize(page));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final page = await client.listTournaments();\n    print(page.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet page = try await client.listTournaments()\nprint(page)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\npage <- list_tournaments(key = key)\nprint(page)"
+     }
+    ],
     "parameters": [
      {
       "name": "search",
@@ -1157,6 +1681,53 @@
    "get": {
     "summary": "One tournament by its stable id (FREE)",
     "operationId": "getTournament",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/tournaments/12158\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    tournament = client.get_tournament(\"12158\")\n    print(tournament)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst tournament = await client.getTournament('12158');\nconsole.log(tournament);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\ttournament, err := client.GetTournament(ctx, \"12158\")\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", tournament)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$tournament = $client->getTournament('12158');\nprint_r($tournament);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar tournament = await client.GetTournamentAsync(\"12158\");\nConsole.WriteLine(JsonSerializer.Serialize(tournament));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final tournament = await client.getTournament('12158');\n    print(tournament?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet tournament = try await client.getTournament(\"12158\")\nprint(tournament)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\ntournament <- get_tournament(\"12158\", key = key)\nprint(tournament)"
+     }
+    ],
     "parameters": [
      {
       "name": "tournamentId",
@@ -1196,6 +1767,48 @@
     "summary": "The match's match-winner market (PRO)",
     "description": "The match-winner market mapped to this match — `data` holds at most one object, and `meta.count` is 0 when nothing is mapped.\n\nMATCH-WINNER ONLY. No handicaps or game spreads, no totals, no set-winner books, and no per-game or per-set derivative of any kind. A quote here is the probability that a player WINS THE MATCH. Venues do list tennis derivatives beside the match-winner book — game spreads such as \"A (-3.5) vs B (+3.5)\" among them — and this API deliberately publishes none of them: a derivative is refused at the mapping step so it can never be served as, or beside, a match-winner price (2026-09-22).",
     "operationId": "listMarkets",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/markets?match_id=18953\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    markets = client.list_markets(18953)\n    print(markets)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst markets = await client.listMarkets(18953);\nconsole.log(markets);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tmarkets, err := client.ListMarkets(ctx, 18953)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", markets)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$markets = $client->listMarkets(18953);\nprint_r($markets);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar markets = await client.ListMarketsAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(markets));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final markets = await client.listMarkets(18953);\n    print(markets.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet markets = try await client.listMarkets(matchId: 18953)\nprint(markets)"
+     }
+    ],
     "parameters": [
      {
       "name": "match_id",
@@ -1256,6 +1869,48 @@
     "summary": "Market + recent price ticks per side, newest first (PRO)",
     "description": "The mapped match-winner market for one match, with its recent price ticks per side, newest first.\n\n404 with `error: no_market` (since 2026-09-02; `match_id` and `coverage: \"none\"` alongside) when no match-winner market is mapped to the match — a market is mapped only where one is published for that fixture, so a client walking every live match will meet this. A bare `not_found` means the match id itself does not exist. Every row of `GET /matches` carries `has_market`, so a slate can be filtered before any call here. `GET /matches/{matchId}` answers `200` for the same match with `market` and `market_price` set to `null` instead, and carries the live score in the same response, so a per-match poll built on the detail route never spends a call on a 404.\n\nTicks are kept for 30 days and then deleted: a market older than that answers with an empty `prices` array while staying mapped — retention, not a fault. For paging past 500 ticks use `/matches/{matchId}/prices` with its cursor.",
     "operationId": "getMarketPrices",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/markets/18953/prices\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    market = client.get_market_prices(18953)\n    print(market)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst market = await client.getMarketPrices(18953);\nconsole.log(market);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tmarket, err := client.GetMarketPrices(ctx, 18953, livetennisapi.ListParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", market)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$market = $client->getMarketPrices(18953);\nprint_r($market);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar market = await client.GetMarketPricesAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(market));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final market = await client.getMarketPrices(18953);\n    print(market?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet market = try await client.getMarketPrices(matchId: 18953)\nprint(market)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -1305,6 +1960,38 @@
     "summary": "Bare price ticks of the mapped match-winner market, newest first (PRO)",
     "description": "Recent ticks only (no market wrapper). `limit` caps at 500; `minutes` bounds the lookback window; `cursor` pages an older match. 404 `no_market` when the match exists but has no mapped market (404 `not_found` for an unknown id). Retention (since 2026-09-15): in-play ticks of a match with a mapped market — from live to completion, plus a five-minute pad — are kept at full resolution and not deleted; pre-match / idle ticks and unmapped markets keep the tiers (every tick for an hour, ~1/minute to 24h, ~1/5 minutes after, deleted after 30 days). Ticks stamped before 2026-09-15 were already thinned under those tiers.\n\nTicks are kept for 30 days and then deleted, so a match older than that answers an empty `data` while its market stays mapped — that is retention, not a fault. Past 500 ticks, page with the cursor: read a page, and while `meta.has_more` is true pass `meta.next_cursor` back as `?cursor=` for the next (older) page. Pages never overlap or skip a tick (added 2026-09-09).",
     "operationId": "listMatchPrices",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/matches/18953/prices\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tprices, err := client.ListMatchPrices(ctx, 18953, livetennisapi.MatchPricesParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", prices)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$prices = $client->listMatchPrices(18953);\nprint_r($prices);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar prices = await client.ListMatchPricesAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(prices));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final prices = await client.listMatchPrices(18953);\n    print(prices.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet prices = try await client.getMatchPrices(matchId: 18953)\nprint(prices)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -1412,6 +2099,13 @@
    "get": {
     "summary": "Per-point price history — the match-winner quote in force at every played point (PRO)",
     "operationId": "listHistoryMatchPrices",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/matches/18953/prices\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "description": "One row per played point of a match with a mapped market, ascending by `seq` (added 2026-09-15). Each row carries the score state the BASIC tape publishes and, per neutral side (\"1\" = players.p1's outcome, \"2\" = p2's), the newest quote observed at or before the point's capture time — or, when none precedes it, the first quote after it within five minutes (negative lag). A side with no usable quote is null, never invented. `resolution` is an honest label of the join: tick (|lag| <= 15 s), minute (<= 90 s), coarse (older); matches played from 2026-09-15 align against the full-resolution in-play tape, earlier ones against the thinned tape and read minute/coarse. The ULTRA-only per-point fields (server, winner, serve, outcome) are not on this surface. Works on a live match too. 404 `no_market` when the match has no mapped market — enumerate with `GET /history/matches?has_market=true`.",
     "parameters": [
      {
@@ -1526,6 +2220,48 @@
     "summary": "Completed matches, newest first, with derived winner and tape coverage (BASIC)",
     "description": "Requires BASIC on the live API, or any Historical Data API plan (Starter and up — see https://livetennisapi.com/historical-tennis-data-api). A FREE key may spend its 20 free history calls per calendar month here; past that the answer is `403 upgrade_required` carrying `free_history_taste: \"used\"`. All tours, January 2023 → now (deeper results live in the results archive, 1968–2022, at `/history/archive/matches`). Filter to a date range with `from`/`to`, and by `tour`, `draw` (singles/doubles), `player` (either participant) and `country` — same vocabulary as `/matches`. Each item carries a `tape` object saying what point-by-point data we hold for that match, so a whole page can be qualified in one call instead of one request per match. NOTE `?coverage=` is applied AFTER the page is cut, so a filtered page is routinely shorter than `limit` (and may be empty) while later pages still hold matching matches — a short filtered page is not an end-of-data signal; `?points_complete=` filters the same way. `?tier=` (added 2026-09-22) selects by the level the tournament was played at in the match's season, and `?restated_since=` (added 2026-09-22) keeps only the matches whose published result was corrected after an instant — the poll to run after each settlement pass.",
     "operationId": "listCompletedMatches",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/matches\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    page = client.list_completed_matches()\n    print(page)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst page = await client.listCompletedMatches();\nconsole.log(page);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpage, err := client.ListCompletedMatches(ctx, livetennisapi.ListParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", page)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$page = $client->listCompletedMatches();\nprint_r($page);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar page = await client.ListCompletedMatchesAsync();\nConsole.WriteLine(JsonSerializer.Serialize(page));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final page = await client.listCompletedMatches();\n    print(page.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet page = try await client.listCompletedMatches()\nprint(page)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/hasMarket"
@@ -1641,6 +2377,23 @@
     "summary": "Measured completeness rollup per tour × draw bucket (BASIC)",
     "description": "Requires BASIC on the live API, or any Historical Data API plan (Starter and up — see https://livetennisapi.com/historical-tennis-data-api). A FREE key may spend its 20 free history calls per calendar month here; past that the answer is `403 upgrade_required` carrying `free_history_taste: \"used\"`. The numbers to read BEFORE choosing what to backtest, in one call instead of paging the archive. A PREBUILT snapshot rebuilt nightly right after the completeness ledger reconverges — never computed at read time — so `as_of` (= `built_at`) dates every number, and `ledger_max_computed_at` is the newest underlying per-match measurement. Buckets are atp/wta/challenger/itf/juniors × singles/doubles plus `other` (team ties, mixed, exhibitions, and matches with no stated event type — counted, never dropped, so the totals cannot lie), derived from the same registries as the `tour` and `draw` fields. `method` states the full measurement rule in one paragraph, so every number carries its own definition. As of 2026-08-18 the headline spread it exposes: 51.1% of ITF singles matches are point-complete on the best basis against 3.5% of ITF doubles — do not extrapolate a completeness rate across a tour group.",
     "operationId": "getHistoryCoverage",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/coverage\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    coverage = client.get_history_coverage()\n    print(coverage)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst coverage = await client.getHistoryCoverage();\nconsole.log(coverage);"
+     }
+    ],
     "responses": {
      "200": {
       "description": "The rollup artifact, dated by its own as_of",
@@ -1679,6 +2432,48 @@
     "summary": "Per-match tape — point-by-point score + per-point model probabilities (BASIC)",
     "description": "The tape is the point-by-point score sequence we hold for this match — every recorded score row including the model fields `win_probability_p1` and `danger` at that point — plus match metadata and the model profiles produced during the match. The model fields here are part of the paid History product by design, distinct from the ULTRA-gated LIVE model fields. One match per request. Requires BASIC on the live API, or the Historical Data API Starter plan and up.\n\nThe tape is NOT guaranteed to cover the whole match — check `meta.coverage` and `meta.point_source` before backtesting. Rows expanded after the fact from a finished-match point-by-point record carry a null `timestamp` and null model fields; nothing is ever synthesised.\n\nWORKS ON A LIVE MATCH, not only a completed one. The tape is assembled from whatever has been committed so far, so it is how you read the point-by-point history of a match in progress — including games played before you started watching, where we were already watching them. The LIST endpoint is completed-only; get live ids from `/matches?status=live`. `/matches/{matchId}/score` is one state; this is the sequence of states.",
     "operationId": "getMatchTape",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/matches/18953\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    tape = client.get_match_tape(18953)\n    print(tape)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst tape = await client.getMatchTape(18953);\nconsole.log(tape);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\ttape, err := client.GetMatchTape(ctx, 18953, livetennisapi.TapeParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", tape)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$tape = $client->getHistoryMatch(18953);\nprint_r($tape);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar tape = await client.GetMatchTapeAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(tape));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final tape = await client.getMatchTape(18953);\n    print(tape?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet tape = try await client.getMatchTape(18953)\nprint(tape)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -1749,6 +2544,13 @@
     "summary": "Published data-quality incidents (BASIC)",
     "description": "Every data-quality incident we have published, oldest window first. This is the register to reconcile against when a published value changed after you read it: each record states the window it applies to, the rule before and after, what the defect was, which surfaces it touched, how to tell an affected row from a clean one, and whether corrections and a per-match list are available. Nothing here is inferred at read time. The register is part of a release, so a record appears only when we have decided what it says, and it does not change between releases.",
     "operationId": "listHistoryIncidents",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/incidents\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "responses": {
      "200": {
       "description": "The incident register.",
@@ -1803,6 +2605,13 @@
     "summary": "The matches one incident affected, as JSONL or CSV (BASIC)",
     "description": "One row per affected match, streamed as JSONL by default or CSV with `?format=csv`. Columns are `incident_id`, `match_id`, `tournament`, `tour`, `round`, `draw_stage`, `scheduled_time`, `affected_field`, `served` and `expected`. `served` and `expected` carry that incident's own vocabulary: for the deciding-set rule `match_tiebreak` against `full_set`, for the price side `side_reversed` against `side_players`, and for a field repair the before and after values. Rows are derived from stored data by the same code every consumer of that field uses. A match whose derivation would be a guess is left out, and the incident's `matches.note` says which those are, so this export is exact rather than complete.",
     "operationId": "listIncidentMatches",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/incidents/deciding-set-level-rule-2026-08-18/matches\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "parameters": [
      {
       "name": "incidentId",
@@ -1879,6 +2688,53 @@
     "summary": "Results archive (1968–2022) — deep historical results (BASIC)",
     "description": "Completed-match RESULTS from a licensed historical corpus — ATP and WTA main draws, qualifying/challengers and futures tiers, 1968 through 2022. Winner/loser-shaped records with final score, round, seeds, the players' ranks AT THE TIME, and per-match serve statistics where the era recorded them. Requires BASIC on the live API, or any Historical Data API plan (Starter and up).\n\nA SEPARATE id space from `/matches` — archive people are identified by the corpus person id and by name, never by roster player ids — and the archive ends where our own point-by-point coverage begins (2023-01), so no match is ever served from two datasets. `event_date` is the TOURNAMENT START date, the only date records of this era carry.",
     "operationId": "listArchiveMatches",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/archive/matches?name=borg\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    page = client.list_archive_matches(name=\"borg\")\n    print(page)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst page = await client.listArchiveMatches({ name: 'borg' });\nconsole.log(page);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpage, err := client.ListArchiveMatches(ctx, livetennisapi.ArchiveMatchesParams{Name: \"borg\"})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", page)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$page = $client->listArchiveMatches(['name' => 'borg']);\nprint_r($page);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar page = await client.ListArchiveMatchesAsync(name: \"borg\");\nConsole.WriteLine(JsonSerializer.Serialize(page));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final page = await client.listArchiveMatches(name: 'borg');\n    print(page.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet page = try await client.listArchiveMatches(name: \"borg\")\nprint(page)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\npage <- archive_matches(name = \"borg\", key = key)\nprint(page)"
+     }
+    ],
     "parameters": [
      {
       "name": "tour",
@@ -2000,6 +2856,48 @@
     "summary": "One archive result, with serve statistics where recorded (BASIC)",
     "description": "Same entitlement as the archive listing. `stats` is null for the (mostly pre-1991) rows the source never recorded statistics for — never synthesised. A result played 2013–2022 may also have a reconstructed point-by-point tape at `/history/archive/matches/{archiveId}/tape`; the RESULT stays on BASIC either way.",
     "operationId": "getArchiveMatch",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/archive/matches/1\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    archive_match = client.get_archive_match(1)\n    print(archive_match)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst archiveMatch = await client.getArchiveMatch(1);\nconsole.log(archiveMatch);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tarchiveMatch, err := client.GetArchiveMatch(ctx, 1)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", archiveMatch)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$archiveMatch = $client->getArchiveMatch(1);\nprint_r($archiveMatch);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar archiveMatch = await client.GetArchiveMatchAsync(1);\nConsole.WriteLine(JsonSerializer.Serialize(archiveMatch));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final archiveMatch = await client.getArchiveMatch(1);\n    print(archiveMatch?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet archiveMatch = try await client.getArchiveMatch(1)\nprint(archiveMatch)"
+     }
+    ],
     "parameters": [
      {
       "name": "archiveId",
@@ -2041,6 +2939,13 @@
     "summary": "Reconstructed 2013–2022 point-by-point tape for one archive result (ULTRA, or any History plan)",
     "description": "The score sequence behind a 2013–2022 archive result: RECONSTRUCTED POINT SEQUENCES, NO CAPTURE TIMESTAMPS. The result tells you what happened; this tells you how.\n\nNOBODY WATCHED THESE MATCHES, and every field that would imply otherwise is null. `timestamp` is null on every row — not by convention, but because the production table has no timestamp column at all, so no repair, backfill or re-archive can put a wall clock on a 2016 row, and the promotion script refuses to run if such a column ever appears. `win_probability_p1` and `danger` are null on every row: the model was not running in 2016 and nothing has been back-computed and served as if it had been (`meta.model_rows` and `meta.observed_rows` are both 0, always). `profiles` is always `[]`. The rule we publish for the 2023+ tape — a non-null `timestamp` means we watched that point live — holds across both halves of the product.\n\nYEARS: 2013–2022 ONLY. 97,901 matches and 14,340,663 rows. The results archive holds a further 977,903 matches from 1968–2012 and NONE of them has a tape — there is no public point-by-point record of those years to rebuild and we do not manufacture one. A match with no tape answers 404, which is also the answer when a tape exists and failed the proof below; the two are deliberately not distinguished.\n\nCOVERAGE OF THE ERA, thin spots beside the strong ones: 19.3% of archive matches played 2013–2022 overall, 44.9% of tour-level play. Main-draw tour buckets run 91.6–98.7% (ATP Masters 98.7%, ATP slam 98.0%, WTA Premier Mandatory 97.9%, WTA slam 97.4%, ATP 250–500 95.4%, WTA Premier 94.1%, WTA International 91.6%); ATP Challenger main draws 55.3% and Challenger qualifying 33.6%; slam QUALIFYING is thin at 16.0% (ATP) and 18.1% (WTA); ITF and futures are effectively absent — 25 of 116,575 ATP futures matches, 68 of 19,162 ITF M15, 48 of 9,380 ITF M25 — and this product does not cover them. If your work is ITF, this is the wrong dataset and we would rather you knew now. 31.0% of the corpus is qualifying-draw play, which is unusual at this scale and is the part you are least likely to hold already.\n\nHOW A TAPE IS BOUND TO ITS MATCH. A tape attached to the wrong match is silent, permanent and poisons anything trained on it, so each one proves five things before publication: the EDITION binds by majority vote onto one archive tournament; the NAMES resolve to exactly one archive row with an unambiguous orientation; the ROUND agrees through an explicit map (this is what separates the qualifying and main-draw meetings of the same pair inside one edition); the SET SPINE derived from the rows equals the published final score exactly (a retirement matches on a one-directional prefix rule — a tape may stop short, never run past the printed score); and the recorded match DATE lies inside the tournament's window. The tape is then walked step by step against 23 interior invariants — games and sets never regress or jump, a closed set holds a score a set can actually finish on, a tiebreak is flagged only where one can be played, points never run backwards inside a game, `seq` is contiguous. A tape that fails any clause or any invariant is REFUSED WHOLESALE rather than published against a guess, which is why this endpoint answers 404 instead of serving a probable match.\n\n`archiveId` is an `archive_matches.id` (the `id` on a `/history/archive/matches` row), NOT a match id — the two are separate, overlapping integer spaces, so passing one to the other's routes resolves a different, real record without erroring. The response names it `meta.archive_match_id` for exactly that reason. Rows are WINNER-FIRST (`sets[0]` / `games[0]` / `points[0]` are the winner's, `server: 1` means the winner was serving), unlike the p1/p2-shaped 2023+ tape — a live match has no winner while it is being played.\n\nThis operation takes NO query parameters: `sequence` and `points` are ignored rather than refused. `meta.sequence` is always `raw` — a reconstructed tape has one source and no corrections, so there is nothing for a clean collapse to remove.\n\nTier: core ULTRA, or any active History plan (Starter included, which opens it on a FREE core key). The archive RESULT itself (`GET /history/archive/matches/{archiveId}`) stays on BASIC — core BASIC and core PRO read the result and are refused the tape, and the refusal is `403 upgrade_required` carrying `capability: archive_tape`. The per-year BULK files (`?kind=archive_tape`) are a separate gate: core ULTRA, or a History Pro/Business subscription, or an active one-off package window.",
     "operationId": "getArchiveTape",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/archive/matches/1/tape\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "parameters": [
      {
       "name": "archiveId",
@@ -2090,6 +2995,53 @@
     "summary": "Archive player bios — hand, DOB, country, height, career-high (BASIC)",
     "description": "People of the results archive (1968–2022), in their own id space — `id` is the corpus person id that archive match rows carry as `winner.player_id` / `loser.player_id`, scoped per tour; never a roster id. Career-high rank and the earliest week it was reached are computed offline from the corpus's own weekly ranking tables. Null fields are the era's silence, never guessed. Requires BASIC, or any Historical Data API plan.",
     "operationId": "listArchivePlayers",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/archive/players?name=borg\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    page = client.list_archive_players(\"borg\")\n    print(page)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst page = await client.listArchivePlayers({ name: 'borg' });\nconsole.log(page);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpage, err := client.ListArchivePlayers(ctx, livetennisapi.ArchivePlayersParams{Name: \"borg\"})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", page)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$page = $client->listArchivePlayers(['name' => 'borg']);\nprint_r($page);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar page = await client.ListArchivePlayersAsync(\"borg\");\nConsole.WriteLine(JsonSerializer.Serialize(page));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final page = await client.listArchivePlayers(name: 'borg');\n    print(page.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet page = try await client.listArchivePlayers(name: \"borg\")\nprint(page)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\npage <- archive_players(name = \"borg\", key = key)\nprint(page)"
+     }
+    ],
     "parameters": [
      {
       "name": "id",
@@ -2176,6 +3128,53 @@
     "summary": "Career aggregates over the results archive, 1968–2022 (BASIC)",
     "description": "One player's whole archive career in one response: W-L record (overall, by surface, by level, by year), titles, and the summed serve-stat block with derived ratios. Everything is a sum or a ratio of sums over rows you can fetch individually from `/history/archive/matches` — nothing is modelled. `serve.matches_with_stats` states the coverage honestly: the corpus records per-match serve statistics from 1991 only, so a 1970s career has a full W-L record and an empty serve block. Ambiguous name fragments are refused with candidates, and an exact name selects its person even where a longer name contains it (same rule as `/h2h`); an unknown name is a 404. Requires BASIC, or any Historical Data API plan.",
     "operationId": "getArchiveCareer",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/archive/career?name=borg\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    career = client.get_archive_career(\"borg\")\n    print(career)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst career = await client.getArchiveCareer('borg');\nconsole.log(career);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tcareer, err := client.GetArchiveCareer(ctx, \"borg\")\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", career)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$career = $client->getArchiveCareer('borg');\nprint_r($career);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar career = await client.GetArchiveCareerAsync(\"borg\");\nConsole.WriteLine(JsonSerializer.Serialize(career));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final career = await client.getArchiveCareer('borg');\n    print(career?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet career = try await client.getArchiveCareer(name: \"borg\")\nprint(career)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\ncareer <- archive_career(\"borg\", key = key)\nprint(career)"
+     }
+    ],
     "parameters": [
      {
       "name": "name",
@@ -2222,6 +3221,53 @@
     "summary": "Head-to-head across the results archive (1968–2022) and our own completed matches (2023→now) (BASIC)",
     "description": "The record between two players, assembled from BOTH halves of the product: the results archive, where the winner is a stored column, and our own completed matches, where the winner is derived from the final recorded state. Names are the keys — archive people have no roster ids. A fragment matching more than one player is refused with the candidate list (`400 ambiguous_name`), because two people summed into one record is a wrong answer, not a convenience. Passing a name EXACTLY selects that person, even where a longer name contains it, so `Carlos Alcaraz` resolves although `Carlos Alcaraz Gonzalez` also exists. A name you did not type in full stays a fragment: `Sinner` still refuses, and lists Jannik and Martin. Totals count meetings with a KNOWN winner; `undecided` counts the rest. Walkovers and retirements are part of the record, and each meeting carries `outcome` so you can exclude them. Requires BASIC, or any Historical Data API plan. On ULTRA, a per-player `stats` block adds serve/return/break-point aggregates over the pairing: `archive_serve` (serve-side, from 1991) and `current` (2023+, adding return and break-point conversion, aces and winners), each with `meetings_with_stats`.",
     "operationId": "getHeadToHead",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/h2h?p1=federer&p2=nadal\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    h2h = client.get_h2h(\"federer\", \"nadal\")\n    print(h2h)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst h2h = await client.getH2H('federer', 'nadal');\nconsole.log(h2h);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\th2h, err := client.GetHeadToHead(ctx, \"federer\", \"nadal\")\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", h2h)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$h2h = $client->getHeadToHead('federer', 'nadal');\nprint_r($h2h);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar h2h = await client.GetHeadToHeadAsync(\"federer\", \"nadal\");\nConsole.WriteLine(JsonSerializer.Serialize(h2h));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final h2h = await client.getHeadToHead(p1: 'federer', p2: 'nadal');\n    print(h2h?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet h2h = try await client.getHeadToHead(p1: \"federer\", p2: \"nadal\")\nprint(h2h)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\nh2h <- head_to_head(\"federer\", \"nadal\", key = key)\nprint(h2h)"
+     }
+    ],
     "parameters": [
      {
       "name": "p1",
@@ -2275,6 +3321,48 @@
     "summary": "List the pre-built monthly bulk history packages (PRO)",
     "description": "Bulk downloads are a heavier product than single-match tape reads. Requires PRO on the live API, or the Historical Data API Pro plan and up, or a one-off package access pass. A key that can read the tape but is not package-entitled receives `403 upgrade_required`.",
     "operationId": "listHistoryPackages",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/packages\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    packages = client.list_history_packages()\n    print(packages)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst packages = await client.listHistoryPackages();\nconsole.log(packages);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpackages, err := client.ListHistoryPackages(ctx, livetennisapi.HistoryPackagesParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", packages)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$packages = $client->listHistoryPackages();\nprint_r($packages);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar packages = await client.ListHistoryPackagesAsync();\nConsole.WriteLine(JsonSerializer.Serialize(packages));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final packages = await client.listHistoryPackages();\n    print(packages.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet packages = try await client.listHistoryPackages()\nprint(packages)"
+     }
+    ],
     "parameters": [
      {
       "name": "kind",
@@ -2356,6 +3444,48 @@
     "summary": "One monthly package — manifest, or the bulk file itself (PRO)",
     "description": "Without `format` returns the package manifest (file set, counts, sha256). With `format=jsonl` or `format=csv` streams that file as an attachment. Same entitlement as `/history/packages`. 404 when the month has not been built yet — list available months first.",
     "operationId": "getHistoryPackage",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/packages/2026-07\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    history_package = client.get_history_package(\"2026-07\")\n    print(history_package)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst historyPackage = await client.getHistoryPackage('2026-07');\nconsole.log(historyPackage);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\thistoryPackage, err := client.GetHistoryPackage(ctx, \"2026-07\", livetennisapi.PackageTape)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", historyPackage)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$historyPackage = $client->getHistoryPackage('2026-07');\nprint_r($historyPackage);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar historyPackage = await client.GetHistoryPackageAsync(\"2026-07\");\nConsole.WriteLine(JsonSerializer.Serialize(historyPackage));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final historyPackage = await client.getHistoryPackage('2026-07');\n    print(historyPackage?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet historyPackage = try await client.getHistoryPackage(period: \"2026-07\")\nprint(historyPackage)"
+     }
+    ],
     "parameters": [
      {
       "name": "period",
@@ -2452,6 +3582,53 @@
     "summary": "Upcoming scheduled fixtures, earliest first (FREE)",
     "description": "One row per schedule entry, keyed on the schedule's own event key. A fixture bound to a match (`match_id` set) is served with the MATCH's `status` (mapped onto the fixture vocabulary: `upcoming` is `scheduled`, `completed` is `finished`) and `start_time`, read at request time (2026-10-29). The match row is the fresher record: the ingest moves it within minutes of the schedule changing, while the fixture row follows the 6-hourly refresher. A fixture whose own `status` is `cancelled` or `postponed` keeps it, since its `reason` carries the stated word. A fixture whose `is_qualifying` is null takes the match's value when the match states one; null is never turned into false without a source. A fixture with no `match_id` is served as stored. Before this, `/fixtures` and `/matches` could disagree on the same match for up to six hours.",
     "operationId": "listFixtures",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/fixtures\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    page = client.list_fixtures()\n    print(page)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst page = await client.listFixtures();\nconsole.log(page);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpage, err := client.ListFixtures(ctx, livetennisapi.ListFixturesParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", page)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$page = $client->listFixtures();\nprint_r($page);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar page = await client.ListFixturesAsync();\nConsole.WriteLine(JsonSerializer.Serialize(page));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final page = await client.listFixtures();\n    print(page.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet page = try await client.listFixtures()\nprint(page)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\npage <- list_fixtures(key = key)\nprint(page)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/tour"
@@ -2508,6 +3685,48 @@
     "summary": "Your own usage vs quota (FREE — any tier)",
     "description": "Durable daily usage for the calling key: tier, limits, today's calls (current to the second) and a 30-day history. The per-minute window is on the X-RateLimit-* headers of every response, not here. Calls to this endpoint are quota-exempt — checking your usage never consumes it.",
     "operationId": "getUsage",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/usage\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    usage = client.get_usage()\n    print(usage)"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tusage, err := client.GetUsage(ctx)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", usage)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$usage = $client->getUsage();\nprint_r($usage);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar usage = await client.GetUsageAsync();\nConsole.WriteLine(JsonSerializer.Serialize(usage));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final usage = await client.getUsage();\n    print(usage?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet usage = try await client.getUsage()\nprint(usage)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\nusage <- api_usage(key = key)\nprint(usage)"
+     }
+    ],
     "responses": {
      "200": {
       "description": "Usage summary",
@@ -2533,6 +3752,53 @@
     "summary": "Rankings and Elo — rank-ordered listing (PRO) or per-player as-of records (ULTRA); the as-of Elo tape is ULTRA in both modes",
     "description": "Returns, per ranking system, the newest record effective ON OR BEFORE `as_of` — never one dated after it. Every other ranking field in this API is the player's CURRENT value joined at read time, so replaying an old match elsewhere shows today's ranks; this endpoint is the point-in-time answer. Systems are never collapsed into a single \"rank\": ATP/WTA and the ITF circuits carry rank+points, UTR carries a rating with null rank and points because it has neither. `meta.coverage.oldest_available` gives the earliest date each system can answer for — ITF and UTR observations reach back to 2026-06-01 (append-only per-player history accumulates from 2026-07-29) and nothing earlier can be reconstructed.\n\nTWO MODES — with `player` ids (ULTRA) — the per-player point-in-time records described above. WITHOUT `player` (PRO) — the FULL published table in rank order for exactly one `system`, the newest week at or before `as_of`; rows carry `player_name` as published and a null `player_id` for players outside our roster, so the table has no silent holes. `utr` has no listing (a rating, not a ranking).\n\nSYSTEM=UTR — observed ratings, honestly bounded. UTR records are observed from UTR's public search: a rating UTR withholds appears as ABSENT, never as 0, and `rating` is the only populated value — `rank` and `points` are always null. Per-player as-of ONLY — there is deliberately no UTR listing, because a table of only the players we happen to track would be a fake leaderboard. Per-player history accumulates from 2026-07-29; scattered earlier single-snapshot observations reach back to 2026-06-01. Coverage is a deliberate bias, not a roster mirror: the 24-hour sweep targets players with no official rank and no Elo rating (so it skews ITF), and among players active in the last 60 days it holds 931 of 5,606 ITF players (16.6%), 197 of 1,903 Challenger (10.4%), 43 of 573 WTA (7.5%) and 15 of 525 ATP (2.9%) — measured 2026-08-17.\n\nSYSTEM=ELO — THE AS-OF ELO TAPE (ULTRA in BOTH modes). Our own computed Elo for 65,622 players on four independent ladders (overall, hard, clay, grass), back to 1877 (ATP) and 1968 (WTA), covering the main tours plus challengers plus the futures tier. It answers what a player was rated BEFORE a given match, which is the only shape a backtest can consume. It is a HISTORICAL TAPE rather than a live leaderboard — the corpus behind it is fixed and no longer receives new results, so `meta.coverage.newest_available` states the tape's head date on every response (2026-06-15 at publication), and you should read it before treating the table as current. A week's results become effective 14 days after that week begins — strictly after the longest event in tennis — so the failure direction is staleness, never look-ahead. `rating` is the Elo. `rank` is LISTING MODE ONLY and is null in per-player mode, because an Elo has no global rank at a past instant until you say which field and which activity window you mean. `points` is always null. `matches` is the count on THAT ladder, published so that a rating still near its 1500 cold start is visible rather than inferred. A ladder a player has never played is omitted, never substituted. Ratings are on our own scale, are not comparable with Elo published elsewhere, and do not decay — a surface played only a few weeks a year (grass in particular) moves slowly, so a rising player can sit below an established one for several seasons while beating them. A CURRENT per-player Elo remains free on `GET /players/{id}`; this is the point-in-time series, the leaderboard and the bulk export. That free rating is computed differently and sits on a DIFFERENT scale — the two differ by roughly 150 Elo of per-player standard deviation — so never present a rating from one scale against a rating from the other. The Elo listing REQUIRES `tour` — the ATP and WTA walks are disjoint, so a combined leaderboard would not be comparable — and takes exactly one `surface` (default `overall`). `elo` is never implicit — omitting `system` returns the official systems only.",
     "operationId": "listRankings",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/rankings?system=atp\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    rankings = client.list_rankings(system=\"atp\")\n    print(rankings)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst rankings = await client.listRankings({ system: 'atp' });\nconsole.log(rankings);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\trankings, err := client.ListRankings(ctx, livetennisapi.RankingsParams{System: []livetennisapi.RankingSystem{livetennisapi.RankingATP}})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", rankings)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$rankings = $client->listRankings(systems: 'atp');\nprint_r($rankings);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar rankings = await client.ListRankingsAsync(RankingSystem.Atp);\nConsole.WriteLine(JsonSerializer.Serialize(rankings));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final rankings = await client.listRankings(systems: [RankingSystem.atp]);\n    print(rankings.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet rankings = try await client.listRankings(systems: [.atp])\nprint(rankings)"
+     },
+     {
+      "lang": "r",
+      "label": "R",
+      "source": "library(livetennisapi)\n\nkey <- Sys.getenv(\"LIVETENNISAPI_KEY\")\nrankings <- rankings(system = \"atp\", key = key)\nprint(rankings)"
+     }
+    ],
     "parameters": [
      {
       "name": "player",
@@ -2700,6 +3966,48 @@
     "summary": "Charted matches with shot-by-shot data (ULTRA)",
     "description": "Charted matches, newest first. RALLY CONSTRUCTION IS THE LAYER BELOW THE TAPE: the tape says what the score became after each point, this says how the point was played.\n\nIt has its OWN id space. The charted corpus and our own match table are different populations — the corpus reaches back decades and concentrates on the biggest events, while our matches begin when our own collection did. Keying this on our match ids would hide most of it. Ask this endpoint for the authoritative coverage list rather than assuming a match is charted: charting is human work, so coverage is deep, not universal.",
     "operationId": "listRallyMatches",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/rally/matches?player=sampras\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    page = client.list_rally_matches(player=\"sampras\")\n    print(page)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst page = await client.listRallyMatches({ player: 'sampras' });\nconsole.log(page);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tpage, err := client.ListRallyMatches(ctx, livetennisapi.RallyMatchesParams{Player: \"sampras\"})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", page)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$page = $client->listRallyMatches(['player' => 'sampras']);\nprint_r($page);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar page = await client.ListRallyMatchesAsync(player: \"sampras\");\nConsole.WriteLine(JsonSerializer.Serialize(page));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final page = await client.listRallyMatches(player: 'sampras');\n    print(page.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet page = try await client.listRallyMatches(player: \"sampras\")\nprint(page)"
+     }
+    ],
     "parameters": [
      {
       "name": "player",
@@ -2799,6 +4107,48 @@
     "summary": "Rally construction for one charted match (ULTRA)",
     "description": "One charted match with its points, in play order. Paged with `limit`/`offset`; `meta.total` is the match's full point count.",
     "operationId": "getRallyMatch",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/rally/matches/1\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    rally = client.get_rally_match(1)\n    print(rally)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst rally = await client.getRallyMatch(1);\nconsole.log(rally);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\trally, err := client.GetRallyMatch(ctx, 1, livetennisapi.ListParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", rally)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$rally = $client->getRallyMatch(1);\nprint_r($rally);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar rally = await client.GetRallyMatchAsync(1);\nConsole.WriteLine(JsonSerializer.Serialize(rally));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final rally = await client.getRallyMatch(1);\n    print(rally?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet rally = try await client.getRallyMatch(1)\nprint(rally)"
+     }
+    ],
     "parameters": [
      {
       "name": "rallyMatchId",
@@ -2864,6 +4214,48 @@
     "summary": "Rally construction by OUR match id (ULTRA)",
     "description": "Rally construction addressed by OUR match id, resolved through the optional link. Answers `404 {\"error\":\"not_charted\"}` when we hold the match but nobody charted it — deliberately distinct from \"no such match\", because most of our matches are not charted and a consumer walking the archive must tell them apart.",
     "operationId": "getMatchRally",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/history/matches/18953/rally\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    rally = client.get_match_rally(18953)\n    print(rally)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst rally = await client.getMatchRally(18953);\nconsole.log(rally);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\trally, err := client.GetMatchRally(ctx, 18953, livetennisapi.ListParams{})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", rally)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$rally = $client->getMatchRally(18953);\nprint_r($rally);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar rally = await client.GetMatchRallyAsync(18953);\nConsole.WriteLine(JsonSerializer.Serialize(rally));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final rally = await client.getMatchRally(18953);\n    print(rally?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet rally = try await client.getMatchRally(matchId: 18953)\nprint(rally)"
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -2927,6 +4319,48 @@
     "summary": "Career shot-level charting aggregate for one player (ULTRA)",
     "description": "The deepest serve/return profile we hold: serve placement (deuce/ad × wide/body/T), return depth and outcomes, net and serve-and-volley conversion, clutch break/game/set-point serving and returning, winners and unforced errors by wing, and rally-length and shot-direction tendencies — summed over the player's charted matches. `name` (min 3 chars) is the key; a fragment matching more than one charted person is refused with the candidate list, and `gender=men|women` disambiguates. An exact name selects its person even where a longer name contains it (same rule as `/h2h`), while one name charted under both genders still refuses, which is what `gender` is for. Every field is a raw SUM over the player's Total rows and `matches_charted` states the sample. COVERAGE IS CURATED — 11,803 charted matches across both tours back to the 1960s, concentrated on the majors, NOT full-slate coverage.",
     "operationId": "getChartingPlayer",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/charting/players?name=graf\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    charting_player = client.get_charting_player(\"graf\")\n    print(charting_player)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst chartingPlayer = await client.getChartingPlayer('graf');\nconsole.log(chartingPlayer);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tchartingPlayer, err := client.GetChartingPlayer(ctx, livetennisapi.ChartingPlayerParams{Name: \"graf\"})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", chartingPlayer)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$chartingPlayer = $client->getChartingPlayer('graf');\nprint_r($chartingPlayer);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar chartingPlayer = await client.GetChartingPlayerAsync(\"graf\");\nConsole.WriteLine(JsonSerializer.Serialize(chartingPlayer));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final chartingPlayer = await client.getChartingPlayer('graf');\n    print(chartingPlayer?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet chartingPlayer = try await client.getChartingPlayer(name: \"graf\")\nprint(chartingPlayer)"
+     }
+    ],
     "parameters": [
      {
       "name": "name",
@@ -3001,6 +4435,48 @@
     "summary": "One charted match, every stat family for both players (ULTRA)",
     "description": "Every charting stat family for one charted match, both players, with the per-set split (row/set 1, 2, Total) exactly as charted. `chartingMatchId` is this product's own id space (1960–2026, mostly matches with no counterpart in the live table).",
     "operationId": "getChartingMatch",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/charting/matches/1\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    charting_match = client.get_charting_match(1)\n    print(charting_match)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst chartingMatch = await client.getChartingMatch(1);\nconsole.log(chartingMatch);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tchartingMatch, err := client.GetChartingMatch(ctx, 1)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", chartingMatch)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$chartingMatch = $client->getChartingMatch(1);\nprint_r($chartingMatch);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar chartingMatch = await client.GetChartingMatchAsync(1);\nConsole.WriteLine(JsonSerializer.Serialize(chartingMatch));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final chartingMatch = await client.getChartingMatch(1);\n    print(chartingMatch?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet chartingMatch = try await client.getChartingMatch(1)\nprint(chartingMatch)"
+     }
+    ],
     "parameters": [
      {
       "name": "chartingMatchId",
@@ -3059,6 +4535,38 @@
     "summary": "Register an outbound webhook (ULTRA, direct keys only)",
     "description": "We POST the same frames the WebSocket sends to your HTTPS endpoint on every live score commit. Up to 3 webhooks per key (`409 webhook_limit` past that). The response is the ONLY time the signing secret is shown — store it.\n\nEach delivery body is the frame plus a top-level `delivery_id`, a string unique per delivery. Verify the `X-LTAPI-Signature-V1` header, `t=<unix seconds>,v1=<hex>`. The hex is HMAC-SHA256, keyed with your webhook secret, of the string `<t>.<raw request body>`. Accept the request if any `v1` value matches. Then run these receiver checks. Reject a `t` more than 5 minutes from your clock. Compare with a constant-time function, over the raw bytes before any JSON parsing. Dedupe on `delivery_id` and keep each id until `t` + 5 minutes on your clock. With several workers, record it with an atomic insert-if-absent. `X-LTAPI-Timestamp` repeats `t`, and `X-LTAPI-Event` names the frame type: `score`, `score_withdrawn`, `break_point`, `break_point_result`, `point` or `status`.\n\nDeprecated: `X-LTAPI-Signature` (`sha256=<hex>`, HMAC-SHA256 of the raw body alone). It does not cover the timestamp, so a captured delivery still verifies when re-sent later under a fresh `X-LTAPI-Timestamp`. We keep sending it unchanged until 2027-02-01. Deliveries sent from 00:00 UTC on that date do not carry it. Both headers use the same secret. Once your receiver checks `X-LTAPI-Signature-V1`, require it and never fall back to the old header: a fallback lets a re-stamped replay through.\n\nDelivery is best-effort, at-most-once, no replay: one attempt per frame with a ~3s timeout and redirects disabled. Every `score` frame is the complete current score, so a missed delivery self-corrects on the next commit. A `point` frame is an EVENT, not a state — a missed one does NOT self-correct; recover it with `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`. After 25 consecutive failures the webhook is disabled automatically (`enabled:false`, `last_error` set — visible in `GET /webhooks`); delete and re-register to resume.",
     "operationId": "createWebhook",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl -X POST \"https://api.livetennisapi.com/api/public/v1/webhooks\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"url\": \"https://example.com/hooks/tennis\"}'"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\twebhook, err := client.CreateWebhook(ctx, livetennisapi.WebhookParams{URL: \"https://example.com/hooks/tennis\"})\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", webhook)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$webhook = $client->createWebhook('https://example.com/hooks/tennis');\nprint_r($webhook);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar webhook = await client.CreateWebhookAsync(\"https://example.com/hooks/tennis\");\nConsole.WriteLine(JsonSerializer.Serialize(webhook));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final webhook = await client.createWebhook(url: 'https://example.com/hooks/tennis');\n    print(webhook?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet webhook = try await client.createWebhook(url: \"https://example.com/hooks/tennis\")\nprint(webhook)"
+     }
+    ],
     "requestBody": {
      "required": true,
      "content": {
@@ -3132,6 +4640,38 @@
    "get": {
     "summary": "List your webhooks (ULTRA, direct keys only; never includes the secret)",
     "operationId": "listWebhooks",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/webhooks\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\twebhooks, err := client.ListWebhooks(ctx)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", webhooks)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$webhooks = $client->listWebhooks();\nprint_r($webhooks);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar webhooks = await client.ListWebhooksAsync();\nConsole.WriteLine(JsonSerializer.Serialize(webhooks));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final webhooks = await client.listWebhooks();\n    print(webhooks.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet webhooks = try await client.listWebhooks()\nprint(webhooks)"
+     }
+    ],
     "responses": {
      "200": {
       "description": "Your webhooks",
@@ -3175,6 +4715,38 @@
    "delete": {
     "summary": "Remove one of your webhooks (ULTRA, direct keys only)",
     "operationId": "deleteWebhook",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl -X DELETE \"https://api.livetennisapi.com/api/public/v1/webhooks/1\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\tif err := client.DeleteWebhook(ctx, 1); err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Println(\"done\")\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$deleted = $client->deleteWebhook(1);\nprint_r($deleted);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar deleted = await client.DeleteWebhookAsync(1);\nConsole.WriteLine(JsonSerializer.Serialize(deleted));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final deleted = await client.deleteWebhook(1);\n    print(deleted);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet deleted = try await client.deleteWebhook(1)\nprint(deleted)"
+     }
+    ],
     "parameters": [
      {
       "name": "webhookId",
@@ -3221,6 +4793,13 @@
     "summary": "One flat object for on-air graphics (ULTRA)",
     "description": "Added 2026-09-24, from a broadcaster's request. ONE flat JSON object for one match, built so a graphics template can bind each field to a fixed path.\n\nThree properties make it different from `GET /matches/{matchId}`, and each exists because a graphics pipeline breaks without it. The object is FLAT — no nested score object, no arrays of arrays. Every key is PRESENT on every read: a value we do not hold is `null`, never missing, because a missing key breaks a template binding. And the score is already in DISPLAY form — `p1_points` reads `\"40\"` or `\"AD\"`, `set_line` is one string such as `\"5-7 2-0\"`, and each set has its own column — so nothing has to be formatted downstream.\n\nIt is a PROJECTION of what the public API already publishes: the match object, its embedded score and the model probability, plus the break-, set- and match-point flags derived by the same classifiers the scoring pipeline uses. Nothing here is a new fact and nothing is guessed.\n\nBUILT FOR 1 Hz. Every response carries a strong `ETag` and `Cache-Control: no-cache, max-age=1`; send `If-None-Match` and an unchanged state costs a 304 with no body. ULTRA's burst window is 600 requests a minute, so ten single-match pollers at 1 Hz fit on one key. Detect a new state on `sequence`, not on `served_at`, which changes on every read.\n\nThe key may be sent as `Authorization: Bearer <key>`, as `X-API-Key`, or as `?token=<key>` for tools that cannot set a header.",
     "operationId": "getBroadcastMatch",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/broadcast/match/18953\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "parameters": [
      {
       "$ref": "#/components/parameters/matchId"
@@ -3260,6 +4839,13 @@
     "summary": "The broadcast object for every live match (ULTRA)",
     "description": "The same object as `GET /broadcast/match/{matchId}`, for every actively-live match, in one call. A ticker or a multi-match wall polls this instead of one URL per match, and it stays ONE request however many matches are live. At most 200 objects.\n\nSame 1 Hz contract, same `ETag` and `Cache-Control`, same display-form fields, same every-key-present rule. An empty `data` means nothing is live right now and is the ordinary overnight answer, not a fault.",
     "operationId": "getBroadcastLive",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/broadcast/live\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     }
+    ],
     "parameters": [
      {
       "name": "tour",
@@ -3316,6 +4902,48 @@
     "summary": "Mint a connection token for the high-fan-out push feed (ULTRA)",
     "description": "Returns a short-lived signed token plus the push WebSocket URL and the channel vocabulary: `match:{match_id}` per-match streams and `slate:all` for every live score frame. Frames are the same allowlist score objects the polling endpoints return. This is a separate surface from the native `/ws` feed described above — same ULTRA gate, built for high fan-out (no shared connection ceiling), and the recommended home for continuous/production streaming.\n\nThe endpoint speaks the **Centrifugo client protocol** (v2, JSON). Easiest path: the official Python (`livetennisapi` ≥ 1.4.0) and JS (≥ 1.5.0) SDKs ship a built-in `PushStream` client — no extra dependency. Raw protocol, if you prefer your own client: (1) open a WebSocket to `ws_url`; (2) send `{\"connect\": {\"token\": \"<token>\"}, \"id\": 1}` — the token goes INSIDE this JSON frame, never as a raw first message; (3) subscribe per channel with `{\"subscribe\": {\"channel\": \"slate:all\"}, \"id\": 2}`; (4) publications arrive as `{\"push\": {\"channel\": ..., \"pub\": {\"data\": <frame>}}}`; (5) the server's heartbeat is an empty JSON object `{}` — reply with `{}` promptly or you will be disconnected. Messages may batch several newline-delimited JSON objects. Tokens are short-lived and the connection closes around token expiry: mint a fresh token on EVERY reconnect and re-subscribe.\n\nThe `channels` object lists only channels that will actually deliver for your key right now (a channel name in this response is a promise). Where enabled server-side, additional channel families appear: `point:match:{match_id}` / `point:slate` (per-point events), listed — as `point_match` / `point_slate` in the vocabulary — only for keys whose plan carries the point surface, and `signal:match:{match_id}` / `signal:slate` (derived `break_point`, `break_point_result` and `divergence` events, and since 2026-09-12 the stoppage family: `medical_timeout_start/end`, `trainer_called/_end`, `toilet_break_start/end`, `stoppage_start/end`, `pause_start/end`). A family absent from the response will not deliver for your key right now. Deliberately separate channels: a `slate:all` subscriber asked for score states and never starts receiving events unasked. Point and signal frames are events, not states — a missed point does NOT self-correct on the next frame; recover it via `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`.\n\nWITHDRAWN STATES, AND HOW TO GET ONE BACK. This feed publishes every state we accept and runs no trust deference, while `GET /matches/{matchId}/score` runs the legality gate and can serve an older state than the newest row. So a state you receive here can later be one we do not stand behind, and when that happens a `score_withdrawn` frame follows the state's own `score` frame on the same channel. Eight keys, and no replacement score:\n\n```json { \"type\": \"score_withdrawn\", \"match_id\": 4711, \"kind\": \"withdrawn\",\n  \"superseded_sequence\": 118, \"reason\": \"illegal_completed_set\",\n  \"safe_to_resume\": true, \"ts\": \"2026-09-25T10:00:03.108Z\",\n  \"published_at\": \"2026-09-25T10:00:03.115Z\" }\n```\n\n`superseded_sequence` is the `sequence` you hold and are to discard. The state to resume from is the one on the next `score` frame, or on a fresh `GET /matches/{matchId}/score`. `kind` is `withdrawn` (discard), `deferred` (the refused state may be early and is pending the next accept, so hold it) or `withheld` (nothing publishable, `games` is null). `ts` is when the judgement was made, `published_at` when this feed was handed the frame. A given (match, `sequence`) is withdrawn at most once per publishing process and there is no replay.\n\nA consumer that was disconnected recovers the judgement from the durable record, added 2026-09-25: `GET /matches?withdrawn_since=<instant>` for the matches that had one, `GET /matches/{matchId}/withdrawals` for the whole record on a match (each row carrying the frame exactly as it went out, and the `sequence` served in the refused state's place), and `GET /matches/{matchId}/score?sequence=N` to ask about the one sequence you hold. Records are kept 90 days. The live `verdict` on the score read is the same judgement on demand, but it is recomputed over the newest state, so it stops answering for N as soon as the next state is accepted. The record does not.",
     "operationId": "createWsToken",
+    "x-codeSamples": [
+     {
+      "lang": "shell",
+      "label": "curl",
+      "source": "curl \"https://api.livetennisapi.com/api/public/v1/ws-token\" \\\n  -H \"Authorization: Bearer $LIVETENNISAPI_KEY\""
+     },
+     {
+      "lang": "python",
+      "label": "Python",
+      "source": "import os\n\nfrom livetennisapi import LiveTennisAPI\n\nwith LiveTennisAPI(api_key=os.environ[\"LIVETENNISAPI_KEY\"]) as client:\n    token = client.get_ws_token()\n    print(token)"
+     },
+     {
+      "lang": "javascript",
+      "label": "JavaScript",
+      "source": "import { LiveTennisAPI } from 'livetennisapi';\n\nconst client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });\n\nconst token = await client.getWsToken();\nconsole.log(token);"
+     },
+     {
+      "lang": "go",
+      "label": "Go",
+      "source": "package main\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"log\"\n\t\"os\"\n\n\t\"github.com/livetennisapi/livetennisapi-go\"\n)\n\nfunc main() {\n\tclient := livetennisapi.New(os.Getenv(\"LIVETENNISAPI_KEY\"))\n\tctx := context.Background()\n\n\ttoken, err := client.GetWSToken(ctx)\n\tif err != nil {\n\t\tlog.Fatal(err)\n\t}\n\tfmt.Printf(\"%+v\\n\", token)\n}"
+     },
+     {
+      "lang": "php",
+      "label": "PHP",
+      "source": "use LiveTennisApi\\LiveTennisApi;\n\n$client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));\n\n$token = $client->getWsToken();\nprint_r($token);"
+     },
+     {
+      "lang": "csharp",
+      "label": ".NET",
+      "source": "using System.Text.Json;\nusing LiveTennisApi;\n\nvar apiKey = Environment.GetEnvironmentVariable(\"LIVETENNISAPI_KEY\")!;\nusing var client = new LiveTennisApiClient(apiKey);\n\nvar token = await client.GetWsTokenAsync();\nConsole.WriteLine(JsonSerializer.Serialize(token));"
+     },
+     {
+      "lang": "dart",
+      "label": "Dart",
+      "source": "import 'dart:io';\n\nimport 'package:livetennisapi/livetennisapi.dart';\n\nFuture<void> main() async {\n  final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;\n  final client = LiveTennisApi(apiKey: apiKey);\n  try {\n    final token = await client.getWsToken();\n    print(token?.raw);\n  } finally {\n    client.close();\n  }\n}"
+     },
+     {
+      "lang": "swift",
+      "label": "Swift",
+      "source": "import Foundation\nimport LiveTennisApi\n\nlet apiKey = ProcessInfo.processInfo.environment[\"LIVETENNISAPI_KEY\"] ?? \"\"\nlet client = LiveTennisApiClient(apiKey: apiKey)\n\nlet token = try await client.getWsToken()\nprint(token)"
+     }
+    ],
     "responses": {
      "200": {
       "description": "Connection token, push URL and channel vocabulary",

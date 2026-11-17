@@ -38,6 +38,9 @@ from typing import Any
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import build_code_samples  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "openapi.yaml"
 DOCS = ROOT / "docs"
@@ -3113,6 +3116,32 @@ CLIENT_QUICKSTARTS = [
 ]
 
 
+def _samples_match_clients_page() -> list[str]:
+    """The code-sample map and the client libraries page must name the same versions and coverage.
+
+    Both were read from the same released sources. After a client release one can be updated and
+    the other forgotten, so each is checked against the other.
+    """
+    methods = build_code_samples.load_methods()
+    problems = []
+    rows = {c["key"]: c for c in CLIENTS}
+    for key in CLIENT_LANGUAGES:
+        mapped = str((methods["clients"].get(key) or {}).get("version"))
+        if mapped != rows[key]["version"]:
+            problems.append(f"{key}: code-samples/sdk-methods.yaml says {mapped}, "
+                            f"the client libraries page says {rows[key]['version']}")
+    ids = {(m, p): op.get("operationId") for p, item in load_spec()["paths"].items()
+           for m, op in item.items() if isinstance(op, dict)}
+    for group, operations, cells in CLIENT_ENDPOINT_GROUPS:
+        for key, cell in zip(CLIENT_LANGUAGES, cells):
+            covered = sum(key in methods["operations"].get(ids.get(o), {}) for o in operations)
+            want = {"Y": len(operations), "N": 0}.get(cell)
+            if (want is not None and covered != want) or (cell == "P" and covered in (0, len(operations))):
+                problems.append(f"{group!r}: the client libraries page says {CLIENT_CELL[cell]} for {key}, "
+                                f"and code-samples/sdk-methods.yaml has {covered} of {len(operations)}")
+    return problems
+
+
 def _clients_drift(spec: dict[str, Any]) -> None:
     """Fail the build when the page names an operation the spec no longer has, or a row is malformed."""
     problems = []
@@ -3967,6 +3996,12 @@ def main() -> int:
     args = ap.parse_args()
 
     spec = load_spec()
+    # The x-codeSamples in openapi.yaml are generated from code-samples/sdk-methods.yaml. Fail
+    # when an operation has no entry there, when an entry names an operation the spec lacks, or
+    # when the samples in the spec are stale.
+    sample_problems = build_code_samples.check() or _samples_match_clients_page()
+    if sample_problems:
+        raise SystemExit("code samples:\n  " + "\n  ".join(sample_problems))
     reference = build_html(spec)
     changelog_html, changelog_date = build_changelog(spec, reference)
     topics = build_topic_pages(spec, reference)
