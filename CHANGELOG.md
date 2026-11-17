@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.87] - 2026-11-17
+
+### Changed
+- **The client libraries page and the code samples name R 0.2.1.** It now installs jsonlite, so a clean install can read responses. No R function changed, so every R sample keeps its call. The R samples now link the source at the `v0.2.1` tag. Nothing on the wire changed.
+
 ## [1.13.86] - 2026-11-17
 
 ### Changed

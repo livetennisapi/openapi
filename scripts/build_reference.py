@@ -2873,7 +2873,7 @@ CLIENTS: list[dict[str, Any]] = [
      "source": ("r-universe", "livetennisapi/livetennisapi"),
      "install": 'install.packages("livetennisapi", repos = c("https://livetennisapi.r-universe.dev", '
                 '"https://cloud.r-project.org"))',
-     "version": "0.2.0", "runtime": "R 4.1", "runtime_spec": ">= 4.1",
+     "version": "0.2.1", "runtime": "R 4.1", "runtime_spec": ">= 4.1",
      "stream": "No", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-r"},
     {"key": "mcp", "name": "MCP server", "language": "TypeScript", "package": "livetennisapi-mcp",
      "registry": "npm", "registry_url": NPM_MCP_URL, "source": ("npm", "livetennisapi-mcp"),
@@ -2967,7 +2967,7 @@ CLIENT_ENDPOINT_GROUPS: list[tuple[str, list[tuple[str, str]], str]] = [
 CLIENT_CELL = {"Y": "Yes", "P": "Part", "N": "No"}
 
 # The quick-start block of each README, unchanged. Python 1.8.0, JavaScript 1.10.2, Go 1.3.0,
-# PHP 1.2.0, .NET 1.2.1, Dart 1.2.1, Swift 1.2.1 and R 0.2.0.
+# PHP 1.2.0, .NET 1.2.1, Dart 1.2.1, Swift 1.2.1 and R 0.2.1.
 CLIENT_SNIPPET_PYTHON = r"""from livetennisapi import LiveTennisAPI
 
 with LiveTennisAPI(api_key="twjp_…") as client:   # or set LIVETENNISAPI_KEY
