@@ -1,0 +1,515 @@
+# Which method of each official client calls each operation in openapi.yaml.
+#
+# scripts/build_code_samples.py reads this file and writes the x-codeSamples
+# block of every operation: a curl call plus one sample per client listed here.
+# Every operationId in the spec needs an entry, and every entry needs an
+# operationId the spec defines. The build fails otherwise.
+#
+# Each method name and argument list below was read from the client's source
+# at the version under `clients`, never from its main branch. A client with no
+# method for an operation has no line in that operation's entry, and the docs
+# show no sample in that language. Do not add one the client does not have.
+#
+# Per operation:
+#   result  the variable that holds the answer, in snake_case. Each language
+#           spells it in its own style.
+#   params  the values the curl sample sends: every path parameter, every
+#           required query parameter and any optional one the clients pass.
+#   body    the JSON body of the curl sample, for POST.
+#   <client> the call after `client.` (`client->` in PHP). R functions are
+#           called on their own. The value is the call itself, or a map with
+#           `call` and one of these keys.
+#             print    What the sample prints, when it is not the result.
+#             returns  `error` for a Go method that returns only an error.
+#
+# The example values come from the client READMEs and the docs pages. They are
+# match 18953, player 1104, tournament 12158 and the period 2026-07, plus the
+# names nadal, borg, federer, graf and sampras. Ids the docs never show
+# (archive, rally, charting and webhook ids) are 1. Replace them with an id
+# from the matching list call.
+
+clients:
+  python:
+    label: Python
+    lang: python
+    version: 1.8.0
+    source: https://github.com/livetennisapi/livetennisapi-python/blob/v1.8.0/src/livetennisapi/client.py
+  js:
+    label: JavaScript
+    lang: javascript
+    version: 1.10.2
+    # 1.10.2 has no tag. This is the commit the npm tarball was built from.
+    source: https://github.com/livetennisapi/livetennisapi-js/blob/a5db420/src/client.ts
+  go:
+    label: Go
+    lang: go
+    version: 1.2.1
+    source: https://github.com/livetennisapi/livetennisapi-go/blob/v1.2.1/endpoints.go
+  php:
+    label: PHP
+    lang: php
+    version: 1.1.1
+    source: https://github.com/livetennisapi/livetennisapi-php/blob/v1.1.1/src/LiveTennisApi.php
+  dotnet:
+    label: .NET
+    lang: csharp
+    version: 1.2.1
+    source: https://github.com/livetennisapi/livetennisapi-dotnet/blob/v1.2.1/src/LiveTennisApi/LiveTennisApiClient.cs
+  dart:
+    label: Dart
+    lang: dart
+    version: 1.2.1
+    source: https://github.com/livetennisapi/livetennisapi-dart/blob/v1.2.1/lib/src/client.dart
+  swift:
+    label: Swift
+    lang: swift
+    version: 1.1.1
+    source: https://github.com/livetennisapi/livetennisapi-swift/blob/v1.1.1/Sources/LiveTennisApi/LiveTennisApiClient.swift
+  r:
+    label: R
+    lang: r
+    version: 0.2.0
+    # 0.2.0 has no tag. This is the commit R-universe built 0.2.0 from.
+    source: https://github.com/livetennisapi/livetennisapi-r/blob/2b95088/R/endpoints.R
+
+operations:
+  healthCheck:
+    result: health
+    python: health()
+    js: health()
+    go: Health(ctx)
+    php: health()
+    dotnet: HealthAsync()
+    dart: {call: health(), print: health}
+    swift: health()
+    r: api_health()
+
+  listMatches:
+    result: page
+    params: {status: live}
+    python: list_matches(status="live")
+    js: "listMatches({ status: 'live' })"
+    go: "ListMatches(ctx, livetennisapi.ListMatchesParams{Status: livetennisapi.StatusLive})"
+    php: listMatches('live')
+    dotnet: ListMatchesAsync(MatchStatus.Live)
+    dart: "listMatches(status: MatchStatus.live)"
+    swift: "listMatches(status: .live)"
+    r: list_matches(status = "live", key = key)
+
+  getMatch:
+    result: match
+    params: {matchId: 18953}
+    python: get_match(18953)
+    js: getMatch(18953)
+    go: GetMatch(ctx, 18953)
+    php: getMatch(18953)
+    dotnet: GetMatchAsync(18953)
+    dart: getMatch(18953)
+    swift: getMatch(18953)
+    r: get_match(18953, key = key)
+
+  getMatchScore:
+    result: score
+    params: {matchId: 18953}
+    python: get_match_score(18953)
+    js: getMatchScore(18953)
+    go: GetMatchScore(ctx, 18953)
+    php: getMatchScore(18953)
+    dotnet: GetMatchScoreAsync(18953)
+    dart: getMatchScore(18953)
+    swift: getMatchScore(18953)
+    r: match_score(18953, key = key)
+
+  listMatchEvents:
+    result: events
+    params: {matchId: 18953}
+    python: list_match_events(18953)
+    js: listMatchEvents(18953)
+    go: ListMatchEvents(ctx, 18953, livetennisapi.ListParams{})
+    php: listMatchEvents(18953)
+    dotnet: ListMatchEventsAsync(18953)
+    dart: listMatchEvents(18953)
+    swift: "listMatchEvents(matchId: 18953)"
+
+  listSlateEvents:
+    result: events
+
+  listPlayerStoppages:
+    result: stoppages
+    params: {playerId: 1104}
+
+  listPlayerInjuries:
+    result: injuries
+    params: {playerId: 1104}
+
+  getMatchStatusHistory:
+    result: history
+    params: {matchId: 18953}
+
+  getMatchWithdrawals:
+    result: withdrawals
+    params: {matchId: 18953}
+
+  getMatchAnalysis:
+    result: analysis
+    params: {matchId: 18953}
+    python: get_match_analysis(18953)
+    js: getMatchAnalysis(18953)
+    go: GetMatchAnalysis(ctx, 18953)
+    php: getMatchAnalysis(18953)
+    dotnet: GetMatchAnalysisAsync(18953)
+    dart: getMatchAnalysis(18953)
+    swift: getMatchAnalysis(18953)
+
+  getMatchStatistics:
+    result: statistics
+    params: {matchId: 18953}
+    python: get_match_statistics(18953)
+    js: getMatchStatistics(18953)
+    go: GetMatchStatistics(ctx, 18953)
+    php: getMatchStatistics(18953)
+    dotnet: GetMatchStatisticsAsync(18953)
+    dart: getMatchStatistics(18953)
+    swift: getMatchStatistics(18953)
+
+  getMatchPoints:
+    result: points
+    params: {matchId: 18953}
+    python: get_match_points(18953)
+    js: getMatchPoints(18953)
+
+  searchPlayers:
+    result: page
+    params: {search: nadal}
+    python: search_players("nadal")
+    js: searchPlayers('nadal')
+    go: "SearchPlayers(ctx, livetennisapi.SearchPlayersParams{Search: \"nadal\"})"
+    php: searchPlayers('nadal')
+    dotnet: SearchPlayersAsync("nadal")
+    dart: "searchPlayers(search: 'nadal')"
+    swift: "searchPlayers(search: \"nadal\")"
+    r: search_players("nadal", key = key)
+
+  getPlayer:
+    result: player
+    params: {playerId: 1104}
+    python: get_player(1104)
+    js: getPlayer(1104)
+    go: GetPlayer(ctx, 1104)
+    php: getPlayer(1104)
+    dotnet: GetPlayerAsync(1104)
+    dart: getPlayer(1104)
+    swift: getPlayer(1104)
+    r: get_player(1104, key = key)
+
+  getPlayerStats:
+    result: stats
+    params: {playerId: 1104}
+    js: getPlayerStats(1104)
+    r: player_stats(1104, key = key)
+
+  listTournaments:
+    result: page
+    python: list_tournaments()
+    js: listTournaments()
+    go: ListTournaments(ctx, livetennisapi.TournamentsParams{})
+    php: listTournaments()
+    dotnet: ListTournamentsAsync()
+    dart: listTournaments()
+    swift: listTournaments()
+    r: list_tournaments(key = key)
+
+  getTournament:
+    result: tournament
+    params: {tournamentId: "12158"}
+    python: get_tournament("12158")
+    js: getTournament('12158')
+    go: GetTournament(ctx, "12158")
+    php: getTournament('12158')
+    dotnet: GetTournamentAsync("12158")
+    dart: getTournament('12158')
+    swift: getTournament("12158")
+    r: get_tournament("12158", key = key)
+
+  listMarkets:
+    result: markets
+    params: {match_id: 18953}
+    python: list_markets(18953)
+    js: listMarkets(18953)
+    go: ListMarkets(ctx, 18953)
+    php: listMarkets(18953)
+    dotnet: ListMarketsAsync(18953)
+    dart: listMarkets(18953)
+    swift: "listMarkets(matchId: 18953)"
+
+  getMarketPrices:
+    result: market
+    params: {matchId: 18953}
+    python: get_market_prices(18953)
+    js: getMarketPrices(18953)
+    go: GetMarketPrices(ctx, 18953, livetennisapi.ListParams{})
+    php: getMarketPrices(18953)
+    dotnet: GetMarketPricesAsync(18953)
+    dart: getMarketPrices(18953)
+    swift: "getMarketPrices(matchId: 18953)"
+
+  listMatchPrices:
+    result: prices
+    params: {matchId: 18953}
+    go: ListMatchPrices(ctx, 18953, livetennisapi.MatchPricesParams{})
+    php: listMatchPrices(18953)
+    dotnet: ListMatchPricesAsync(18953)
+    dart: listMatchPrices(18953)
+    swift: "getMatchPrices(matchId: 18953)"
+
+  listHistoryMatchPrices:
+    result: prices
+    params: {matchId: 18953}
+
+  listCompletedMatches:
+    result: page
+    python: list_completed_matches()
+    js: listCompletedMatches()
+    go: ListCompletedMatches(ctx, livetennisapi.ListParams{})
+    php: listCompletedMatches()
+    dotnet: ListCompletedMatchesAsync()
+    dart: listCompletedMatches()
+    swift: listCompletedMatches()
+
+  getHistoryCoverage:
+    result: coverage
+    python: get_history_coverage()
+    js: getHistoryCoverage()
+
+  getMatchTape:
+    result: tape
+    params: {matchId: 18953}
+    python: get_match_tape(18953)
+    js: getMatchTape(18953)
+    go: GetMatchTape(ctx, 18953, livetennisapi.TapeParams{})
+    php: getHistoryMatch(18953)
+    dotnet: GetMatchTapeAsync(18953)
+    dart: getMatchTape(18953)
+    swift: getMatchTape(18953)
+
+  listHistoryIncidents:
+    result: incidents
+
+  listIncidentMatches:
+    result: rows
+    params: {incidentId: deciding-set-level-rule-2026-08-18}
+
+  listArchiveMatches:
+    result: page
+    params: {name: borg}
+    python: list_archive_matches(name="borg")
+    js: "listArchiveMatches({ name: 'borg' })"
+    go: "ListArchiveMatches(ctx, livetennisapi.ArchiveMatchesParams{Name: \"borg\"})"
+    php: "listArchiveMatches(['name' => 'borg'])"
+    dotnet: "ListArchiveMatchesAsync(name: \"borg\")"
+    dart: "listArchiveMatches(name: 'borg')"
+    swift: "listArchiveMatches(name: \"borg\")"
+    r: archive_matches(name = "borg", key = key)
+
+  getArchiveMatch:
+    result: archive_match
+    params: {archiveId: 1}
+    python: get_archive_match(1)
+    js: getArchiveMatch(1)
+    go: GetArchiveMatch(ctx, 1)
+    php: getArchiveMatch(1)
+    dotnet: GetArchiveMatchAsync(1)
+    dart: getArchiveMatch(1)
+    swift: getArchiveMatch(1)
+
+  getArchiveTape:
+    result: tape
+    params: {archiveId: 1}
+
+  listArchivePlayers:
+    result: page
+    params: {name: borg}
+    python: list_archive_players("borg")
+    js: "listArchivePlayers({ name: 'borg' })"
+    go: "ListArchivePlayers(ctx, livetennisapi.ArchivePlayersParams{Name: \"borg\"})"
+    php: "listArchivePlayers(['name' => 'borg'])"
+    dotnet: ListArchivePlayersAsync("borg")
+    dart: "listArchivePlayers(name: 'borg')"
+    swift: "listArchivePlayers(name: \"borg\")"
+    r: archive_players(name = "borg", key = key)
+
+  getArchiveCareer:
+    result: career
+    params: {name: borg}
+    python: get_archive_career("borg")
+    js: getArchiveCareer('borg')
+    go: GetArchiveCareer(ctx, "borg")
+    php: getArchiveCareer('borg')
+    dotnet: GetArchiveCareerAsync("borg")
+    dart: getArchiveCareer('borg')
+    swift: "getArchiveCareer(name: \"borg\")"
+    r: archive_career("borg", key = key)
+
+  getHeadToHead:
+    result: h2h
+    params: {p1: federer, p2: nadal}
+    python: get_h2h("federer", "nadal")
+    js: getH2H('federer', 'nadal')
+    go: GetHeadToHead(ctx, "federer", "nadal")
+    php: getHeadToHead('federer', 'nadal')
+    dotnet: GetHeadToHeadAsync("federer", "nadal")
+    dart: "getHeadToHead(p1: 'federer', p2: 'nadal')"
+    swift: "getHeadToHead(p1: \"federer\", p2: \"nadal\")"
+    r: head_to_head("federer", "nadal", key = key)
+
+  listHistoryPackages:
+    result: packages
+    python: list_history_packages()
+    js: listHistoryPackages()
+    go: ListHistoryPackages(ctx, livetennisapi.HistoryPackagesParams{})
+    php: listHistoryPackages()
+    dotnet: ListHistoryPackagesAsync()
+    dart: listHistoryPackages()
+    swift: listHistoryPackages()
+
+  getHistoryPackage:
+    result: history_package
+    params: {period: "2026-07"}
+    python: get_history_package("2026-07")
+    js: getHistoryPackage('2026-07')
+    go: GetHistoryPackage(ctx, "2026-07", livetennisapi.PackageTape)
+    php: getHistoryPackage('2026-07')
+    dotnet: GetHistoryPackageAsync("2026-07")
+    dart: getHistoryPackage('2026-07')
+    swift: "getHistoryPackage(period: \"2026-07\")"
+
+  listFixtures:
+    result: page
+    python: list_fixtures()
+    js: listFixtures()
+    go: ListFixtures(ctx, livetennisapi.ListFixturesParams{})
+    php: listFixtures()
+    dotnet: ListFixturesAsync()
+    dart: listFixtures()
+    swift: listFixtures()
+    r: list_fixtures(key = key)
+
+  getUsage:
+    result: usage
+    python: get_usage()
+    go: GetUsage(ctx)
+    php: getUsage()
+    dotnet: GetUsageAsync()
+    dart: getUsage()
+    swift: getUsage()
+    r: api_usage(key = key)
+
+  listRankings:
+    result: rankings
+    params: {system: atp}
+    python: list_rankings(system="atp")
+    js: "listRankings({ system: 'atp' })"
+    go: "ListRankings(ctx, livetennisapi.RankingsParams{System: []livetennisapi.RankingSystem{livetennisapi.RankingATP}})"
+    php: "listRankings(systems: 'atp')"
+    dotnet: ListRankingsAsync(RankingSystem.Atp)
+    dart: "listRankings(systems: [RankingSystem.atp])"
+    swift: "listRankings(systems: [.atp])"
+    r: rankings(system = "atp", key = key)
+
+  listRallyMatches:
+    result: page
+    params: {player: sampras}
+    python: list_rally_matches(player="sampras")
+    js: "listRallyMatches({ player: 'sampras' })"
+    go: "ListRallyMatches(ctx, livetennisapi.RallyMatchesParams{Player: \"sampras\"})"
+    php: "listRallyMatches(['player' => 'sampras'])"
+    dotnet: "ListRallyMatchesAsync(player: \"sampras\")"
+    dart: "listRallyMatches(player: 'sampras')"
+    swift: "listRallyMatches(player: \"sampras\")"
+
+  getRallyMatch:
+    result: rally
+    params: {rallyMatchId: 1}
+    python: get_rally_match(1)
+    js: getRallyMatch(1)
+    go: GetRallyMatch(ctx, 1, livetennisapi.ListParams{})
+    php: getRallyMatch(1)
+    dotnet: GetRallyMatchAsync(1)
+    dart: getRallyMatch(1)
+    swift: getRallyMatch(1)
+
+  getMatchRally:
+    result: rally
+    params: {matchId: 18953}
+    python: get_match_rally(18953)
+    js: getMatchRally(18953)
+    go: GetMatchRally(ctx, 18953, livetennisapi.ListParams{})
+    php: getMatchRally(18953)
+    dotnet: GetMatchRallyAsync(18953)
+    dart: getMatchRally(18953)
+    swift: "getMatchRally(matchId: 18953)"
+
+  getChartingPlayer:
+    result: charting_player
+    params: {name: graf}
+    python: get_charting_player("graf")
+    js: getChartingPlayer('graf')
+    go: "GetChartingPlayer(ctx, livetennisapi.ChartingPlayerParams{Name: \"graf\"})"
+    php: getChartingPlayer('graf')
+    dotnet: GetChartingPlayerAsync("graf")
+    dart: getChartingPlayer('graf')
+    swift: "getChartingPlayer(name: \"graf\")"
+
+  getChartingMatch:
+    result: charting_match
+    params: {chartingMatchId: 1}
+    python: get_charting_match(1)
+    js: getChartingMatch(1)
+    go: GetChartingMatch(ctx, 1)
+    php: getChartingMatch(1)
+    dotnet: GetChartingMatchAsync(1)
+    dart: getChartingMatch(1)
+    swift: getChartingMatch(1)
+
+  createWebhook:
+    result: webhook
+    body: {url: "https://example.com/hooks/tennis"}
+    go: "CreateWebhook(ctx, livetennisapi.WebhookParams{URL: \"https://example.com/hooks/tennis\"})"
+    php: createWebhook('https://example.com/hooks/tennis')
+    dotnet: CreateWebhookAsync("https://example.com/hooks/tennis")
+    dart: "createWebhook(url: 'https://example.com/hooks/tennis')"
+    swift: "createWebhook(url: \"https://example.com/hooks/tennis\")"
+
+  listWebhooks:
+    result: webhooks
+    go: ListWebhooks(ctx)
+    php: listWebhooks()
+    dotnet: ListWebhooksAsync()
+    dart: listWebhooks()
+    swift: listWebhooks()
+
+  deleteWebhook:
+    result: deleted
+    params: {webhookId: 1}
+    go: {call: "DeleteWebhook(ctx, 1)", returns: error}
+    php: deleteWebhook(1)
+    dotnet: DeleteWebhookAsync(1)
+    dart: {call: deleteWebhook(1), print: deleted}
+    swift: deleteWebhook(1)
+
+  getBroadcastMatch:
+    result: card
+    params: {matchId: 18953}
+
+  getBroadcastLive:
+    result: cards
+
+  createWsToken:
+    result: token
+    python: get_ws_token()
+    js: getWsToken()
+    go: GetWSToken(ctx)
+    php: getWsToken()
+    dotnet: GetWsTokenAsync()
+    dart: getWsToken()
+    swift: getWsToken()

@@ -24,6 +24,7 @@ over REST and WebSocket, across ATP, WTA, Challenger, ITF and juniors.
 |---|---|
 | [`openapi.yaml`](openapi.yaml) | The specification — OpenAPI 3.1.0, 49 operations (48 paths), 66 schemas |
 | [`docs/`](docs/) | Rendered reference, published to <https://docs.livetennisapi.com> |
+| [`code-samples/sdk-methods.yaml`](code-samples/sdk-methods.yaml) | The method each official client calls for each operation. The code samples in the spec are built from it |
 
 The spec is the **source of truth** for our official SDKs. If the spec and an SDK disagree,
 the spec is right and the SDK has a bug.

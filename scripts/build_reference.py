@@ -38,6 +38,9 @@ from typing import Any
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import build_code_samples  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "openapi.yaml"
 DOCS = ROOT / "docs"
@@ -3967,6 +3970,12 @@ def main() -> int:
     args = ap.parse_args()
 
     spec = load_spec()
+    # The x-codeSamples in openapi.yaml are generated from code-samples/sdk-methods.yaml. Fail
+    # when an operation has no entry there, when an entry names an operation the spec lacks, or
+    # when the samples in the spec are stale.
+    sample_problems = build_code_samples.check()
+    if sample_problems:
+        raise SystemExit("code samples:\n  " + "\n  ".join(sample_problems))
     reference = build_html(spec)
     changelog_html, changelog_date = build_changelog(spec, reference)
     topics = build_topic_pages(spec, reference)

@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.85] - 2026-11-17
+
+### Added
+- **Code samples for the official clients.** Every operation now carries an `x-codeSamples` list. It starts with a curl call, then has one sample for each official client with a method for that operation. The samples cover Python 1.8.0, JavaScript 1.10.2, Go 1.2.1 and PHP 1.1.1. They also cover .NET 1.2.1, Dart 1.2.1, Swift 1.1.1 and R 0.2.0. The interactive reference lists them in the language picker of each operation, and no longer offers its own generated HTTP snippets. `code-samples/sdk-methods.yaml` records the method and the call of each client for each operation, read from the source of that version. `scripts/build_code_samples.py` writes the samples into the spec. The build fails when an operation has no entry in that file. It also fails when an entry names an operation the spec does not define, or when the samples are stale. Eleven operations have no client method yet, so they show curl only. Nothing on the wire changed.
+
 ## [1.13.84] - 2026-11-15
 
 ### Added

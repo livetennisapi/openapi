@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.84"
+  version: "1.13.85"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -197,6 +197,109 @@ paths:
     get:
       summary: Liveness probe (no auth)
       operationId: healthCheck
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/health"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                health = client.health()
+                print(health)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const health = await client.health();
+            console.log(health);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	health, err := client.Health(ctx)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", health)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $health = $client->health();
+            print_r($health);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var health = await client.HealthAsync();
+            Console.WriteLine(JsonSerializer.Serialize(health));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final health = await client.health();
+                print(health);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let health = try await client.health()
+            print(health)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            health <- api_health()
+            print(health)
       security: []
       responses:
         "200":
@@ -227,6 +330,111 @@ paths:
         `/matches/{matchId}/analysis` and `/matches/{matchId}/prices` only for
         the ids that have something, rather than probing per match for a 404.
       operationId: listMatches
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches?status=live" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                page = client.list_matches(status="live")
+                print(page)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const page = await client.listMatches({ status: 'live' });
+            console.log(page);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	page, err := client.ListMatches(ctx, livetennisapi.ListMatchesParams{Status: livetennisapi.StatusLive})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", page)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $page = $client->listMatches('live');
+            print_r($page);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var page = await client.ListMatchesAsync(MatchStatus.Live);
+            Console.WriteLine(JsonSerializer.Serialize(page));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final page = await client.listMatches(status: MatchStatus.live);
+                print(page.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let page = try await client.listMatches(status: .live)
+            print(page)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            page <- list_matches(status = "live", key = key)
+            print(page)
       parameters:
         - name: status
           in: query
@@ -279,6 +487,111 @@ paths:
     get:
       summary: Full match detail (FREE; +market PRO, +analysis ULTRA)
       operationId: getMatch
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                match = client.get_match(18953)
+                print(match)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const match = await client.getMatch(18953);
+            console.log(match);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	match, err := client.GetMatch(ctx, 18953)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", match)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $match = $client->getMatch(18953);
+            print_r($match);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var match = await client.GetMatchAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(match));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final match = await client.getMatch(18953);
+                print(match?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let match = try await client.getMatch(18953)
+            print(match)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            match <- get_match(18953, key = key)
+            print(match)
       parameters: [ { $ref: "#/components/parameters/matchId" } ]
       responses:
         "200":
@@ -347,6 +660,111 @@ paths:
         time, measured at the change) while the completed listing served its
         score.
       operationId: getMatchScore
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953/score" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                score = client.get_match_score(18953)
+                print(score)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const score = await client.getMatchScore(18953);
+            console.log(score);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	score, err := client.GetMatchScore(ctx, 18953)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", score)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $score = $client->getMatchScore(18953);
+            print_r($score);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var score = await client.GetMatchScoreAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(score));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final score = await client.getMatchScore(18953);
+                print(score?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let score = try await client.getMatchScore(18953)
+            print(score)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            score <- match_score(18953, key = key)
+            print(score)
       parameters:
         - $ref: "#/components/parameters/matchId"
         - $ref: "#/components/parameters/sequence"
@@ -379,6 +797,103 @@ paths:
     get:
       summary: Match events, newest first (PRO)
       operationId: listMatchEvents
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953/events" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                events = client.list_match_events(18953)
+                print(events)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const events = await client.listMatchEvents(18953);
+            console.log(events);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	events, err := client.ListMatchEvents(ctx, 18953, livetennisapi.ListParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", events)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $events = $client->listMatchEvents(18953);
+            print_r($events);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var events = await client.ListMatchEventsAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(events));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final events = await client.listMatchEvents(18953);
+                print(events.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let events = try await client.listMatchEvents(matchId: 18953)
+            print(events)
       parameters:
         - $ref: "#/components/parameters/matchId"
         - $ref: "#/components/parameters/limit"
@@ -403,6 +918,12 @@ paths:
     get:
       summary: Slate-wide events feed — every match's events in one call, oldest first, cursor by id (PRO)
       operationId: listSlateEvents
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/events" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       description: >-
         Added 2026-09-13. The rows of GET /matches/{matchId}/events for EVERY match in
         one request, so a poller watching the whole live slate spends one request per
@@ -470,6 +991,12 @@ paths:
         no off-court injury record exists here. Same PRO capability as /events.
         `GET /players/{playerId}/injuries` serves the identical response.
       operationId: listPlayerStoppages
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/players/1104/stoppages" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       parameters:
       - name: playerId
         in: path
@@ -544,6 +1071,12 @@ paths:
         is `stoppages`: nothing here is a diagnosis, only what the scorer, umpire or
         result stated.
       operationId: listPlayerInjuries
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/players/1104/injuries" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       parameters:
       - name: playerId
         in: path
@@ -624,6 +1157,12 @@ paths:
         History capability (BASIC and the Historical
         Data plans), like the tape.
       operationId: getMatchStatusHistory
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953/status-history" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       parameters:
         - $ref: "#/components/parameters/matchId"
         - $ref: "#/components/parameters/limit"
@@ -668,6 +1207,12 @@ paths:
         WebSocket. An empty `data` is the ordinary answer and means nothing was
         withdrawn on that match. Records are kept 90 days from the withdrawal.
       operationId: getMatchWithdrawals
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953/withdrawals" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       parameters:
         - $ref: "#/components/parameters/matchId"
       responses:
@@ -721,6 +1266,103 @@ paths:
         score, analysis and prices calls with one request and never spends a
         call on a 404.
       operationId: getMatchAnalysis
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953/analysis" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                analysis = client.get_match_analysis(18953)
+                print(analysis)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const analysis = await client.getMatchAnalysis(18953);
+            console.log(analysis);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	analysis, err := client.GetMatchAnalysis(ctx, 18953)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", analysis)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $analysis = $client->getMatchAnalysis(18953);
+            print_r($analysis);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var analysis = await client.GetMatchAnalysisAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(analysis));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final analysis = await client.getMatchAnalysis(18953);
+                print(analysis?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let analysis = try await client.getMatchAnalysis(18953)
+            print(analysis)
       parameters: [ { $ref: "#/components/parameters/matchId" } ]
       responses:
         "200":
@@ -794,6 +1436,103 @@ paths:
         separately; the live record collapses a whole tiebreak onto one entry,
         so most of its points are lost.
       operationId: getMatchStatistics
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953/statistics" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                statistics = client.get_match_statistics(18953)
+                print(statistics)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const statistics = await client.getMatchStatistics(18953);
+            console.log(statistics);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	statistics, err := client.GetMatchStatistics(ctx, 18953)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", statistics)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $statistics = $client->getMatchStatistics(18953);
+            print_r($statistics);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var statistics = await client.GetMatchStatisticsAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(statistics));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final statistics = await client.getMatchStatistics(18953);
+                print(statistics?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let statistics = try await client.getMatchStatistics(18953)
+            print(statistics)
       parameters: [ { $ref: "#/components/parameters/matchId" } ]
       responses:
         "200":
@@ -957,6 +1696,31 @@ paths:
         `changed_since` read of it is an empty page: that sequence is final
         at first read.
       operationId: getMatchPoints
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953/points" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                points = client.get_match_points(18953)
+                print(points)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const points = await client.getMatchPoints(18953);
+            console.log(points);
       parameters:
         - $ref: "#/components/parameters/matchId"
         - name: after_seq
@@ -998,6 +1762,111 @@ paths:
     get:
       summary: Search players by name (FREE)
       operationId: searchPlayers
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/players?search=nadal" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                page = client.search_players("nadal")
+                print(page)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const page = await client.searchPlayers('nadal');
+            console.log(page);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	page, err := client.SearchPlayers(ctx, livetennisapi.SearchPlayersParams{Search: "nadal"})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", page)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $page = $client->searchPlayers('nadal');
+            print_r($page);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var page = await client.SearchPlayersAsync("nadal");
+            Console.WriteLine(JsonSerializer.Serialize(page));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final page = await client.searchPlayers(search: 'nadal');
+                print(page.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let page = try await client.searchPlayers(search: "nadal")
+            print(page)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            page <- search_players("nadal", key = key)
+            print(page)
       parameters:
         - name: search
           in: query
@@ -1053,6 +1922,111 @@ paths:
         `/history/archive/players?id={playerId}`, which is where that id is
         read. A 404 with no `see` field is simply an id we do not hold.
       operationId: getPlayer
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/players/1104" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                player = client.get_player(1104)
+                print(player)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const player = await client.getPlayer(1104);
+            console.log(player);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	player, err := client.GetPlayer(ctx, 1104)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", player)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $player = $client->getPlayer(1104);
+            print_r($player);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var player = await client.GetPlayerAsync(1104);
+            Console.WriteLine(JsonSerializer.Serialize(player));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final player = await client.getPlayer(1104);
+                print(player?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let player = try await client.getPlayer(1104)
+            print(player)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            player <- get_player(1104, key = key)
+            print(player)
       parameters:
         - name: playerId
           in: path
@@ -1115,6 +2089,29 @@ paths:
         like `GET /players/{playerId}`. Cached up to 60 seconds
         (`meta.generated_at`).
       operationId: getPlayerStats
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/players/1104/stats" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const stats = await client.getPlayerStats(1104);
+            console.log(stats);
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            stats <- player_stats(1104, key = key)
+            print(stats)
       parameters:
       - name: playerId
         in: path
@@ -1202,6 +2199,111 @@ paths:
         (`atp_500`, `challenger_125`, `wta_125`, `itf_w35` … | null); the
         tier is per season, so a match carries its own.
       operationId: listTournaments
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/tournaments" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                page = client.list_tournaments()
+                print(page)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const page = await client.listTournaments();
+            console.log(page);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	page, err := client.ListTournaments(ctx, livetennisapi.TournamentsParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", page)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $page = $client->listTournaments();
+            print_r($page);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var page = await client.ListTournamentsAsync();
+            Console.WriteLine(JsonSerializer.Serialize(page));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final page = await client.listTournaments();
+                print(page.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let page = try await client.listTournaments()
+            print(page)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            page <- list_tournaments(key = key)
+            print(page)
       parameters:
         - name: search
           in: query
@@ -1249,6 +2351,111 @@ paths:
     get:
       summary: One tournament by its stable id (FREE)
       operationId: getTournament
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/tournaments/12158" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                tournament = client.get_tournament("12158")
+                print(tournament)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const tournament = await client.getTournament('12158');
+            console.log(tournament);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	tournament, err := client.GetTournament(ctx, "12158")
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", tournament)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $tournament = $client->getTournament('12158');
+            print_r($tournament);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var tournament = await client.GetTournamentAsync("12158");
+            Console.WriteLine(JsonSerializer.Serialize(tournament));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final tournament = await client.getTournament('12158');
+                print(tournament?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let tournament = try await client.getTournament("12158")
+            print(tournament)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            tournament <- get_tournament("12158", key = key)
+            print(tournament)
       parameters:
         - name: tournamentId
           in: path
@@ -1281,6 +2488,103 @@ paths:
         it can never be served as, or beside, a match-winner price
         (2026-09-22).
       operationId: listMarkets
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/markets?match_id=18953" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                markets = client.list_markets(18953)
+                print(markets)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const markets = await client.listMarkets(18953);
+            console.log(markets);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	markets, err := client.ListMarkets(ctx, 18953)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", markets)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $markets = $client->listMarkets(18953);
+            print_r($markets);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var markets = await client.ListMarketsAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(markets));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final markets = await client.listMarkets(18953);
+                print(markets.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let markets = try await client.listMarkets(matchId: 18953)
+            print(markets)
       parameters:
         - name: match_id
           in: query
@@ -1332,6 +2636,103 @@ paths:
         not a fault. For paging past 500 ticks use `/matches/{matchId}/prices`
         with its cursor.
       operationId: getMarketPrices
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/markets/18953/prices" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                market = client.get_market_prices(18953)
+                print(market)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const market = await client.getMarketPrices(18953);
+            console.log(market);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	market, err := client.GetMarketPrices(ctx, 18953, livetennisapi.ListParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", market)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $market = $client->getMarketPrices(18953);
+            print_r($market);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var market = await client.GetMarketPricesAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(market));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final market = await client.getMarketPrices(18953);
+                print(market?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let market = try await client.getMarketPrices(matchId: 18953)
+            print(market)
       parameters:
         - $ref: "#/components/parameters/matchId"
         - $ref: "#/components/parameters/limit"
@@ -1374,6 +2775,84 @@ paths:
         `?cursor=` for the next (older) page. Pages never overlap or skip a
         tick (added 2026-09-09).
       operationId: listMatchPrices
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/matches/18953/prices" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	prices, err := client.ListMatchPrices(ctx, 18953, livetennisapi.MatchPricesParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", prices)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $prices = $client->listMatchPrices(18953);
+            print_r($prices);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var prices = await client.ListMatchPricesAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(prices));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final prices = await client.listMatchPrices(18953);
+                print(prices.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let prices = try await client.getMatchPrices(matchId: 18953)
+            print(prices)
       parameters:
         - $ref: "#/components/parameters/matchId"
         - name: limit
@@ -1429,6 +2908,12 @@ paths:
     get:
       summary: Per-point price history — the match-winner quote in force at every played point (PRO)
       operationId: listHistoryMatchPrices
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/matches/18953/prices" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       description: >-
         One row per played point of a match with a mapped market, ascending by `seq` (added
         2026-09-15). Each row carries the score state the BASIC tape publishes and, per neutral side
@@ -1538,6 +3023,103 @@ paths:
         corrected after an instant — the poll to run after each settlement
         pass.
       operationId: listCompletedMatches
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/matches" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                page = client.list_completed_matches()
+                print(page)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const page = await client.listCompletedMatches();
+            console.log(page);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	page, err := client.ListCompletedMatches(ctx, livetennisapi.ListParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", page)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $page = $client->listCompletedMatches();
+            print_r($page);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var page = await client.ListCompletedMatchesAsync();
+            Console.WriteLine(JsonSerializer.Serialize(page));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final page = await client.listCompletedMatches();
+                print(page.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let page = try await client.listCompletedMatches()
+            print(page)
       parameters:
         - $ref: '#/components/parameters/hasMarket'
         - $ref: "#/components/parameters/isQualifying"
@@ -1630,6 +3212,31 @@ paths:
         matches are point-complete on the best basis against 3.5% of ITF
         doubles — do not extrapolate a completeness rate across a tour group.
       operationId: getHistoryCoverage
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/coverage" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                coverage = client.get_history_coverage()
+                print(coverage)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const coverage = await client.getHistoryCoverage();
+            console.log(coverage);
       responses:
         "200":
           description: The rollup artifact, dated by its own as_of
@@ -1675,6 +3282,103 @@ paths:
         `/matches?status=live`. `/matches/{matchId}/score` is one state; this
         is the sequence of states.
       operationId: getMatchTape
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/matches/18953" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                tape = client.get_match_tape(18953)
+                print(tape)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const tape = await client.getMatchTape(18953);
+            console.log(tape);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	tape, err := client.GetMatchTape(ctx, 18953, livetennisapi.TapeParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", tape)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $tape = $client->getHistoryMatch(18953);
+            print_r($tape);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var tape = await client.GetMatchTapeAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(tape));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final tape = await client.getMatchTape(18953);
+                print(tape?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let tape = try await client.getMatchTape(18953)
+            print(tape)
       parameters:
         - $ref: "#/components/parameters/matchId"
         - name: sequence
@@ -1748,6 +3452,12 @@ paths:
         release, so a record appears only when we have decided what it says,
         and it does not change between releases.
       operationId: listHistoryIncidents
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/incidents" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       responses:
         "200":
           description: The incident register.
@@ -1786,6 +3496,12 @@ paths:
         out, and the incident's `matches.note` says which those are, so this
         export is exact rather than complete.
       operationId: listIncidentMatches
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/incidents/deciding-set-level-rule-2026-08-18/matches" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       parameters:
         - name: incidentId
           in: path
@@ -1842,6 +3558,111 @@ paths:
         so no match is ever served from two datasets. `event_date` is the
         TOURNAMENT START date, the only date records of this era carry.
       operationId: listArchiveMatches
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/archive/matches?name=borg" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                page = client.list_archive_matches(name="borg")
+                print(page)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const page = await client.listArchiveMatches({ name: 'borg' });
+            console.log(page);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	page, err := client.ListArchiveMatches(ctx, livetennisapi.ArchiveMatchesParams{Name: "borg"})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", page)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $page = $client->listArchiveMatches(['name' => 'borg']);
+            print_r($page);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var page = await client.ListArchiveMatchesAsync(name: "borg");
+            Console.WriteLine(JsonSerializer.Serialize(page));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final page = await client.listArchiveMatches(name: 'borg');
+                print(page.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let page = try await client.listArchiveMatches(name: "borg")
+            print(page)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            page <- archive_matches(name = "borg", key = key)
+            print(page)
       parameters:
         - name: tour
           in: query
@@ -1903,6 +3724,103 @@ paths:
         `/history/archive/matches/{archiveId}/tape`; the RESULT stays on BASIC
         either way.
       operationId: getArchiveMatch
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/archive/matches/1" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                archive_match = client.get_archive_match(1)
+                print(archive_match)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const archiveMatch = await client.getArchiveMatch(1);
+            console.log(archiveMatch);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	archiveMatch, err := client.GetArchiveMatch(ctx, 1)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", archiveMatch)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $archiveMatch = $client->getArchiveMatch(1);
+            print_r($archiveMatch);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var archiveMatch = await client.GetArchiveMatchAsync(1);
+            Console.WriteLine(JsonSerializer.Serialize(archiveMatch));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final archiveMatch = await client.getArchiveMatch(1);
+                print(archiveMatch?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let archiveMatch = try await client.getArchiveMatch(1)
+            print(archiveMatch)
       parameters:
         - name: archiveId
           in: path
@@ -2008,6 +3926,12 @@ paths:
         core ULTRA, or a History Pro/Business subscription, or an active
         one-off package window.
       operationId: getArchiveTape
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/archive/matches/1/tape" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       parameters:
         - name: archiveId
           in: path
@@ -2049,6 +3973,111 @@ paths:
         fields are the era's silence, never guessed. Requires BASIC, or any
         Historical Data API plan.
       operationId: listArchivePlayers
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/archive/players?name=borg" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                page = client.list_archive_players("borg")
+                print(page)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const page = await client.listArchivePlayers({ name: 'borg' });
+            console.log(page);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	page, err := client.ListArchivePlayers(ctx, livetennisapi.ArchivePlayersParams{Name: "borg"})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", page)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $page = $client->listArchivePlayers(['name' => 'borg']);
+            print_r($page);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var page = await client.ListArchivePlayersAsync("borg");
+            Console.WriteLine(JsonSerializer.Serialize(page));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final page = await client.listArchivePlayers(name: 'borg');
+                print(page.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let page = try await client.listArchivePlayers(name: "borg")
+            print(page)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            page <- archive_players(name = "borg", key = key)
+            print(page)
       parameters:
         - name: id
           in: query
@@ -2112,6 +4141,111 @@ paths:
         unknown name is a 404. Requires BASIC, or any Historical Data API
         plan.
       operationId: getArchiveCareer
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/archive/career?name=borg" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                career = client.get_archive_career("borg")
+                print(career)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const career = await client.getArchiveCareer('borg');
+            console.log(career);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	career, err := client.GetArchiveCareer(ctx, "borg")
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", career)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $career = $client->getArchiveCareer('borg');
+            print_r($career);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var career = await client.GetArchiveCareerAsync("borg");
+            Console.WriteLine(JsonSerializer.Serialize(career));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final career = await client.getArchiveCareer('borg');
+                print(career?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let career = try await client.getArchiveCareer(name: "borg")
+            print(career)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            career <- archive_career("borg", key = key)
+            print(career)
       parameters:
         - name: name
           in: query
@@ -2155,6 +4289,111 @@ paths:
         and `current` (2023+, adding return and break-point conversion, aces
         and winners), each with `meetings_with_stats`.
       operationId: getHeadToHead
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/h2h?p1=federer&p2=nadal" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                h2h = client.get_h2h("federer", "nadal")
+                print(h2h)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const h2h = await client.getH2H('federer', 'nadal');
+            console.log(h2h);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	h2h, err := client.GetHeadToHead(ctx, "federer", "nadal")
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", h2h)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $h2h = $client->getHeadToHead('federer', 'nadal');
+            print_r($h2h);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var h2h = await client.GetHeadToHeadAsync("federer", "nadal");
+            Console.WriteLine(JsonSerializer.Serialize(h2h));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final h2h = await client.getHeadToHead(p1: 'federer', p2: 'nadal');
+                print(h2h?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let h2h = try await client.getHeadToHead(p1: "federer", p2: "nadal")
+            print(h2h)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            h2h <- head_to_head("federer", "nadal", key = key)
+            print(h2h)
       parameters:
         - name: p1
           in: query
@@ -2187,6 +4426,103 @@ paths:
         up, or a one-off package access pass. A key that can read the tape but
         is not package-entitled receives `403 upgrade_required`.
       operationId: listHistoryPackages
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/packages" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                packages = client.list_history_packages()
+                print(packages)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const packages = await client.listHistoryPackages();
+            console.log(packages);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	packages, err := client.ListHistoryPackages(ctx, livetennisapi.HistoryPackagesParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", packages)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $packages = $client->listHistoryPackages();
+            print_r($packages);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var packages = await client.ListHistoryPackagesAsync();
+            Console.WriteLine(JsonSerializer.Serialize(packages));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final packages = await client.listHistoryPackages();
+                print(packages.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let packages = try await client.listHistoryPackages()
+            print(packages)
       parameters:
         - name: kind
           in: query
@@ -2246,6 +4582,103 @@ paths:
         attachment. Same entitlement as `/history/packages`. 404 when the
         month has not been built yet — list available months first.
       operationId: getHistoryPackage
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/packages/2026-07" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                history_package = client.get_history_package("2026-07")
+                print(history_package)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const historyPackage = await client.getHistoryPackage('2026-07');
+            console.log(historyPackage);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	historyPackage, err := client.GetHistoryPackage(ctx, "2026-07", livetennisapi.PackageTape)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", historyPackage)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $historyPackage = $client->getHistoryPackage('2026-07');
+            print_r($historyPackage);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var historyPackage = await client.GetHistoryPackageAsync("2026-07");
+            Console.WriteLine(JsonSerializer.Serialize(historyPackage));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final historyPackage = await client.getHistoryPackage('2026-07');
+                print(historyPackage?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let historyPackage = try await client.getHistoryPackage(period: "2026-07")
+            print(historyPackage)
       parameters:
         - name: period
           in: path
@@ -2321,6 +4754,111 @@ paths:
         fixture with no `match_id` is served as stored. Before this, `/fixtures`
         and `/matches` could disagree on the same match for up to six hours.
       operationId: listFixtures
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/fixtures" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                page = client.list_fixtures()
+                print(page)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const page = await client.listFixtures();
+            console.log(page);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	page, err := client.ListFixtures(ctx, livetennisapi.ListFixturesParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", page)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $page = $client->listFixtures();
+            print_r($page);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var page = await client.ListFixturesAsync();
+            Console.WriteLine(JsonSerializer.Serialize(page));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final page = await client.listFixtures();
+                print(page.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let page = try await client.listFixtures()
+            print(page)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            page <- list_fixtures(key = key)
+            print(page)
       parameters:
         - $ref: "#/components/parameters/tour"
         - $ref: "#/components/parameters/draw"
@@ -2353,6 +4891,102 @@ paths:
         on the X-RateLimit-* headers of every response, not here. Calls to this
         endpoint are quota-exempt — checking your usage never consumes it.
       operationId: getUsage
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/usage" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                usage = client.get_usage()
+                print(usage)
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	usage, err := client.GetUsage(ctx)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", usage)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $usage = $client->getUsage();
+            print_r($usage);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var usage = await client.GetUsageAsync();
+            Console.WriteLine(JsonSerializer.Serialize(usage));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final usage = await client.getUsage();
+                print(usage?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let usage = try await client.getUsage()
+            print(usage)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            usage <- api_usage(key = key)
+            print(usage)
       responses:
         "200":
           description: Usage summary
@@ -2427,6 +5061,111 @@ paths:
         takes exactly one `surface` (default `overall`). `elo` is never
         implicit — omitting `system` returns the official systems only.
       operationId: listRankings
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/rankings?system=atp" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                rankings = client.list_rankings(system="atp")
+                print(rankings)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const rankings = await client.listRankings({ system: 'atp' });
+            console.log(rankings);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	rankings, err := client.ListRankings(ctx, livetennisapi.RankingsParams{System: []livetennisapi.RankingSystem{livetennisapi.RankingATP}})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", rankings)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $rankings = $client->listRankings(systems: 'atp');
+            print_r($rankings);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var rankings = await client.ListRankingsAsync(RankingSystem.Atp);
+            Console.WriteLine(JsonSerializer.Serialize(rankings));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final rankings = await client.listRankings(systems: [RankingSystem.atp]);
+                print(rankings.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let rankings = try await client.listRankings(systems: [.atp])
+            print(rankings)
+        - lang: r
+          label: "R"
+          source: |-
+            library(livetennisapi)
+
+            key <- Sys.getenv("LIVETENNISAPI_KEY")
+            rankings <- rankings(system = "atp", key = key)
+            print(rankings)
       parameters:
         - name: player
           in: query
@@ -2559,6 +5298,103 @@ paths:
         assuming a match is charted: charting is human work, so coverage is
         deep, not universal.
       operationId: listRallyMatches
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/rally/matches?player=sampras" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                page = client.list_rally_matches(player="sampras")
+                print(page)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const page = await client.listRallyMatches({ player: 'sampras' });
+            console.log(page);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	page, err := client.ListRallyMatches(ctx, livetennisapi.RallyMatchesParams{Player: "sampras"})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", page)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $page = $client->listRallyMatches(['player' => 'sampras']);
+            print_r($page);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var page = await client.ListRallyMatchesAsync(player: "sampras");
+            Console.WriteLine(JsonSerializer.Serialize(page));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final page = await client.listRallyMatches(player: 'sampras');
+                print(page.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let page = try await client.listRallyMatches(player: "sampras")
+            print(page)
       parameters:
         - name: player
           in: query
@@ -2608,6 +5444,103 @@ paths:
         One charted match with its points, in play order. Paged with
         `limit`/`offset`; `meta.total` is the match's full point count.
       operationId: getRallyMatch
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/rally/matches/1" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                rally = client.get_rally_match(1)
+                print(rally)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const rally = await client.getRallyMatch(1);
+            console.log(rally);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	rally, err := client.GetRallyMatch(ctx, 1, livetennisapi.ListParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", rally)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $rally = $client->getRallyMatch(1);
+            print_r($rally);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var rally = await client.GetRallyMatchAsync(1);
+            Console.WriteLine(JsonSerializer.Serialize(rally));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final rally = await client.getRallyMatch(1);
+                print(rally?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let rally = try await client.getRallyMatch(1)
+            print(rally)
       parameters:
         - name: rallyMatchId
           in: path
@@ -2643,6 +5576,103 @@ paths:
         match", because most of our matches are not charted and a consumer
         walking the archive must tell them apart.
       operationId: getMatchRally
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/history/matches/18953/rally" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                rally = client.get_match_rally(18953)
+                print(rally)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const rally = await client.getMatchRally(18953);
+            console.log(rally);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	rally, err := client.GetMatchRally(ctx, 18953, livetennisapi.ListParams{})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", rally)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $rally = $client->getMatchRally(18953);
+            print_r($rally);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var rally = await client.GetMatchRallyAsync(18953);
+            Console.WriteLine(JsonSerializer.Serialize(rally));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final rally = await client.getMatchRally(18953);
+                print(rally?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let rally = try await client.getMatchRally(matchId: 18953)
+            print(rally)
       parameters:
         - $ref: "#/components/parameters/matchId"
         - $ref: "#/components/parameters/limit"
@@ -2685,6 +5715,103 @@ paths:
         tours back to the 1960s, concentrated on the majors, NOT full-slate
         coverage.
       operationId: getChartingPlayer
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/charting/players?name=graf" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                charting_player = client.get_charting_player("graf")
+                print(charting_player)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const chartingPlayer = await client.getChartingPlayer('graf');
+            console.log(chartingPlayer);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	chartingPlayer, err := client.GetChartingPlayer(ctx, livetennisapi.ChartingPlayerParams{Name: "graf"})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", chartingPlayer)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $chartingPlayer = $client->getChartingPlayer('graf');
+            print_r($chartingPlayer);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var chartingPlayer = await client.GetChartingPlayerAsync("graf");
+            Console.WriteLine(JsonSerializer.Serialize(chartingPlayer));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final chartingPlayer = await client.getChartingPlayer('graf');
+                print(chartingPlayer?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let chartingPlayer = try await client.getChartingPlayer(name: "graf")
+            print(chartingPlayer)
       parameters:
         - name: name
           in: query
@@ -2724,6 +5851,103 @@ paths:
         charted. `chartingMatchId` is this product's own id space (1960–2026,
         mostly matches with no counterpart in the live table).
       operationId: getChartingMatch
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/charting/matches/1" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                charting_match = client.get_charting_match(1)
+                print(charting_match)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const chartingMatch = await client.getChartingMatch(1);
+            console.log(chartingMatch);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	chartingMatch, err := client.GetChartingMatch(ctx, 1)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", chartingMatch)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $chartingMatch = $client->getChartingMatch(1);
+            print_r($chartingMatch);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var chartingMatch = await client.GetChartingMatchAsync(1);
+            Console.WriteLine(JsonSerializer.Serialize(chartingMatch));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final chartingMatch = await client.getChartingMatch(1);
+                print(chartingMatch?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let chartingMatch = try await client.getChartingMatch(1)
+            print(chartingMatch)
       parameters:
         - name: chartingMatchId
           in: path
@@ -2790,6 +6014,86 @@ paths:
         automatically (`enabled:false`, `last_error` set — visible in
         `GET /webhooks`); delete and re-register to resume.
       operationId: createWebhook
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl -X POST "https://api.livetennisapi.com/api/public/v1/webhooks" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY" \
+              -H "Content-Type: application/json" \
+              -d '{"url": "https://example.com/hooks/tennis"}'
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	webhook, err := client.CreateWebhook(ctx, livetennisapi.WebhookParams{URL: "https://example.com/hooks/tennis"})
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", webhook)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $webhook = $client->createWebhook('https://example.com/hooks/tennis');
+            print_r($webhook);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var webhook = await client.CreateWebhookAsync("https://example.com/hooks/tennis");
+            Console.WriteLine(JsonSerializer.Serialize(webhook));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final webhook = await client.createWebhook(url: 'https://example.com/hooks/tennis');
+                print(webhook?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let webhook = try await client.createWebhook(url: "https://example.com/hooks/tennis")
+            print(webhook)
       requestBody:
         required: true
         content:
@@ -2831,6 +6135,84 @@ paths:
     get:
       summary: List your webhooks (ULTRA, direct keys only; never includes the secret)
       operationId: listWebhooks
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/webhooks" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	webhooks, err := client.ListWebhooks(ctx)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", webhooks)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $webhooks = $client->listWebhooks();
+            print_r($webhooks);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var webhooks = await client.ListWebhooksAsync();
+            Console.WriteLine(JsonSerializer.Serialize(webhooks));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final webhooks = await client.listWebhooks();
+                print(webhooks.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let webhooks = try await client.listWebhooks()
+            print(webhooks)
       responses:
         "200":
           description: Your webhooks
@@ -2853,6 +6235,83 @@ paths:
     delete:
       summary: Remove one of your webhooks (ULTRA, direct keys only)
       operationId: deleteWebhook
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl -X DELETE "https://api.livetennisapi.com/api/public/v1/webhooks/1" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	if err := client.DeleteWebhook(ctx, 1); err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Println("done")
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $deleted = $client->deleteWebhook(1);
+            print_r($deleted);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var deleted = await client.DeleteWebhookAsync(1);
+            Console.WriteLine(JsonSerializer.Serialize(deleted));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final deleted = await client.deleteWebhook(1);
+                print(deleted);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let deleted = try await client.deleteWebhook(1)
+            print(deleted)
       parameters:
         - name: webhookId
           in: path
@@ -2908,6 +6367,12 @@ paths:
         The key may be sent as `Authorization: Bearer <key>`, as `X-API-Key`,
         or as `?token=<key>` for tools that cannot set a header.
       operationId: getBroadcastMatch
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/broadcast/match/18953" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       parameters:
         - $ref: "#/components/parameters/matchId"
       responses:
@@ -2935,6 +6400,12 @@ paths:
         fields, same every-key-present rule. An empty `data` means nothing is
         live right now and is the ordinary overnight answer, not a fault.
       operationId: getBroadcastLive
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/broadcast/live" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
       parameters:
         - name: tour
           in: query
@@ -3044,6 +6515,103 @@ paths:
         the newest state, so it stops answering for N as soon as the next
         state is accepted. The record does not.
       operationId: createWsToken
+      x-codeSamples:
+        - lang: shell
+          label: "curl"
+          source: |-
+            curl "https://api.livetennisapi.com/api/public/v1/ws-token" \
+              -H "Authorization: Bearer $LIVETENNISAPI_KEY"
+        - lang: python
+          label: "Python"
+          source: |-
+            import os
+
+            from livetennisapi import LiveTennisAPI
+
+            with LiveTennisAPI(api_key=os.environ["LIVETENNISAPI_KEY"]) as client:
+                token = client.get_ws_token()
+                print(token)
+        - lang: javascript
+          label: "JavaScript"
+          source: |-
+            import { LiveTennisAPI } from 'livetennisapi';
+
+            const client = new LiveTennisAPI({ apiKey: process.env.LIVETENNISAPI_KEY });
+
+            const token = await client.getWsToken();
+            console.log(token);
+        - lang: go
+          label: "Go"
+          source: |-
+            package main
+
+            import (
+            	"context"
+            	"fmt"
+            	"log"
+            	"os"
+
+            	"github.com/livetennisapi/livetennisapi-go"
+            )
+
+            func main() {
+            	client := livetennisapi.New(os.Getenv("LIVETENNISAPI_KEY"))
+            	ctx := context.Background()
+
+            	token, err := client.GetWSToken(ctx)
+            	if err != nil {
+            		log.Fatal(err)
+            	}
+            	fmt.Printf("%+v\n", token)
+            }
+        - lang: php
+          label: "PHP"
+          source: |-
+            use LiveTennisApi\LiveTennisApi;
+
+            $client = new LiveTennisApi(getenv('LIVETENNISAPI_KEY'));
+
+            $token = $client->getWsToken();
+            print_r($token);
+        - lang: csharp
+          label: ".NET"
+          source: |-
+            using System.Text.Json;
+            using LiveTennisApi;
+
+            var apiKey = Environment.GetEnvironmentVariable("LIVETENNISAPI_KEY")!;
+            using var client = new LiveTennisApiClient(apiKey);
+
+            var token = await client.GetWsTokenAsync();
+            Console.WriteLine(JsonSerializer.Serialize(token));
+        - lang: dart
+          label: "Dart"
+          source: |-
+            import 'dart:io';
+
+            import 'package:livetennisapi/livetennisapi.dart';
+
+            Future<void> main() async {
+              final apiKey = Platform.environment['LIVETENNISAPI_KEY']!;
+              final client = LiveTennisApi(apiKey: apiKey);
+              try {
+                final token = await client.getWsToken();
+                print(token?.raw);
+              } finally {
+                client.close();
+              }
+            }
+        - lang: swift
+          label: "Swift"
+          source: |-
+            import Foundation
+            import LiveTennisApi
+
+            let apiKey = ProcessInfo.processInfo.environment["LIVETENNISAPI_KEY"] ?? ""
+            let client = LiveTennisApiClient(apiKey: apiKey)
+
+            let token = try await client.getWsToken()
+            print(token)
       responses:
         "200":
           description: Connection token, push URL and channel vocabulary
