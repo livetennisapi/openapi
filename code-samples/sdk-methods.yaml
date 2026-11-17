@@ -68,9 +68,8 @@ clients:
   r:
     label: R
     lang: r
-    version: 0.2.0
-    # 0.2.0 has no tag. This is the commit R-universe built 0.2.0 from.
-    source: https://github.com/livetennisapi/livetennisapi-r/blob/2b95088/R/endpoints.R
+    version: 0.2.1
+    source: https://github.com/livetennisapi/livetennisapi-r/blob/v0.2.1/R/endpoints.R
 
 operations:
   healthCheck:
