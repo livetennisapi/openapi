@@ -1518,6 +1518,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
 <p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>{E(info['version'])}</strong>, last change <time datetime="{latest}">{latest}</time>. Also as <a href="{DOCS_URL}/reference.html">the full reference</a>, <a href="{DOCS_URL}/openapi.yaml">OpenAPI YAML</a> / <a href="{DOCS_URL}/openapi.json">JSON</a>, and <a href="{SITE}/facts.json">the dated facts file</a>.</p>
+<p>Corrections to published data values are not spec changes, so they are listed in <a href="{SITE}/data/corrections">the corrections log</a>.</p>
 </header>
 {articles}
 </main>
