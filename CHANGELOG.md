@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.88] - 2026-11-19
+
+### Changed
+- **The client libraries page and the code samples name JavaScript 1.10.3.** It fixes requests in a browser, which all failed with "Illegal invocation" in 1.10.2. Its timeout now covers the response body as well as the headers. No JavaScript method changed, so every JavaScript sample keeps its call. The samples now link the source at the `v1.10.3` tag. The page also links the live scores web starter, a static page built on this client. Nothing on the wire changed.
+
 ## [1.13.87] - 2026-11-17
 
 ### Changed

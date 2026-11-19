@@ -2820,7 +2820,7 @@ writes them and <code>export</code> does both.</p>
 # branch. Each quick-start snippet is copied from the README of that published version.
 # scripts/check_client_versions.py reads the registries again and fails when a row is behind.
 # After a release, update the row here, re-read its coverage and run that script.
-CLIENTS_CHECKED = "2026-11-17"
+CLIENTS_CHECKED = "2026-11-19"
 CLIENTS_ORG = "https://github.com/livetennisapi"
 
 # One row per library. `source` is (registry kind, identifier) for check_client_versions.py.
@@ -2835,7 +2835,7 @@ CLIENTS: list[dict[str, Any]] = [
     {"key": "js", "name": "JavaScript and TypeScript client", "language": "JavaScript, TypeScript",
      "package": "livetennisapi", "registry": "npm", "registry_url": NPM_JS_URL,
      "source": ("npm", "livetennisapi"),
-     "install": "npm install livetennisapi", "version": "1.10.2",
+     "install": "npm install livetennisapi", "version": "1.10.3",
      "runtime": "Node 18", "runtime_spec": ">=18",
      "stream": "Yes", "export": "No", "mcp": "No", "repo": f"{CLIENTS_ORG}/livetennisapi-js"},
     {"key": "go", "name": "Go client", "language": "Go",
@@ -2967,7 +2967,7 @@ CLIENT_ENDPOINT_GROUPS: list[tuple[str, list[tuple[str, str]], str]] = [
 ]
 CLIENT_CELL = {"Y": "Yes", "P": "Part", "N": "No"}
 
-# The quick-start block of each README, unchanged. Python 1.8.0, JavaScript 1.10.2, Go 1.3.0,
+# The quick-start block of each README, unchanged. Python 1.8.0, JavaScript 1.10.3, Go 1.3.0,
 # PHP 1.2.0, .NET 1.2.1, Dart 1.2.1, Swift 1.2.1 and R 0.2.1.
 CLIENT_SNIPPET_PYTHON = r"""from livetennisapi import LiveTennisAPI
 
@@ -3085,6 +3085,12 @@ if (nrow(live) > 0) {
 
 search_players("sinner")
 list_fixtures(tour = "wta", limit = 20)"""
+
+# A paragraph after a client's quick start, for a starter built on that client.
+CLIENT_QUICKSTART_AFTER = {
+    "js": ('For a page in the browser, the <a href="https://github.com/livetennisapi/livetennisapi-starter-web">'
+           "live scores web starter</a> uses this client and runs on sample data until you add an API key."),
+}
 
 # (client key, heading, install lines, snippet, a note the README or the registry supports).
 CLIENT_QUICKSTARTS = [
@@ -3255,6 +3261,7 @@ def _clients_body(spec: dict[str, Any]) -> str:
         f'<pre style="tab-size:4"><code>{E(snippet)}</code></pre>\n'
         f'<p>{note} The example is from the <a href="{by_key[key]["repo"]}#readme">README</a> of '
         f'version {E(by_key[key]["version"])}.</p>\n'
+        + (f"<p>{CLIENT_QUICKSTART_AFTER[key]}</p>\n" if key in CLIENT_QUICKSTART_AFTER else "")
         for key, heading, install, snippet, note in CLIENT_QUICKSTARTS
     )
     return f"""<h2 id="matrix">Which client library should I use?</h2>
