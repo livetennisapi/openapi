@@ -37,9 +37,8 @@ clients:
   js:
     label: JavaScript
     lang: javascript
-    version: 1.10.2
-    # 1.10.2 has no tag. This is the commit the npm tarball was built from.
-    source: https://github.com/livetennisapi/livetennisapi-js/blob/a5db420/src/client.ts
+    version: 1.10.3
+    source: https://github.com/livetennisapi/livetennisapi-js/blob/v1.10.3/src/client.ts
   go:
     label: Go
     lang: go
