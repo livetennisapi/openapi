@@ -1213,6 +1213,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"Changelog (dated, versioned): {DOCS_URL}/changelog.html",
         f"Changelog feed (Atom): {CHANGELOG_ATOM_URL}",
         f"Changelog feed (JSON Feed 1.1): {CHANGELOG_JSON_URL}",
+        # The `about` URL of the feed's extension object points here, so this line documents it.
+        "Each JSON Feed item has a _livetennisapi object with the version and the date. It also holds",
+        "the sections (name, items, notes) and the client library versions named (client, package, version).",
         f"OpenAPI spec: {DOCS_URL}/openapi.yaml",
         f"OpenAPI spec (JSON): {DOCS_URL}/openapi.json",
         f"Website: {SITE}",
@@ -1405,6 +1408,9 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
 # --------------------------------------------------------------------------- changelog --------
 CHANGELOG = Path(__file__).resolve().parents[1] / "CHANGELOG.md"
 _ENTRY_RX = re.compile(r"^## \[(?P<ver>[^\]]+)\] - (?P<date>\d{4}-\d{2}-\d{2})\s*$")
+# Anything that looks like it meant to be an entry heading: a level-two heading, or a heading of
+# any level (or none) that opens with a bracketed version, indented or not.
+_NEAR_HEADING_RX = re.compile(r"^\s*(?:##(?!#)|#+\s*\[\d)")
 
 
 def changelog_entries(text: str) -> list[dict]:
@@ -1418,7 +1424,7 @@ def changelog_entries(text: str) -> list[dict]:
         m = _ENTRY_RX.match(line)
         if m:
             out.append({"version": m["ver"], "date": m["date"], "lines": []})
-        elif line.startswith("## "):
+        elif _NEAR_HEADING_RX.match(line):
             raise SystemExit(f"CHANGELOG.md: {line!r} is not an entry heading "
                              "(write it as ## [x.y.z] - YYYY-MM-DD)")
         elif out:
@@ -1431,8 +1437,13 @@ def changelog_entries(text: str) -> list[dict]:
 _BOLD_RX = re.compile(r"\*\*(.+?)\*\*")
 
 
+_AUTOLINK_RX = re.compile(r"<(https?://[^>\s]+)>")
+
+
 def _inline(text: str) -> str:
-    return _BOLD_RX.sub(r"<strong>\1</strong>", md_inline(text))
+    """Bold, code and links in one changelog paragraph or item. A Markdown autolink loses its
+    angle brackets first: md_inline links the bare URL, and the brackets used to show as text."""
+    return _BOLD_RX.sub(r"<strong>\1</strong>", md_inline(_AUTOLINK_RX.sub(r"\1", text)))
 
 
 def _md_block(md: str) -> str:
@@ -1445,41 +1456,54 @@ def _md_block(md: str) -> str:
     html_parts: list[str] = []
     in_list = False
     para: list[str] = []
+    item: list[str] | None = None
 
     def flush_para() -> None:
         if para:
             html_parts.append(f"<p>{_inline(' '.join(para))}</p>")
             para.clear()
 
+    def flush_item() -> None:
+        # The item is formatted once, after all its lines are in. Formatting line by line left
+        # bold or code that wrapped onto the next line unclosed, so 1.9.0, 1.9.6, 1.9.7, 1.8.0,
+        # 1.6.0 and 1.1.0 showed raw ** and backticks.
+        nonlocal item
+        if item is not None:
+            html_parts.append(f"<li>{_inline(' '.join(item))}</li>")
+            item = None
+
+    def close_list() -> None:
+        nonlocal in_list
+        flush_item()
+        if in_list:
+            html_parts.append("</ul>")
+            in_list = False
+
     for raw in md.splitlines():
         line = raw.rstrip()
         if line.startswith("### "):
             flush_para()
-            if in_list:
-                html_parts.append("</ul>")
-                in_list = False
+            close_list()
             html_parts.append(f"<h3>{E(line[4:])}</h3>")
         elif line.startswith("- "):
             flush_para()
+            flush_item()
             if not in_list:
                 html_parts.append("<ul>")
                 in_list = True
-            html_parts.append(f"<li>{_inline(line[2:])}</li>")
-        elif line and in_list and html_parts and html_parts[-1].endswith("</li>"):
+            item = [line[2:]]
+        elif line and item is not None:
             # A continuation line belongs to the open item, indented or not. Markdown's lazy
             # continuation reads it that way, and treating an unindented one as a paragraph
             # put a <p> straight inside the <ul> (1.13.60's entry did exactly that).
-            html_parts[-1] = html_parts[-1][:-5] + " " + _inline(line.strip()) + "</li>"
+            item.append(line.strip())
         elif not line:
             flush_para()
-            if in_list:
-                html_parts.append("</ul>")
-                in_list = False
+            close_list()
         else:
             para.append(line.strip())
     flush_para()
-    if in_list:
-        html_parts.append("</ul>")
+    close_list()
     return "\n".join(html_parts)
 
 

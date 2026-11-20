@@ -12,6 +12,7 @@ removing a field or changing its type would require `v2`.
 
 ### Fixed
 - **The changelog page shows all 115 entries.** Fifteen headings from 1.1.0 to 1.9.3 were written with an em dash. The page folded them into the 1.9.4 entry as plain text. Each is now its own entry, and the build stops on a heading it cannot read.
+- **Bold and code that wrap onto a second line render in full.** Six older entries showed raw asterisks and backticks there. Two links written in angle brackets showed the brackets. Both now render as on the rest of the page.
 
 ## [1.13.88] - 2026-11-19
 

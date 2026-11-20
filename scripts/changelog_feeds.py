@@ -8,14 +8,17 @@ three outputs entry by entry (parity_problems).
 Nothing in either feed depends on when the build ran. An entry's id is its anchor on the page,
 its dates are the date in its heading, and the feed's own date is the newest entry's. A rebuild
 writes the same bytes, so `build_reference.py --check` covers both files, and a feed reader never
-sees an old entry as new.
+sees an old entry as new. The flip side: rewording an old entry changes its content but not its
+date, so a reader may not show the edit. The changelog only states days, so entries released on
+the same day share a timestamp, as entries of the corrections feed do.
 
 - docs/changelog.atom is Atom 1.0 (RFC 4287). Its shape follows the corrections log feed at
   livetennisapi.com/data/corrections.atom: page anchors as ids, dates at 00:00Z, a self and an
   alternate link, the author, the icon, the rights, a plain-text summary on every entry.
-- docs/changelog.json is JSON Feed 1.1. The parsed fields (version, date, the items of each
-  section, the client library versions an entry names) sit in each item's `_livetennisapi`
-  object. JSON Feed lets a publisher add objects whose names start with an underscore.
+- docs/changelog.json is JSON Feed 1.1. The parsed fields (version, date, the sections with
+  their items and notes, the client library versions an entry names) sit in each item's
+  `_livetennisapi` object. JSON Feed lets a publisher add objects whose names start with an
+  underscore. The object's `about` link is llms.txt, which describes it.
 
 atom_problems() and json_feed_problems() check the rules of the two formats with the standard
 library, so the CI job needs nothing beyond PyYAML. scripts/test_changelog_feeds.py breaks
@@ -39,56 +42,52 @@ EXT_KEY = "_livetennisapi"
 
 # --------------------------------------------------------------------------- entry structure --
 
-_SECTION_RX = re.compile(r"^### (\S+)")
+def entry_sections(body_md: str) -> list[dict[str, Any]]:
+    """[{name, items, notes}] from one entry's Markdown, in page order, read line by line by the
+    same rules as _md_block, so the feeds hold exactly the items and paragraphs the page shows.
 
-
-def entry_sections(body_md: str) -> tuple[list[dict[str, Any]], list[str]]:
-    """([{name, items}], notes) from one entry's Markdown, read by the rules _md_block renders by.
-
-    `### Name` opens a section, named by its first word, so "Added (spec catch-up ...)" counts as
-    Added. `- ` opens an item. A non-blank line after an item continues it, indented or not, and a
-    blank line closes it. Any other line is a note. A section that appears twice in one entry (the
-    1.1.0 entry has two Added) is one section. An item before any heading (1.13.44 has one) goes
-    in a section whose name is None. Items and notes keep their Markdown."""
+    A line starting `### ` opens a section, named by the first word after it, so "Added (spec
+    catch-up ...)" is Added. A line starting `- ` opens an item. A non-blank line after an item
+    continues it, indented or not, and a blank line closes it. Any other line is a paragraph,
+    kept as a note of the section it sits in. A section that appears twice (1.1.0 has two Added,
+    with a note between them) stays two sections, so the note keeps its place. Content before any
+    heading (1.13.44 has an item there) goes in a section whose name is None. Items and notes keep
+    their Markdown."""
     sections: list[dict[str, Any]] = []
-    by_name: dict[str | None, dict[str, Any]] = {}
-    notes: list[str] = []
-    current: str | None = None
     item: list[str] | None = None
     para: list[str] = []
 
-    def section(name: str | None) -> dict[str, Any]:
-        if name not in by_name:
-            by_name[name] = {"name": name, "items": []}
-            sections.append(by_name[name])
-        return by_name[name]
+    def current() -> dict[str, Any]:
+        if not sections:
+            sections.append({"name": None, "items": [], "notes": []})
+        return sections[-1]
 
     def close() -> None:
         nonlocal item
         if item is not None:
-            section(current)["items"].append(" ".join(item))
+            current()["items"].append(" ".join(item))
             item = None
         if para:
-            notes.append(" ".join(para))
+            current()["notes"].append(" ".join(para))
             para.clear()
 
     for raw in body_md.splitlines():
-        line = raw.strip()
-        m = _SECTION_RX.match(raw)
-        if m:
+        line = raw.rstrip()
+        if line.startswith("### "):
             close()
-            current = m[1].rstrip(":")
-        elif raw.startswith("- "):
+            words = line[4:].split()
+            sections.append({"name": words[0].rstrip(":") if words else None, "items": [], "notes": []})
+        elif line.startswith("- "):
             close()
-            item = [raw[2:].strip()]
+            item = [line[2:]]
         elif not line:
             close()
         elif item is not None:
-            item.append(line)
+            item.append(line.strip())
         else:
-            para.append(line)
+            para.append(line.strip())
     close()
-    return sections, notes
+    return sections
 
 
 _PLAIN_SUBS = [
@@ -108,7 +107,8 @@ def plain(md: str) -> str:
 # A sentence ends at . ! or ? followed by a space and a capital, a digit, a quote or a bracket.
 # Dots inside a version number or a path are never followed by a space, so they do not end one.
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'(])")
-_BOLD_LEAD = re.compile(r"^\*\*(.+?[.!?])\*\*")
+# The opening bold run, up to its first closing **, when it ends in a full stop or the like.
+_BOLD_LEAD = re.compile(r"^\*\*((?:(?!\*\*).)+?[.!?])\*\*")
 
 
 def lead(md: str) -> str:
@@ -121,23 +121,35 @@ def lead(md: str) -> str:
     return _SENTENCE_END.split(plain(md), 1)[0]
 
 
-def entry_summary(sections: list[dict[str, Any]], notes: list[str]) -> str:
-    """The section names, each followed by what each of its items says it changed."""
+def _items(sections: list[dict[str, Any]]) -> list[str]:
+    return [i for s in sections for i in s["items"]]
+
+
+def _notes(sections: list[dict[str, Any]]) -> list[str]:
+    return [n for s in sections for n in s["notes"]]
+
+
+def entry_summary(sections: list[dict[str, Any]]) -> str:
+    """Each section's name, then what each of its items says it changed. An entry with no items
+    (none today) is summed up by the first sentence of its first paragraph."""
     parts = []
     for s in sections:
+        if not s["items"]:
+            continue
         leads = " ".join(lead(i) for i in s["items"])
         parts.append(f"{s['name']}: {leads}" if s["name"] else leads)
-    if not parts and notes:
-        parts.append(lead(notes[0]))
+    if not parts and _notes(sections):
+        parts.append(lead(_notes(sections)[0]))
     return " ".join(parts)
 
 
 TITLE_MAX = 160
 
 
-def entry_title(version: str, sections: list[dict[str, Any]], notes: list[str]) -> str:
+def entry_title(version: str, sections: list[dict[str, Any]]) -> str:
     """"1.13.79: The super-tiebreak example in Score.games reads right, and 1 more change"."""
-    items = [i for s in sections for i in s["items"]]
+    items = _items(sections)
+    notes = _notes(sections)
     first = lead(items[0]) if items else (lead(notes[0]) if notes else "")
     if not first:
         return version
@@ -149,20 +161,34 @@ def entry_title(version: str, sections: list[dict[str, Any]], notes: list[str]) 
     return f"{version}: {first}{tail}"
 
 
-def client_versions(text: str, names: dict[str, tuple[str, str]]) -> list[dict[str, str]]:
+def section_names(sections: list[dict[str, Any]]) -> list[str]:
+    """The named sections of an entry, once each, in order: the Atom categories and JSON tags."""
+    return list(dict.fromkeys(s["name"] for s in sections if s["name"]))
+
+
+def _version_key(v: str) -> tuple[int, ...]:
+    return tuple(int(x) for x in v.split("."))
+
+
+def client_versions(text: str, names: dict[str, tuple[str, str, str]]) -> list[dict[str, str]]:
     """The client library versions a text names, in order, once each.
 
     `names` maps each way the changelog writes a client ("Python", "JS", "livetennisapi-ai") to
-    (client name, package). Only a three-part version right after a name counts, so "Swift 5.10"
-    (the toolchain) and "Python 3.9" (a minimum runtime) are not read as client versions."""
+    (client name, package, newest published version). Only a three-part version right after a
+    name counts ("Python 1.8.0", "livetennisapi-mcp@1.6.5"). A version above the newest published
+    one is a runtime or a toolchain, not the client: "Python 3.12.4" or "Swift 5.10.1" is not read
+    as a client version. The newest versions come from CLIENTS, which check_client_versions.py
+    keeps in step with the registries."""
     if not names:
         return []
     alternation = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
-    rx = re.compile(rf"(?<![\w.-])({alternation})\s+v?(\d+\.\d+\.\d+)(?![\w-]|\.\d)")
+    rx = re.compile(rf"(?<![\w.-])({alternation})(?:\s+v?|@)(\d+\.\d+\.\d+)(?![\w-]|\.\d)")
     out: list[dict[str, str]] = []
     seen: set[tuple[str, str]] = set()
     for m in rx.finditer(plain(text)):
-        client, package = names[m[1]]
+        client, package, newest = names[m[1]]
+        if _version_key(m[2]) > _version_key(newest):
+            continue
         key = (client, m[2])
         if key not in seen:
             seen.add(key)
@@ -171,21 +197,21 @@ def client_versions(text: str, names: dict[str, tuple[str, str]]) -> list[dict[s
 
 
 def feed_entries(entries: list[dict[str, Any]], render: Any, page_url: str,
-                 client_names: dict[str, tuple[str, str]]) -> list[dict[str, Any]]:
+                 client_names: dict[str, tuple[str, str, str]]) -> list[dict[str, Any]]:
     """The feed view of changelog_entries(): everything both feeds need, computed once."""
     out = []
     for e in entries:
-        sections, notes = entry_sections(e["body_md"])
+        sections = entry_sections(e["body_md"])
         out.append({
             "version": e["version"],
             "date": e["date"],
             "id": f"{page_url}#v{e['version']}",
             "url": f"{page_url}#v{e['version']}",
-            "title": entry_title(e["version"], sections, notes),
-            "summary": entry_summary(sections, notes),
+            "title": entry_title(e["version"], sections),
+            "summary": entry_summary(sections),
             "content_html": render(e["body_md"]),
             "sections": sections,
-            "notes": notes,
+            "tags": section_names(sections),
             "clients": client_versions(e["body_md"], client_names),
         })
     return out
@@ -205,7 +231,9 @@ def _stamp(date: str) -> str:
 
 def build_atom(items: list[dict[str, Any]], meta: dict[str, str]) -> str:
     """Atom 1.0. One element per line, so a new version shows in a diff as a block of new lines."""
-    updated = _stamp(items[0]["date"]) if items else _stamp(meta["fallback_date"])
+    # The newest date in the feed, not the first entry's: the same thing while the changelog stays
+    # newest first, and still right if it ever does not.
+    updated = _stamp(max(it["date"] for it in items)) if items else _stamp(meta["fallback_date"])
     lines = [
         '<?xml version="1.0" encoding="utf-8"?>',
         f'<feed xmlns="{ATOM_NS}" xml:lang="en">',
@@ -222,7 +250,7 @@ def build_atom(items: list[dict[str, Any]], meta: dict[str, str]) -> str:
     ]
     for it in items:
         stamp = _stamp(it["date"])
-        cats = [f'<category term="{_x(s["name"])}"/>' for s in it["sections"] if s["name"]]
+        cats = [f'<category term="{_x(name)}"/>' for name in it["tags"]]
         cats += [
             f'<category term="{_x(c["client"])} {_x(c["version"])}" scheme="{_x(meta["clients_url"])}"/>'
             for c in it["clients"]
@@ -263,16 +291,16 @@ def build_json_feed(items: list[dict[str, Any]], meta: dict[str, str]) -> str:
                 "summary": it["summary"],
                 "content_html": it["content_html"],
                 "date_published": _stamp(it["date"]),
-                "tags": [s["name"] for s in it["sections"] if s["name"]],
+                "tags": it["tags"],
                 EXT_KEY: {
                     "about": meta["ext_about"],
                     "version": it["version"],
                     "date": it["date"],
                     "sections": [
-                        {"name": s["name"], "items": [plain(i) for i in s["items"]]}
+                        {"name": s["name"], "items": [plain(i) for i in s["items"]],
+                         "notes": [plain(n) for n in s["notes"]]}
                         for s in it["sections"]
                     ],
-                    "notes": [plain(n) for n in it["notes"]],
                     "client_libraries": it["clients"],
                 },
             }
@@ -295,7 +323,8 @@ def _is_rfc3339(value: str | None) -> bool:
     if not value or not _RFC3339.match(value):
         return False
     try:
-        datetime.fromisoformat(value.replace("Z", "+00:00"))
+        # RFC 3339 allows a leap second (23:59:60), which datetime cannot hold.
+        datetime.fromisoformat(value.replace("Z", "+00:00").replace(":60", ":59", 1))
     except ValueError:
         return False
     return True
@@ -332,9 +361,13 @@ def _a(tag: str) -> str:
 
 
 def _check_text_construct(el: ET.Element, where: str, out: list[str]) -> None:
+    """RFC 4287 3.1: type is text, html or xhtml. Text and html hold no child elements (3.1.1.1,
+    3.1.1.2), and html must be markup a reader can show. Xhtml is one xhtml:div (3.1.1.3)."""
     kind = el.get("type", "text")
     if kind not in _TEXT_TYPES:
         out.append(f"{where}: type {kind!r} is not text, html or xhtml")
+    elif kind in ("text", "html") and len(el):
+        out.append(f"{where}: a {kind} construct holds child elements")
     elif kind == "html":
         out += [f"{where}: {f}" for f in html_fragment_problems(el.text or "")]
     elif kind == "xhtml":
@@ -343,9 +376,31 @@ def _check_text_construct(el: ET.Element, where: str, out: list[str]) -> None:
             out.append(f"{where}: xhtml content must be one xhtml:div")
 
 
+def _check_content(el: ET.Element, entry: ET.Element, where: str, out: list[str]) -> None:
+    """RFC 4287 4.1.3: content is a Text construct when its type is text, html or xhtml, or
+    names a MIME media type. A composite type is not allowed. Content with a src, or content
+    that is neither text nor XML (so Base64), needs an atom:summary on the entry (4.1.1.1)."""
+    kind = el.get("type", "text")
+    if el.get("src") is None and kind in _TEXT_TYPES:
+        _check_text_construct(el, where, out)
+        return
+    if kind not in _TEXT_TYPES and "/" not in kind:
+        out.append(f"{where}: type {kind!r} is neither text, html, xhtml nor a media type")
+        return
+    if kind.lower().startswith(("multipart/", "message/")):
+        out.append(f"{where}: composite type {kind!r} is not allowed")
+    textual = kind in _TEXT_TYPES or kind.startswith("text/") or kind.endswith(("+xml", "/xml"))
+    if (el.get("src") is not None or not textual) and entry.find(_a("summary")) is None:
+        out.append(f"{where}: content with a src or in Base64 needs an atom:summary")
+
+
 def _check_person(el: ET.Element, where: str, out: list[str]) -> None:
+    """RFC 4287 3.2: one atom:name, at most one atom:uri (an IRI) and at most one atom:email."""
     if len(el.findall(_a("name"))) != 1:
         out.append(f"{where}: a person needs exactly one atom:name")
+    for tag in ("uri", "email"):
+        if len(el.findall(_a(tag))) > 1:
+            out.append(f"{where}: more than one atom:{tag}")
     for uri in el.findall(_a("uri")):
         if not _ABSOLUTE_IRI.match((uri.text or "").strip()):
             out.append(f"{where}: atom:uri {uri.text!r} is not an absolute IRI")
@@ -367,6 +422,9 @@ def _check_links(parent: ET.Element, where: str, out: list[str]) -> None:
     for cat in parent.findall(_a("category")):
         if not cat.get("term"):
             out.append(f"{where}: atom:category without term")
+        scheme = cat.get("scheme")
+        if scheme is not None and not _ABSOLUTE_IRI.match(scheme):
+            out.append(f"{where}: atom:category scheme {scheme!r} is not an IRI")
 
 
 def _one(parent: ET.Element, tag: str, where: str, out: list[str], required: bool = True) -> ET.Element | None:
@@ -438,30 +496,34 @@ def atom_problems(text: str, self_url: str | None = None) -> list[str]:
             el = entry.find(_a(tag))
             if el is not None and not _is_rfc3339(el.text):
                 out.append(f"{where}: atom:{tag} {el.text!r} is not an RFC 3339 date")
-        for tag in ("title", "summary", "content", "rights"):
+        for tag in ("title", "summary", "rights"):
             el = entry.find(_a(tag))
-            if el is not None and not (tag == "content" and el.get("src")):
+            if el is not None:
                 _check_text_construct(el, f"{where} atom:{tag}", out)
         _check_links(entry, where, out)
         authors = entry.findall(_a("author"))
         for a in authors:
             _check_person(a, f"{where} author", out)
-        if not feed_authors and not authors and entry.find(_a("source")) is None:
-            out.append(f"{where}: no atom:author on the entry or the feed")
+        source = entry.find(_a("source"))
+        source_has_author = source is not None and source.find(_a("author")) is not None
+        if not feed_authors and not authors and not source_has_author:
+            out.append(f"{where}: no atom:author on the entry, its source or the feed")
         content = entry.find(_a("content"))
         if content is None:
             if not any(l.get("rel", "alternate") == "alternate" for l in entry.findall(_a("link"))):
                 out.append(f"{where}: no atom:content and no alternate link")
-        elif content.get("src") and entry.find(_a("summary")) is None:
-            out.append(f"{where}: atom:content has src but there is no atom:summary")
+        else:
+            _check_content(content, entry, f"{where} atom:content", out)
     return out
 
 
+# Every key JSON Feed 1.1 defines. `author` is the 1.0 key that 1.1 keeps readable.
 _ITEM_KEYS = {"id", "url", "external_url", "title", "content_html", "content_text", "summary",
-              "image", "banner_image", "date_published", "date_modified", "authors", "tags",
-              "language", "attachments"}
+              "image", "banner_image", "date_published", "date_modified", "authors", "author",
+              "tags", "language", "attachments"}
 _FEED_KEYS = {"version", "title", "home_page_url", "feed_url", "description", "user_comment",
-              "next_url", "icon", "favicon", "authors", "language", "expired", "hubs", "items"}
+              "next_url", "icon", "favicon", "authors", "author", "language", "expired", "hubs",
+              "items"}
 _EXT_NAME = re.compile(r"^_[A-Za-z]")
 
 
@@ -488,9 +550,14 @@ def json_feed_problems(text: str, feed_url: str | None = None) -> list[str]:
         out.append(f"version is {feed.get('version')!r}, expected {JSON_FEED_VERSION!r}")
     if not isinstance(feed.get("title"), str) or not feed["title"]:
         out.append("feed: title is required")
-    for key in ("home_page_url", "feed_url", "icon", "favicon"):
+    # JSON Feed asks for URLs. That they are https is this site's own rule.
+    for key in ("home_page_url", "feed_url", "icon", "favicon", "next_url"):
         if key in feed and not (isinstance(feed[key], str) and feed[key].startswith("https://")):
             out.append(f"feed: {key} must be an https URL")
+    for key, kind in (("description", str), ("user_comment", str), ("language", str),
+                      ("expired", bool), ("hubs", list)):
+        if key in feed and not isinstance(feed[key], kind):
+            out.append(f"feed: {key} must be a {kind.__name__}")
     if feed_url and feed.get("feed_url") != feed_url:
         out.append(f"feed: feed_url is {feed.get('feed_url')!r}, expected {feed_url!r}")
     if "authors" in feed:
@@ -523,9 +590,13 @@ def json_feed_problems(text: str, feed_url: str | None = None) -> list[str]:
         for key in ("url", "external_url", "image", "banner_image"):
             if key in item and not (isinstance(item[key], str) and item[key].startswith("https://")):
                 out.append(f"{where}: {key} must be an https URL")
-        for key in ("title", "summary"):
+        for key in ("title", "summary", "language"):
             if key in item and not isinstance(item[key], str):
                 out.append(f"{where}: {key} must be a string")
+        for att in item.get("attachments", []) if isinstance(item.get("attachments", []), list) else [None]:
+            if not (isinstance(att, dict) and isinstance(att.get("url"), str)
+                    and isinstance(att.get("mime_type"), str)):
+                out.append(f"{where}: an attachment needs a url and a mime_type")
         for key in ("date_published", "date_modified"):
             if key in item and not _is_rfc3339(item[key]):
                 out.append(f"{where}: {key} {item[key]!r} is not an RFC 3339 date")
@@ -550,9 +621,53 @@ def page_entries(page_html: str) -> list[tuple[str, str, str]]:
     return [(m["ver"], m["date"], m["body"]) for m in _ARTICLE_RX.finditer(page_html)]
 
 
+class _BlockText(HTMLParser):
+    """The visible text of each <h3>, <li> and <p> in an article body, in order."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.blocks: list[tuple[str, str]] = []
+        self._open: str | None = None
+        self._text: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: Any) -> None:
+        if tag in ("h3", "li", "p"):
+            self._open, self._text = tag, []
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag == self._open:
+            self.blocks.append((tag, " ".join("".join(self._text).split())))
+            self._open = None
+
+    def handle_data(self, data: str) -> None:
+        if self._open:
+            self._text.append(data)
+
+
+def _page_sections(body: str) -> list[dict[str, Any]]:
+    """What a reader of changelog.html sees in one entry, as sections of items and notes."""
+    p = _BlockText()
+    p.feed(body)
+    sections: list[dict[str, Any]] = []
+    for tag, text in p.blocks:
+        if tag == "h3":
+            words = text.split()
+            sections.append({"name": words[0].rstrip(":") if words else None, "items": [], "notes": []})
+            continue
+        if not sections:
+            sections.append({"name": None, "items": [], "notes": []})
+        sections[-1]["items" if tag == "li" else "notes"].append(text)
+    return sections
+
+
 def parity_problems(page_html: str, atom_text: str, json_text: str, page_url: str) -> list[str]:
     """Every entry on changelog.html is in both feeds, in the same order, with the same version,
-    date and body. Any difference is drift, whichever side it is on."""
+    date and body, and the two feeds agree with each other.
+
+    The body is compared as HTML. The parsed fields of the JSON Feed (sections, items, notes)
+    are compared with the text a reader sees on the page, read back from the page's HTML, so a
+    parse that drops, splits or garbles an item shows here. Any difference is drift, whichever
+    side it is on."""
     out: list[str] = []
     page = page_entries(page_html)
     if not page:
@@ -560,25 +675,42 @@ def parity_problems(page_html: str, atom_text: str, json_text: str, page_url: st
     if page_html.count("<article ") != len(page):
         out.append("changelog.html: an <article> does not have the id, heading and time shape")
     root = ET.fromstring(atom_text.encode("utf-8"))
-    atom = [
-        (e.findtext(_a("id")), e.findtext(_a("published")), e.findtext(_a("updated")),
-         e.findtext(_a("content")))
-        for e in root.findall(_a("entry"))
-    ]
+    entries = root.findall(_a("entry"))
     items = json.loads(json_text)["items"]
-    if len(atom) != len(page):
-        out.append(f"atom has {len(atom)} entries, changelog.html has {len(page)}")
+    if len(entries) != len(page):
+        out.append(f"atom has {len(entries)} entries, changelog.html has {len(page)}")
     if len(items) != len(page):
         out.append(f"json feed has {len(items)} items, changelog.html has {len(page)}")
-    for (ver, date, body), a, j in zip(page, atom, items):
+    for (ver, date, body), e, j in zip(page, entries, items):
         want_id = f"{page_url}#v{ver}"
         stamp = f"{date}T00:00:00Z"
-        if a != (want_id, stamp, stamp, body):
-            out.append(f"atom entry for {ver} differs from changelog.html (id, dates or content)")
+        content = e.find(_a("content"))
+        alternates = [l.get("href") for l in e.findall(_a("link")) if l.get("rel", "alternate") == "alternate"]
+        if (e.findtext(_a("id")), e.findtext(_a("published")), e.findtext(_a("updated")),
+                content.text if content is not None else None, alternates) != (
+                want_id, stamp, stamp, body, [want_id]):
+            out.append(f"atom entry for {ver} differs from changelog.html (id, dates, link or content)")
+        if content is None or content.get("type") != "html":
+            out.append(f"atom entry for {ver}: content is not type html")
         ext = j.get(EXT_KEY, {})
-        if (j.get("id"), j.get("date_published"), j.get("content_html"),
-                ext.get("version"), ext.get("date")) != (want_id, stamp, body, ver, date):
-            out.append(f"json feed item for {ver} differs from changelog.html (id, date or content)")
+        if (j.get("id"), j.get("url"), j.get("date_published"), j.get("content_html"),
+                ext.get("version"), ext.get("date")) != (want_id, want_id, stamp, body, ver, date):
+            out.append(f"json feed item for {ver} differs from changelog.html (id, url, date or content)")
+        if ext.get("sections") != _page_sections(body):
+            out.append(f"json feed item for {ver}: sections, items or notes differ from what changelog.html shows")
+        title, summary = e.findtext(_a("title")) or "", e.findtext(_a("summary")) or ""
+        if not title.startswith(f"{ver}: ") or not summary:
+            out.append(f"atom entry for {ver}: title does not open with the version, or no summary")
+        if (title, summary) != (j.get("title"), j.get("summary")):
+            out.append(f"{ver}: the feeds disagree on title or summary")
+        plain_cats = [c.get("term") for c in e.findall(_a("category")) if c.get("scheme") is None]
+        client_cats = [c.get("term") for c in e.findall(_a("category")) if c.get("scheme") is not None]
+        names = [s["name"] for s in _page_sections(body) if s["name"]]
+        if plain_cats != j.get("tags") or plain_cats != list(dict.fromkeys(names)):
+            out.append(f"{ver}: categories, tags and the page's section headings disagree")
+        clients = [f"{c.get('client')} {c.get('version')}" for c in ext.get("client_libraries", [])]
+        if client_cats != clients:
+            out.append(f"{ver}: the feeds disagree on client library versions")
     return out
 
 
@@ -594,17 +726,20 @@ def alternate_links(page_html: str) -> list[dict[str, str]]:
     return links
 
 
-def names_for_clients(clients: Iterable[dict[str, Any]], languages: dict[str, list[str]]) -> dict[str, tuple[str, str]]:
-    """How the changelog writes each client -> (client name, package).
+def names_for_clients(clients: Iterable[dict[str, Any]],
+                      languages: dict[str, list[str]]) -> dict[str, tuple[str, str, str]]:
+    """How the changelog writes each client -> (client name, package, newest published version).
 
     A language client is named by its language ("Python 1.8.0", "JS 1.10.2"). Every other
-    package is named by its package name ("livetennisapi-ai 1.3.0")."""
-    out: dict[str, tuple[str, str]] = {}
+    package is named by its package name ("livetennisapi-ai 1.3.0") or by the name the client
+    libraries page gives it ("MCP server 1.6.5")."""
+    out: dict[str, tuple[str, str, str]] = {}
     for c in clients:
         spoken = languages.get(c["key"])
         if spoken:
             for word in spoken:
-                out[word] = (spoken[0], c["package"])
+                out[word] = (spoken[0], c["package"], c["version"])
         else:
-            out[c["package"]] = (c["package"], c["package"])
+            for word in (c["package"], c["name"]):
+                out[word] = (c["package"], c["package"], c["version"])
     return out

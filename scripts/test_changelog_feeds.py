@@ -112,37 +112,62 @@ class CommittedFeedsTest(unittest.TestCase):
 
 
 class EntryParsingTest(unittest.TestCase):
-    def test_sections_items_and_notes(self) -> None:
+    def test_sections_items_and_notes_keep_page_order(self) -> None:
         md = ("### Added\n- **One.** More text\n  continued.\n- Two.\n\n"
-              "A note.\n\n### Added (again)\n- Three.\n### Fixed\n- **Four.**")
-        sections, notes = cf.entry_sections(md)
-        self.assertEqual([(s["name"], len(s["items"])) for s in sections], [("Added", 3), ("Fixed", 1)])
+              "A note.\n\n### Added (again)\n- Three.\n###  Fixed\n- **Four.**\n### Clarified\nOnly a note.")
+        sections = cf.entry_sections(md)
+        self.assertEqual([(s["name"], len(s["items"]), s["notes"]) for s in sections],
+                         [("Added", 2, ["A note."]), ("Added", 1, []), ("Fixed", 1, []),
+                          ("Clarified", 0, ["Only a note."])])
         self.assertEqual(sections[0]["items"][0], "**One.** More text continued.")
-        self.assertEqual(notes, ["A note."])
+        self.assertEqual(cf.section_names(sections), ["Added", "Fixed", "Clarified"])
+
+    def test_the_parse_matches_what_the_page_renders(self) -> None:
+        md = ("### Added\n- **Wrapped bold\nacross lines.** And `code\nwrapped`.\n- \n"
+              "  more\n\nSee <https://example.com/x>.\n###  Fixed\n- Two.")
+        sections = cf.entry_sections(md)
+        as_read = [{"name": x["name"], "items": [cf.plain(i) for i in x["items"]],
+                    "notes": [cf.plain(n) for n in x["notes"]]} for x in sections]
+        self.assertEqual(as_read, cf._page_sections(br._md_block(md)))
+        self.assertNotIn("**", br._md_block(md))
+        self.assertNotIn("&lt;https", br._md_block(md))
 
     def test_an_item_before_any_heading_has_no_section_name(self) -> None:
-        sections, _ = cf.entry_sections("- **Loose.** Item.")
-        self.assertEqual(sections, [{"name": None, "items": ["**Loose.** Item."]}])
+        self.assertEqual(cf.entry_sections("- **Loose.** Item."),
+                         [{"name": None, "items": ["**Loose.** Item."], "notes": []}])
 
     def test_title_and_summary(self) -> None:
-        sections, notes = cf.entry_sections("### Fixed\n- **A `x` reads right.** `[1]` is 1.\n- **B.** b.")
-        self.assertEqual(cf.entry_title("1.0.0", sections, notes), "1.0.0: A x reads right, and 1 more change")
-        self.assertEqual(cf.entry_summary(sections, notes), "Fixed: A x reads right. B.")
+        sections = cf.entry_sections("### Fixed\n- **A `x` reads right.** `[1]` is 1.\n- **B.** b.")
+        self.assertEqual(cf.entry_title("1.0.0", sections), "1.0.0: A x reads right, and 1 more change")
+        self.assertEqual(cf.entry_summary(sections), "Fixed: A x reads right. B.")
+
+    def test_the_lead_stops_at_the_first_bold_run(self) -> None:
+        self.assertEqual(cf.lead("**`Price.side`** now follows p1. Then **the mapping is verified.** More."),
+                         "Price.side now follows p1.")
 
     def test_client_versions(self) -> None:
         names = cf.names_for_clients(br.CLIENTS, br.CHANGELOG_CLIENT_WORDS)
         text = ("The samples cover Python 1.8.0, JavaScript 1.10.2, Go 1.3.0 and PHP 1.2.0. They also "
                 "cover .NET 1.2.1, Dart 1.2.1, Swift 1.1.1 and R 0.2.0. JS 1.10.2 again. It builds with "
-                "Swift 5.10 on Python 3.9, with `livetennisapi-export` 0.1.0 and livetennisapi-mcp 1.6.1.")
+                "Swift 5.10 on Python 3.9, with `livetennisapi-export` 0.1.0 and livetennisapi-mcp@1.6.1.")
         got = [(c["client"], c["version"]) for c in cf.client_versions(text, names)]
         self.assertEqual(got, [("Python", "1.8.0"), ("JavaScript", "1.10.2"), ("Go", "1.3.0"),
                                ("PHP", "1.2.0"), (".NET", "1.2.1"), ("Dart", "1.2.1"),
                                ("Swift", "1.1.1"), ("R", "0.2.0"),
                                ("livetennisapi-export", "0.1.0"), ("livetennisapi-mcp", "1.6.1")])
 
+    def test_a_runtime_version_is_not_a_client_version(self) -> None:
+        names = cf.names_for_clients(br.CLIENTS, br.CHANGELOG_CLIENT_WORDS)
+        text = "Built with Go 1.25.0, R 4.4.1, Python 3.12.4, Swift 5.10.1 and PHP 8.3.12."
+        self.assertEqual(cf.client_versions(text, names), [])
+
     def test_a_heading_the_parser_cannot_read_stops_the_build(self) -> None:
-        with self.assertRaises(SystemExit):
-            br.changelog_entries("## [1.0.1] - 2026-01-02\n- a\n\n## [1.0.0] — 2026-01-01\n- b\n")
+        good = "## [1.0.1] - 2026-01-02\n- a\n\n"
+        for bad in ("## [1.0.0] \u2014 2026-01-01", "##[1.0.0] - 2026-01-01",
+                    " ## [1.0.0] - 2026-01-01", "### [1.0.0] - 2026-01-01", "## 1.0.0 - 2026-01-01"):
+            with self.subTest(bad=bad), self.assertRaises(SystemExit):
+                br.changelog_entries(good + bad + "\n- b\n")
+        self.assertEqual(len(br.changelog_entries(good + "### Added\n- b\n")), 1)
 
 
 class RulesCatchFaultsTest(unittest.TestCase):
@@ -175,7 +200,7 @@ class RulesCatchFaultsTest(unittest.TestCase):
                                            'href="changelog.html#'), "is not absolute")
         self.assertCaught(self.atom_faults("&lt;/ul&gt;</content>", "</content>"), "never closed")
         self.assertCaught(self.atom_faults('<content type="html">', '<content type="markdown">'),
-                          "is not text, html or xhtml")
+                          "is neither text, html, xhtml nor a media type")
         self.assertCaught(self.atom_faults("<title type=\"text\">1.", "<title>x</title><title>1."),
                           "at most one allowed")
         self.assertCaught(self.atom_faults('<category term="Added"/>', '<category term=""/>'), "without term")
@@ -202,7 +227,50 @@ class RulesCatchFaultsTest(unittest.TestCase):
         self.assertCaught(self.json_faults(lambda f: f.update(feed_url="http://x")), "https URL")
         self.assertCaught(self.json_faults(lambda f: f.update(authors=[{}])), "name, url or avatar")
 
+    def test_more_atom_faults(self) -> None:
+        self.assertCaught(self.atom_faults('<content type="html">', '<content type="multipart/mixed">'),
+                          "composite type")
+        self.assertCaught(self.atom_faults('<content type="html">', '<content type="image/png">')
+                          + cf.atom_problems(re.sub(r"<summary[^>]*>.*?</summary>\n", "",
+                                                    self.atom.replace('<content type="html">',
+                                                                      '<content type="image/png">', 1),
+                                                    count=1)), "needs an atom:summary")
+        self.assertCaught(self.atom_faults('<title type="text">1.', '<title type="text"><b/>1.'),
+                          "holds child elements")
+        self.assertCaught(self.atom_faults("</name>", "</name><uri>https://a.example</uri>"),
+                          "more than one atom:uri")
+        self.assertCaught(self.atom_faults('<category term="Added"/>',
+                                           '<category term="Added" scheme="not an iri"/>'), "not an IRI")
+        self.assertEqual([p for p in self.atom_faults("<updated>2026-11-20T00:00:00Z",
+                                                      "<updated>2016-12-31T23:59:60Z") if "RFC 3339" in p], [])
+
     def test_parity_faults(self) -> None:
+        def broken(old: str, new: str) -> list[str]:
+            self.assertIn(old, self.atom)
+            return cf.parity_problems(self.page, self.atom.replace(old, new), self.feed, br.CHANGELOG_URL)
+
+        self.assertCaught(broken('<content type="html">', '<content type="text">'), "not type html")
+        self.assertCaught(broken('<summary type="text">', '<summary type="text">WRONG '), "disagree on title")
+        self.assertCaught(broken('<category term="Added"/>', ""), "categories")
+        self.assertCaught(broken('changelog.html#v1.13.88"/>', 'changelog.html#v0.0.0"/>'), "link")
+        feed = json.loads(self.feed)
+        feed["items"][0]["_livetennisapi"]["sections"][0]["items"].pop()
+        self.assertCaught(cf.parity_problems(self.page, self.atom, json.dumps(feed), br.CHANGELOG_URL),
+                          "sections, items or notes differ")
+        feed = json.loads(self.feed)
+        feed["items"][1]["_livetennisapi"]["client_libraries"] = []
+        self.assertCaught(cf.parity_problems(self.page, self.atom, json.dumps(feed), br.CHANGELOG_URL),
+                          "client library versions")
+        feed = json.loads(self.feed)
+        feed["items"][2]["url"] = "https://example.com/"
+        self.assertCaught(cf.parity_problems(self.page, self.atom, json.dumps(feed), br.CHANGELOG_URL),
+                          "json feed item for")
+        raw_marks = self.page.replace("<li><strong>", "<li>**", 1).replace("</strong>", "**", 2)
+        self.assertCaught(cf.parity_problems(raw_marks, self.atom, self.feed, br.CHANGELOG_URL),
+                          "differs from changelog.html")
+
+
+    def test_parity_faults_in_count_dates_and_content(self) -> None:
         dropped = re.sub(r"<entry>.*?</entry>\n", "", self.atom, count=1, flags=re.S)
         self.assertCaught(cf.parity_problems(self.page, dropped, self.feed, br.CHANGELOG_URL),
                           "atom has")
