@@ -129,15 +129,24 @@ def _notes(sections: list[dict[str, Any]]) -> list[str]:
     return [n for s in sections for n in s["notes"]]
 
 
+SUMMARY_ITEMS = 2
+
+
 def entry_summary(sections: list[dict[str, Any]]) -> str:
-    """Each section's name, then what each of its items says it changed. An entry with no items
-    (none today) is summed up by the first sentence of its first paragraph."""
-    parts = []
+    """What the first two items say they changed, each after its section's name, and how many
+    more there are. JSON Feed describes a summary as a sentence or two, and the full entry is in
+    the content. An entry with no items (none today) gets the first sentence of its first note."""
+    parts: list[str] = []
+    shown = total = 0
     for s in sections:
-        if not s["items"]:
-            continue
-        leads = " ".join(lead(i) for i in s["items"])
-        parts.append(f"{s['name']}: {leads}" if s["name"] else leads)
+        total += len(s["items"])
+        leads = [lead(i) for i in s["items"][:SUMMARY_ITEMS - shown]]
+        if leads:
+            shown += len(leads)
+            parts.append(f"{s['name']}: {' '.join(leads)}" if s["name"] else " ".join(leads))
+    if total > shown:
+        more = total - shown
+        parts.append(f"Plus {more} more change{'s' if more > 1 else ''}.")
     if not parts and _notes(sections):
         parts.append(lead(_notes(sections)[0]))
     return " ".join(parts)
@@ -170,29 +179,43 @@ def _version_key(v: str) -> tuple[int, ...]:
     return tuple(int(x) for x in v.split("."))
 
 
-def client_versions(text: str, names: dict[str, tuple[str, str, str]]) -> list[dict[str, str]]:
+def client_versions(texts: str | Iterable[str], names: dict[str, tuple[str, str, str]]) -> list[dict[str, str]]:
     """The client library versions a text names, in order, once each.
 
     `names` maps each way the changelog writes a client ("Python", "JS", "livetennisapi-ai") to
-    (client name, package, newest published version). Only a three-part version right after a
-    name counts ("Python 1.8.0", "livetennisapi-mcp@1.6.5"). A version above the newest published
-    one is a runtime or a toolchain, not the client: "Python 3.12.4" or "Swift 5.10.1" is not read
-    as a client version. The newest versions come from CLIENTS, which check_client_versions.py
-    keeps in step with the registries."""
+    (client name, package, newest published version). A three-part version right after a name
+    counts ("Python 1.8.0", "livetennisapi-mcp@1.6.5"). So does a bare version later in the same
+    item, of the same major version as the client just named ("JavaScript 1.10.3 fixes what
+    failed in 1.10.2"). A version above the newest published one is a runtime or a toolchain,
+    not the client: "Python 3.12.4" or "Swift 5.10.1" is not read as a client version. The newest
+    versions come from CLIENTS, which check_client_versions.py keeps in step with the registries.
+    Pass the items one by one, so a name never reaches into the next item."""
     if not names:
         return []
+    if isinstance(texts, str):
+        texts = [texts]
     alternation = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
-    rx = re.compile(rf"(?<![\w.-])({alternation})(?:\s+v?|@)(\d+\.\d+\.\d+)(?![\w-]|\.\d)")
+    rx = re.compile(rf"(?<![\w.-])(?:({alternation})(?:\s+v?|@)|v?)(\d+\.\d+\.\d+)(?![\w-]|\.\d)")
     out: list[dict[str, str]] = []
     seen: set[tuple[str, str]] = set()
-    for m in rx.finditer(plain(text)):
-        client, package, newest = names[m[1]]
-        if _version_key(m[2]) > _version_key(newest):
-            continue
-        key = (client, m[2])
-        if key not in seen:
-            seen.add(key)
-            out.append({"client": client, "package": package, "version": m[2]})
+    for text in texts:
+        last: tuple[str, str, str, int] | None = None
+        for m in rx.finditer(plain(text)):
+            version = m[2]
+            if m[1]:
+                client, package, newest = names[m[1]]
+                if _version_key(version) > _version_key(newest):
+                    continue
+                last = (client, package, newest, _version_key(version)[0])
+            elif last is None:
+                continue
+            else:
+                client, package, newest, major = last
+                if _version_key(version) > _version_key(newest) or _version_key(version)[0] != major:
+                    continue
+            if (client, version) not in seen:
+                seen.add((client, version))
+                out.append({"client": client, "package": package, "version": version})
     return out
 
 
@@ -212,7 +235,7 @@ def feed_entries(entries: list[dict[str, Any]], render: Any, page_url: str,
             "content_html": render(e["body_md"]),
             "sections": sections,
             "tags": section_names(sections),
-            "clients": client_versions(e["body_md"], client_names),
+            "clients": client_versions([*_items(sections), *_notes(sections)], client_names),
         })
     return out
 
@@ -313,7 +336,8 @@ def build_json_feed(items: list[dict[str, Any]], meta: dict[str, str]) -> str:
 # ----------------------------------------------------------------------------------- checks --
 
 _RFC3339 = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$")
-_ABSOLUTE_IRI = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:\S+$")
+# A scheme, a colon, no whitespace, and every % starting a two-digit hex escape (RFC 3987 2.2).
+_ABSOLUTE_IRI = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:(?:[^\s%]|%[0-9A-Fa-f]{2})+$")
 _TEXT_TYPES = {"text", "html", "xhtml"}
 _VOID = {"area", "base", "br", "col", "embed", "hr", "img", "input", "link", "meta", "source",
          "track", "wbr"}
@@ -381,7 +405,16 @@ def _check_content(el: ET.Element, entry: ET.Element, where: str, out: list[str]
     names a MIME media type. A composite type is not allowed. Content with a src, or content
     that is neither text nor XML (so Base64), needs an atom:summary on the entry (4.1.1.1)."""
     kind = el.get("type", "text")
-    if el.get("src") is None and kind in _TEXT_TYPES:
+    src = el.get("src")
+    if src is not None:
+        # 4.1.3.2: content with a src is empty, and a type it gives is a media type.
+        if (el.text or "").strip() or len(el):
+            out.append(f"{where}: content with a src must be empty")
+        if el.get("type") is not None and "/" not in kind:
+            out.append(f"{where}: content with a src needs a media type, not {kind!r}")
+        if not _ABSOLUTE_IRI.match(src):
+            out.append(f"{where}: src {src!r} is not an absolute IRI")
+    elif kind in _TEXT_TYPES:
         _check_text_construct(el, where, out)
         return
     if kind not in _TEXT_TYPES and "/" not in kind:
@@ -590,7 +623,7 @@ def json_feed_problems(text: str, feed_url: str | None = None) -> list[str]:
         for key in ("url", "external_url", "image", "banner_image"):
             if key in item and not (isinstance(item[key], str) and item[key].startswith("https://")):
                 out.append(f"{where}: {key} must be an https URL")
-        for key in ("title", "summary", "language"):
+        for key in ("title", "summary", "language", "content_html", "content_text"):
             if key in item and not isinstance(item[key], str):
                 out.append(f"{where}: {key} must be a string")
         for att in item.get("attachments", []) if isinstance(item.get("attachments", []), list) else [None]:
@@ -612,13 +645,16 @@ def json_feed_problems(text: str, feed_url: str | None = None) -> list[str]:
 
 
 _ARTICLE_RX = re.compile(
-    r'<article id="v(?P<ver>[^"]+)"><h2>[^<]*<time datetime="(?P<date>[^"]+)">[^<]*</time></h2>\n'
-    r"(?P<body>.*?)</article>", re.S)
+    r'<article id="v(?P<ver>[^"]+)"><h2>(?P<shown_ver>[^<]*) <time datetime="(?P<date>[^"]+)">'
+    r'(?P<shown_date>[^<]*)</time></h2>\n(?P<body>.*?)</article>', re.S)
 
 
 def page_entries(page_html: str) -> list[tuple[str, str, str]]:
-    """(version, date, body html) for every dated <article> on changelog.html, in page order."""
-    return [(m["ver"], m["date"], m["body"]) for m in _ARTICLE_RX.finditer(page_html)]
+    """(version, date, body html) for every dated <article> on changelog.html, in page order.
+    An article whose heading shows another version or date than its anchor and its datetime
+    is left out, so the parity check reports it."""
+    return [(m["ver"], m["date"], m["body"]) for m in _ARTICLE_RX.finditer(page_html)
+            if html.unescape(m["shown_ver"]) == m["ver"] and m["shown_date"] == m["date"]]
 
 
 class _BlockText(HTMLParser):
@@ -692,6 +728,8 @@ def parity_problems(page_html: str, atom_text: str, json_text: str, page_url: st
             out.append(f"atom entry for {ver} differs from changelog.html (id, dates, link or content)")
         if content is None or content.get("type") != "html":
             out.append(f"atom entry for {ver}: content is not type html")
+        if "content_text" in j:
+            out.append(f"json feed item for {ver}: content_text would be a second account of the entry")
         ext = j.get(EXT_KEY, {})
         if (j.get("id"), j.get("url"), j.get("date_published"), j.get("content_html"),
                 ext.get("version"), ext.get("date")) != (want_id, want_id, stamp, body, ver, date):

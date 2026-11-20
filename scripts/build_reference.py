@@ -1407,7 +1407,7 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
 
 # --------------------------------------------------------------------------- changelog --------
 CHANGELOG = Path(__file__).resolve().parents[1] / "CHANGELOG.md"
-_ENTRY_RX = re.compile(r"^## \[(?P<ver>[^\]]+)\] - (?P<date>\d{4}-\d{2}-\d{2})\s*$")
+_ENTRY_RX = re.compile(r"^## \[(?P<ver>\d+\.\d+\.\d+)\] - (?P<date>\d{4}-\d{2}-\d{2})\s*$")
 # Anything that looks like it meant to be an entry heading: a level-two heading, or a heading of
 # any level (or none) that opens with a bracketed version, indented or not.
 _NEAR_HEADING_RX = re.compile(r"^\s*(?:##(?!#)|#+\s*\[\d)")
@@ -1441,9 +1441,16 @@ _AUTOLINK_RX = re.compile(r"<(https?://[^>\s]+)>")
 
 
 def _inline(text: str) -> str:
-    """Bold, code and links in one changelog paragraph or item. A Markdown autolink loses its
-    angle brackets first: md_inline links the bare URL, and the brackets used to show as text."""
-    return _BOLD_RX.sub(r"<strong>\1</strong>", md_inline(_AUTOLINK_RX.sub(r"\1", text)))
+    """Bold, code and links in one changelog paragraph or item. A Markdown autolink becomes a
+    link without its angle brackets, which used to show as text. It is linked here rather than
+    left to md_inline, whose bare-URL match would run on into a following ** and break the bold."""
+    parts, pos = [], 0
+    for m in _AUTOLINK_RX.finditer(text):
+        url = E(m[1])
+        parts += [md_inline(text[pos:m.start()]), f'<a href="{url}">{url}</a>']
+        pos = m.end()
+    parts.append(md_inline(text[pos:]))
+    return _BOLD_RX.sub(r"<strong>\1</strong>", "".join(parts))
 
 
 def _md_block(md: str) -> str:
@@ -4222,8 +4229,13 @@ def main() -> int:
         + [f"changelog.json: {p}" for p in changelog_feeds.json_feed_problems(changelog_json, CHANGELOG_JSON_URL)]
         + changelog_feeds.parity_problems(changelog_html, changelog_atom, changelog_json, CHANGELOG_URL)
     )
-    if len(changelog_feeds.alternate_links(changelog_html)) != 2:
+    feed_links = {("application/atom+xml", CHANGELOG_ATOM_URL), ("application/feed+json", CHANGELOG_JSON_URL)}
+    if {(l["type"], l["href"]) for l in changelog_feeds.alternate_links(changelog_html)} != feed_links:
         feed_bad.append("changelog.html: the head does not link both feeds")
+    if (DOCS / "index.html").exists() and {
+            (l["type"], l["href"]) for l in changelog_feeds.alternate_links(
+                (DOCS / "index.html").read_text(encoding="utf-8"))} != feed_links:
+        feed_bad.append("index.html: the head does not link both feeds (it is hand-written, add them)")
     if feed_bad:
         raise SystemExit("changelog feeds:\n  " + "\n  ".join(feed_bad))
 

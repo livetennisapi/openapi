@@ -156,6 +156,20 @@ class EntryParsingTest(unittest.TestCase):
                                ("Swift", "1.1.1"), ("R", "0.2.0"),
                                ("livetennisapi-export", "0.1.0"), ("livetennisapi-mcp", "1.6.1")])
 
+    def test_a_bare_version_belongs_to_the_client_just_named(self) -> None:
+        names = cf.names_for_clients(br.CLIENTS, br.CHANGELOG_CLIENT_WORDS)
+        items = ["JavaScript 1.10.3 fixes what failed in 1.10.2, as the v1.10.3 tag shows. Spec 1.13.88.",
+                 "In livetennisapi-ai 1.1.0 it fails, until 1.2.1 is on npm.",
+                 "Nothing is named here, 1.2.0."]
+        got = [(c["client"], c["version"]) for c in cf.client_versions(items, names)]
+        self.assertEqual(got, [("JavaScript", "1.10.3"), ("JavaScript", "1.10.2"),
+                               ("livetennisapi-ai", "1.1.0"), ("livetennisapi-ai", "1.2.1")])
+
+    def test_an_autolink_inside_bold_renders(self) -> None:
+        out = br._md_block("- **See <https://example.com/docs>**.")
+        self.assertEqual(out, '<ul>\n<li><strong>See <a href="https://example.com/docs">'
+                              'https://example.com/docs</a></strong>.</li>\n</ul>')
+
     def test_a_runtime_version_is_not_a_client_version(self) -> None:
         names = cf.names_for_clients(br.CLIENTS, br.CHANGELOG_CLIENT_WORDS)
         text = "Built with Go 1.25.0, R 4.4.1, Python 3.12.4, Swift 5.10.1 and PHP 8.3.12."
@@ -226,6 +240,10 @@ class RulesCatchFaultsTest(unittest.TestCase):
         self.assertCaught(self.json_faults(lambda f: f["items"][0].update(livetennisapi={})), "unknown key")
         self.assertCaught(self.json_faults(lambda f: f.update(feed_url="http://x")), "https URL")
         self.assertCaught(self.json_faults(lambda f: f.update(authors=[{}])), "name, url or avatar")
+        self.assertCaught(self.json_faults(lambda f: f["items"][0].update(content_text=123)),
+                          "content_text must be a str")
+        self.assertCaught(self.json_faults(lambda f: f["items"][0].update(attachments=[{}])),
+                          "url and a mime_type")
 
     def test_more_atom_faults(self) -> None:
         self.assertCaught(self.atom_faults('<content type="html">', '<content type="multipart/mixed">'),
@@ -241,6 +259,11 @@ class RulesCatchFaultsTest(unittest.TestCase):
                           "more than one atom:uri")
         self.assertCaught(self.atom_faults('<category term="Added"/>',
                                            '<category term="Added" scheme="not an iri"/>'), "not an IRI")
+        self.assertCaught(self.atom_faults("changelog.html#v1.13.89</id>", "changelog.html#v1.13.89%zz</id>"),
+                          "not an absolute IRI")
+        self.assertCaught(self.atom_faults('<content type="html">',
+                                           '<content type="html" src="https://example.com/r.html">'),
+                          "must be empty")
         self.assertEqual([p for p in self.atom_faults("<updated>2026-11-20T00:00:00Z",
                                                       "<updated>2016-12-31T23:59:60Z") if "RFC 3339" in p], [])
 
@@ -265,6 +288,14 @@ class RulesCatchFaultsTest(unittest.TestCase):
         feed["items"][2]["url"] = "https://example.com/"
         self.assertCaught(cf.parity_problems(self.page, self.atom, json.dumps(feed), br.CHANGELOG_URL),
                           "json feed item for")
+        feed = json.loads(self.feed)
+        feed["items"][0]["content_text"] = "another account"
+        self.assertCaught(cf.parity_problems(self.page, self.atom, json.dumps(feed), br.CHANGELOG_URL),
+                          "second account")
+        shown = self.page.replace("<h2>1.13.88 ", "<h2>1.13.87 ", 1)
+        self.assertNotEqual(shown, self.page)
+        self.assertCaught(cf.parity_problems(shown, self.atom, self.feed, br.CHANGELOG_URL),
+                          "does not have the id, heading and time shape")
         raw_marks = self.page.replace("<li><strong>", "<li>**", 1).replace("</strong>", "**", 2)
         self.assertCaught(cf.parity_problems(raw_marks, self.atom, self.feed, br.CHANGELOG_URL),
                           "differs from changelog.html")
