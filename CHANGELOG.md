@@ -5,6 +5,15 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.89] - 2026-11-20
+
+### Added
+- **The changelog as an Atom feed and a JSON Feed.** `changelog.atom` (Atom 1.0) and `changelog.json` (JSON Feed 1.1) carry every entry of this changelog. Each one has the version, the date, the items of each section, a summary and the client library versions the entry names. Both are written from the same parse as `changelog.html`. The build fails when either feed breaks its format or differs from the page. An entry's id is its anchor on the page, so a rebuild never shows an old entry as new. The changelog page and the docs home link both feeds in their head, and llms.txt lists them. Nothing on the wire changed.
+
+### Fixed
+- **The changelog page shows all 115 entries.** Fifteen headings from 1.1.0 to 1.9.3 were written with an em dash. The page folded them into the 1.9.4 entry as plain text. Each is now its own entry, and the build stops on a heading it cannot read.
+- **Bold and code that wrap onto a second line render in full.** Six older entries showed raw asterisks and backticks there. Two links written in angle brackets showed the brackets. Both now render as on the rest of the page.
+
 ## [1.13.88] - 2026-11-19
 
 ### Changed
@@ -742,7 +751,7 @@ Documentation only. No field, endpoint or wire value changed.
   `synthetic: true` by design because the live book attaches at match start;
   `timestamp` is our observation clock (UTC), not a venue publication time.
 
-## [1.9.3] — 2026-09-04
+## [1.9.3] - 2026-09-04
 
 ### Clarified
 - **`Match.tournament_id` null cases** restated with the real causes and a
@@ -752,7 +761,7 @@ Documentation only. No field, endpoint or wire value changed.
   2026 backlog was backfilled the same day (2,547 rows); ITF null rate went
   from about 25% to about 2.5%. No wire change.
 
-## [1.9.2] — 2026-09-04
+## [1.9.2] - 2026-09-04
 
 ### Added (spec catch-up — every one of these has been live on the API; the document lagged)
 - **`GET /matches?status=cancelled`** is now in the `status` enum, with what it
@@ -774,7 +783,7 @@ Documentation only. No field, endpoint or wire value changed.
   listings, so `has_more` is the only end-of-data signal there.
   Asked by a Basic customer on Discord; no wire change.
 
-## [1.9.1] — 2026-09-02
+## [1.9.1] - 2026-09-02
 
 ### Clarified
 - **`Player.ranking` / `Player.ranking_points`** now say what they are: the
@@ -784,7 +793,7 @@ Documentation only. No field, endpoint or wire value changed.
   record even on historical matches (`/rankings?as_of=` is the as-of surface).
   Asked by a Basic customer; no wire change.
 
-## [1.9.0] — 2026-09-02
+## [1.9.0] - 2026-09-02
 
 ### Added
 - **`has_analysis` and `has_market` on `Match`** — two booleans on every row of
@@ -800,7 +809,7 @@ Documentation only. No field, endpoint or wire value changed.
   `/matches/{matchId}/statistics` already uses in its `200`. New `error` codes
   `no_analysis`, `no_market` documented on the `Error` schema.
 
-## [1.8.0] — 2026-09-01
+## [1.8.0] - 2026-09-01
 
 ### Added
 - **`GET /history/archive/matches/{archiveId}/tape`** (`getArchiveTape`) — the
@@ -862,7 +871,7 @@ Documentation only. No field, endpoint or wire value changed.
   corpus, the null clock and the coverage floor together.
 - `info.version` is now `1.8.0`.
 
-## [1.7.2] — 2026-08-23
+## [1.7.2] - 2026-08-23
 
 ### Changed
 - **`status` on Match now documents the lifecycle rule.** `completed` is
@@ -877,7 +886,7 @@ Documentation only. No field, endpoint or wire value changed.
   changed type — prose only.
 - `info.version` is now `1.7.2`.
 
-## [1.7.1] — 2026-08-19
+## [1.7.1] - 2026-08-19
 
 ### Added
 - **`event_status_updated_at` on Match.** Nullable ISO-8601 UTC (`Z`)
@@ -894,7 +903,7 @@ Documentation only. No field, endpoint or wire value changed.
 ### Changed
 - `info.version` is now `1.7.1`.
 
-## [1.7.0] — 2026-08-18
+## [1.7.0] - 2026-08-18
 
 ### Added
 - **`basis` on `GET /matches/{matchId}/points` responses.** `live` |
@@ -921,7 +930,7 @@ Documentation only. No field, endpoint or wire value changed.
 ### Changed
 - `info.version` is now `1.7.0`.
 
-## [1.6.0] — 2026-08-18
+## [1.6.0] - 2026-08-18
 
 ### Added
 - **The three-valued `draw` field on Match.** `singles` | `doubles` | null —
@@ -987,7 +996,7 @@ Documentation only. No field, endpoint or wire value changed.
 ### Changed
 - `info.version` is now `1.6.0`.
 
-## [1.5.0] — 2026-08-17
+## [1.5.0] - 2026-08-17
 
 ### Added
 - **The as-of Elo tape.** `GET /rankings?system=elo` (ULTRA, both modes) —
@@ -1053,7 +1062,7 @@ Documentation only. No field, endpoint or wire value changed.
   that change.
 - `info.version` is now `1.5.0`.
 
-## [1.4.0] — 2026-08-16
+## [1.4.0] - 2026-08-16
 
 ### Added
 - **Live per-point events.** `GET /matches/{matchId}/points` (ULTRA) — the
@@ -1107,7 +1116,7 @@ Documentation only. No field, endpoint or wire value changed.
   well as `?sequence=clean` (there the served order IS point order).
 - `info.version` is now `1.4.0`.
 
-## [1.3.1] — 2026-08-07
+## [1.3.1] - 2026-08-07
 
 ### Added
 - **`kind=rally` bulk packages documented.** The `/history/packages` `kind`
@@ -1119,7 +1128,7 @@ Documentation only. No field, endpoint or wire value changed.
   `kind` accepts `tape` (default), `rankings` (ULTRA), `rally` (ULTRA)
   and `archive`.
 
-## [1.3.0] — 2026-08-07
+## [1.3.0] - 2026-08-07
 
 ### Added
 - **Shot-level charting.** `GET /charting/players` (ULTRA) — career
@@ -1168,7 +1177,7 @@ Documentation only. No field, endpoint or wire value changed.
   key limit is stated.
 - `info.version` is now `1.3.0`.
 
-## [1.2.0] — 2026-08-03
+## [1.2.0] - 2026-08-03
 
 ### Added
 - **Results archive (1968–2022).** The history product now runs in two
@@ -1246,7 +1255,7 @@ Documentation only. No field, endpoint or wire value changed.
   and `/h2h` on BASIC/History plans, the rankings listing on PRO, rally and
   per-player as-of rankings on ULTRA).
 
-## [1.1.0] — 2026-08-02
+## [1.1.0] - 2026-08-02
 
 ### Added
 - **Usage endpoint.** `GET /usage` (FREE — any tier): your own durable daily

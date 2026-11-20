@@ -6,11 +6,12 @@
 # to be present. CHANGELOG.md is exempt: its dated entries legitimately quote
 # the grid as it stood at the time — and since 2026-09-14 docs/changelog.html is
 # that same file rendered, so it inherits the exemption or the rule contradicts
-# itself. Nothing else generated from the spec is exempt.
+# itself. docs/changelog.atom and docs/changelog.json are the same entries as
+# feeds, so they inherit it too. Nothing else generated from the spec is exempt.
 set -eu
 cd "$(dirname "$0")/.."
 
-files=$(git ls-files | grep -vE '^CHANGELOG\.md$|^docs/changelog\.html$|^scripts/truthcheck\.sh$|\.(png|jpg|jpeg|ico|svg|woff2?)$')
+files=$(git ls-files | grep -vE '^CHANGELOG\.md$|^docs/changelog\.(html|atom|json)$|^scripts/truthcheck\.sh$|\.(png|jpg|jpeg|ico|svg|woff2?)$')
 
 fail=0
 

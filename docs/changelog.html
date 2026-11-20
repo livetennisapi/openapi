@@ -4,9 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Tennis API — Changelog</title>
-<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.88, last change 2026-11-19.">
+<meta name="description" content="Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.89, last change 2026-11-20.">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://docs.livetennisapi.com/changelog.html">
+<link rel="alternate" type="application/atom+xml" title="Live Tennis API changelog (Atom)" href="https://docs.livetennisapi.com/changelog.atom">
+<link rel="alternate" type="application/feed+json" title="Live Tennis API changelog (JSON Feed)" href="https://docs.livetennisapi.com/changelog.json">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Live Tennis API — Changelog">
 <meta property="og:url" content="https://docs.livetennisapi.com/changelog.html">
@@ -14,7 +16,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.ico" sizes="any">
 <script type="application/ld+json">
-{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Live Tennis API — Changelog", "description": "Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.88, last change 2026-11-19.", "url": "https://docs.livetennisapi.com/changelog.html", "dateModified": "2026-11-19", "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": "https://livetennisapi.com"}, "publisher": {"@type": "Organization", "@id": "https://livetennisapi.com/#org", "name": "JSB Holdings LLC", "alternateName": "Live Tennis API", "url": "https://livetennisapi.com", "logo": "https://docs.livetennisapi.com/icon-256.png", "sameAs": ["https://rapidapi.com/contact-whTqTESH5/api/tennis-data-analytics-api3", "https://apify.com/livetennisapi/tennis-data-analytics", "https://api.market/store/live-tennis-api/tennis-data-analytics", "https://www.postman.com/livetennisapi", "https://github.com/livetennisapi", "https://pypi.org/project/livetennisapi/", "https://www.npmjs.com/package/livetennisapi", "https://www.npmjs.com/package/livetennisapi-mcp", "https://docs.livetennisapi.com", "https://x.com/livetennisapi"]}}
+{"@context": "https://schema.org", "@type": "TechArticle", "headline": "Live Tennis API — Changelog", "description": "Every change to the Live Tennis API specification, dated and versioned: additive within v1, newest first. Current version 1.13.89, last change 2026-11-20.", "url": "https://docs.livetennisapi.com/changelog.html", "dateModified": "2026-11-20", "encoding": [{"@type": "MediaObject", "encodingFormat": "application/atom+xml", "contentUrl": "https://docs.livetennisapi.com/changelog.atom"}, {"@type": "MediaObject", "encodingFormat": "application/feed+json", "contentUrl": "https://docs.livetennisapi.com/changelog.json"}], "inLanguage": "en", "isPartOf": {"@type": "WebSite", "name": "Live Tennis API", "url": "https://livetennisapi.com"}, "publisher": {"@type": "Organization", "@id": "https://livetennisapi.com/#org", "name": "JSB Holdings LLC", "alternateName": "Live Tennis API", "url": "https://livetennisapi.com", "logo": "https://docs.livetennisapi.com/icon-256.png", "sameAs": ["https://rapidapi.com/contact-whTqTESH5/api/tennis-data-analytics-api3", "https://apify.com/livetennisapi/tennis-data-analytics", "https://api.market/store/live-tennis-api/tennis-data-analytics", "https://www.postman.com/livetennisapi", "https://github.com/livetennisapi", "https://pypi.org/project/livetennisapi/", "https://www.npmjs.com/package/livetennisapi", "https://www.npmjs.com/package/livetennisapi-mcp", "https://docs.livetennisapi.com", "https://x.com/livetennisapi"]}}
 </script>
 <link rel="preload" href="fonts/inter-latin-400.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
 <link rel="preload" href="fonts/space-grotesk-latin-700.woff2" as="font" type="font/woff2" crossorigin fetchpriority="high">
@@ -204,9 +206,20 @@
 <header>
 <p class="eyebrow">Live Tennis API · docs</p>
 <h1>Changelog</h1>
-<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.88</strong>, last change <time datetime="2026-11-19">2026-11-19</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
+<p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>1.13.89</strong>, last change <time datetime="2026-11-20">2026-11-20</time>. Also as <a href="https://docs.livetennisapi.com/reference.html">the full reference</a>, <a href="https://docs.livetennisapi.com/openapi.yaml">OpenAPI YAML</a> / <a href="https://docs.livetennisapi.com/openapi.json">JSON</a>, and <a href="https://livetennisapi.com/facts.json">the dated facts file</a>.</p>
 <p>Corrections to published data values are not spec changes, so they are listed in <a href="https://livetennisapi.com/data/corrections">the corrections log</a>.</p>
+<p>To follow new versions in a feed reader, subscribe to the <a href="https://docs.livetennisapi.com/changelog.atom" type="application/atom+xml">Atom feed</a> or the <a href="https://docs.livetennisapi.com/changelog.json" type="application/feed+json">JSON Feed</a>.</p>
 </header>
+<article id="v1.13.89"><h2>1.13.89 <time datetime="2026-11-20">2026-11-20</time></h2>
+<h3>Added</h3>
+<ul>
+<li><strong>The changelog as an Atom feed and a JSON Feed.</strong> <code>changelog.atom</code> (Atom 1.0) and <code>changelog.json</code> (JSON Feed 1.1) carry every entry of this changelog. Each one has the version, the date, the items of each section, a summary and the client library versions the entry names. Both are written from the same parse as <code>changelog.html</code>. The build fails when either feed breaks its format or differs from the page. An entry&#x27;s id is its anchor on the page, so a rebuild never shows an old entry as new. The changelog page and the docs home link both feeds in their head, and llms.txt lists them. Nothing on the wire changed.</li>
+</ul>
+<h3>Fixed</h3>
+<ul>
+<li><strong>The changelog page shows all 115 entries.</strong> Fifteen headings from 1.1.0 to 1.9.3 were written with an em dash. The page folded them into the 1.9.4 entry as plain text. Each is now its own entry, and the build stops on a heading it cannot read.</li>
+<li><strong>Bold and code that wrap onto a second line render in full.</strong> Six older entries showed raw asterisks and backticks there. Two links written in angle brackets showed the brackets. Both now render as on the rest of the page.</li>
+</ul></article>
 <article id="v1.13.88"><h2>1.13.88 <time datetime="2026-11-19">2026-11-19</time></h2>
 <h3>Changed</h3>
 <ul>
@@ -866,14 +879,14 @@
 <article id="v1.9.7"><h2>1.9.7 <time datetime="2026-09-10">2026-09-10</time></h2>
 <h3>Added</h3>
 <ul>
-<li><strong><code>Match.outcome</code></strong> is now documented on the Match schema (it has been on every match since 2026-08-18): `completed | retired | walkover | default | abandoned | unresolved | null<code>, derived from </code>status<code> + </code>event_status`.</li>
+<li><strong><code>Match.outcome</code></strong> is now documented on the Match schema (it has been on every match since 2026-08-18): <code>completed | retired | walkover | default | abandoned | unresolved | null</code>, derived from <code>status</code> + <code>event_status</code>.</li>
 <li><strong><code>outcome: unresolved</code></strong> — a match every source lost before a result is closed unfinished and says so: <code>score</code> is the last state observed, <code>winner</code> is null, no result is asserted; it flips to <code>completed</code> with the proven final when an authority confirms the result. Until 2026-09-10 such closes were published as <code>completed</code> with a mid-match score, which an ULTRA customer read as a wrong result.</li>
 </ul></article>
 <article id="v1.9.6"><h2>1.9.6 <time datetime="2026-09-10">2026-09-10</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong><code>stats.ratings_as_of</code></strong> on <code>GET /players/{id}</code> — the date (UTC) the <code>ratings</code> block was last refreshed. The current Elo is now refreshed every week for every rated player from the published rating tables (Tuesdays); before this the rating carried no date and a May capture read as this week&#x27;s. Reported by a PRO customer building pre-match research.</li>
-<li><strong><code>GET /history/packages/{period}?format=corrections</code></strong> — a CSV keyed by <code>match_id</code> (`match_id, field, before, after, tournament_key, source, corrected_at`) on every package whose stored data was repaired after publication, listed in the manifest as <code>format: corrections</code>; 404 when a package has none. First use: <code>surface</code> corrections on the 2023-02 → 2024-12 tape packages (19,439 Challenger matches whose court surface a tournament-name rule had set to grass; repaired and rebuilt 2026-09-10). Reported by a History Pro customer.</li>
+<li><strong><code>GET /history/packages/{period}?format=corrections</code></strong> — a CSV keyed by <code>match_id</code> (<code>match_id, field, before, after, tournament_key, source, corrected_at</code>) on every package whose stored data was repaired after publication, listed in the manifest as <code>format: corrections</code>; 404 when a package has none. First use: <code>surface</code> corrections on the 2023-02 → 2024-12 tape packages (19,439 Challenger matches whose court surface a tournament-name rule had set to grass; repaired and rebuilt 2026-09-10). Reported by a History Pro customer.</li>
 </ul>
 <h3>Fixed</h3>
 <ul>
@@ -899,13 +912,13 @@
 <h3>Clarified</h3>
 <ul>
 <li><code>Price.mid</code> is the venue&#x27;s observed midpoint, never a model estimate; <code>synthetic</code> describes only <code>bid</code>/<code>ask</code> (<code>mid</code> +/- 0.005 when true); pre-match ticks are <code>synthetic: true</code> by design because the live book attaches at match start; <code>timestamp</code> is our observation clock (UTC), not a venue publication time.</li>
-</ul>
-<p>## [1.9.3] — 2026-09-04</p>
+</ul></article>
+<article id="v1.9.3"><h2>1.9.3 <time datetime="2026-09-04">2026-09-04</time></h2>
 <h3>Clarified</h3>
 <ul>
 <li><strong><code>Match.tournament_id</code> null cases</strong> restated with the real causes and a measured rate: not in our tournament list (UTR), or a match whose name matched no single edition in that list. The API now resolves the latter at ingest by name + event type + date against the published fixtures, and the 2026 backlog was backfilled the same day (2,547 rows); ITF null rate went from about 25% to about 2.5%. No wire change.</li>
-</ul>
-<p>## [1.9.2] — 2026-09-04</p>
+</ul></article>
+<article id="v1.9.2"><h2>1.9.2 <time datetime="2026-09-04">2026-09-04</time></h2>
 <h3>Added (spec catch-up — every one of these has been live on the API; the document lagged)</h3>
 <ul>
 <li><strong><code>GET /matches?status=cancelled</code></strong> is now in the <code>status</code> enum, with what it covers (feed-cancelled, walkover with no stated winner, postponed and never played), its tier (BASIC or any History plan, like <code>completed</code>), and the one restriction: it pages with <code>limit</code>/<code>offset</code> and refuses <code>updated_since</code>.</li>
@@ -915,41 +928,41 @@
 <h3>Clarified</h3>
 <ul>
 <li><code>meta.has_more</code> says how to enumerate a filtered set completely (page <code>offset</code> by <code>limit</code> until false) and that <code>total</code> is null on the terminal listings, so <code>has_more</code> is the only end-of-data signal there. Asked by a Basic customer on Discord; no wire change.</li>
-</ul>
-<p>## [1.9.1] — 2026-09-02</p>
+</ul></article>
+<article id="v1.9.1"><h2>1.9.1 <time datetime="2026-09-02">2026-09-02</time></h2>
 <h3>Clarified</h3>
 <ul>
 <li><strong><code>Player.ranking</code> / <code>Player.ranking_points</code></strong> now say what they are: the official singles ranking POSITION (the ordinal), ATP table for men and WTA table for women chosen by the player, refreshed ahead of each match the player has with us, <code>null</code> when no ranking is held, and always the CURRENT record even on historical matches (<code>/rankings?as_of=</code> is the as-of surface). Asked by a Basic customer; no wire change.</li>
-</ul>
-<p>## [1.9.0] — 2026-09-02</p>
+</ul></article>
+<article id="v1.9.0"><h2>1.9.0 <time datetime="2026-09-02">2026-09-02</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong><code>has_analysis</code> and <code>has_market</code> on <code>Match</code></strong> — two booleans on every row of <code>GET /matches</code> and on the detail, every tier. They carry the same fact the per-match endpoints answer 404 about, so a slate is filtered in one call instead of one 404 per match. Shipped to production 2026-09-02.</li>
-<li>**Distinguishable absence on <code>GET /matches/{matchId}/analysis</code> and <code>GET /markets/{matchId}/prices</code>.** The status stays <code>404</code> (unchanged, and shipped clients branch on it), but the body now says which absence it is: <code>{&quot;error&quot;:&quot;not_found&quot;}</code> for an id that does not exist, and <code>{&quot;error&quot;:&quot;no_analysis&quot;|&quot;no_market&quot;,&quot;match_id&quot;:…,&quot;coverage&quot;:&quot;none&quot;,&quot;detail&quot;:…}</code> for a real match we hold nothing for — the same <code>coverage: &quot;none&quot;</code> vocabulary <code>/matches/{matchId}/statistics</code> already uses in its <code>200</code>. New <code>error</code> codes <code>no_analysis</code>, <code>no_market</code> documented on the <code>Error</code> schema.</li>
-</ul>
-<p>## [1.8.0] — 2026-09-01</p>
+<li><strong>Distinguishable absence on <code>GET /matches/{matchId}/analysis</code> and <code>GET /markets/{matchId}/prices</code>.</strong> The status stays <code>404</code> (unchanged, and shipped clients branch on it), but the body now says which absence it is: <code>{&quot;error&quot;:&quot;not_found&quot;}</code> for an id that does not exist, and <code>{&quot;error&quot;:&quot;no_analysis&quot;|&quot;no_market&quot;,&quot;match_id&quot;:…,&quot;coverage&quot;:&quot;none&quot;,&quot;detail&quot;:…}</code> for a real match we hold nothing for — the same <code>coverage: &quot;none&quot;</code> vocabulary <code>/matches/{matchId}/statistics</code> already uses in its <code>200</code>. New <code>error</code> codes <code>no_analysis</code>, <code>no_market</code> documented on the <code>Error</code> schema.</li>
+</ul></article>
+<article id="v1.8.0"><h2>1.8.0 <time datetime="2026-09-01">2026-09-01</time></h2>
 <h3>Added</h3>
 <ul>
-<li><strong><code>GET /history/archive/matches/{archiveId}/tape</code></strong> (<code>getArchiveTape</code>) — the RECONSTRUCTED 2013–2022 point-by-point tape for one archive result: the score sequence behind the published result: reconstructed point sequences, no capture timestamps. Shipped to production 2026-09-01; the spec was the last place it was missing. Tier: core ULTRA, **or any active History plan including Starter** (which opens it on a FREE core key). The archive RESULT stays on BASIC, so core BASIC and core PRO read the result and are refused the tape — <code>403 upgrade_required</code> carrying <code>capability: archive_tape</code>.</li>
+<li><strong><code>GET /history/archive/matches/{archiveId}/tape</code></strong> (<code>getArchiveTape</code>) — the RECONSTRUCTED 2013–2022 point-by-point tape for one archive result: the score sequence behind the published result: reconstructed point sequences, no capture timestamps. Shipped to production 2026-09-01; the spec was the last place it was missing. Tier: core ULTRA, <strong>or any active History plan including Starter</strong> (which opens it on a FREE core key). The archive RESULT stays on BASIC, so core BASIC and core PRO read the result and are refused the tape — <code>403 upgrade_required</code> carrying <code>capability: archive_tape</code>.</li>
 <li><strong><code>ArchiveTape</code> schema.</strong> Same envelope as <code>HistoryTape</code> so one parser reads both halves of the tape product, with the differences that are true: <code>match</code> is the winner/loser-shaped archive row (rows are WINNER-FIRST, not p1/p2), <code>profiles</code> is always <code>[]</code>, and <code>meta</code> carries <code>archive_match_id</code> rather than <code>match_id</code> — an archive id is not a match id, and passing one to the other&#x27;s routes resolves a different, real record without erroring. Rows are <code>HistoryTapeRow</code>, reused unchanged.</li>
-<li>**<code>kind=archive_tape</code> on <code>/history/packages</code> and <code>/history/packages/{period}</code>, and on <code>HistoryPackage.kind</code>.** Ten per-year bulk files, <code>period</code> 2013 through 2022, JSONL + CSV, all <code>ready</code>. The JSONL record is byte-for-byte what the per-match endpoint returns; the CSV is the flat per-row view keyed on <code>archive_match_id</code> and deliberately carries no <code>timestamp</code>, <code>win_probability_p1</code> or <code>danger</code> column. A SEPARATE gate from the per-match tape: ULTRA, a History Pro/Business subscription, or an active one-off package window — a Starter grant reads tapes one at a time and does not download years of them. <strong>Core PRO carries neither gate.</strong></li>
+<li><strong><code>kind=archive_tape</code> on <code>/history/packages</code> and <code>/history/packages/{period}</code>, and on <code>HistoryPackage.kind</code>.</strong> Ten per-year bulk files, <code>period</code> 2013 through 2022, JSONL + CSV, all <code>ready</code>. The JSONL record is byte-for-byte what the per-match endpoint returns; the CSV is the flat per-row view keyed on <code>archive_match_id</code> and deliberately carries no <code>timestamp</code>, <code>win_probability_p1</code> or <code>danger</code> column. A SEPARATE gate from the per-match tape: ULTRA, a History Pro/Business subscription, or an active one-off package window — a Starter grant reads tapes one at a time and does not download years of them. <strong>Core PRO carries neither gate.</strong></li>
 </ul>
 <h3>Changed</h3>
 <ul>
-<li>**<code>info.description</code> states the provenance and the coverage, thin spots included.** Nobody watched these matches: <code>timestamp</code>, <code>win_probability_p1</code> and <code>danger</code> are null on EVERY row and cannot be filled in later — the production table has no timestamp column at all, so this is a structural fact and not a convention. That is the opposite of the 2023→now tape, which is our own recording, where the rows we actually watched carry a real clock and most of them a model probability. The corpus is 97,901 matches / 14,340,663 rows, seasons <strong>2013–2022 only</strong>: 977,903 archive results from 1968–2012 have no tape and never will. Coverage of the era is 19.3% overall and 44.9% of tour-level play — main-draw tour buckets 91.6–98.7%, ATP Challenger main 55.3% and Challenger qualifying 33.6%, slam QUALIFYING 16.0% (ATP) / 18.1% (WTA), ITF and futures effectively zero (25 of 116,575 ATP futures). Stated together, because a strong number published without its thin counterpart sells a corpus nobody has.</li>
-<li>**<code>ArchiveTape.meta.coverage</code> names the measured split rather than glossing the label.** <code>reconstructed_partial</code> (3,594 matches) has TWO causes and does not say which: 3,038 are point-granular tapes of matches that genuinely stopped early (3,027 retirements, 11 defaults) — the larger cause — and the other 556 carry the label only because their tape is per-GAME. Read <code>granularity</code> and the match&#x27;s own score, not the label, when the question is whether the whole match is there. <code>granularity</code> is <code>point</code> on 99.4% of the corpus; the 556 <code>game</code> tapes are 555 in 2013 and one in 2014.</li>
+<li><strong><code>info.description</code> states the provenance and the coverage, thin spots included.</strong> Nobody watched these matches: <code>timestamp</code>, <code>win_probability_p1</code> and <code>danger</code> are null on EVERY row and cannot be filled in later — the production table has no timestamp column at all, so this is a structural fact and not a convention. That is the opposite of the 2023→now tape, which is our own recording, where the rows we actually watched carry a real clock and most of them a model probability. The corpus is 97,901 matches / 14,340,663 rows, seasons <strong>2013–2022 only</strong>: 977,903 archive results from 1968–2012 have no tape and never will. Coverage of the era is 19.3% overall and 44.9% of tour-level play — main-draw tour buckets 91.6–98.7%, ATP Challenger main 55.3% and Challenger qualifying 33.6%, slam QUALIFYING 16.0% (ATP) / 18.1% (WTA), ITF and futures effectively zero (25 of 116,575 ATP futures). Stated together, because a strong number published without its thin counterpart sells a corpus nobody has.</li>
+<li><strong><code>ArchiveTape.meta.coverage</code> names the measured split rather than glossing the label.</strong> <code>reconstructed_partial</code> (3,594 matches) has TWO causes and does not say which: 3,038 are point-granular tapes of matches that genuinely stopped early (3,027 retirements, 11 defaults) — the larger cause — and the other 556 carry the label only because their tape is per-GAME. Read <code>granularity</code> and the match&#x27;s own score, not the label, when the question is whether the whole match is there. <code>granularity</code> is <code>point</code> on 99.4% of the corpus; the 556 <code>game</code> tapes are 555 in 2013 and one in 2014.</li>
 <li><strong><code>Coverage</code> says where its vocabulary stops.</strong> It describes the 2023+ tape; the archive tape reuses two of its five values and derives <code>reconstructed_partial</code> differently.</li>
 <li><strong><code>ArchiveMatch</code> points at the tape</strong>, and <code>GET /history/archive/matches/{archiveId}</code> says the RESULT stays on BASIC either way.</li>
 <li>The plain-HTML reference gains an FAQ entry — &quot;Is there point-by-point data before 2023?&quot; — and the history FAQ, <code>llms.txt</code> digest and README plan summary carry the same numbers, so an answer engine reading any one of them gets the corpus, the null clock and the coverage floor together.</li>
 <li><code>info.version</code> is now <code>1.8.0</code>.</li>
-</ul>
-<p>## [1.7.2] — 2026-08-23</p>
+</ul></article>
+<article id="v1.7.2"><h2>1.7.2 <time datetime="2026-08-23">2026-08-23</time></h2>
 <h3>Changed</h3>
 <ul>
 <li><strong><code>status</code> on Match now documents the lifecycle rule.</strong> <code>completed</code> is asserted only for a match we observed being played or whose match-winner market settled decisively; a closed market alone never finishes a match. <code>cancelled</code> with <code>event_status: null</code> means positive evidence the match was not played as scheduled (the market settled void) and no stated reason for why — <code>outcome</code> / fixture <code>reason</code> stay null rather than guessed, and the row upgrades to a completed walkover if a <code>Walk Over</code> with a stated winner lands later. Before 2026-08-23 a void market closure completed the match and stamped <code>Finished</code>; those rows were corrected. No field added or changed type — prose only.</li>
 <li><code>info.version</code> is now <code>1.7.2</code>.</li>
-</ul>
-<p>## [1.7.1] — 2026-08-19</p>
+</ul></article>
+<article id="v1.7.1"><h2>1.7.1 <time datetime="2026-08-19">2026-08-19</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong><code>event_status_updated_at</code> on Match.</strong> Nullable ISO-8601 UTC (<code>Z</code>) timestamp, right after <code>event_status</code>: when <code>event_status</code> last CHANGED — the instant WE recorded the walkover / retirement / cancellation / postponement / suspension (or its clearing), not when the tournament desk did. It is the field to measure our admin-status latency with. Bumps only on a change of value (a re-read of the same status never moves it; a clear back to null does). Null while <code>event_status</code> has never changed since the field was introduced (2026-08-19) — never backfilled, never guessed. Inherited by every schema built on Match (<code>MatchDetail</code>, <code>HistoryMatch</code>). Additive only — no existing field moved or changed type.</li>
@@ -957,8 +970,8 @@
 <h3>Changed</h3>
 <ul>
 <li><code>info.version</code> is now <code>1.7.1</code>.</li>
-</ul>
-<p>## [1.7.0] — 2026-08-18</p>
+</ul></article>
+<article id="v1.7.0"><h2>1.7.0 <time datetime="2026-08-18">2026-08-18</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong><code>basis</code> on <code>GET /matches/{matchId}/points</code> responses.</strong> <code>live</code> | <code>reconstruction</code> — which base served the page. Live capture is inherently partial: the stream serves what arrived while the match ran, and the match-closing point never streams live. For a COMPLETED match where a measured-complete recorded point sequence exists, the endpoint now serves that complete sequence instead, projected into the same point-frame shape — love-love opener through the match-closing point, <code>seq</code> contiguous <code>1..N</code>, <code>quality</code> <code>clean</code> — and says so with <code>basis: &quot;reconstruction&quot;</code>. Every other case (every live match, and any completed match without a measured-complete recorded sequence) stays <code>basis: &quot;live&quot;</code> — the persisted stream rows, byte-for-byte what was served before. Completeness beats the partial live capture WHOLESALE — the two sequences are never interleaved (they share no key, so any merge would fabricate an order), the same rule <code>?points=complete</code> follows on the history read. On projected frames <code>ts</code> is null on every row: the recorded sequence carries no per-point clock and none is fabricated (<code>LivePoint.ts</code> now documents this). <code>after_seq</code> pagination and <code>seq</code> dedup work identically on either basis, but the two bases are different sequences: after a match completes and flips to <code>reconstruction</code>, re-read from <code>after_seq=0</code> rather than resuming a live cursor into it. Additive only — no existing field moved or changed type.</li>
@@ -966,21 +979,21 @@
 <h3>Changed</h3>
 <ul>
 <li><code>info.version</code> is now <code>1.7.0</code>.</li>
-</ul>
-<p>## [1.6.0] — 2026-08-18</p>
+</ul></article>
+<article id="v1.6.0"><h2>1.6.0 <time datetime="2026-08-18">2026-08-18</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong>The three-valued <code>draw</code> field on Match.</strong> <code>singles</code> | <code>doubles</code> | null — same vocabulary as the new <code>?draw=</code> filter, decided by one shared definition, so filter and field cannot disagree. Evidence order: a doubles-team participant proves doubles over any event type; otherwise the stated event type decides. Null means neither says anything — no stated event type, or a team tie (Davis Cup / BJK Cup / United Cup class), where one event type covers both singles and doubles rubbers and we will not guess which this is. Null is NOT singles. <code>is_doubles</code> stays for compatibility and is now documented as LOSSY, with its evidence order: false also covers &quot;unknown&quot;, which is not a claim of singles — prefer <code>draw</code>, whose null says so honestly.</li>
 <li><strong><code>?draw=singles|doubles</code> on four listings</strong> — <code>GET /matches</code>, <code>/history/matches</code>, <code>/tournaments</code> and <code>/fixtures</code>: the axis the <code>tour</code> filter deliberately collapses; the two compose (<code>?tour=itf&amp;draw=doubles</code> is the ITF doubles slice). A row whose draw is null matches NEITHER value — null is an answer, not a wildcard. An unknown value is a 400 <code>bad_draw</code> with the allowed values. Two honesty notes carried into the spec: on <code>/tournaments</code> the answer comes from the event type alone (a tournament row has no participants to supply the doubles-team evidence matches have), and <code>?draw=doubles</code> alone also returns mixed and exhibition doubles that no <code>?tour=</code> value reaches.</li>
 <li><strong><code>GET /history/coverage</code></strong> (BASIC, or any Historical Data API plan) — the measured completeness rollup per tour × draw bucket: the numbers to read BEFORE choosing what to backtest, in one call instead of paging the archive. A prebuilt snapshot rebuilt nightly right after the completeness ledger reconverges — never computed at read time — so <code>as_of</code> (= <code>built_at</code>) dates every number and <code>ledger_max_computed_at</code> is the newest underlying per-match measurement; <code>503 coverage_unavailable</code> before the first nightly build. Buckets are atp/wta/challenger/itf/juniors × singles/doubles plus <code>other</code> (team ties, mixed, exhibitions and matches with no stated event type — counted, never dropped, so the totals cannot lie); a bucket with zero completed matches is OMITTED, never emitted as zeros. Each bucket carries the five verifiable numbers (<code>completed</code>, <code>any_tape</code>, <code>point_complete</code>, <code>complete_on_default_read</code>, <code>share</code>), and <code>method</code> states the full measurement rule so every number carries its own definition. As of 2026-08-18: 174,393 completed matches; 91,318 point-complete on the best basis (52.4%) against 81,196 on the default read alone (46.6%); ITF singles 51.1% against ITF doubles 3.5% — do not extrapolate a completeness rate across a tour group.</li>
-<li>**<code>tape.starts_at_love</code> and <code>tape.computed_at</code> on <code>/history/matches</code> items** (both nullable, present where enabled). <code>starts_at_love</code> follows the SAME best-basis rule as <code>points_complete</code> — true when either measured basis opens at the 0-0 state, so if any on-disk sequence opens at love you can obtain one that does. <code>computed_at</code> is when the ledger last measured the match: every field in the tape&#x27;s measured block is a nightly-reconverged cache, and this is the as-of to quote with any of them. Null on either means the match has not been measured — never a guess.</li>
+<li><strong><code>tape.starts_at_love</code> and <code>tape.computed_at</code> on <code>/history/matches</code> items</strong> (both nullable, present where enabled). <code>starts_at_love</code> follows the SAME best-basis rule as <code>points_complete</code> — true when either measured basis opens at the 0-0 state, so if any on-disk sequence opens at love you can obtain one that does. <code>computed_at</code> is when the ledger last measured the match: every field in the tape&#x27;s measured block is a nightly-reconverged cache, and this is the as-of to quote with any of them. Null on either means the match has not been measured — never a guess.</li>
 <li><strong>The complete-basis addendum package files.</strong> An affected month&#x27;s manifest may also list <code>tennis_history_points_complete_&lt;period&gt;.jsonl.gz</code> / <code>.csv.gz</code> (marked <code>compression: gzip</code>; <code>bytes</code>/<code>sha256</code> cover the compressed bytes — exactly the download): for exactly the matches whose complete point sequence exists only as the on-disk reconstruction, the same tape <code>?points=complete</code> serves (reconstruction contract: null timestamps and null model fields). The base files keep carrying every match&#x27;s DEFAULT read — already the complete tape for most point-complete matches — and are never rewritten by the addendum; their <code>bytes</code> and <code>sha256</code> values do not move.</li>
 </ul>
 <h3>Changed</h3>
 <ul>
 <li><code>info.version</code> is now <code>1.6.0</code>.</li>
-</ul>
-<p>## [1.5.0] — 2026-08-17</p>
+</ul></article>
+<article id="v1.5.0"><h2>1.5.0 <time datetime="2026-08-17">2026-08-17</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong>The as-of Elo tape.</strong> <code>GET /rankings?system=elo</code> (ULTRA, both modes) — our own computed Elo as point-in-time records: per-player as-of (also via <code>archive_player</code> for the ~62,000 rated people outside the roster, <code>tour</code> required there) and a leaderboard (<code>tour</code> required — the ATP and WTA walks are disjoint; exactly one <code>surface</code>, default <code>overall</code>; <code>min_matches</code> default 20 and <code>activity_weeks</code> default 52 / max 104, both echoed in <code>meta.coverage.qualified</code>). Four independent ladders (overall/hard/clay/grass), ATP from 1877, WTA from 1968, main tours plus challengers plus the futures tier. <code>rating</code> always; <code>rank</code> leaderboard-only; <code>points</code> always null; <code>matches</code> is the ladder-scoped count. <code>meta.coverage</code> gains <code>newest_available</code>, <code>players_rated</code> / <code>players_linked</code>, <code>qualified</code> and the <code>model</code> block (<code>publication_lag_days: 14</code> — a week&#x27;s results become effective 14 days after the week begins, so the failure direction is staleness, never look-ahead). The corpus head is frozen at 2026-05-25 and does not advance; <code>elo</code> is never included implicitly. The free current Elo on <code>GET /players/{id}</code> is a DIFFERENT scale (~150 Elo of per-player standard deviation apart) — never present a rating from one scale against a rating from the other. <code>kind=elo</code> yearly bulk packages join <code>/history/packages</code>.</li>
@@ -994,8 +1007,8 @@
 <li><strong>UTR honesty.</strong> <code>system=utr</code> is documented as observed from UTR&#x27;s public search: withheld ratings are ABSENT, never 0; per-player as-of only — no listing by design (a table of only the players we happen to track would be a fake leaderboard); history since 2026-07-29; and the sweep&#x27;s deliberate rankless / no-Elo (ITF-skewed) bias with its measured coverage (2026-08-17, players active in the last 60 days): ITF 931 of 5,606 (16.6%), Challenger 197 of 1,903 (10.4%), WTA 43 of 573 (7.5%), ATP 15 of 525 (2.9%).</li>
 <li>*(recorded retroactively)* On 2026-08-16 the <code>/ws-token</code> description was expanded in place to teach the push-feed protocol (Centrifugo v2 connect/subscribe/heartbeat, token-per-reconnect, the SDK <code>PushStream</code> pointer) without a version bump; this entry is the changelog record of that change.</li>
 <li><code>info.version</code> is now <code>1.5.0</code>.</li>
-</ul>
-<p>## [1.4.0] — 2026-08-16</p>
+</ul></article>
+<article id="v1.4.0"><h2>1.4.0 <time datetime="2026-08-16">2026-08-16</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong>Live per-point events.</strong> <code>GET /matches/{matchId}/points</code> (ULTRA) — the live per-point event stream of one match in <code>seq</code> order, paged with <code>?after_seq=</code> (the resume cursor; up to 500 rows per page, continue on <code>last_seq</code> while <code>has_more</code>). It is the REST catch-up for the WebSocket <code>point</code> frames, which are best-effort with no replay. Per-match <code>pbp_coverage</code> states honestly whether the match has a true per-point stream (<code>point</code>) or only the snapshot score path (<code>game</code> — <code>points</code> empty, an answer rather than an error); per-point coverage is never promised slate-wide. New schemas <code>MatchPoints</code>, <code>LivePoint</code> and <code>PointFrame</code>; new error codes <code>bad_after_seq</code> and <code>points_disabled</code> (the surface switched off server-side).</li>
@@ -1008,13 +1021,13 @@
 <li><strong>Model win-probability copy tells the truth about density.</strong> The plan and FAQ copy no longer claims the tape carries the model win-probability &quot;at every point&quot; / &quot;per point&quot;: the model stamp is best-effort and rides the rows where the model ran — <code>meta.model_rows</code> is the count, and null is the honest value elsewhere. The current-score snapshot is described as overwritten on every score commit, not &quot;on every point&quot;.</li>
 <li><code>HistoryTapeRow.point_winner</code> is documented on <code>?points=complete</code> rows as well as <code>?sequence=clean</code> (there the served order IS point order).</li>
 <li><code>info.version</code> is now <code>1.4.0</code>.</li>
-</ul>
-<p>## [1.3.1] — 2026-08-07</p>
+</ul></article>
+<article id="v1.3.1"><h2>1.3.1 <time datetime="2026-08-07">2026-08-07</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong><code>kind=rally</code> bulk packages documented.</strong> The <code>/history/packages</code> <code>kind</code> enum gains <code>rally</code> — the charted rally corpus (shot-by-shot) as YEARLY exports, ULTRA, <code>period</code> = <code>YYYY</code> like <code>archive</code>. The kind has been live in the API (it shipped alongside the per-match rally endpoints); the spec simply did not list it. Additive only: the enum, the <code>HistoryPackage.kind</code> field, and the package-shape prose now match the served surface — <code>kind</code> accepts <code>tape</code> (default), <code>rankings</code> (ULTRA), <code>rally</code> (ULTRA) and <code>archive</code>.</li>
-</ul>
-<p>## [1.3.0] — 2026-08-07</p>
+</ul></article>
+<article id="v1.3.0"><h2>1.3.0 <time datetime="2026-08-07">2026-08-07</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong>Shot-level charting.</strong> <code>GET /charting/players</code> (ULTRA) — career serve/return profile: serve placement (deuce/ad × wide/body/T), return depth and outcomes, net and serve-and-volley conversion, clutch break/game/set-point serving and returning, winners and unforced errors by wing, rally-length and shot-direction tendencies, summed over the player&#x27;s charted matches (<code>name</code> keyed, <code>gender=men|women</code> disambiguates, ambiguous fragments refused with candidates). <code>GET /charting/matches/{chartingMatchId}</code> (ULTRA) — every stat family for one charted match, both players, per-set split. Coverage is curated: 11,646 charted matches back to the 1960s, concentrated on the majors, not full-slate.</li>
@@ -1028,8 +1041,8 @@
 <li><strong>Tours.</strong> Coverage phrasing is now the five tours everywhere — ATP, WTA, Challenger, ITF and juniors — matching the <code>tour</code> filter enum (<code>atp, wta, challenger, itf, juniors</code>).</li>
 <li><strong>WebSocket copy.</strong> The subscribe frame is documented as <code>{&quot;topics&quot;:[&quot;live-scores&quot;]}</code> (+ optional <code>signals</code>) — the previously shown <code>action</code> key is not read by the server. Score frames are documented as carrying the ULTRA model fields (<code>win_probability_p1</code>, <code>danger</code>) live — a null means the model had no output for that point. The 2-connections-per- key limit is stated.</li>
 <li><code>info.version</code> is now <code>1.3.0</code>.</li>
-</ul>
-<p>## [1.2.0] — 2026-08-03</p>
+</ul></article>
+<article id="v1.2.0"><h2>1.2.0 <time datetime="2026-08-03">2026-08-03</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong>Results archive (1968–2022).</strong> The history product now runs in two continuous, non-overlapping halves: the point-by-point tape (2023→now) and the results archive (1968–2022). Four new endpoints, all BASIC (or any Historical Data API plan): <code>GET /history/archive/matches</code> (winner/loser- shaped results — ATP and WTA, main draws, qualifying and the ITF/futures tiers, 1968 through 2022, with final score, seeds, ranks at the time; filters <code>tour</code>, <code>name</code>, <code>from</code>/<code>to</code>, <code>round</code>, <code>level</code>; its own id space; <code>event_date</code> is the TOURNAMENT START date; ends 2022-12-31, exactly where the tape begins), <code>GET /history/archive/matches/{archiveId}</code> (one result, with per-match serve statistics where the era recorded them — null before 1991 mostly, never synthesised), <code>GET /history/archive/players</code> (bios + career-high rank and the week it was first reached), and <code>GET /history/archive/career</code> (career aggregates — sums and ratios of sums only; <code>serve.matches_with_stats</code> states the serve-stat coverage). New schemas <code>ArchiveMatch</code>, <code>ArchivePlayer</code>, <code>ArchivePlayerBio</code>, <code>ArchiveCareer</code>.</li>
@@ -1047,8 +1060,8 @@
 <h3>Changed</h3>
 <ul>
 <li><code>info.version</code> is now <code>1.2.0</code>; <code>info.description</code> states the two history halves and the updated tier deltas (tournaments on FREE, the archive family and <code>/h2h</code> on BASIC/History plans, the rankings listing on PRO, rally and per-player as-of rankings on ULTRA).</li>
-</ul>
-<p>## [1.1.0] — 2026-08-02</p>
+</ul></article>
+<article id="v1.1.0"><h2>1.1.0 <time datetime="2026-08-02">2026-08-02</time></h2>
 <h3>Added</h3>
 <ul>
 <li><strong>Usage endpoint.</strong> <code>GET /usage</code> (FREE — any tier): your own durable daily usage vs quota — tier, limits, today&#x27;s calls and a 30-day history. Calls to it are quota-exempt. New schema <code>Usage</code>.</li>
@@ -1076,11 +1089,11 @@
 <li><strong>History endpoints documented.</strong> <code>/history/matches/{matchId}</code> (the full point-by-point tape with the per-point model win-probability — BASIC, or Historical Data API Starter+), <code>/history/packages</code> and <code>/history/packages/{period}</code> (pre-built monthly bulk downloads, manifest + <code>?format=jsonl|csv</code> — PRO, Historical Data API Pro+, or a one-off package pass), plus the <code>from</code>/<code>to</code> date-range filter and the 400/403 responses on <code>/history/matches</code>. New schemas <code>HistoryTape</code>, <code>ModelProfile</code>, <code>HistoryPackage</code>. Purely additive.</li>
 <li><strong>Concrete plan deltas.</strong> <code>info.description</code> now states exactly what each tier adds over the one below it, with its rate limits (FREE 30/min · 1,000/day; BASIC 60/min · 10,000/day; PRO 300/min · 100,000/day; ULTRA 600/min · 500,000/day), and documents the standalone Historical Data API plans (Starter / Pro / Business / one-off passes). <code>/matches</code> documents that <code>status=completed</code> requires BASIC — the gate was always enforced, just not written down.</li>
 <li><strong>WebSocket break-point signals.</strong> The <code>/ws</code> subscribe frame now documents an optional <code>signals</code> array; naming <code>break_point</code> opts the connection into two new frames — <code>break_point</code> (schema <code>BreakPoint</code>) the instant a break point arises and <code>break_point_result</code> (schema <code>BreakPointResult</code>) when it resolves. Both are ULTRA-only and purely additive: an existing subscriber that sends no <code>signals</code> sees exactly the frames it saw before. Documented in <code>info.description</code>, the two new component schemas, and the rendered reference.</li>
-<li><strong>FREE tier.</strong> Self-serve with no card at &lt;<a href="https://livetennisapi.com/subscribe/free">https://livetennisapi.com/subscribe/free</a>&gt; (30 req/min, 1,000 req/day). Covers live and upcoming matches, scores, players and fixtures — the six endpoints now tagged <code>(FREE)</code> in their summary. Purely additive: no endpoint, field, or type changed, and every paid tier keeps exactly the access it had. <code>/history/matches</code> remains BASIC; market prices stay PRO; analysis, live model fields and the WebSocket feed stay ULTRA.</li>
+<li><strong>FREE tier.</strong> Self-serve with no card at <a href="https://livetennisapi.com/subscribe/free">https://livetennisapi.com/subscribe/free</a> (30 req/min, 1,000 req/day). Covers live and upcoming matches, scores, players and fixtures — the six endpoints now tagged <code>(FREE)</code> in their summary. Purely additive: no endpoint, field, or type changed, and every paid tier keeps exactly the access it had. <code>/history/matches</code> remains BASIC; market prices stay PRO; analysis, live model fields and the WebSocket feed stay ULTRA.</li>
 <li><code>operationId</code> on all 12 operations, so generated clients get stable method names.</li>
 <li><code>info.contact</code>, <code>info.license</code> (MIT) and <code>info.termsOfService</code>.</li>
 <li>Redocly lint + a structural contract check in CI.</li>
-<li>Rendered reference published to &lt;<a href="https://docs.livetennisapi.com">https://docs.livetennisapi.com</a>&gt;.</li>
+<li>Rendered reference published to <a href="https://docs.livetennisapi.com">https://docs.livetennisapi.com</a>.</li>
 </ul>
 <h3>Changed</h3>
 <ul>
