@@ -90,17 +90,30 @@ def entry_sections(body_md: str) -> list[dict[str, Any]]:
     return sections
 
 
+_CODE_SPAN = re.compile(r"`[^`]+`")
+_AUTOLINK = re.compile(r"<(https?://[^>\s]+)>")
+
+
+def autolinks(md: str) -> list[re.Match[str]]:
+    """The Markdown autolinks (<https://...>) in a line, leaving out any inside a code span,
+    which is literal text. _md_block links these and plain() drops their brackets, by one rule."""
+    spans = [m.span() for m in _CODE_SPAN.finditer(md)]
+    return [m for m in _AUTOLINK.finditer(md)
+            if not any(a <= m.start() < b for a, b in spans)]
+
+
 _PLAIN_SUBS = [
     (re.compile(r"\*\*(.+?)\*\*"), r"\1"),
     (re.compile(r"`([^`]+)`"), r"\1"),
-    (re.compile(r"<(https?://[^>\s]+)>"), r"\1"),
 ]
 
 
 def plain(md: str) -> str:
     """The text a reader sees, without the Markdown marks the changelog uses."""
-    for rx, rep in _PLAIN_SUBS:
-        md = rx.sub(rep, md)
+    for m in reversed(autolinks(md)):
+        md = md[:m.start()] + m[1] + md[m.end():]
+    for rx, sub in _PLAIN_SUBS:
+        md = rx.sub(sub, md)
     return " ".join(md.split())
 
 
@@ -179,12 +192,16 @@ def _version_key(v: str) -> tuple[int, ...]:
     return tuple(int(x) for x in v.split("."))
 
 
+# A bare version right after one of these words is the spec's or the changelog's, never a client's.
+_NOT_A_CLIENT = {"spec", "api", "openapi", "changelog", "entry", "info.version"}
+
+
 def client_versions(texts: str | Iterable[str], names: dict[str, tuple[str, str, str]]) -> list[dict[str, str]]:
     """The client library versions a text names, in order, once each.
 
     `names` maps each way the changelog writes a client ("Python", "JS", "livetennisapi-ai") to
     (client name, package, newest published version). A three-part version right after a name
-    counts ("Python 1.8.0", "livetennisapi-mcp@1.6.5"). So does a bare version later in the same
+    counts ("Python 1.8.0", "livetennisapi-mcp@1.6.5", "the Python client to 1.8.0"). So does a bare version later in the same
     item, of the same major version as the client just named ("JavaScript 1.10.3 fixes what
     failed in 1.10.2"). A version above the newest published one is a runtime or a toolchain,
     not the client: "Python 3.12.4" or "Swift 5.10.1" is not read as a client version. The newest
@@ -195,19 +212,21 @@ def client_versions(texts: str | Iterable[str], names: dict[str, tuple[str, str,
     if isinstance(texts, str):
         texts = [texts]
     alternation = "|".join(re.escape(n) for n in sorted(names, key=len, reverse=True))
-    rx = re.compile(rf"(?<![\w.-])(?:({alternation})(?:\s+v?|@)|v?)(\d+\.\d+\.\d+)(?![\w-]|\.\d)")
+    rx = re.compile(rf"(?<![\w.-])(?:({alternation})(?:\s+(?:client|library|package))?"
+                    rf"(?:\s+(?:to|at|from|in))?(?:\s+v?|@)|(?:(\S+)\s+)?v?)"
+                    rf"(\d+\.\d+\.\d+)(?![\w-]|\.\d)")
     out: list[dict[str, str]] = []
     seen: set[tuple[str, str]] = set()
     for text in texts:
         last: tuple[str, str, str, int] | None = None
         for m in rx.finditer(plain(text)):
-            version = m[2]
+            version = m[3]
             if m[1]:
                 client, package, newest = names[m[1]]
                 if _version_key(version) > _version_key(newest):
                     continue
                 last = (client, package, newest, _version_key(version)[0])
-            elif last is None:
+            elif last is None or (m[2] or "").lower() in _NOT_A_CLIENT:
                 continue
             else:
                 client, package, newest, major = last
@@ -335,7 +354,8 @@ def build_json_feed(items: list[dict[str, Any]], meta: dict[str, str]) -> str:
 
 # ----------------------------------------------------------------------------------- checks --
 
-_RFC3339 = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$")
+_RFC3339 = re.compile(
+    r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)$")
 # A scheme, a colon, no whitespace, and every % starting a two-digit hex escape (RFC 3987 2.2).
 _ABSOLUTE_IRI = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:(?:[^\s%]|%[0-9A-Fa-f]{2})+$")
 _TEXT_TYPES = {"text", "html", "xhtml"}
@@ -557,7 +577,8 @@ _ITEM_KEYS = {"id", "url", "external_url", "title", "content_html", "content_tex
 _FEED_KEYS = {"version", "title", "home_page_url", "feed_url", "description", "user_comment",
               "next_url", "icon", "favicon", "authors", "author", "language", "expired", "hubs",
               "items"}
-_EXT_NAME = re.compile(r"^_[A-Za-z]")
+# JSON Feed 1.1: an extension name is an underscore, a letter, and no dot.
+_EXT_NAME = re.compile(r"^_[A-Za-z][^.]*$")
 
 
 def _check_authors(authors: Any, where: str, out: list[str]) -> None:
@@ -649,11 +670,16 @@ _ARTICLE_RX = re.compile(
     r'(?P<shown_date>[^<]*)</time></h2>\n(?P<body>.*?)</article>', re.S)
 
 
+def _uncommented(page_html: str) -> str:
+    """The page without HTML comments: markup inside one is not on the page."""
+    return re.sub(r"<!--.*?-->", "", page_html, flags=re.S)
+
+
 def page_entries(page_html: str) -> list[tuple[str, str, str]]:
     """(version, date, body html) for every dated <article> on changelog.html, in page order.
     An article whose heading shows another version or date than its anchor and its datetime
     is left out, so the parity check reports it."""
-    return [(m["ver"], m["date"], m["body"]) for m in _ARTICLE_RX.finditer(page_html)
+    return [(m["ver"], m["date"], m["body"]) for m in _ARTICLE_RX.finditer(_uncommented(page_html))
             if html.unescape(m["shown_ver"]) == m["ver"] and m["shown_date"] == m["date"]]
 
 
@@ -708,7 +734,7 @@ def parity_problems(page_html: str, atom_text: str, json_text: str, page_url: st
     page = page_entries(page_html)
     if not page:
         return ["changelog.html: no dated <article> found"]
-    if page_html.count("<article ") != len(page):
+    if _uncommented(page_html).count("<article ") != len(page):
         out.append("changelog.html: an <article> does not have the id, heading and time shape")
     root = ET.fromstring(atom_text.encode("utf-8"))
     entries = root.findall(_a("entry"))
@@ -754,7 +780,7 @@ def parity_problems(page_html: str, atom_text: str, json_text: str, page_url: st
 
 def alternate_links(page_html: str) -> list[dict[str, str]]:
     """The rel="alternate" feed links in a page's head, as attribute dicts."""
-    head = page_html.split("</head>", 1)[0]
+    head = _uncommented(page_html).split("</head>", 1)[0]
     links = []
     for tag in re.findall(r"<link\b[^>]*>", head):
         attrs = dict(re.findall(r'(\w[\w-]*)="([^"]*)"', tag))

@@ -165,6 +165,18 @@ class EntryParsingTest(unittest.TestCase):
         self.assertEqual(got, [("JavaScript", "1.10.3"), ("JavaScript", "1.10.2"),
                                ("livetennisapi-ai", "1.1.0"), ("livetennisapi-ai", "1.2.1")])
 
+    def test_client_phrasing_and_spec_versions(self) -> None:
+        names = cf.names_for_clients(br.CLIENTS, br.CHANGELOG_CLIENT_WORDS)
+        got = [(c["client"], c["version"]) for c in cf.client_versions(
+            ["Upgrade the Python client to 1.8.0.", "Use JavaScript 1.10.3 with API spec 1.9.3."], names)]
+        self.assertEqual(got, [("Python", "1.8.0"), ("JavaScript", "1.10.3")])
+
+    def test_an_autolink_inside_code_stays_literal(self) -> None:
+        md = "- Use `<https://example.com/docs>` as a literal."
+        shown = cf._page_sections(br._md_block(md))[0]["items"]
+        self.assertEqual(shown, ["Use <https://example.com/docs> as a literal."])
+        self.assertEqual(cf.plain(md[2:]), shown[0])
+
     def test_an_autolink_inside_bold_renders(self) -> None:
         out = br._md_block("- **See <https://example.com/docs>**.")
         self.assertEqual(out, '<ul>\n<li><strong>See <a href="https://example.com/docs">'
@@ -178,7 +190,8 @@ class EntryParsingTest(unittest.TestCase):
     def test_a_heading_the_parser_cannot_read_stops_the_build(self) -> None:
         good = "## [1.0.1] - 2026-01-02\n- a\n\n"
         for bad in ("## [1.0.0] \u2014 2026-01-01", "##[1.0.0] - 2026-01-01",
-                    " ## [1.0.0] - 2026-01-01", "### [1.0.0] - 2026-01-01", "## 1.0.0 - 2026-01-01"):
+                    " ## [1.0.0] - 2026-01-01", "### [1.0.0] - 2026-01-01", "## 1.0.0 - 2026-01-01",
+                    "[1.0.0] - 2026-01-01\n---", "## [1.0.0-beta] - 2026-01-01"):
             with self.subTest(bad=bad), self.assertRaises(SystemExit):
                 br.changelog_entries(good + bad + "\n- b\n")
         self.assertEqual(len(br.changelog_entries(good + "### Added\n- b\n")), 1)
@@ -238,6 +251,7 @@ class RulesCatchFaultsTest(unittest.TestCase):
         self.assertCaught(self.json_faults(lambda f: f["items"][0].update(date_published="2026-11-20")),
                           "RFC 3339")
         self.assertCaught(self.json_faults(lambda f: f["items"][0].update(livetennisapi={})), "unknown key")
+        self.assertCaught(self.json_faults(lambda f: f["items"][0].update({"_extra.foo": {}})), "unknown key")
         self.assertCaught(self.json_faults(lambda f: f.update(feed_url="http://x")), "https URL")
         self.assertCaught(self.json_faults(lambda f: f.update(authors=[{}])), "name, url or avatar")
         self.assertCaught(self.json_faults(lambda f: f["items"][0].update(content_text=123)),
@@ -259,6 +273,8 @@ class RulesCatchFaultsTest(unittest.TestCase):
                           "more than one atom:uri")
         self.assertCaught(self.atom_faults('<category term="Added"/>',
                                            '<category term="Added" scheme="not an iri"/>'), "not an IRI")
+        self.assertCaught(self.atom_faults("<updated>2026-11-20T00:00:00Z", "<updated>2026-11-20T00:00:00+01:75"),
+                          "RFC 3339")
         self.assertCaught(self.atom_faults("changelog.html#v1.13.89</id>", "changelog.html#v1.13.89%zz</id>"),
                           "not an absolute IRI")
         self.assertCaught(self.atom_faults('<content type="html">',
@@ -296,6 +312,14 @@ class RulesCatchFaultsTest(unittest.TestCase):
         self.assertNotEqual(shown, self.page)
         self.assertCaught(cf.parity_problems(shown, self.atom, self.feed, br.CHANGELOG_URL),
                           "does not have the id, heading and time shape")
+        start = self.page.index('<article id="v1.13.88">')
+        end = self.page.index("</article>", start) + len("</article>")
+        commented = self.page[:start] + "<!--" + self.page[start:end] + "-->" + self.page[end:]
+        self.assertCaught(cf.parity_problems(commented, self.atom, self.feed, br.CHANGELOG_URL),
+                          "differs from changelog.html")
+        index = (br.DOCS / "index.html").read_text(encoding="utf-8")
+        hidden = re.sub(r'(<link rel="alternate" type="application/feed\+json"[^>]*>)', r"<!--\1-->", index)
+        self.assertEqual([l["type"] for l in cf.alternate_links(hidden)], ["application/atom+xml"])
         raw_marks = self.page.replace("<li><strong>", "<li>**", 1).replace("</strong>", "**", 2)
         self.assertCaught(cf.parity_problems(raw_marks, self.atom, self.feed, br.CHANGELOG_URL),
                           "differs from changelog.html")

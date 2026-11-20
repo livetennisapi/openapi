@@ -1408,9 +1408,10 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
 # --------------------------------------------------------------------------- changelog --------
 CHANGELOG = Path(__file__).resolve().parents[1] / "CHANGELOG.md"
 _ENTRY_RX = re.compile(r"^## \[(?P<ver>\d+\.\d+\.\d+)\] - (?P<date>\d{4}-\d{2}-\d{2})\s*$")
-# Anything that looks like it meant to be an entry heading: a level-two heading, or a heading of
-# any level (or none) that opens with a bracketed version, indented or not.
-_NEAR_HEADING_RX = re.compile(r"^\s*(?:##(?!#)|#+\s*\[\d)")
+# Anything that looks like it meant to be an entry heading: a level-two heading, a heading of any
+# level that opens with a bracketed version, or a bracketed version and a dash with no # at all
+# (a setext heading, underlined on the next line), indented or not.
+_NEAR_HEADING_RX = re.compile(r"^\s*(?:##(?!#)|#+\s*\[\d|\[\d+\.\d+\.\d+\]\s*[-\u2013\u2014])")
 
 
 def changelog_entries(text: str) -> list[dict]:
@@ -1437,15 +1438,12 @@ def changelog_entries(text: str) -> list[dict]:
 _BOLD_RX = re.compile(r"\*\*(.+?)\*\*")
 
 
-_AUTOLINK_RX = re.compile(r"<(https?://[^>\s]+)>")
-
-
 def _inline(text: str) -> str:
     """Bold, code and links in one changelog paragraph or item. A Markdown autolink becomes a
     link without its angle brackets, which used to show as text. It is linked here rather than
     left to md_inline, whose bare-URL match would run on into a following ** and break the bold."""
     parts, pos = [], 0
-    for m in _AUTOLINK_RX.finditer(text):
+    for m in changelog_feeds.autolinks(text):
         url = E(m[1])
         parts += [md_inline(text[pos:m.start()]), f'<a href="{url}">{url}</a>']
         pos = m.end()
