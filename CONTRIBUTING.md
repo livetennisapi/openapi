@@ -44,6 +44,15 @@ entry. It also fails when an entry names an operation the spec does not
 define, or when the samples are stale. `python -m unittest scripts/test_build_code_samples.py`
 breaks copies of both files and checks that each of those failures is caught.
 
+## Changelog feeds
+
+`docs/changelog.atom` (Atom 1.0) and `docs/changelog.json` (JSON Feed 1.1)
+are built from `CHANGELOG.md` together with `docs/changelog.html`, so do not
+edit them by hand. Write each entry heading as `## [x.y.z] - YYYY-MM-DD`.
+The build stops on any other `## ` line. It also fails when a feed breaks its
+format or differs from the page. `python -m unittest scripts/test_changelog_feeds.py`
+runs the same checks and breaks copies of both feeds to show each check works.
+
 ## Versioning
 
 Changes within `v1` are **additive only**: new endpoints, new optional fields.

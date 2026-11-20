@@ -40,6 +40,7 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_code_samples  # noqa: E402
+import changelog_feeds  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "openapi.yaml"
@@ -1210,6 +1211,8 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"Base URL: {base}",
         f"Full text reference: {DOCS_URL}/reference.html",
         f"Changelog (dated, versioned): {DOCS_URL}/changelog.html",
+        f"Changelog feed (Atom): {CHANGELOG_ATOM_URL}",
+        f"Changelog feed (JSON Feed 1.1): {CHANGELOG_JSON_URL}",
         f"OpenAPI spec: {DOCS_URL}/openapi.yaml",
         f"OpenAPI spec (JSON): {DOCS_URL}/openapi.json",
         f"Website: {SITE}",
@@ -1405,12 +1408,19 @@ _ENTRY_RX = re.compile(r"^## \[(?P<ver>[^\]]+)\] - (?P<date>\d{4}-\d{2}-\d{2})\s
 
 
 def changelog_entries(text: str) -> list[dict]:
-    """[{version, date, body_md}] newest first, from the Keep-a-Changelog headings."""
+    """[{version, date, body_md}] newest first, from the Keep-a-Changelog headings.
+
+    A `## ` line that is not an entry heading stops the build. Fifteen headings from 1.1.0 to
+    1.9.3 were written with an em dash, did not match, and were read as body text of the 1.9.4
+    entry: the page showed them as paragraphs inside it and had 99 entries, not 114."""
     out: list[dict] = []
     for line in text.splitlines():
         m = _ENTRY_RX.match(line)
         if m:
             out.append({"version": m["ver"], "date": m["date"], "lines": []})
+        elif line.startswith("## "):
+            raise SystemExit(f"CHANGELOG.md: {line!r} is not an entry heading "
+                             "(write it as ## [x.y.z] - YYYY-MM-DD)")
         elif out:
             out[-1]["lines"].append(line)
     for e in out:
@@ -1473,11 +1483,12 @@ def _md_block(md: str) -> str:
     return "\n".join(html_parts)
 
 
-def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str]:
+def build_changelog(spec: dict[str, Any], reference_html: str,
+                    entries: list[dict]) -> tuple[str, str]:
     """(html, latest_date). Same head shape and stylesheet as the reference so it reads as one
     site; each entry is a dated <article> so an engine can quote 'as of' from the page itself.
-    The sitemap's lastmod for this page is the newest entry's date — a date the file proves."""
-    entries = changelog_entries(CHANGELOG.read_text(encoding="utf-8"))
+    The sitemap's lastmod for this page is the newest entry's date — a date the file proves.
+    `entries` is the same list build_changelog_feeds() writes the two feeds from."""
     latest = entries[0]["date"] if entries else ""
     style_html = reference_base_style(reference_html)
     articles = "\n".join(
@@ -1487,8 +1498,15 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
     info = spec["info"]
     desc = ("Every change to the Live Tennis API specification, dated and versioned: additive "
             f"within v1, newest first. Current version {info['version']}, last change {latest}.")
+    # The feeds as encodings of this page, the way the corrections page lists its CSV and Atom
+    # files as distributions of its dataset.
     ld_json = tech_article_ld(f"{info['title']} — Changelog", desc, f"{DOCS_URL}/changelog.html",
-                              dateModified=latest)
+                              dateModified=latest, encoding=[
+                                  {"@type": "MediaObject", "encodingFormat": "application/atom+xml",
+                                   "contentUrl": CHANGELOG_ATOM_URL},
+                                  {"@type": "MediaObject", "encodingFormat": "application/feed+json",
+                                   "contentUrl": CHANGELOG_JSON_URL},
+                              ])
     page = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -1498,6 +1516,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 <meta name="description" content="{E(desc)}">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="{DOCS_URL}/changelog.html">
+{CHANGELOG_FEED_LINKS}
 <meta property="og:type" content="article">
 <meta property="og:title" content="{E(info['title'])} — Changelog">
 <meta property="og:url" content="{DOCS_URL}/changelog.html">
@@ -1519,6 +1538,7 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 <h1>Changelog</h1>
 <p>Every change to the specification, dated and versioned. The API surface is <code>v1</code>; changes within it are additive only. Current version <strong>{E(info['version'])}</strong>, last change <time datetime="{latest}">{latest}</time>. Also as <a href="{DOCS_URL}/reference.html">the full reference</a>, <a href="{DOCS_URL}/openapi.yaml">OpenAPI YAML</a> / <a href="{DOCS_URL}/openapi.json">JSON</a>, and <a href="{SITE}/facts.json">the dated facts file</a>.</p>
 <p>Corrections to published data values are not spec changes, so they are listed in <a href="{SITE}/data/corrections">the corrections log</a>.</p>
+<p>To follow new versions in a feed reader, subscribe to the <a href="{CHANGELOG_ATOM_URL}" type="application/atom+xml">Atom feed</a> or the <a href="{CHANGELOG_JSON_URL}" type="application/feed+json">JSON Feed</a>.</p>
 </header>
 {articles}
 </main>
@@ -1526,6 +1546,56 @@ def build_changelog(spec: dict[str, Any], reference_html: str) -> tuple[str, str
 </html>
 """
     return page, latest
+
+
+# ------------------------------------------------------------------------ changelog feeds -----
+# changelog.atom and changelog.json carry the same entries as changelog.html, parsed once in
+# main(). scripts/changelog_feeds.py writes and checks them; this block holds the site's values.
+CHANGELOG_URL = f"{DOCS_URL}/changelog.html"
+CHANGELOG_ATOM_URL = f"{DOCS_URL}/changelog.atom"
+CHANGELOG_JSON_URL = f"{DOCS_URL}/changelog.json"
+CHANGELOG_FEED_TITLE = "Live Tennis API changelog"
+CHANGELOG_FEED_DESC = ("Every change to the Live Tennis API specification, dated and versioned, "
+                       "newest first.")
+# Autodiscovery: a feed reader given the changelog page or the docs home finds both feeds.
+CHANGELOG_FEED_LINKS = (
+    f'<link rel="alternate" type="application/atom+xml" title="{CHANGELOG_FEED_TITLE} (Atom)" '
+    f'href="{CHANGELOG_ATOM_URL}">\n'
+    f'<link rel="alternate" type="application/feed+json" title="{CHANGELOG_FEED_TITLE} (JSON Feed)" '
+    f'href="{CHANGELOG_JSON_URL}">'
+)
+# How the changelog names each client: by language for the eight language clients, by package
+# name for the rest. The first word is the name the feeds report.
+CHANGELOG_CLIENT_WORDS = {
+    "python": ["Python"], "js": ["JavaScript", "JS", "TypeScript"], "go": ["Go"], "php": ["PHP"],
+    "dotnet": [".NET"], "dart": ["Dart"], "swift": ["Swift"], "r": ["R"],
+}
+
+
+def changelog_feed_meta(spec: dict[str, Any]) -> dict[str, str]:
+    lic = spec["info"].get("license", {})
+    return {
+        "title": CHANGELOG_FEED_TITLE,
+        "description": CHANGELOG_FEED_DESC,
+        "page_url": CHANGELOG_URL,
+        "atom_url": CHANGELOG_ATOM_URL,
+        "json_url": CHANGELOG_JSON_URL,
+        "author": "Live Tennis API",
+        "author_url": SITE,
+        "icon": f"{DOCS_URL}/icon-256.png",
+        "rights": f"{lic.get('name', 'MIT')} licence, https://github.com/livetennisapi/openapi/blob/main/LICENSE",
+        "clients_url": f"{DOCS_URL}/client-libraries.html",
+        "ext_about": f"{DOCS_URL}/llms.txt",
+        "fallback_date": "1970-01-01",
+    }
+
+
+def build_changelog_feeds(spec: dict[str, Any], entries: list[dict]) -> tuple[str, str]:
+    """(atom, json feed) from the entries changelog.html is built from, rendered by _md_block."""
+    names = changelog_feeds.names_for_clients(CLIENTS, CHANGELOG_CLIENT_WORDS)
+    items = changelog_feeds.feed_entries(entries, _md_block, CHANGELOG_URL, names)
+    meta = changelog_feed_meta(spec)
+    return changelog_feeds.build_atom(items, meta), changelog_feeds.build_json_feed(items, meta)
 
 # ---------------------------------------------------------------------------
 # Per-topic pages
@@ -4011,12 +4081,16 @@ def main() -> int:
     if sample_problems:
         raise SystemExit("code samples:\n  " + "\n  ".join(sample_problems))
     reference = build_html(spec)
-    changelog_html, changelog_date = build_changelog(spec, reference)
+    entries = changelog_entries(CHANGELOG.read_text(encoding="utf-8"))
+    changelog_html, changelog_date = build_changelog(spec, reference, entries)
+    changelog_atom, changelog_json = build_changelog_feeds(spec, entries)
     topics = build_topic_pages(spec, reference)
     guides = build_guide_pages(spec, reference)
     outputs = {
         DOCS / "reference.html": reference,
         DOCS / "changelog.html": changelog_html,
+        DOCS / "changelog.atom": changelog_atom,
+        DOCS / "changelog.json": changelog_json,
         **{DOCS / f"{slug}.html": html for slug, html in topics.items()},
         **{DOCS / f"{slug}.html": html for slug, html in guides.items()},
         DOCS / "llms.txt": build_llms_txt(spec),
@@ -4115,6 +4189,19 @@ def main() -> int:
             "generated pages with no behaviour tag: " + ", ".join(missing_clarity)
             + "\n  Add {CLARITY} before </body> in that template."
         )
+
+    # The two changelog feeds must be valid Atom 1.0 and JSON Feed 1.1, and must hold every entry
+    # of changelog.html with its version, date and body. The page and both feeds come from one
+    # parse, so a failure here is a bug in a writer, never an edit someone forgot to copy.
+    feed_bad = (
+        [f"changelog.atom: {p}" for p in changelog_feeds.atom_problems(changelog_atom, CHANGELOG_ATOM_URL)]
+        + [f"changelog.json: {p}" for p in changelog_feeds.json_feed_problems(changelog_json, CHANGELOG_JSON_URL)]
+        + changelog_feeds.parity_problems(changelog_html, changelog_atom, changelog_json, CHANGELOG_URL)
+    )
+    if len(changelog_feeds.alternate_links(changelog_html)) != 2:
+        feed_bad.append("changelog.html: the head does not link both feeds")
+    if feed_bad:
+        raise SystemExit("changelog feeds:\n  " + "\n  ".join(feed_bad))
 
     # The README states the spec's size in prose and nothing kept it honest: it read
     # "39 operations (38 paths), 47 schemas" against a spec of 40/39/48 — off by one in three
