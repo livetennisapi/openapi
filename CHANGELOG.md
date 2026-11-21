@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.91] - 2026-11-21
+
+### Clarified
+- **What counts as a webhook delivery.** The `POST /webhooks` description now says that any 2xx response counts as a successful delivery. Redirects are not followed, so a 3xx response counts as a failed delivery toward the consecutive-failure count. The HMAC key is the secret string's UTF-8 bytes, for both signature headers. The troubleshooting section on `push-feed-and-webhooks.html` reads all three from the spec at build time. The build fails when the spec stops saying one of them. Nothing on the wire changed.
+
 ## [1.13.90] - 2026-11-21
 
 ### Added
