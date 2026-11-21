@@ -3,13 +3,26 @@
 <id>https://docs.livetennisapi.com/changelog.html</id>
 <title type="text">Live Tennis API changelog</title>
 <subtitle type="text">Every change to the Live Tennis API specification, dated and versioned, newest first.</subtitle>
-<updated>2026-11-20T00:00:00Z</updated>
+<updated>2026-11-21T00:00:00Z</updated>
 <link rel="self" type="application/atom+xml" href="https://docs.livetennisapi.com/changelog.atom"/>
 <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html"/>
 <link rel="alternate" type="application/feed+json" href="https://docs.livetennisapi.com/changelog.json"/>
 <author><name>Live Tennis API</name><uri>https://livetennisapi.com</uri></author>
 <icon>https://docs.livetennisapi.com/icon-256.png</icon>
 <rights type="text">MIT licence, https://github.com/livetennisapi/openapi/blob/main/LICENSE</rights>
+<entry>
+<id>https://docs.livetennisapi.com/changelog.html#v1.13.90</id>
+<title type="text">1.13.90: Troubleshooting for webhook deliveries</title>
+<published>2026-11-21T00:00:00Z</published>
+<updated>2026-11-21T00:00:00Z</updated>
+<link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.90"/>
+<category term="Added"/>
+<summary type="text">Added: Troubleshooting for webhook deliveries.</summary>
+<content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Troubleshooting for webhook deliveries.&lt;/strong&gt; &lt;code&gt;push-feed-and-webhooks.html#troubleshooting&lt;/code&gt; gives nine symptoms, each with its cause and its fix. They cover a URL that redirects, events left at the default and a body parsed before the HMAC. They also cover a hex value of the wrong length, a &lt;code&gt;t&lt;/code&gt; outside the 5-minute window and a fallback to &lt;code&gt;X-LTAPI-Signature&lt;/code&gt;. The last three are duplicate deliveries, a handler slower than the ~3s timeout and a webhook disabled after 25 consecutive failures. A verifier in Node and Python covers the signature checks. Both were run against deliveries signed as the spec describes. The limits and the date are read from the spec when the page is built, and the build fails when the spec stops saying something the section relies on. The page gains a contents list, the docs home card names the section and llms.txt links each entry. Nothing on the wire changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+</entry>
 <entry>
 <id>https://docs.livetennisapi.com/changelog.html#v1.13.89</id>
 <title type="text">1.13.89: The changelog as an Atom feed and a JSON Feed, and 2 more changes</title>

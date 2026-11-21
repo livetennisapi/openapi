@@ -1235,6 +1235,11 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "## Guides",
         *[f"- {t['question']} {DOCS_URL}/{t['slug']}.html" for t in GUIDES],
         "",
+        "## Webhook troubleshooting",
+        f"Symptom, cause and fix for each delivery problem: {DOCS_URL}/push-feed-and-webhooks.html#{WEBHOOK_TS_ID}",
+        *[f"- {symptom}: {DOCS_URL}/push-feed-and-webhooks.html#{i}"
+          for i, symptom, _, _ in webhook_troubleshooting(spec)],
+        "",
         "## Quickstart (no code required)",
         f"Open this in a browser — no install, no headers: {base}/matches?status=live&token=YOUR_KEY",
         "Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.",
@@ -1769,6 +1774,11 @@ TOPICS: list[dict[str, Any]] = [
             "Webhooks require a direct key, not a marketplace one."
         ),
         "paths": lambda p: p.startswith("/webhooks") or p == "/ws-token",
+        # Written sections after the endpoints: (id, heading, html). A topic with any gets a
+        # contents list at the top of main.
+        "sections": lambda spec: [
+            (WEBHOOK_TS_ID, WEBHOOK_TS_TITLE, webhook_troubleshooting_html(spec)),
+        ],
     },
     {
         "slug": "auth-quota-and-health",
@@ -1870,6 +1880,15 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
         # "title — Live Tennis API" stays inside TITLE_MAX.
         head_title = topic.get("head_title") or f"{topic['title']} — {info['title']}"
         ld_json = tech_article_ld(topic["title"], desc, f"{DOCS_URL}/{topic['slug']}.html")
+        sections = topic.get("sections", lambda _spec: [])(spec)
+        contents = ""
+        if sections:
+            items = ['<li><a href="#endpoints">The endpoints</a></li>'] + [
+                f'<li><a href="#{sid}">{E(heading)}</a></li>' for sid, heading, _ in sections
+            ]
+            contents = ('<nav aria-labelledby="contents-heading">\n'
+                        '<h2 id="contents-heading">Contents</h2>\n<ul class="toc">\n'
+                        + "\n".join(items) + "\n</ul>\n</nav>\n")
         pages[topic["slug"]] = f"""<!doctype html>
 <html lang="en">
 <head>
@@ -1912,12 +1931,12 @@ def build_topic_pages(spec: dict[str, Any], reference_html: str) -> dict[str, st
 </nav>
 </header>
 <main id="main">
-<h2 id="endpoints">The endpoints</h2>
+{contents}<h2 id="endpoints">The endpoints</h2>
 <p>Each one below lists its plan tier, every parameter, the response shape and an example. They
 are the same entries as in <a href="./reference.html#endpoints">the full reference</a>, which
 carries all {total_ops} operations of the API on one page.</p>
 {"".join(ops_html)}
-</main>
+{"".join(section for _, _, section in sections)}</main>
 <footer>
 <hr>
 <nav class="pagenav" aria-label="Other topics">
@@ -1933,6 +1952,300 @@ this page is also in <a href="./reference.html">the full reference</a>.</p>
 </html>
 """
     return pages
+
+
+# ------------------------------------------------------- webhook troubleshooting -------------
+# A written section on the push feed and webhooks page. Every rule in it comes from the
+# createWebhook description, its request body and the Webhook schema. The numbers and the date
+# are not typed here: webhook_facts() reads them from the spec, so the copy cannot drift from
+# it. WEBHOOK_SPEC_CLAIMS are the phrases the copy relies on, and the build fails when the spec
+# stops saying one of them. Each entry is (anchor id, symptom, cause, fix).
+WEBHOOK_TS_ID = "troubleshooting"
+WEBHOOK_TS_TITLE = "Troubleshooting webhook deliveries"
+
+_WEBHOOK_NUMBERS = {
+    "failures": r"After (\d+) consecutive failures the webhook is disabled",
+    "schema_failures": r"Set to false automatically after (\d+) consecutive delivery failures",
+    "window": r"Reject a `t` more than (\d+) minutes from your clock",
+    "dedupe": r"keep each id until `t` \+ (\d+) minutes on your clock",
+    "timeout": r"one attempt per frame with a ~(\d+)s timeout and redirects disabled",
+    "max_hooks": r"Up to (\d+) webhooks per key \(`409 webhook_limit`",
+    "legacy_until": r"We keep sending it unchanged until (\d{4}-\d{2}-\d{2})",
+    "legacy_from": r"Deliveries sent from (\d\d:\d\d) UTC on that date do not carry it",
+}
+
+# (where, phrase): the spec text each claim of the section rests on. "post" is the
+# createWebhook description, "url" and "events" its request body fields, "schema" the
+# Webhook schema.
+WEBHOOK_SPEC_CLAIMS = [
+    ("post", "`X-LTAPI-Signature-V1` header, `t=<unix seconds>,v1=<hex>`"),
+    ("post", "The hex is HMAC-SHA256, keyed with your webhook secret, of the string "
+             "`<t>.<raw request body>`"),
+    ("post", "Accept the request if any `v1` value matches"),
+    ("post", "Compare with a constant-time function, over the raw bytes before any JSON parsing"),
+    ("post", "Dedupe on `delivery_id`"),
+    ("post", "With several workers, record it with an atomic insert-if-absent"),
+    ("post", "`X-LTAPI-Timestamp` repeats `t`"),
+    ("post", "Deprecated: `X-LTAPI-Signature` (`sha256=<hex>`, HMAC-SHA256 of the raw body alone)"),
+    ("post", "a captured delivery still verifies when re-sent later under a fresh `X-LTAPI-Timestamp`"),
+    ("post", "require it and never fall back to the old header"),
+    ("post", "Delivery is best-effort, at-most-once, no replay"),
+    ("post", "a missed delivery self-corrects on the next commit"),
+    ("post", "recover it with `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`"),
+    ("post", "(`enabled:false`, `last_error` set — visible in `GET /webhooks`); delete and "
+             "re-register to resume"),
+    ("post", "The response is the ONLY time the signing secret is shown"),
+    ("url", "HTTPS only, publicly routable"),
+    ("events", "the match has `pbp_coverage: \"point\"`"),
+    ("schema", "consecutive_failures"),
+    ("schema", "last_error"),
+]
+
+
+def webhook_facts(spec: dict[str, Any]) -> dict[str, str]:
+    """The numbers and the date the troubleshooting section states, read from the spec.
+
+    Fails the build when a phrase the section rests on is gone or two of them disagree. A
+    reworded spec then gets its copy rewritten by hand, never a stale number on the page."""
+    post = spec["paths"]["/webhooks"]["post"]
+    body = post["requestBody"]["content"]["application/json"]["schema"]["properties"]
+    schema = spec["components"]["schemas"]["Webhook"]
+    flat = lambda s: " ".join(str(s).split())  # noqa: E731
+    texts = {
+        "post": flat(post["description"]),
+        "url": flat(body["url"].get("description", "")),
+        "events": flat(body["events"].get("description", "")),
+        "schema": flat(json.dumps(schema)) + " " + flat(schema["properties"]["enabled"]["description"]),
+    }
+    problems = []
+    facts: dict[str, str] = {}
+    for name, rx in _WEBHOOK_NUMBERS.items():
+        where = "schema" if name == "schema_failures" else "post"
+        m = re.search(rx, texts[where])
+        if not m:
+            problems.append(f"{name}: the spec no longer says /{rx}/")
+            continue
+        facts[name] = m.group(1)
+    for where, phrase in WEBHOOK_SPEC_CLAIMS:
+        if flat(phrase) not in texts[where]:
+            problems.append(f"{where}: the spec no longer says {phrase!r}")
+    if facts.get("failures") != facts.get("schema_failures"):
+        problems.append("the createWebhook description and the Webhook schema give different failure counts")
+    if facts.get("window") != facts.get("dedupe"):
+        problems.append("the timestamp window and the dedupe window differ")
+    if body["events"].get("default") != ["score"]:
+        problems.append("events no longer defaults to [score]")
+    # The section says a webhook cannot be edited, only deleted and registered again.
+    for path, ops in spec["paths"].items():
+        if path.startswith("/webhooks") and set(ops) & {"put", "patch"}:
+            problems.append(f"{path} now has an update operation")
+    if problems:
+        raise SystemExit("webhook troubleshooting out of step with the spec:\n  " + "\n  ".join(problems))
+    return facts
+
+
+# Node and Python, in the plain-function style of the page's other snippets. Both were run
+# against deliveries signed as the spec describes (scripts/test_webhook_troubleshooting.py).
+# {window_s} is the timestamp window in seconds, filled in from the spec.
+WEBHOOK_VERIFY_NODE = """import {{ createHmac, timingSafeEqual }} from 'node:crypto';
+
+const HEX64 = /^[0-9a-f]{{64}}$/i;
+
+// rawBody is a Buffer of the request body as it arrived.
+// header is the X-LTAPI-Signature-V1 value. Never fall back to X-LTAPI-Signature.
+export function verifyV1(rawBody, header, secret, now = Math.floor(Date.now() / 1000)) {{
+  if (!header) return false;
+  let t = null;
+  const sigs = [];
+  for (const part of header.split(',')) {{
+    const i = part.indexOf('=');
+    if (i < 0) continue;
+    const key = part.slice(0, i).trim();
+    const value = part.slice(i + 1).trim();
+    if (key === 't') t = value;
+    else if (key === 'v1') sigs.push(value);
+  }}
+  if (!/^[0-9]+$/.test(t ?? '') || Math.abs(now - Number(t)) > {window_s}) return false;
+  const expected = createHmac('sha256', secret)
+    .update(Buffer.concat([Buffer.from(`${{t}}.`), rawBody]))
+    .digest();
+  return sigs.some((v) => HEX64.test(v) && timingSafeEqual(Buffer.from(v, 'hex'), expected));
+}}"""
+
+WEBHOOK_VERIFY_PYTHON = """import hashlib
+import hmac
+import re
+import time
+
+HEX64 = re.compile(r"[0-9a-fA-F]{{64}}")
+
+
+def verify_v1(raw_body: bytes, header: str | None, secret: str, now: int | None = None) -> bool:
+    \"\"\"raw_body is the request body as it arrived. header is X-LTAPI-Signature-V1.
+
+    Never fall back to X-LTAPI-Signature.\"\"\"
+    if not header:
+        return False
+    t, sigs = None, []
+    for part in header.split(","):
+        key, _, value = part.strip().partition("=")
+        if key == "t":
+            t = value
+        elif key == "v1":
+            sigs.append(value)
+    if t is None or not re.fullmatch(r"[0-9]+", t):
+        return False
+    now = int(time.time()) if now is None else now
+    if abs(now - int(t)) > {window_s}:
+        return False
+    expected = hmac.new(secret.encode(), t.encode() + b"." + raw_body, hashlib.sha256).digest()
+    return any(HEX64.fullmatch(v) and hmac.compare_digest(bytes.fromhex(v), expected) for v in sigs)"""
+
+WEBHOOK_URL_CHECK = """curl -s -o /dev/null -w '%{http_code}\\n' -X POST https://example.com/hooks/tennis"""
+
+
+def webhook_snippets(spec: dict[str, Any]) -> dict[str, str]:
+    """The three snippets with the spec's window filled in."""
+    window_s = int(webhook_facts(spec)["window"]) * 60
+    return {
+        "node": WEBHOOK_VERIFY_NODE.format(window_s=window_s),
+        "python": WEBHOOK_VERIFY_PYTHON.format(window_s=window_s),
+        "curl": WEBHOOK_URL_CHECK,
+    }
+
+
+def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, str]]:
+    """(id, symptom, cause, fix) for each entry, with the spec's numbers in the copy."""
+    f = webhook_facts(spec)
+    snip = webhook_snippets(spec)
+    w, n = f["window"], f["failures"]
+    reregister = ("Store the secret from the new <code>201</code> response, because it is the only "
+                  "time the secret is shown.")
+    return [
+        ("ts-redirect",
+         "No delivery ever reaches your handler",
+         "Your URL answers with a redirect. A common one adds or removes a trailing slash, or moves "
+         "the request to another host name. Each frame gets one attempt with redirects disabled, "
+         "so it stops at the redirect.",
+         "Register the exact URL your handler serves. It must be HTTPS and publicly routable. "
+         "Check it with a POST that does not follow redirects. Your handler will refuse this "
+         "unsigned request, and that is fine. Any <code>3xx</code> status means the URL redirects."
+         f"<pre><code>{E(snip['curl'])}</code></pre>"
+         "<p>The API has no call that changes a webhook's URL. Delete the webhook with "
+         "<code>DELETE /webhooks/{webhookId}</code> and register the final URL with "
+         f"<code>POST /webhooks</code>. {reregister}</p>"),
+        ("ts-events",
+         "Only score frames arrive",
+         "<code>events</code> defaults to <code>[\"score\"]</code> when you register. "
+         "<code>break_point</code>, <code>point</code> and <code>status</code> frames go only to a "
+         "webhook registered with them. A <code>point</code> frame also needs the surface to be "
+         "enabled and the match to have <code>pbp_coverage: \"point\"</code>.",
+         "Delete the webhook and register it again with every event you want, for example "
+         "<code>{\"url\": \"https://example.com/hooks/tennis\", \"events\": [\"score\", \"point\"]}</code>. "
+         f"{reregister}"),
+        ("ts-raw-body",
+         "The signature never matches",
+         "The HMAC was computed over a body your framework had already parsed and serialised "
+         "again. Key order, spacing and number formatting can change on the way, so the bytes "
+         "differ from the ones we signed.",
+         "Read the raw request bytes. Compute HMAC-SHA256 of <code>&lt;t&gt;.&lt;raw request "
+         "body&gt;</code> with your webhook secret, and parse the JSON only after the check passes. "
+         "In Express, mount <code>express.raw({ type: '*/*' })</code> on the webhook route so "
+         "<code>req.body</code> is a Buffer. In Flask, pass <code>request.get_data()</code>. The "
+         '<a href="#ts-verifier">verifier below</a> takes the raw bytes.'),
+        ("ts-hex-length",
+         "The signature compare throws an error",
+         "In Node, <code>timingSafeEqual</code> throws a <code>RangeError</code> when the two buffers "
+         "differ in length. <code>Buffer.from(value, 'hex')</code> stops at the first character that "
+         "is not hex, so a damaged value decodes short. In Python, "
+         "<code>hmac.compare_digest</code> raises a <code>TypeError</code> on a string with "
+         "characters outside ASCII.",
+         "An HMAC-SHA256 digest is 32 bytes, so its hex is 64 characters. Check each "
+         "<code>v1</code> value against <code>^[0-9a-fA-F]{64}$</code> before you decode it. Treat "
+         "any other value as a failed match, not as an error. Then compare the decoded bytes."),
+        ("ts-timestamp",
+         "X-LTAPI-Signature-V1 fails on some deliveries",
+         f"<code>t</code> is more than {w} minutes from your clock when you check it. Either the "
+         "receiver's clock is off, or the check runs late, for example after the delivery waited "
+         "in a queue.",
+         "Keep the receiver's clock in sync with NTP. Verify each delivery when it arrives, before "
+         "you queue it. <code>t</code> is in Unix seconds, so in Node divide "
+         f"<code>Date.now()</code> by 1000. Keep the {w}-minute window as it is. The "
+         f"<code>delivery_id</code> dedupe only holds ids for {w} minutes past <code>t</code>, so a "
+         "wider window lets a replay through."),
+        ("ts-require-v1",
+         "A replayed delivery passes verification",
+         "Your receiver falls back to the deprecated <code>X-LTAPI-Signature</code> header when "
+         "<code>X-LTAPI-Signature-V1</code> fails or is missing. That header signs the body alone. "
+         "A captured delivery sent again under a fresh <code>X-LTAPI-Timestamp</code> still "
+         "verifies against it. The same hole opens when the window check reads "
+         "<code>X-LTAPI-Timestamp</code> instead of the signed <code>t</code>.",
+         "Require <code>X-LTAPI-Signature-V1</code> and reject a delivery without it. Never fall "
+         "back to the old header. Take <code>t</code> from the V1 header itself. We send the old "
+         f"header until {f['legacy_until']}, and deliveries sent from {f['legacy_from']} UTC on "
+         "that date do not carry it."),
+        ("ts-duplicates",
+         "The same frame arrives twice",
+         "Delivery is at-most-once, with one attempt per frame and no replay. So a second copy "
+         "with the same <code>delivery_id</code> is not a retry from us. It is a captured delivery "
+         f"sent again inside the {w}-minute window, or a copy made on your side by a proxy or a "
+         "second worker.",
+         f"Dedupe on <code>delivery_id</code>. Keep each id until <code>t</code> + {w} minutes on "
+         "your clock, then drop it. With several workers, record the id with an atomic "
+         "insert-if-absent, such as a unique key in your database. For <code>point</code> frames "
+         "you also fetch from <code>GET /matches/{matchId}/points?after_seq=</code>, dedupe on "
+         "<code>seq</code>."),
+        ("ts-timeout",
+         "Frames go missing while your handler is busy",
+         f"Each frame gets one attempt with a ~{f['timeout']}s timeout. A handler that does all its "
+         "work before it responds can run past that, and the frame is not sent again.",
+         "Verify the signature, record the <code>delivery_id</code> and respond. Do the rest of the "
+         "work after the response. A missed <code>score</code> frame corrects itself on the next "
+         "commit, because each one is the complete current score. A missed <code>point</code> frame "
+         "does not. Recover it with <code>GET /matches/{matchId}/points?after_seq=</code> and "
+         "dedupe on <code>seq</code>."),
+        ("ts-disabled",
+         "Deliveries stopped and nothing changed on your side",
+         f"After {n} consecutive failures the webhook is disabled automatically.",
+         "Call <code>GET /webhooks</code>. A disabled webhook shows <code>enabled</code> as "
+         "<code>false</code>, and <code>last_error</code> says what went wrong. On an enabled one, "
+         f"<code>consecutive_failures</code> shows how close it is to {n}. Fix the cause first. Then "
+         "delete the webhook and register it again. Deleting first matters, because a key holds at "
+         f"most {f['max_hooks']} webhooks and one more gets <code>409 webhook_limit</code>. "
+         f"{reregister} Nothing is replayed for the time it was off."),
+    ]
+
+
+def webhook_troubleshooting_html(spec: dict[str, Any]) -> str:
+    """The section as it sits on push-feed-and-webhooks.html, after the endpoints."""
+    entries = webhook_troubleshooting(spec)
+    snip = webhook_snippets(spec)
+    w = webhook_facts(spec)["window"]
+    toc = "\n".join(f'<li><a href="#{i}">{E(symptom)}</a></li>' for i, symptom, _, _ in entries)
+    toc += '\n<li><a href="#ts-verifier">A verifier in Node and Python</a></li>'
+    body = []
+    for i, symptom, cause, fix in entries:
+        # A fix that carries a code block holds its own paragraphs.
+        fix_html = (f"<p><strong>Fix.</strong> {fix}</p>" if "<pre>" not in fix else
+                    "<p><strong>Fix.</strong> " + fix.replace("<pre>", "</p>\n<pre>", 1))
+        body.append(f'<h3 id="{i}">{E(symptom)}</h3>\n'
+                    f"<p><strong>Cause.</strong> {cause}</p>\n{fix_html}\n")
+    return f"""<h2 id="{WEBHOOK_TS_ID}">{E(WEBHOOK_TS_TITLE)}</h2>
+<p>Each entry starts with what you see, then gives the cause and the fix. The rules come from
+<a href="#createWebhook"><code>POST /webhooks</code></a> and the
+<a href="./reference.html#schema-webhook"><code>Webhook</code></a> schema.</p>
+<ul class="toc">
+{toc}
+</ul>
+{"".join(body)}<h3 id="ts-verifier">A verifier in Node and Python</h3>
+<p>Both functions take the raw body, the <code>X-LTAPI-Signature-V1</code> value and your secret.
+They return true only when <code>t</code> is within {w} minutes of your clock and a
+<code>v1</code> value matches. Dedupe on <code>delivery_id</code> after they pass.</p>
+<h4>Node</h4>
+<pre><code>{E(snip['node'])}</code></pre>
+<h4>Python</h4>
+<pre><code>{E(snip['python'])}</code></pre>
+"""
 
 
 # ------------------------------------------------------------------ guides ---------------------
