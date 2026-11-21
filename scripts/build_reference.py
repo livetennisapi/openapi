@@ -1062,8 +1062,8 @@ catch up via <code>GET /matches/{{matchId}}/points?after_seq=</code> and dedup b
 <code>seq</code>. The push feed carries the same frames on their own channel family
 (<code>point:match:{{matchId}}</code> and <code>point:slate</code>), deliberately separate
 from the score channels.</p>
-<p>Webhooks POST the same frames to your HTTPS endpoint. When deliveries fail, stop or do not
-verify, see <a href="./push-feed-and-webhooks.html#troubleshooting">troubleshooting webhook
+<p>Webhooks POST these frames to your HTTPS endpoint, for the events you register. When
+deliveries fail, stop or do not verify, see <a href="./push-feed-and-webhooks.html#troubleshooting">troubleshooting webhook
 deliveries</a>.</p>
 
 <h2 id="faq">FAQ — plans and data depth</h2>
@@ -1242,6 +1242,7 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         f"Symptom, cause and fix for each delivery problem: {DOCS_URL}/push-feed-and-webhooks.html#{WEBHOOK_TS_ID}",
         *[f"- {symptom}: {DOCS_URL}/push-feed-and-webhooks.html#{i}"
           for i, symptom, _, _ in webhook_troubleshooting(spec)],
+        f"- A verifier in Node and Python: {DOCS_URL}/push-feed-and-webhooks.html#ts-verifier",
         "",
         "## Quickstart (no code required)",
         f"Open this in a browser — no install, no headers: {base}/matches?status=live&token=YOUR_KEY",
@@ -2010,6 +2011,8 @@ WEBHOOK_SPEC_CLAIMS = [
     ("events", "`break_point` = the derived `break_point` / `break_point_result` frames"),
     ("post", "Every `score` frame is the complete current score"),
     ("schema", "consecutive_failures"),
+    ("points", "if a completed match reads `reconstruction`, re-read from `after_seq=0` rather than "
+               "resuming a live cursor into it"),
     ("schema", "last_error"),
 ]
 
@@ -2028,6 +2031,7 @@ def webhook_facts(spec: dict[str, Any]) -> dict[str, str]:
         "url": flat(body["url"].get("description", "")),
         "events": flat(body["events"].get("description", "")),
         "schema": flat(json.dumps(schema)) + " " + flat(schema["properties"]["enabled"]["description"]),
+        "points": flat(spec["paths"].get("/matches/{matchId}/points", {}).get("get", {}).get("description", "")),
     }
     problems = []
     facts: dict[str, str] = {}
@@ -2054,18 +2058,25 @@ def webhook_facts(spec: dict[str, Any]) -> dict[str, str]:
         if field not in schema["properties"]:
             problems.append(f"the Webhook schema has no {field} field")
     # The copy says the secret comes once, on the 201, and the description says "both ULTRA".
-    if "201" not in post["responses"] or "secret" not in flat(post["responses"]["201"].get("description", "")):
-        problems.append("POST /webhooks no longer returns the secret on a 201")
+    created = post["responses"].get("201", {})
+    created_ref = (created.get("content", {}).get("application/json", {})
+                   .get("schema", {}).get("$ref", ""))
+    if "secret" not in flat(created.get("description", "")) or not created_ref.endswith("/Webhook"):
+        problems.append("POST /webhooks no longer returns the Webhook with its secret on a 201")
+    limit = flat(post["responses"].get("409", {}).get("description", ""))
+    if f"({facts.get('max_hooks')} per key)" not in limit:
+        problems.append("the 409 response and the description give different webhook limits")
     for path, method in (("/webhooks", "post"), ("/webhooks", "get"),
                          ("/webhooks/{webhookId}", "delete"), ("/ws-token", "get")):
-        if "(ULTRA" not in spec["paths"][path][method].get("summary", ""):
+        if not re.search(r"\(ULTRA[,)]", spec["paths"][path][method].get("summary", "")):
             problems.append(f"{method.upper()} {path} is no longer ULTRA")
-    live_point = flat(spec["components"]["schemas"].get("LivePoint", {}).get("description", ""))
-    if "`seq` is per-match" not in live_point:
-        problems.append("LivePoint no longer says seq is per-match (the copy dedupes on match_id and seq)")
+    live_point = spec["components"]["schemas"].get("LivePoint", {})
+    if ("`seq` is per-match" not in flat(live_point.get("description", ""))
+            or "seq" not in live_point.get("properties", {})):
+        problems.append("LivePoint no longer has a per-match seq (the copy dedupes on match_id and seq)")
     points = spec["paths"].get("/matches/{matchId}/points", {}).get("get", {})
-    if "after_seq" not in {prm.get("name") for prm in points.get("parameters", [])}:
-        problems.append("GET /matches/{matchId}/points has no after_seq parameter")
+    if ("after_seq", "query") not in {(prm.get("name"), prm.get("in")) for prm in points.get("parameters", [])}:
+        problems.append("GET /matches/{matchId}/points has no after_seq query parameter")
     # The section says a webhook cannot be edited, only deleted and registered again.
     for path, ops in spec["paths"].items():
         if path.startswith("/webhooks") and set(ops) & {"put", "patch"}:
@@ -2101,7 +2112,7 @@ export function verifyV1(rawBody, header, secret,
     }} else if (key === 'v1') sigs.push(value);
   }}
   if (!/^[0-9]{{1,12}}$/.test(t ?? '')) return false;
-  if (Math.abs(now - Number(t)) > {window_s}) return false;
+  if (!(Math.abs(now - Number(t)) <= {window_s})) return false;
   const expected = createHmac('sha256', secret)
     .update(Buffer.concat([Buffer.from(`${{t}}.`), rawBody]))
     .digest();
@@ -2117,12 +2128,11 @@ import time
 HEX64 = re.compile(r"[0-9a-fA-F]{{64}}")
 
 
-def verify_v1(raw_body: bytes, header: str | None, secret: str,
-              now: int | None = None) -> bool:
-    # raw_body is the request body as it arrived.
+def verify_v1(raw_body, header, secret, now=None):
+    # raw_body is the request body as it arrived, in bytes.
     # header is the X-LTAPI-Signature-V1 value.
     # Never fall back to X-LTAPI-Signature.
-    if not header:
+    if not header or not isinstance(raw_body, bytes):
         return False
     t, sigs = None, []
     for part in header.split(","):
@@ -2138,7 +2148,7 @@ def verify_v1(raw_body: bytes, header: str | None, secret: str,
     if t is None or not re.fullmatch(r"[0-9]{{1,12}}", t):
         return False
     now = int(time.time()) if now is None else now
-    if abs(now - int(t)) > {window_s}:
+    if not abs(now - int(t)) <= {window_s}:
         return False
     signed = t.encode() + b"." + raw_body
     expected = hmac.new(secret.encode(), signed, hashlib.sha256).digest()
@@ -2147,7 +2157,7 @@ def verify_v1(raw_body: bytes, header: str | None, secret: str,
         for v in sigs
     )"""
 
-WEBHOOK_URL_CHECK = """curl -s -o /dev/null -w '%{http_code}\\n' -X POST https://example.com/hooks/tennis"""
+WEBHOOK_URL_CHECK = """curl -q -s -o /dev/null -w '%{http_code}\\n' -X POST https://example.com/hooks/tennis"""
 
 
 def webhook_snippets(spec: dict[str, Any]) -> dict[str, str]:
@@ -2235,8 +2245,8 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          "with the same <code>delivery_id</code> is not a retry from us. It is a captured delivery "
          f"sent again inside the {w}-minute window, or a copy made on your side by a proxy or a "
          "second worker.",
-         f"Dedupe on <code>delivery_id</code>. Keep each id until at least <code>t</code> + {w} "
-         "minutes on your clock. With several workers, record the id with an atomic "
+         f"Dedupe on <code>delivery_id</code>. Keep each id until your clock is past "
+         f"<code>t</code> + {w} minutes. With several workers, record the id with an atomic "
          "insert-if-absent, such as a unique key in your database. If the two copies carry "
          "different <code>delivery_id</code> values, check <code>GET /webhooks</code> for two "
          "webhooks with the same <code>url</code>. For <code>point</code> frames you also fetch "
@@ -2248,12 +2258,13 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          f"Each frame gets one attempt with a ~{f['timeout']}s timeout. A handler that does all its "
          "work before it responds can run past that. If your server takes one request at a time, "
          "frames that arrive meanwhile wait too. None of them is sent again.",
-         "Verify the signature, then save or queue the frame and record its "
-         "<code>delivery_id</code>. Respond after that, and do the slow work later. A missed "
+         "Verify the signature. Then save the frame with its <code>delivery_id</code> in one "
+         "atomic insert-if-absent, and respond. Do the slow work later. A missed "
          "<code>score</code> frame corrects itself on the next commit, because each one is the "
          "complete current score. A missed <code>point</code> frame does not. Recover it with "
          "<code>GET /matches/{matchId}/points?after_seq=</code> and dedupe on "
-         "<code>match_id</code> and <code>seq</code>."),
+         "<code>match_id</code> and <code>seq</code>. If a completed match reads "
+         "<code>basis: \"reconstruction\"</code>, read it again from <code>after_seq=0</code>."),
         ("ts-disabled",
          "Deliveries stopped and nothing changed on your side",
          f"After {n} consecutive failures the webhook is disabled automatically.",

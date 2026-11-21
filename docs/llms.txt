@@ -49,6 +49,7 @@ Symptom, cause and fix for each delivery problem: https://docs.livetennisapi.com
 - The same frame arrives twice: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-duplicates
 - Frames go missing when your handler is slow: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-timeout
 - Deliveries stopped and nothing changed on your side: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-disabled
+- A verifier in Node and Python: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-verifier
 
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY

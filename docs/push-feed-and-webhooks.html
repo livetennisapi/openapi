@@ -305,7 +305,7 @@ A consumer that was disconnected recovers the judgement from the durable record,
 <h3 id="ts-redirect">No delivery ever reaches your handler</h3>
 <p><strong>Cause.</strong> Your URL answers with a redirect, often to add or drop a trailing slash. Each frame gets one attempt with redirects disabled, so it stops there.</p>
 <p><strong>Fix.</strong> Register the exact URL your handler serves. It must be HTTPS and publicly routable. Check it with a POST that does not follow redirects. Your handler should refuse this unsigned request, and that is fine. A <code>301</code>, <code>302</code>, <code>303</code>, <code>307</code> or <code>308</code> means the URL redirects.</p>
-<pre><code>curl -s -o /dev/null -w &#x27;%{http_code}\n&#x27; -X POST https://example.com/hooks/tennis</code></pre><p>No call changes a webhook's URL. Delete it with <code>DELETE /webhooks/{webhookId}</code>, then register the final URL. Store the secret from the new <code>201</code> response, because it is shown only once.</p>
+<pre><code>curl -q -s -o /dev/null -w &#x27;%{http_code}\n&#x27; -X POST https://example.com/hooks/tennis</code></pre><p>No call changes a webhook's URL. Delete it with <code>DELETE /webhooks/{webhookId}</code>, then register the final URL. Store the secret from the new <code>201</code> response, because it is shown only once.</p>
 <h3 id="ts-events">Only score frames arrive</h3>
 <p><strong>Cause.</strong> <code>events</code> defaults to <code>["score"]</code> when you register. <code>break_point</code> (with <code>break_point_result</code>), <code>point</code> and <code>status</code> frames go only to a webhook registered with them. A <code>point</code> frame also needs the surface to be enabled and the match to have <code>pbp_coverage: "point"</code>.</p>
 <p><strong>Fix.</strong> Delete the webhook and register it again with every event you want, for example <code>{"url": "https://example.com/hooks/tennis", "events": ["score", "point"]}</code>. Keep the secret from that <code>201</code> response.</p>
@@ -323,10 +323,10 @@ A consumer that was disconnected recovers the judgement from the durable record,
 <p><strong>Fix.</strong> Require <code>X-LTAPI-Signature-V1</code> and reject a delivery without it. Never fall back to the old header. Take <code>t</code> from the V1 header itself. We send the old header until 2027-02-01, and deliveries sent from 00:00 UTC on that date do not carry it.</p>
 <h3 id="ts-duplicates">The same frame arrives twice</h3>
 <p><strong>Cause.</strong> Delivery is at-most-once, with one attempt per frame and no replay. So a second copy with the same <code>delivery_id</code> is not a retry from us. It is a captured delivery sent again inside the 5-minute window, or a copy made on your side by a proxy or a second worker.</p>
-<p><strong>Fix.</strong> Dedupe on <code>delivery_id</code>. Keep each id until at least <code>t</code> + 5 minutes on your clock. With several workers, record the id with an atomic insert-if-absent, such as a unique key in your database. If the two copies carry different <code>delivery_id</code> values, check <code>GET /webhooks</code> for two webhooks with the same <code>url</code>. For <code>point</code> frames you also fetch from <code>GET /matches/{matchId}/points?after_seq=</code>, dedupe on <code>match_id</code> and <code>seq</code> together, because <code>seq</code> counts per match.</p>
+<p><strong>Fix.</strong> Dedupe on <code>delivery_id</code>. Keep each id until your clock is past <code>t</code> + 5 minutes. With several workers, record the id with an atomic insert-if-absent, such as a unique key in your database. If the two copies carry different <code>delivery_id</code> values, check <code>GET /webhooks</code> for two webhooks with the same <code>url</code>. For <code>point</code> frames you also fetch from <code>GET /matches/{matchId}/points?after_seq=</code>, dedupe on <code>match_id</code> and <code>seq</code> together, because <code>seq</code> counts per match.</p>
 <h3 id="ts-timeout">Frames go missing when your handler is slow</h3>
 <p><strong>Cause.</strong> Each frame gets one attempt with a ~3s timeout. A handler that does all its work before it responds can run past that. If your server takes one request at a time, frames that arrive meanwhile wait too. None of them is sent again.</p>
-<p><strong>Fix.</strong> Verify the signature, then save or queue the frame and record its <code>delivery_id</code>. Respond after that, and do the slow work later. A missed <code>score</code> frame corrects itself on the next commit, because each one is the complete current score. A missed <code>point</code> frame does not. Recover it with <code>GET /matches/{matchId}/points?after_seq=</code> and dedupe on <code>match_id</code> and <code>seq</code>.</p>
+<p><strong>Fix.</strong> Verify the signature. Then save the frame with its <code>delivery_id</code> in one atomic insert-if-absent, and respond. Do the slow work later. A missed <code>score</code> frame corrects itself on the next commit, because each one is the complete current score. A missed <code>point</code> frame does not. Recover it with <code>GET /matches/{matchId}/points?after_seq=</code> and dedupe on <code>match_id</code> and <code>seq</code>. If a completed match reads <code>basis: "reconstruction"</code>, read it again from <code>after_seq=0</code>.</p>
 <h3 id="ts-disabled">Deliveries stopped and nothing changed on your side</h3>
 <p><strong>Cause.</strong> After 25 consecutive failures the webhook is disabled automatically.</p>
 <p><strong>Fix.</strong> Call <code>GET /webhooks</code>. A disabled webhook shows <code>enabled</code> as <code>false</code>, and <code>last_error</code> holds the last error. On an enabled one, <code>consecutive_failures</code> counts the failures in a row toward 25. Fix the cause first. Then delete the webhook and register it again. If the key already holds 3 webhooks, delete first, because one more gets <code>409 webhook_limit</code>. Store the secret from the new <code>201</code> response. Nothing is replayed for the time it was off.</p>
@@ -358,7 +358,7 @@ export function verifyV1(rawBody, header, secret,
     } else if (key === &#x27;v1&#x27;) sigs.push(value);
   }
   if (!/^[0-9]{1,12}$/.test(t ?? &#x27;&#x27;)) return false;
-  if (Math.abs(now - Number(t)) &gt; 300) return false;
+  if (!(Math.abs(now - Number(t)) &lt;= 300)) return false;
   const expected = createHmac(&#x27;sha256&#x27;, secret)
     .update(Buffer.concat([Buffer.from(`${t}.`), rawBody]))
     .digest();
@@ -374,12 +374,11 @@ import time
 HEX64 = re.compile(r&quot;[0-9a-fA-F]{64}&quot;)
 
 
-def verify_v1(raw_body: bytes, header: str | None, secret: str,
-              now: int | None = None) -&gt; bool:
-    # raw_body is the request body as it arrived.
+def verify_v1(raw_body, header, secret, now=None):
+    # raw_body is the request body as it arrived, in bytes.
     # header is the X-LTAPI-Signature-V1 value.
     # Never fall back to X-LTAPI-Signature.
-    if not header:
+    if not header or not isinstance(raw_body, bytes):
         return False
     t, sigs = None, []
     for part in header.split(&quot;,&quot;):
@@ -395,7 +394,7 @@ def verify_v1(raw_body: bytes, header: str | None, secret: str,
     if t is None or not re.fullmatch(r&quot;[0-9]{1,12}&quot;, t):
         return False
     now = int(time.time()) if now is None else now
-    if abs(now - int(t)) &gt; 300:
+    if not abs(now - int(t)) &lt;= 300:
         return False
     signed = t.encode() + b&quot;.&quot; + raw_body
     expected = hmac.new(secret.encode(), signed, hashlib.sha256).digest()

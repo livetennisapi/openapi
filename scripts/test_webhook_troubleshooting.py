@@ -113,7 +113,7 @@ class CommittedSectionTest(unittest.TestCase):
             op = self.spec["paths"][path].get(method.lower())
             self.assertIsNotNone(op, f"{method} {path}")
             if query:
-                names = {prm.get("name") for prm in op.get("parameters", [])}
+                names = {prm.get("name") for prm in op.get("parameters", []) if prm.get("in") == "query"}
                 self.assertIn(query[1:-1], names, f"{method} {path}{query}")
 
     def test_every_field_and_code_named_is_in_the_spec(self) -> None:
@@ -148,18 +148,18 @@ class CommittedSectionTest(unittest.TestCase):
         d = re.search(r"unchanged until (\d{4}-\d{2}-\d{2})", post).group(1)
         self.assertIn(f"After {n} consecutive failures the webhook is disabled", self.text)
         self.assertIn(f"more than {w} minutes from your clock", self.text)
-        self.assertIn(f"t + {w} minutes on your clock", self.text)
+        self.assertIn(f"your clock is past t + {w} minutes", self.text)
         self.assertIn(f"~{s}s timeout", self.text)
         self.assertIn(f"already holds {k} webhooks", self.text)
         self.assertIn(f"until {d}", self.text)
         for snippet in ("node", "python"):
-            self.assertIn(f"> {int(w) * 60}", br.webhook_snippets(self.spec)[snippet])
+            self.assertRegex(br.webhook_snippets(self.spec)[snippet], rf"<= {int(w) * 60}[):]")
 
     def test_every_number_in_the_prose_is_accounted_for(self) -> None:
         f = self.facts
         allowed = {f["failures"], f["window"], f["timeout"], f["max_hooks"],
                    f"{f['timeout']}s", f"{f['window']}-minute",
-                   "201", "409", "301", "302", "303", "307", "308", "1000", "32", "64", f["legacy_from"], f["legacy_until"]}
+                   "0", "201", "409", "301", "302", "303", "307", "308", "1000", "32", "64", f["legacy_from"], f["legacy_until"]}
         for number in re.findall(r"\b\d[\w:-]*", text_of(self.prose)):
             self.assertTrue(number in allowed or number == "0-9a-fA-F", number)
 
@@ -178,9 +178,13 @@ class SnippetTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        snippets = br.webhook_snippets(br.load_spec())
+        spec = br.load_spec()
+        snippets = br.webhook_snippets(spec)
+        cls.W = int(br.webhook_facts(spec)["window"]) * 60
         namespace: dict = {}
-        exec(compile(snippets["python"], "verify_v1", "exec"), namespace)  # noqa: S102
+        # dont_inherit: compile the snippet as a reader's own file would be, without this
+        # module's `from __future__ import annotations`.
+        exec(compile(snippets["python"], "verify_v1", "exec", dont_inherit=True), namespace)  # noqa: S102
         cls.verify = staticmethod(namespace["verify_v1"])
         cls.node_source = snippets["node"]
 
@@ -194,8 +198,8 @@ class SnippetTest(unittest.TestCase):
             ("upper-case hex", BODY, good.upper().replace("T=", "t=").replace("V1=", "v1="), True),
             ("a body serialised again", reparsed, good, False),
             ("no header: never fall back", BODY, None, False),
-            ("t outside the window", BODY, sign_v1(BODY, self.NOW - 301), False),
-            ("t just inside the window", BODY, sign_v1(BODY, self.NOW - 300), True),
+            ("t outside the window", BODY, sign_v1(BODY, self.NOW - self.W - 1), False),
+            ("t just inside the window", BODY, sign_v1(BODY, self.NOW - self.W), True),
             ("t in milliseconds", BODY, sign_v1(BODY, self.NOW * 1000), False),
             ("t re-stamped, signature kept", BODY, f"t={self.NOW},{sign_v1(BODY, self.NOW - 900).split(',')[1]}", False),
             ("hex one character short", BODY, good[:-1], False),
@@ -212,13 +216,20 @@ class SnippetTest(unittest.TestCase):
             ("a bare t part after the signed one", BODY, f"{good},t", True),
             ("U+0085 before the digits", BODY, good.replace("t=", "t=\u0085"), False),
             ("empty parts", BODY, f",,{good},,", True),
-            ("signed exactly at the window edge", BODY, sign_v1(BODY, self.NOW + 300), True),
+            ("signed exactly at the window edge", BODY, sign_v1(BODY, self.NOW + self.W), True),
         ]
 
     def test_python_verifier(self) -> None:
         for name, body, header, want in self.cases():
             with self.subTest(name):
                 self.assertIs(self.verify(body, header, SECRET, now=self.NOW), want)
+        good = sign_v1(BODY, self.NOW - 3600)
+        for name, body, now in (("no body at all", None, self.NOW - 3600),
+                                ("a parsed body", json.loads(BODY), self.NOW - 3600),
+                                ("a body as text", BODY.decode(), self.NOW - 3600),
+                                ("a clock that is NaN", BODY, float("nan"))):
+            with self.subTest(name):
+                self.assertIs(self.verify(body, good, SECRET, now=now), False)
 
     def test_node_verifier(self) -> None:
         node = shutil.which("node")
@@ -226,6 +237,7 @@ class SnippetTest(unittest.TestCase):
             self.skipTest("node is not installed, so the Node verifier was not run")
         cases = [(n, b.decode("latin-1"), h, w) for n, b, h, w in self.cases()]
         cases.append(("no body at all", None, sign_v1(BODY, self.NOW), False))
+        nan_case = sign_v1(BODY, self.NOW - 3600)
         with tempfile.TemporaryDirectory() as tmp:
             module = Path(tmp) / "verify.mjs"
             module.write_text(self.node_source, encoding="utf-8")
@@ -236,6 +248,8 @@ class SnippetTest(unittest.TestCase):
                 "const out = cases.map(([name, body, header]) =>"
                 " [name, verifyV1(body === null ? undefined : Buffer.from(body, 'latin1'), header,"
                 f" {json.dumps(SECRET)}, {self.NOW})]);\n"
+                f"out.push(['a clock that is NaN', verifyV1(Buffer.from({json.dumps(BODY.decode())}),"
+                f" {json.dumps(nan_case)}, {json.dumps(SECRET)}, NaN)]);\n"
                 "console.log(JSON.stringify(out));\n",
                 encoding="utf-8",
             )
@@ -245,6 +259,7 @@ class SnippetTest(unittest.TestCase):
         for name, _, _, want in cases:
             with self.subTest(name):
                 self.assertIs(got[name], want)
+        self.assertIs(got["a clock that is NaN"], False)
 
 
 class DriftTest(unittest.TestCase):
@@ -282,8 +297,8 @@ class DriftTest(unittest.TestCase):
         self.edit("more than 5 minutes", "more than 2 minutes")
         self.edit("`t` + 5 minutes", "`t` + 2 minutes")
         snippets = br.webhook_snippets(self.spec)
-        self.assertIn("> 120", snippets["node"])
-        self.assertIn("> 120", snippets["python"])
+        self.assertIn("<= 120)", snippets["node"])
+        self.assertIn("<= 120:", snippets["python"])
 
     def test_windows_that_disagree(self) -> None:
         self.edit("more than 5 minutes", "more than 2 minutes")
@@ -340,6 +355,22 @@ class DriftTest(unittest.TestCase):
     def test_seq_no_longer_per_match(self) -> None:
         point = self.spec["components"]["schemas"]["LivePoint"]
         point["description"] = point["description"].replace("`seq` is per-match", "`seq` is global")
+        self.refused()
+
+    def test_limit_changed_in_one_place(self) -> None:
+        self.edit("Up to 3 webhooks per key", "Up to 4 webhooks per key")
+        self.refused()
+
+    def test_after_seq_moved_to_a_header(self) -> None:
+        op = self.spec["paths"]["/matches/{matchId}/points"]["get"]
+        for prm in op["parameters"]:
+            if prm.get("name") == "after_seq":
+                prm["in"] = "header"
+        self.refused()
+
+    def test_reconstruction_rule_dropped(self) -> None:
+        op = self.spec["paths"]["/matches/{matchId}/points"]["get"]
+        op["description"] = op["description"].replace("re-read from", "resume from")
         self.refused()
 
     def test_schema_field_removed(self) -> None:
