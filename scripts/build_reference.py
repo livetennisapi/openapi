@@ -1062,6 +1062,9 @@ catch up via <code>GET /matches/{{matchId}}/points?after_seq=</code> and dedup b
 <code>seq</code>. The push feed carries the same frames on their own channel family
 (<code>point:match:{{matchId}}</code> and <code>point:slate</code>), deliberately separate
 from the score channels.</p>
+<p>Webhooks POST the same frames to your HTTPS endpoint. When deliveries fail, stop or do not
+verify, see <a href="./push-feed-and-webhooks.html#troubleshooting">troubleshooting webhook
+deliveries</a>.</p>
 
 <h2 id="faq">FAQ — plans and data depth</h2>
 
@@ -1766,6 +1769,12 @@ TOPICS: list[dict[str, Any]] = [
         "slug": "push-feed-and-webhooks",
         "title": "Tennis WebSocket feed and webhooks",
         "question": "How do you receive tennis data as it happens instead of polling?",
+        # Written by hand so the result snippet ends on a full sentence and names the
+        # troubleshooting section. The lede's word cut stopped at "for the high-fan-out push".
+        "description": (
+            "How do you receive tennis data as it happens? Use the WebSocket push feed or signed "
+            "webhooks, both ULTRA. Includes webhook delivery troubleshooting."
+        ),
         "lede": (
             "Two ways, both ULTRA. <code>GET /ws-token</code> mints a short-lived token for the "
             "high-fan-out push feed, which streams score and point changes as they are written. "
@@ -1997,6 +2006,9 @@ WEBHOOK_SPEC_CLAIMS = [
     ("post", "The response is the ONLY time the signing secret is shown"),
     ("url", "HTTPS only, publicly routable"),
     ("events", "the match has `pbp_coverage: \"point\"`"),
+    ("events", "where that surface is enabled"),
+    ("events", "`break_point` = the derived `break_point` / `break_point_result` frames"),
+    ("post", "Every `score` frame is the complete current score"),
     ("schema", "consecutive_failures"),
     ("schema", "last_error"),
 ]
@@ -2035,6 +2047,12 @@ def webhook_facts(spec: dict[str, Any]) -> dict[str, str]:
         problems.append("the timestamp window and the dedupe window differ")
     if body["events"].get("default") != ["score"]:
         problems.append("events no longer defaults to [score]")
+    # The section names every event a webhook can carry, and these schema fields by name.
+    if body["events"]["items"].get("enum") != ["score", "break_point", "point", "status"]:
+        problems.append("the events enum changed: rewrite the events entry")
+    for field in ("enabled", "last_error", "consecutive_failures", "secret"):
+        if field not in schema["properties"]:
+            problems.append(f"the Webhook schema has no {field} field")
     # The section says a webhook cannot be edited, only deleted and registered again.
     for path, ops in spec["paths"].items():
         if path.startswith("/webhooks") and set(ops) & {"put", "patch"}:
@@ -2052,8 +2070,10 @@ WEBHOOK_VERIFY_NODE = """import {{ createHmac, timingSafeEqual }} from 'node:cry
 const HEX64 = /^[0-9a-f]{{64}}$/i;
 
 // rawBody is a Buffer of the request body as it arrived.
-// header is the X-LTAPI-Signature-V1 value. Never fall back to X-LTAPI-Signature.
-export function verifyV1(rawBody, header, secret, now = Math.floor(Date.now() / 1000)) {{
+// header is the X-LTAPI-Signature-V1 value.
+// Never fall back to X-LTAPI-Signature.
+export function verifyV1(rawBody, header, secret,
+                         now = Math.floor(Date.now() / 1000)) {{
   if (!header) return false;
   let t = null;
   const sigs = [];
@@ -2065,11 +2085,13 @@ export function verifyV1(rawBody, header, secret, now = Math.floor(Date.now() / 
     if (key === 't') t = value;
     else if (key === 'v1') sigs.push(value);
   }}
-  if (!/^[0-9]+$/.test(t ?? '') || Math.abs(now - Number(t)) > {window_s}) return false;
+  if (!/^[0-9]{{1,12}}$/.test(t ?? '')) return false;
+  if (Math.abs(now - Number(t)) > {window_s}) return false;
   const expected = createHmac('sha256', secret)
     .update(Buffer.concat([Buffer.from(`${{t}}.`), rawBody]))
     .digest();
-  return sigs.some((v) => HEX64.test(v) && timingSafeEqual(Buffer.from(v, 'hex'), expected));
+  return sigs.some((v) =>
+    HEX64.test(v) && timingSafeEqual(Buffer.from(v, 'hex'), expected));
 }}"""
 
 WEBHOOK_VERIFY_PYTHON = """import hashlib
@@ -2080,26 +2102,32 @@ import time
 HEX64 = re.compile(r"[0-9a-fA-F]{{64}}")
 
 
-def verify_v1(raw_body: bytes, header: str | None, secret: str, now: int | None = None) -> bool:
-    \"\"\"raw_body is the request body as it arrived. header is X-LTAPI-Signature-V1.
-
-    Never fall back to X-LTAPI-Signature.\"\"\"
+def verify_v1(raw_body: bytes, header: str | None, secret: str,
+              now: int | None = None) -> bool:
+    # raw_body is the request body as it arrived.
+    # header is the X-LTAPI-Signature-V1 value.
+    # Never fall back to X-LTAPI-Signature.
     if not header:
         return False
     t, sigs = None, []
     for part in header.split(","):
-        key, _, value = part.strip().partition("=")
+        key, _, value = part.partition("=")
+        key, value = key.strip(), value.strip()
         if key == "t":
             t = value
         elif key == "v1":
             sigs.append(value)
-    if t is None or not re.fullmatch(r"[0-9]+", t):
+    if t is None or not re.fullmatch(r"[0-9]{{1,12}}", t):
         return False
     now = int(time.time()) if now is None else now
     if abs(now - int(t)) > {window_s}:
         return False
-    expected = hmac.new(secret.encode(), t.encode() + b"." + raw_body, hashlib.sha256).digest()
-    return any(HEX64.fullmatch(v) and hmac.compare_digest(bytes.fromhex(v), expected) for v in sigs)"""
+    signed = t.encode() + b"." + raw_body
+    expected = hmac.new(secret.encode(), signed, hashlib.sha256).digest()
+    return any(
+        HEX64.fullmatch(v) and hmac.compare_digest(bytes.fromhex(v), expected)
+        for v in sigs
+    )"""
 
 WEBHOOK_URL_CHECK = """curl -s -o /dev/null -w '%{http_code}\\n' -X POST https://example.com/hooks/tennis"""
 
@@ -2119,39 +2147,37 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
     f = webhook_facts(spec)
     snip = webhook_snippets(spec)
     w, n = f["window"], f["failures"]
-    reregister = ("Store the secret from the new <code>201</code> response, because it is the only "
-                  "time the secret is shown.")
     return [
         ("ts-redirect",
          "No delivery ever reaches your handler",
-         "Your URL answers with a redirect. A common one adds or removes a trailing slash, or moves "
-         "the request to another host name. Each frame gets one attempt with redirects disabled, "
-         "so it stops at the redirect.",
+         "Your URL answers with a redirect, often to add or drop a trailing slash. Each frame gets "
+         "one attempt with redirects disabled, so it stops there.",
          "Register the exact URL your handler serves. It must be HTTPS and publicly routable. "
-         "Check it with a POST that does not follow redirects. Your handler will refuse this "
+         "Check it with a POST that does not follow redirects. Your handler should refuse this "
          "unsigned request, and that is fine. Any <code>3xx</code> status means the URL redirects."
          f"<pre><code>{E(snip['curl'])}</code></pre>"
-         "<p>The API has no call that changes a webhook's URL. Delete the webhook with "
-         "<code>DELETE /webhooks/{webhookId}</code> and register the final URL with "
-         f"<code>POST /webhooks</code>. {reregister}</p>"),
+         "<p>No call changes a webhook's URL. Delete it with "
+         "<code>DELETE /webhooks/{webhookId}</code>, then register the final URL. Store the "
+         "secret from the new <code>201</code> response, because it is shown only once.</p>"),
         ("ts-events",
          "Only score frames arrive",
          "<code>events</code> defaults to <code>[\"score\"]</code> when you register. "
-         "<code>break_point</code>, <code>point</code> and <code>status</code> frames go only to a "
-         "webhook registered with them. A <code>point</code> frame also needs the surface to be "
+         "<code>break_point</code> (with <code>break_point_result</code>), <code>point</code> and "
+         "<code>status</code> frames go only to a webhook registered with them. A <code>point</code> frame also needs the surface to be "
          "enabled and the match to have <code>pbp_coverage: \"point\"</code>.",
          "Delete the webhook and register it again with every event you want, for example "
          "<code>{\"url\": \"https://example.com/hooks/tennis\", \"events\": [\"score\", \"point\"]}</code>. "
-         f"{reregister}"),
+         "Keep the secret from that <code>201</code> response."),
         ("ts-raw-body",
          "The signature never matches",
          "The HMAC was computed over a body your framework had already parsed and serialised "
-         "again. Key order, spacing and number formatting can change on the way, so the bytes "
-         "differ from the ones we signed.",
+         "again. That can reorder keys and change spacing or how numbers are written, so the "
+         "bytes differ from the ones we signed.",
          "Read the raw request bytes. Compute HMAC-SHA256 of <code>&lt;t&gt;.&lt;raw request "
          "body&gt;</code> with your webhook secret, and parse the JSON only after the check passes. "
-         "In Express, mount <code>express.raw({ type: '*/*' })</code> on the webhook route so "
-         "<code>req.body</code> is a Buffer. In Flask, pass <code>request.get_data()</code>. The "
+         "In Express, mount <code>express.raw({ type: '*/*' })</code> on the webhook route, ahead "
+         "of any <code>express.json()</code> that also covers it, so <code>req.body</code> is a "
+         "Buffer. In Flask, pass <code>request.get_data()</code>. The "
          '<a href="#ts-verifier">verifier below</a> takes the raw bytes.'),
         ("ts-hex-length",
          "The signature compare throws an error",
@@ -2170,7 +2196,7 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          "in a queue.",
          "Keep the receiver's clock in sync with NTP. Verify each delivery when it arrives, before "
          "you queue it. <code>t</code> is in Unix seconds, so in Node divide "
-         f"<code>Date.now()</code> by 1000. Keep the {w}-minute window as it is. The "
+         f"<code>Date.now()</code> by 1000 and round down. Keep the {w}-minute window as it is. The "
          f"<code>delivery_id</code> dedupe only holds ids for {w} minutes past <code>t</code>, so a "
          "wider window lets a replay through."),
         ("ts-require-v1",
@@ -2192,13 +2218,16 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          "second worker.",
          f"Dedupe on <code>delivery_id</code>. Keep each id until <code>t</code> + {w} minutes on "
          "your clock, then drop it. With several workers, record the id with an atomic "
-         "insert-if-absent, such as a unique key in your database. For <code>point</code> frames "
+         "insert-if-absent, such as a unique key in your database. If the two copies carry different "
+         "<code>delivery_id</code> values, check <code>GET /webhooks</code> for two webhooks with the "
+         "same <code>url</code>. For <code>point</code> frames "
          "you also fetch from <code>GET /matches/{matchId}/points?after_seq=</code>, dedupe on "
          "<code>seq</code>."),
         ("ts-timeout",
-         "Frames go missing while your handler is busy",
+         "Frames go missing when your handler is slow",
          f"Each frame gets one attempt with a ~{f['timeout']}s timeout. A handler that does all its "
-         "work before it responds can run past that, and the frame is not sent again.",
+         "work before it responds can run past that. So can frames that wait behind it, and none "
+         "of them is sent again.",
          "Verify the signature, record the <code>delivery_id</code> and respond. Do the rest of the "
          "work after the response. A missed <code>score</code> frame corrects itself on the next "
          "commit, because each one is the complete current score. A missed <code>point</code> frame "
@@ -2208,11 +2237,12 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          "Deliveries stopped and nothing changed on your side",
          f"After {n} consecutive failures the webhook is disabled automatically.",
          "Call <code>GET /webhooks</code>. A disabled webhook shows <code>enabled</code> as "
-         "<code>false</code>, and <code>last_error</code> says what went wrong. On an enabled one, "
-         f"<code>consecutive_failures</code> shows how close it is to {n}. Fix the cause first. Then "
-         "delete the webhook and register it again. Deleting first matters, because a key holds at "
-         f"most {f['max_hooks']} webhooks and one more gets <code>409 webhook_limit</code>. "
-         f"{reregister} Nothing is replayed for the time it was off."),
+         "<code>false</code>, and <code>last_error</code> holds the last error. On an enabled one, "
+         f"<code>consecutive_failures</code> counts the failures in a row toward {n}. Fix the cause "
+         "first. Then delete the webhook and register it again. If the key already holds "
+         f"{f['max_hooks']} webhooks, delete first, because one more gets "
+         "<code>409 webhook_limit</code>. Store the secret from the new <code>201</code> response. "
+         "Nothing is replayed for the time it was off."),
     ]
 
 

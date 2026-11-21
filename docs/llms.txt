@@ -47,7 +47,7 @@ Symptom, cause and fix for each delivery problem: https://docs.livetennisapi.com
 - X-LTAPI-Signature-V1 fails on some deliveries: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-timestamp
 - A replayed delivery passes verification: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-require-v1
 - The same frame arrives twice: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-duplicates
-- Frames go missing while your handler is busy: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-timeout
+- Frames go missing when your handler is slow: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-timeout
 - Deliveries stopped and nothing changed on your side: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-disabled
 
 ## Quickstart (no code required)

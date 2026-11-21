@@ -1341,6 +1341,9 @@ catch up via <code>GET /matches/{matchId}/points?after_seq=</code> and dedup by
 <code>seq</code>. The push feed carries the same frames on their own channel family
 (<code>point:match:{matchId}</code> and <code>point:slate</code>), deliberately separate
 from the score channels.</p>
+<p>Webhooks POST the same frames to your HTTPS endpoint. When deliveries fail, stop or do not
+verify, see <a href="./push-feed-and-webhooks.html#troubleshooting">troubleshooting webhook
+deliveries</a>.</p>
 
 <h2 id="faq">FAQ — plans and data depth</h2>
 

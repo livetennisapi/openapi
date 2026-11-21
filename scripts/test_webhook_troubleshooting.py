@@ -56,6 +56,7 @@ class CommittedSectionTest(unittest.TestCase):
         cls.text = text_of(cls.section)
         cls.facts = br.webhook_facts(cls.spec)
         cls.post = " ".join(cls.spec["paths"]["/webhooks"]["post"]["description"].split())
+        cls.schema = cls.spec["components"]["schemas"]["Webhook"]
 
     def test_page_is_what_the_build_writes(self) -> None:
         reference = (br.DOCS / "reference.html").read_text(encoding="utf-8")
@@ -85,7 +86,11 @@ class CommittedSectionTest(unittest.TestCase):
         for i, symptom, _, _ in entries:
             block = self.section[self.section.index(f'<h3 id="{i}">'):]
             block = block[:block.index("<h3", 4)]
-            self.assertLess(block.index(html.escape(symptom)), block.index("<strong>Cause.</strong>"))
+            # The heading is the symptom, then one Cause paragraph, then one Fix paragraph.
+            head = f'<h3 id="{i}">{html.escape(symptom)}</h3>\n<p><strong>Cause.</strong>'
+            self.assertTrue(block.startswith(head), i)
+            self.assertEqual(block.count("<strong>Cause.</strong>"), 1, i)
+            self.assertEqual(block.count("<strong>Fix.</strong>"), 1, i)
             self.assertLess(block.index("<strong>Cause.</strong>"), block.index("<strong>Fix.</strong>"))
 
     def test_every_in_page_link_resolves(self) -> None:
@@ -110,7 +115,16 @@ class CommittedSectionTest(unittest.TestCase):
         tokens = set(re.findall(r"[A-Za-z0-9_]+", spec_text))
         for code in re.findall(r"<code>([a-z][a-z0-9_]*)</code>", self.prose):
             self.assertIn(code, tokens, code)
-        self.assertIn("webhook_limit", self.text)
+        # Named fields are fields of the Webhook schema, and named events are in its enum.
+        for field in ("enabled", "last_error", "consecutive_failures", "delivery_id"):
+            self.assertIn(f"<code>{field}</code>", self.prose)
+        for field in ("enabled", "last_error", "consecutive_failures"):
+            self.assertIn(field, self.schema["properties"])
+        events = self.schema["properties"]["events"]["items"]["enum"]
+        for event in ("score", "break_point", "point", "status"):
+            self.assertIn(event, events)
+            self.assertIn(f"<code>{event}</code>", self.prose)
+        self.assertIn("409 webhook_limit", self.text)
 
     def test_limits_match_the_spec(self) -> None:
         post = self.post
@@ -123,7 +137,7 @@ class CommittedSectionTest(unittest.TestCase):
         self.assertIn(f"more than {w} minutes from your clock", self.text)
         self.assertIn(f"t + {w} minutes on your clock", self.text)
         self.assertIn(f"~{s}s timeout", self.text)
-        self.assertIn(f"at most {k} webhooks", self.text)
+        self.assertIn(f"already holds {k} webhooks", self.text)
         self.assertIn(f"until {d}", self.text)
         for snippet in ("node", "python"):
             self.assertIn(f"> {int(w) * 60}", br.webhook_snippets(self.spec)[snippet])
@@ -132,8 +146,7 @@ class CommittedSectionTest(unittest.TestCase):
         f = self.facts
         allowed = {f["failures"], f["window"], f["timeout"], f["max_hooks"],
                    f"{f['timeout']}s", f"{f['window']}-minute",
-                   "201", "409", "3xx", "1000", "32", "64", "00:00", f["legacy_until"],
-                   "V1", "v1", "SHA256", "4711"}
+                   "201", "409", "3xx", "1000", "32", "64", f["legacy_from"], f["legacy_until"]}
         for number in re.findall(r"\b\d[\w:-]*", text_of(self.prose)):
             self.assertTrue(number in allowed or number.startswith(("0-9", "64")), number)
 
@@ -178,6 +191,11 @@ class SnippetTest(unittest.TestCase):
             ("odd garbage", BODY, "t=,v1=,=,", False),
             ("t not a number", BODY, "t=12a," + good.split(",")[1], False),
             ("t in non-ASCII digits", BODY, "t=١٢," + good.split(",")[1], False),
+            ("t of 5,000 digits", BODY, "t=" + "9" * 5000 + "," + good.split(",")[1], False),
+            ("t with leading zeros past 12 digits", BODY, f"t=000{self.NOW}," + good.split(",")[1], False),
+            ("a second t after the signed one", BODY, f"{good},t={self.NOW + 1}", False),
+            ("spaces around the separators", BODY, good.replace("=", " = ").replace(",", ", "), True),
+            ("empty parts", BODY, f",,{good},,", True),
         ]
 
     def test_python_verifier(self) -> None:
@@ -188,7 +206,7 @@ class SnippetTest(unittest.TestCase):
     def test_node_verifier(self) -> None:
         node = shutil.which("node")
         if not node:
-            self.skipTest("node is not installed")
+            self.skipTest("node is not installed, so the Node verifier was not run")
         cases = [(n, b.decode("latin-1"), h, w) for n, b, h, w in self.cases()]
         with tempfile.TemporaryDirectory() as tmp:
             module = Path(tmp) / "verify.mjs"
@@ -226,7 +244,8 @@ class DriftTest(unittest.TestCase):
             br.webhook_troubleshooting_html(self.spec)
 
     def test_untouched_spec_builds(self) -> None:
-        self.assertIn("After 25 consecutive failures", br.webhook_troubleshooting_html(self.spec))
+        n = br.webhook_facts(self.spec)["failures"]
+        self.assertIn(f"After {n} consecutive failures", br.webhook_troubleshooting_html(self.spec))
 
     def test_failure_count_changed_in_one_place(self) -> None:
         self.edit("25 consecutive failures", "30 consecutive failures")
@@ -274,6 +293,16 @@ class DriftTest(unittest.TestCase):
 
     def test_update_operation_added(self) -> None:
         self.spec["paths"]["/webhooks/{webhookId}"]["patch"] = {"responses": {}}
+        self.refused()
+
+    def test_event_added(self) -> None:
+        body = self.post["requestBody"]["content"]["application/json"]["schema"]["properties"]
+        body["events"]["items"]["enum"].append("stoppages")
+        self.refused()
+
+    def test_schema_field_renamed(self) -> None:
+        props = self.spec["components"]["schemas"]["Webhook"]["properties"]
+        props["last_error_code"] = props.pop("last_error")
         self.refused()
 
     def test_schema_field_removed(self) -> None:
