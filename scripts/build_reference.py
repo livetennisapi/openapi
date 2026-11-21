@@ -1982,6 +1982,11 @@ _WEBHOOK_NUMBERS = {
     "max_hooks": r"Up to (\d+) webhooks per key \(`409 webhook_limit`",
     "legacy_until": r"We keep sending it unchanged until (\d{4}-\d{2}-\d{2})",
     "legacy_from": r"Deliveries sent from (\d\d:\d\d) UTC on that date do not carry it",
+    # Not numbers, but read the same way: the status class that counts as a success, the one
+    # that counts as a failure because redirects are not followed, and the key's encoding.
+    "success": r"Any (\dxx) response counts as a successful delivery",
+    "redirect": r"Redirects are not followed, so a (\dxx) response counts as a failed delivery",
+    "key_encoding": r"The HMAC key is the secret string's ([A-Za-z0-9-]+) bytes",
 }
 
 # (where, phrase): the spec text each claim of the section rests on. "post" is the
@@ -1991,6 +1996,7 @@ WEBHOOK_SPEC_CLAIMS = [
     ("post", "`X-LTAPI-Signature-V1` header, `t=<unix seconds>,v1=<hex>`"),
     ("post", "The hex is HMAC-SHA256, keyed with your webhook secret, of the string "
              "`<t>.<raw request body>`"),
+    ("post", "The HMAC key is the secret string's UTF-8 bytes"),
     ("post", "Accept the request if any `v1` value matches"),
     ("post", "Compare with a constant-time function, over the raw bytes before any JSON parsing"),
     ("post", "Dedupe on `delivery_id`"),
@@ -2000,6 +2006,9 @@ WEBHOOK_SPEC_CLAIMS = [
     ("post", "a captured delivery still verifies when re-sent later under a fresh `X-LTAPI-Timestamp`"),
     ("post", "require it and never fall back to the old header"),
     ("post", "Delivery is best-effort, at-most-once, no replay"),
+    ("post", "Any 2xx response counts as a successful delivery"),
+    ("post", "Redirects are not followed, so a 3xx response counts as a failed delivery toward the "
+             "consecutive-failure count"),
     ("post", "a missed delivery self-corrects on the next commit"),
     ("post", "recover it with `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`"),
     ("post", "(`enabled:false`, `last_error` set — visible in `GET /webhooks`); delete and "
@@ -2047,6 +2056,9 @@ def webhook_facts(spec: dict[str, Any]) -> dict[str, str]:
             problems.append(f"{where}: the spec no longer says {phrase!r}")
     if facts.get("failures") != facts.get("schema_failures"):
         problems.append("the createWebhook description and the Webhook schema give different failure counts")
+    # Both verifier snippets key the HMAC with the secret's UTF-8 bytes.
+    if facts.get("key_encoding") != "UTF-8":
+        problems.append("the HMAC key is no longer the secret's UTF-8 bytes: rewrite the verifiers")
     if facts.get("window") != facts.get("dedupe"):
         problems.append("the timestamp window and the dedupe window differ")
     if body["events"].get("default") != ["score"]:
@@ -2175,11 +2187,14 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
     f = webhook_facts(spec)
     snip = webhook_snippets(spec)
     w, n = f["window"], f["failures"]
+    ok, redirect, enc = f["success"], f["redirect"], f["key_encoding"]
     return [
         ("ts-redirect",
          "No delivery ever reaches your handler",
          "Your URL answers with a redirect, often to add or drop a trailing slash. Each frame gets "
-         "one attempt with redirects disabled, so it stops there.",
+         "one attempt with redirects disabled, so it stops there. Any "
+         f"<code>{redirect}</code> response counts as a failed delivery, and {n} failures in a row "
+         "disable the webhook.",
          "Register the exact URL your handler serves. It must be HTTPS and publicly routable. "
          "Check it with a POST that does not follow redirects. Your handler should refuse this "
          "unsigned request, and that is fine. A <code>301</code>, <code>302</code>, <code>303</code>, "
@@ -2201,9 +2216,11 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          "The signature never matches",
          "The HMAC was computed over a body your framework had already parsed and serialised "
          "again. That can reorder keys and change spacing or how numbers are written, so the "
-         "bytes differ from the ones we signed.",
+         "bytes differ from the ones we signed. Decoding the secret from hex or base64 first fails "
+         f"the same way, because the HMAC key is the secret string's {enc} bytes.",
          "Read the raw request bytes. Compute HMAC-SHA256 of <code>&lt;t&gt;.&lt;raw request "
-         "body&gt;</code> with your webhook secret, and parse the JSON only after the check passes. "
+         f"body&gt;</code>, keyed with your webhook secret's {enc} bytes, and parse the JSON only "
+         "after the check passes. "
          "In Express, mount <code>express.raw({ type: '*/*' })</code> on the webhook route, ahead "
          "of any <code>express.json()</code> that also covers it, so <code>req.body</code> is a "
          "Buffer. In Flask, pass <code>request.get_data()</code>. The "
@@ -2259,8 +2276,8 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          "work before it responds can run past that. If your server takes one request at a time, "
          "frames that arrive meanwhile wait too. None of them is sent again.",
          "Verify the signature. Then save the frame with its <code>delivery_id</code> in one "
-         "atomic insert-if-absent, and respond. Do the slow work later. A missed "
-         "<code>score</code> frame corrects itself on the next commit, because each one is the "
+         f"atomic insert-if-absent, and respond with any <code>{ok}</code>. Do the slow work "
+         "later. A missed <code>score</code> frame corrects itself on the next commit, because each one is the "
          "complete current score. A missed <code>point</code> frame does not. Recover it with "
          "<code>GET /matches/{matchId}/points?after_seq=</code> and dedupe on "
          "<code>match_id</code> and <code>seq</code>. If a completed match reads "

@@ -15,6 +15,32 @@
  ],
  "items": [
   {
+   "id": "https://docs.livetennisapi.com/changelog.html#v1.13.91",
+   "url": "https://docs.livetennisapi.com/changelog.html#v1.13.91",
+   "title": "1.13.91: What counts as a webhook delivery",
+   "summary": "Clarified: What counts as a webhook delivery.",
+   "content_html": "<h3>Clarified</h3>\n<ul>\n<li><strong>What counts as a webhook delivery.</strong> The <code>POST /webhooks</code> description now says that any 2xx response counts as a successful delivery. Redirects are not followed, so a 3xx response counts as a failed delivery toward the consecutive-failure count. The HMAC key is the secret string&#x27;s UTF-8 bytes, for both signature headers. The troubleshooting section on <code>push-feed-and-webhooks.html</code> reads all three from the spec at build time. The build fails when the spec stops saying one of them. Nothing on the wire changed.</li>\n</ul>",
+   "date_published": "2026-11-21T00:00:00Z",
+   "tags": [
+    "Clarified"
+   ],
+   "_livetennisapi": {
+    "about": "https://docs.livetennisapi.com/llms.txt",
+    "version": "1.13.91",
+    "date": "2026-11-21",
+    "sections": [
+     {
+      "name": "Clarified",
+      "items": [
+       "What counts as a webhook delivery. The POST /webhooks description now says that any 2xx response counts as a successful delivery. Redirects are not followed, so a 3xx response counts as a failed delivery toward the consecutive-failure count. The HMAC key is the secret string's UTF-8 bytes, for both signature headers. The troubleshooting section on push-feed-and-webhooks.html reads all three from the spec at build time. The build fails when the spec stops saying one of them. Nothing on the wire changed."
+      ],
+      "notes": []
+     }
+    ],
+    "client_libraries": []
+   }
+  },
+  {
    "id": "https://docs.livetennisapi.com/changelog.html#v1.13.90",
    "url": "https://docs.livetennisapi.com/changelog.html#v1.13.90",
    "title": "1.13.90: Troubleshooting for webhook deliveries",

@@ -156,12 +156,33 @@ class CommittedSectionTest(unittest.TestCase):
         for snippet in ("node", "python"):
             self.assertRegex(br.webhook_snippets(self.spec)[snippet], rf"<= {int(w) * 60}[):]")
 
+    def test_delivery_rules_and_key_encoding_match_the_spec(self) -> None:
+        post = self.post
+        ok = re.search(r"Any (\dxx) response counts as a successful delivery", post).group(1)
+        bad = re.search(r"Redirects are not followed, so a (\dxx) response counts as a failed "
+                        r"delivery toward the consecutive-failure count", post).group(1)
+        enc = re.search(r"The HMAC key is the secret string's (\S+) bytes", post).group(1)
+        self.assertEqual((ok, bad, enc), ("2xx", "3xx", "UTF-8"))
+        self.assertIn(f"respond with any {ok}", self.text)
+        self.assertIn(f"Any {bad} response counts as a failed delivery, and "
+                      f"{self.facts['failures']} failures in a row disable the webhook", self.text)
+        self.assertIn(f"the HMAC key is the secret string's {enc} bytes", self.text)
+        self.assertIn(f"keyed with your webhook secret's {enc} bytes", self.text)
+        # Each rule sits in the entry it belongs to.
+        for i, phrase in (("ts-timeout", f"respond with any <code>{ok}</code>"),
+                          ("ts-redirect", f"Any <code>{bad}</code> response counts as a failed delivery"),
+                          ("ts-raw-body", f"secret string's {enc} bytes")):
+            block = self.section[self.section.index(f'<h3 id="{i}">'):]
+            self.assertIn(phrase, block[:block.index("<h3", 4)], i)
+
     def test_every_number_in_the_prose_is_accounted_for(self) -> None:
         f = self.facts
         allowed = {f["failures"], f["window"], f["timeout"], f["max_hooks"],
-                   f"{f['timeout']}s", f"{f['window']}-minute",
+                   f"{f['timeout']}s", f"{f['window']}-minute", f["success"], f["redirect"],
                    "0", "201", "409", "301", "302", "303", "307", "308", "1000", "32", "64", f["legacy_from"], f["legacy_until"]}
-        for number in re.findall(r"\b\d[\w:-]*", text_of(self.prose)):
+        # The key encoding is a name, not a number: drop it so its 8 is not counted.
+        prose = text_of(self.prose).replace(f["key_encoding"], "")
+        for number in re.findall(r"\b\d[\w:-]*", prose):
             self.assertTrue(number in allowed or number == "0-9a-fA-F", number)
 
     def test_llms_txt_lists_the_section_and_its_entries(self) -> None:
@@ -231,6 +252,38 @@ class SnippetTest(unittest.TestCase):
                                 ("a clock that is NaN", BODY, float("nan"))):
             with self.subTest(name):
                 self.assertIs(self.verify(body, good, SECRET, now=now), False)
+
+    def test_python_verifier_keys_with_the_secret_utf8_bytes(self) -> None:
+        secret = "s\u00e9cret-\u2603"
+        utf8 = sign_v1(BODY, self.NOW, secret)
+        utf16 = hmac.new(secret.encode("utf-16-le"), f"{self.NOW}.".encode() + BODY, hashlib.sha256)
+        self.assertIs(self.verify(BODY, utf8, secret, now=self.NOW), True)
+        self.assertIs(self.verify(BODY, f"t={self.NOW},v1={utf16.hexdigest()}", secret, now=self.NOW), False)
+
+    def test_node_verifier_keys_with_the_secret_utf8_bytes(self) -> None:
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node is not installed, so the Node verifier was not run")
+        secret = "s\u00e9cret-\u2603"
+        headers = [sign_v1(BODY, self.NOW, secret),
+                   f"t={self.NOW},v1=" + hmac.new(secret.encode("utf-16-le"), f"{self.NOW}.".encode() + BODY,
+                                                  hashlib.sha256).hexdigest()]
+        runner = (
+            "import { verifyV1 } from './verify.mjs';\n"
+            "const { headers, now, body } = JSON.parse((await import('node:fs')).readFileSync(0, 'utf8'));\n"
+            "console.log(JSON.stringify(headers.map((h) =>"
+            " verifyV1(Buffer.from(body), h, process.env.LTAPI_TEST_SECRET, now))));\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "verify.mjs").write_text(self.node_source, encoding="utf-8")
+            run = subprocess.run(
+                [node, "--input-type=module", "-e", runner],
+                input=json.dumps({"headers": headers, "now": self.NOW, "body": BODY.decode()}),
+                cwd=tmp, env={**os.environ, "LTAPI_TEST_SECRET": secret},
+                capture_output=True, text=True, timeout=60,
+            )
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(json.loads(run.stdout), [True, False])
 
     def test_node_verifier(self) -> None:
         node = shutil.which("node")
@@ -319,6 +372,27 @@ class DriftTest(unittest.TestCase):
     def test_timeout_reworded(self) -> None:
         self.edit("~3s timeout", "~5s timeout")
         self.assertIn("~5s timeout", br.webhook_troubleshooting_html(self.spec))
+
+    def test_success_rule_dropped(self) -> None:
+        self.edit("Any 2xx response counts as a successful delivery",
+                  "A 200 response counts as a successful delivery")
+        self.refused()
+
+    def test_redirect_failure_rule_dropped(self) -> None:
+        self.edit("so a 3xx response counts as a failed delivery", "so a 3xx response is ignored")
+        self.refused()
+
+    def test_redirect_failure_no_longer_counted(self) -> None:
+        self.edit("toward the consecutive-failure count", "that is not counted")
+        self.refused()
+
+    def test_key_encoding_changed(self) -> None:
+        self.edit("the secret string's UTF-8 bytes", "the secret string's UTF-16 bytes")
+        self.refused()
+
+    def test_key_encoding_dropped(self) -> None:
+        self.edit("The HMAC key is the secret string's UTF-8 bytes. ", "")
+        self.refused()
 
     def test_redirects_followed(self) -> None:
         self.edit("redirects disabled", "redirects followed")

@@ -11,6 +11,19 @@
 <icon>https://docs.livetennisapi.com/icon-256.png</icon>
 <rights type="text">MIT licence, https://github.com/livetennisapi/openapi/blob/main/LICENSE</rights>
 <entry>
+<id>https://docs.livetennisapi.com/changelog.html#v1.13.91</id>
+<title type="text">1.13.91: What counts as a webhook delivery</title>
+<published>2026-11-21T00:00:00Z</published>
+<updated>2026-11-21T00:00:00Z</updated>
+<link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.91"/>
+<category term="Clarified"/>
+<summary type="text">Clarified: What counts as a webhook delivery.</summary>
+<content type="html">&lt;h3&gt;Clarified&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;What counts as a webhook delivery.&lt;/strong&gt; The &lt;code&gt;POST /webhooks&lt;/code&gt; description now says that any 2xx response counts as a successful delivery. Redirects are not followed, so a 3xx response counts as a failed delivery toward the consecutive-failure count. The HMAC key is the secret string&amp;#x27;s UTF-8 bytes, for both signature headers. The troubleshooting section on &lt;code&gt;push-feed-and-webhooks.html&lt;/code&gt; reads all three from the spec at build time. The build fails when the spec stops saying one of them. Nothing on the wire changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+</entry>
+<entry>
 <id>https://docs.livetennisapi.com/changelog.html#v1.13.90</id>
 <title type="text">1.13.90: Troubleshooting for webhook deliveries</title>
 <published>2026-11-21T00:00:00Z</published>

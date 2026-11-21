@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.90"
+  version: "1.13.91"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -5983,10 +5983,11 @@ paths:
         Each delivery body is the frame plus a top-level `delivery_id`, a
         string unique per delivery. Verify the `X-LTAPI-Signature-V1` header,
         `t=<unix seconds>,v1=<hex>`. The hex is HMAC-SHA256, keyed with your
-        webhook secret, of the string `<t>.<raw request body>`. Accept the
-        request if any `v1` value matches. Then run these receiver checks.
-        Reject a `t` more than 5 minutes from your clock. Compare with a
-        constant-time function, over the raw bytes before any JSON parsing.
+        webhook secret, of the string `<t>.<raw request body>`. The HMAC key
+        is the secret string's UTF-8 bytes. Accept the request if any `v1`
+        value matches. Then run these receiver checks. Reject a `t` more
+        than 5 minutes from your clock. Compare with a constant-time
+        function, over the raw bytes before any JSON parsing.
         Dedupe on `delivery_id` and keep each id until `t` + 5 minutes on
         your clock. With several workers, record it with an atomic
         insert-if-absent. `X-LTAPI-Timestamp` repeats `t`, and
@@ -5999,15 +6000,18 @@ paths:
         delivery still verifies when re-sent later under a fresh
         `X-LTAPI-Timestamp`. We keep sending it unchanged until 2027-02-01.
         Deliveries sent from 00:00 UTC on that date do not carry it. Both
-        headers use the same secret. Once your receiver checks
+        headers use the same secret and the same UTF-8 key. Once your
+        receiver checks
         `X-LTAPI-Signature-V1`, require it and never fall back to the old
         header: a fallback lets a re-stamped replay through.
 
 
         Delivery is best-effort, at-most-once, no replay: one attempt per frame
-        with a ~3s timeout and redirects disabled. Every `score` frame is the
-        complete current score, so a missed delivery self-corrects on the next
-        commit. A `point` frame is an EVENT, not a state — a missed one does
+        with a ~3s timeout and redirects disabled. Any 2xx response counts as
+        a successful delivery. Redirects are not followed, so a 3xx response
+        counts as a failed delivery toward the consecutive-failure count.
+        Every `score` frame is the complete current score, so a missed
+        delivery self-corrects on the next commit. A `point` frame is an EVENT, not a state — a missed one does
         NOT self-correct; recover it with
         `GET /matches/{matchId}/points?after_seq=` and dedup by `seq`. After
         25 consecutive failures the webhook is disabled

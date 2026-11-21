@@ -57,7 +57,8 @@ runs the same checks and breaks copies of both feeds to show each check works.
 
 The troubleshooting section on `docs/push-feed-and-webhooks.html` is written in
 `scripts/build_reference.py`, next to `webhook_troubleshooting`. Its numbers and its date
-are read from the `POST /webhooks` description and the `Webhook` schema. The build fails
+are read from the `POST /webhooks` description and the `Webhook` schema. So are the status
+classes that count as success and failure, and the encoding of the HMAC key. The build fails
 when the spec stops saying a phrase the section relies on. The phrases are listed in
 `WEBHOOK_SPEC_CLAIMS` and `_WEBHOOK_NUMBERS`. Rewrite the copy when that happens, then
 rebuild. `python -m unittest scripts/test_webhook_troubleshooting.py` checks the header
