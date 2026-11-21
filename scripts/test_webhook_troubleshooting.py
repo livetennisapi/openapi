@@ -14,6 +14,7 @@ import hashlib
 import hmac
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -238,22 +239,25 @@ class SnippetTest(unittest.TestCase):
         cases = [(n, b.decode("latin-1"), h, w) for n, b, h, w in self.cases()]
         cases.append(("no body at all", None, sign_v1(BODY, self.NOW), False))
         nan_case = sign_v1(BODY, self.NOW - 3600)
+        # Only the snippet goes to disk. The test secret and the cases reach node through the
+        # environment and stdin, so no file holds a secret, even a test one.
+        runner = (
+            "import { verifyV1 } from './verify.mjs';\n"
+            "const { cases, now, nanCase, body } = JSON.parse(require_stdin());\n"
+            "const secret = process.env.LTAPI_TEST_SECRET;\n"
+            "const out = cases.map(([name, b, header]) =>"
+            " [name, verifyV1(b === null ? undefined : Buffer.from(b, 'latin1'), header, secret, now)]);\n"
+            "out.push(['a clock that is NaN', verifyV1(Buffer.from(body), nanCase, secret, NaN)]);\n"
+            "console.log(JSON.stringify(out));\n"
+        ).replace("require_stdin()", "(await import('node:fs')).readFileSync(0, 'utf8')")
+        payload = json.dumps({"cases": cases, "now": self.NOW, "nanCase": nan_case, "body": BODY.decode()})
         with tempfile.TemporaryDirectory() as tmp:
-            module = Path(tmp) / "verify.mjs"
-            module.write_text(self.node_source, encoding="utf-8")
-            runner = Path(tmp) / "run.mjs"
-            runner.write_text(
-                "import { verifyV1 } from './verify.mjs';\n"
-                f"const cases = {json.dumps(cases)};\n"
-                "const out = cases.map(([name, body, header]) =>"
-                " [name, verifyV1(body === null ? undefined : Buffer.from(body, 'latin1'), header,"
-                f" {json.dumps(SECRET)}, {self.NOW})]);\n"
-                f"out.push(['a clock that is NaN', verifyV1(Buffer.from({json.dumps(BODY.decode())}),"
-                f" {json.dumps(nan_case)}, {json.dumps(SECRET)}, NaN)]);\n"
-                "console.log(JSON.stringify(out));\n",
-                encoding="utf-8",
+            (Path(tmp) / "verify.mjs").write_text(self.node_source, encoding="utf-8")
+            run = subprocess.run(
+                [node, "--input-type=module", "-e", runner], input=payload, cwd=tmp,
+                env={**os.environ, "LTAPI_TEST_SECRET": SECRET},
+                capture_output=True, text=True, timeout=60,
             )
-            run = subprocess.run([node, str(runner)], capture_output=True, text=True, timeout=60)
         self.assertEqual(run.returncode, 0, run.stderr)
         got = dict(json.loads(run.stdout))
         for name, _, _, want in cases:
