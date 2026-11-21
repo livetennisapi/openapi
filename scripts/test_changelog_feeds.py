@@ -297,7 +297,9 @@ class RulesCatchFaultsTest(unittest.TestCase):
         self.assertCaught(cf.parity_problems(self.page, self.atom, json.dumps(feed), br.CHANGELOG_URL),
                           "sections, items or notes differ")
         feed = json.loads(self.feed)
-        feed["items"][1]["_livetennisapi"]["client_libraries"] = []
+        # The newest entry that names a client: a fixed index breaks with each new entry.
+        named = next(i for i in feed["items"] if i["_livetennisapi"]["client_libraries"])
+        named["_livetennisapi"]["client_libraries"] = []
         self.assertCaught(cf.parity_problems(self.page, self.atom, json.dumps(feed), br.CHANGELOG_URL),
                           "client library versions")
         feed = json.loads(self.feed)

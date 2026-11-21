@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.90] - 2026-11-21
+
+### Added
+- **Troubleshooting for webhook deliveries.** `push-feed-and-webhooks.html#troubleshooting` gives nine symptoms, each with its cause and its fix. They cover a URL that redirects, events left at the default and a body parsed before the HMAC. They also cover a hex value of the wrong length, a `t` outside the 5-minute window and a fallback to `X-LTAPI-Signature`. The last three are duplicate deliveries, a handler slower than the ~3s timeout and a webhook disabled after 25 consecutive failures. A verifier in Node and Python covers the signature checks. Both were run against deliveries signed as the spec describes. The limits and the date are read from the spec when the page is built. The build fails when the spec stops saying one of the phrases the section relies on. The page gains a contents list, the docs home card names the section and llms.txt links each entry. Nothing on the wire changed.
+
 ## [1.13.89] - 2026-11-20
 
 ### Added

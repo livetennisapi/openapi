@@ -38,6 +38,19 @@ endpoints, generated from the same spec as the reference:
 - Which client libraries does the Live Tennis API have? https://docs.livetennisapi.com/client-libraries.html
 - How does the Live Tennis API score object map to IPTC SportsML? https://docs.livetennisapi.com/sportsml.html
 
+## Webhook troubleshooting
+Symptom, cause and fix for each delivery problem: https://docs.livetennisapi.com/push-feed-and-webhooks.html#troubleshooting
+- No delivery ever reaches your handler: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-redirect
+- Only score frames arrive: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-events
+- The signature never matches: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-raw-body
+- The signature compare throws an error: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-hex-length
+- X-LTAPI-Signature-V1 fails on some deliveries: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-timestamp
+- A replayed delivery passes verification: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-require-v1
+- The same frame arrives twice: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-duplicates
+- Frames go missing when your handler is slow: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-timeout
+- Deliveries stopped and nothing changed on your side: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-disabled
+- A verifier in Node and Python: https://docs.livetennisapi.com/push-feed-and-webhooks.html#ts-verifier
+
 ## Quickstart (no code required)
 Open this in a browser — no install, no headers: https://api.livetennisapi.com/api/public/v1/matches?status=live&token=YOUR_KEY
 Reading a score: every array is PLAYER-MAJOR — first list is player 1, second is player 2.
