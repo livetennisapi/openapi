@@ -2053,6 +2053,19 @@ def webhook_facts(spec: dict[str, Any]) -> dict[str, str]:
     for field in ("enabled", "last_error", "consecutive_failures", "secret"):
         if field not in schema["properties"]:
             problems.append(f"the Webhook schema has no {field} field")
+    # The copy says the secret comes once, on the 201, and the description says "both ULTRA".
+    if "201" not in post["responses"] or "secret" not in flat(post["responses"]["201"].get("description", "")):
+        problems.append("POST /webhooks no longer returns the secret on a 201")
+    for path, method in (("/webhooks", "post"), ("/webhooks", "get"),
+                         ("/webhooks/{webhookId}", "delete"), ("/ws-token", "get")):
+        if "(ULTRA" not in spec["paths"][path][method].get("summary", ""):
+            problems.append(f"{method.upper()} {path} is no longer ULTRA")
+    live_point = flat(spec["components"]["schemas"].get("LivePoint", {}).get("description", ""))
+    if "`seq` is per-match" not in live_point:
+        problems.append("LivePoint no longer says seq is per-match (the copy dedupes on match_id and seq)")
+    points = spec["paths"].get("/matches/{matchId}/points", {}).get("get", {})
+    if "after_seq" not in {prm.get("name") for prm in points.get("parameters", [])}:
+        problems.append("GET /matches/{matchId}/points has no after_seq parameter")
     # The section says a webhook cannot be edited, only deleted and registered again.
     for path, ops in spec["paths"].items():
         if path.startswith("/webhooks") and set(ops) & {"put", "patch"}:
@@ -2074,16 +2087,18 @@ const HEX64 = /^[0-9a-f]{{64}}$/i;
 // Never fall back to X-LTAPI-Signature.
 export function verifyV1(rawBody, header, secret,
                          now = Math.floor(Date.now() / 1000)) {{
-  if (!header) return false;
+  if (!header || !Buffer.isBuffer(rawBody)) return false;
   let t = null;
   const sigs = [];
   for (const part of header.split(',')) {{
     const i = part.indexOf('=');
     if (i < 0) continue;
-    const key = part.slice(0, i).trim();
-    const value = part.slice(i + 1).trim();
-    if (key === 't') t = value;
-    else if (key === 'v1') sigs.push(value);
+    const key = part.slice(0, i);
+    const value = part.slice(i + 1);
+    if (key === 't') {{
+      if (t !== null) return false; // one t only
+      t = value;
+    }} else if (key === 'v1') sigs.push(value);
   }}
   if (!/^[0-9]{{1,12}}$/.test(t ?? '')) return false;
   if (Math.abs(now - Number(t)) > {window_s}) return false;
@@ -2111,9 +2126,12 @@ def verify_v1(raw_body: bytes, header: str | None, secret: str,
         return False
     t, sigs = None, []
     for part in header.split(","):
-        key, _, value = part.partition("=")
-        key, value = key.strip(), value.strip()
+        key, sep, value = part.partition("=")
+        if not sep:
+            continue
         if key == "t":
+            if t is not None:
+                return False  # one t only
             t = value
         elif key == "v1":
             sigs.append(value)
@@ -2154,7 +2172,8 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          "one attempt with redirects disabled, so it stops there.",
          "Register the exact URL your handler serves. It must be HTTPS and publicly routable. "
          "Check it with a POST that does not follow redirects. Your handler should refuse this "
-         "unsigned request, and that is fine. Any <code>3xx</code> status means the URL redirects."
+         "unsigned request, and that is fine. A <code>301</code>, <code>302</code>, <code>303</code>, "
+         "<code>307</code> or <code>308</code> means the URL redirects."
          f"<pre><code>{E(snip['curl'])}</code></pre>"
          "<p>No call changes a webhook's URL. Delete it with "
          "<code>DELETE /webhooks/{webhookId}</code>, then register the final URL. Store the "
@@ -2216,23 +2235,25 @@ def webhook_troubleshooting(spec: dict[str, Any]) -> list[tuple[str, str, str, s
          "with the same <code>delivery_id</code> is not a retry from us. It is a captured delivery "
          f"sent again inside the {w}-minute window, or a copy made on your side by a proxy or a "
          "second worker.",
-         f"Dedupe on <code>delivery_id</code>. Keep each id until <code>t</code> + {w} minutes on "
-         "your clock, then drop it. With several workers, record the id with an atomic "
-         "insert-if-absent, such as a unique key in your database. If the two copies carry different "
-         "<code>delivery_id</code> values, check <code>GET /webhooks</code> for two webhooks with the "
-         "same <code>url</code>. For <code>point</code> frames "
-         "you also fetch from <code>GET /matches/{matchId}/points?after_seq=</code>, dedupe on "
-         "<code>seq</code>."),
+         f"Dedupe on <code>delivery_id</code>. Keep each id until at least <code>t</code> + {w} "
+         "minutes on your clock. With several workers, record the id with an atomic "
+         "insert-if-absent, such as a unique key in your database. If the two copies carry "
+         "different <code>delivery_id</code> values, check <code>GET /webhooks</code> for two "
+         "webhooks with the same <code>url</code>. For <code>point</code> frames you also fetch "
+         "from <code>GET /matches/{matchId}/points?after_seq=</code>, dedupe on "
+         "<code>match_id</code> and <code>seq</code> together, because <code>seq</code> counts "
+         "per match."),
         ("ts-timeout",
          "Frames go missing when your handler is slow",
          f"Each frame gets one attempt with a ~{f['timeout']}s timeout. A handler that does all its "
-         "work before it responds can run past that. So can frames that wait behind it, and none "
-         "of them is sent again.",
-         "Verify the signature, record the <code>delivery_id</code> and respond. Do the rest of the "
-         "work after the response. A missed <code>score</code> frame corrects itself on the next "
-         "commit, because each one is the complete current score. A missed <code>point</code> frame "
-         "does not. Recover it with <code>GET /matches/{matchId}/points?after_seq=</code> and "
-         "dedupe on <code>seq</code>."),
+         "work before it responds can run past that. If your server takes one request at a time, "
+         "frames that arrive meanwhile wait too. None of them is sent again.",
+         "Verify the signature, then save or queue the frame and record its "
+         "<code>delivery_id</code>. Respond after that, and do the slow work later. A missed "
+         "<code>score</code> frame corrects itself on the next commit, because each one is the "
+         "complete current score. A missed <code>point</code> frame does not. Recover it with "
+         "<code>GET /matches/{matchId}/points?after_seq=</code> and dedupe on "
+         "<code>match_id</code> and <code>seq</code>."),
         ("ts-disabled",
          "Deliveries stopped and nothing changed on your side",
          f"After {n} consecutive failures the webhook is disabled automatically.",

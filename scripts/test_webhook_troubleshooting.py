@@ -105,16 +105,29 @@ class CommittedSectionTest(unittest.TestCase):
         self.assertLessEqual(headers, spec_headers)
 
     def test_every_operation_named_is_in_the_spec(self) -> None:
-        for method, path in re.findall(r"\b(GET|POST|PUT|PATCH|DELETE) (/[A-Za-z0-9_{}/-]*)", self.text):
+        named = re.findall(r"\b(GET|POST|PUT|PATCH|DELETE) (/[A-Za-z0-9_{}/-]*)(\?[a-z_]+=)?", self.text)
+        self.assertTrue(named)
+        for method, path, query in named:
             path = path.rstrip("/") or "/"
             self.assertIn(path, self.spec["paths"], path)
-            self.assertIn(method.lower(), self.spec["paths"][path], f"{method} {path}")
+            op = self.spec["paths"][path].get(method.lower())
+            self.assertIsNotNone(op, f"{method} {path}")
+            if query:
+                names = {prm.get("name") for prm in op.get("parameters", [])}
+                self.assertIn(query[1:-1], names, f"{method} {path}{query}")
 
     def test_every_field_and_code_named_is_in_the_spec(self) -> None:
-        spec_text = json.dumps(self.spec)
-        tokens = set(re.findall(r"[A-Za-z0-9_]+", spec_text))
+        # Every lower-case identifier in <code> is a field, event, header part or error code the
+        # webhook operations, the Webhook schema or the point frame define.
+        scope = json.dumps([self.spec["paths"]["/webhooks"], self.schema,
+                            self.spec["paths"]["/matches/{matchId}/points"],
+                            self.spec["components"]["schemas"]["LivePoint"],
+                            self.spec["components"]["schemas"]["PointFrame"]])
+        tokens = set(re.findall(r"[A-Za-z0-9_]+", scope))
         for code in re.findall(r"<code>([a-z][a-z0-9_]*)</code>", self.prose):
-            self.assertIn(code, tokens, code)
+            self.assertIn(code, tokens, f"{code} is not in the webhook or point schemas")
+        self.assertIn("<code>enabled</code> as <code>false</code>", self.prose)
+        self.assertIn("its hex is 64 characters", self.text)
         # Named fields are fields of the Webhook schema, and named events are in its enum.
         for field in ("enabled", "last_error", "consecutive_failures", "delivery_id"):
             self.assertIn(f"<code>{field}</code>", self.prose)
@@ -146,9 +159,9 @@ class CommittedSectionTest(unittest.TestCase):
         f = self.facts
         allowed = {f["failures"], f["window"], f["timeout"], f["max_hooks"],
                    f"{f['timeout']}s", f"{f['window']}-minute",
-                   "201", "409", "3xx", "1000", "32", "64", f["legacy_from"], f["legacy_until"]}
+                   "201", "409", "301", "302", "303", "307", "308", "1000", "32", "64", f["legacy_from"], f["legacy_until"]}
         for number in re.findall(r"\b\d[\w:-]*", text_of(self.prose)):
-            self.assertTrue(number in allowed or number.startswith(("0-9", "64")), number)
+            self.assertTrue(number in allowed or number == "0-9a-fA-F", number)
 
     def test_llms_txt_lists_the_section_and_its_entries(self) -> None:
         llms = LLMS.read_text(encoding="utf-8")
@@ -194,8 +207,12 @@ class SnippetTest(unittest.TestCase):
             ("t of 5,000 digits", BODY, "t=" + "9" * 5000 + "," + good.split(",")[1], False),
             ("t with leading zeros past 12 digits", BODY, f"t=000{self.NOW}," + good.split(",")[1], False),
             ("a second t after the signed one", BODY, f"{good},t={self.NOW + 1}", False),
-            ("spaces around the separators", BODY, good.replace("=", " = ").replace(",", ", "), True),
+            ("a second t before the signed one", BODY, f"t={self.NOW + 1},{good}", False),
+            ("spaces around the separators", BODY, good.replace("=", " = ").replace(",", ", "), False),
+            ("a bare t part after the signed one", BODY, f"{good},t", True),
+            ("U+0085 before the digits", BODY, good.replace("t=", "t=\u0085"), False),
             ("empty parts", BODY, f",,{good},,", True),
+            ("signed exactly at the window edge", BODY, sign_v1(BODY, self.NOW + 300), True),
         ]
 
     def test_python_verifier(self) -> None:
@@ -208,6 +225,7 @@ class SnippetTest(unittest.TestCase):
         if not node:
             self.skipTest("node is not installed, so the Node verifier was not run")
         cases = [(n, b.decode("latin-1"), h, w) for n, b, h, w in self.cases()]
+        cases.append(("no body at all", None, sign_v1(BODY, self.NOW), False))
         with tempfile.TemporaryDirectory() as tmp:
             module = Path(tmp) / "verify.mjs"
             module.write_text(self.node_source, encoding="utf-8")
@@ -216,7 +234,8 @@ class SnippetTest(unittest.TestCase):
                 "import { verifyV1 } from './verify.mjs';\n"
                 f"const cases = {json.dumps(cases)};\n"
                 "const out = cases.map(([name, body, header]) =>"
-                f" [name, verifyV1(Buffer.from(body, 'latin1'), header, {json.dumps(SECRET)}, {self.NOW})]);\n"
+                " [name, verifyV1(body === null ? undefined : Buffer.from(body, 'latin1'), header,"
+                f" {json.dumps(SECRET)}, {self.NOW})]);\n"
                 "console.log(JSON.stringify(out));\n",
                 encoding="utf-8",
             )
@@ -303,6 +322,24 @@ class DriftTest(unittest.TestCase):
     def test_schema_field_renamed(self) -> None:
         props = self.spec["components"]["schemas"]["Webhook"]["properties"]
         props["last_error_code"] = props.pop("last_error")
+        self.refused()
+
+    def test_secret_no_longer_on_201(self) -> None:
+        self.post["responses"]["200"] = self.post["responses"].pop("201")
+        self.refused()
+
+    def test_tier_changed(self) -> None:
+        self.post["summary"] = self.post["summary"].replace("(ULTRA", "(PRO")
+        self.refused()
+
+    def test_after_seq_dropped(self) -> None:
+        op = self.spec["paths"]["/matches/{matchId}/points"]["get"]
+        op["parameters"] = [prm for prm in op["parameters"] if prm.get("name") != "after_seq"]
+        self.refused()
+
+    def test_seq_no_longer_per_match(self) -> None:
+        point = self.spec["components"]["schemas"]["LivePoint"]
+        point["description"] = point["description"].replace("`seq` is per-match", "`seq` is global")
         self.refused()
 
     def test_schema_field_removed(self) -> None:
