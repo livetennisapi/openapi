@@ -3298,6 +3298,8 @@ writes them and <code>export</code> does both.</p>
 <li><a href="{SITE}/subscribe/free">Free API key</a></li>
 <li><a href="./live-scores.html">Live scores</a>, the <code>/matches</code> endpoint</li>
 <li><a href="./players-and-tournaments.html">Players, tournaments and rankings</a></li>
+<li><a href="{SITE}/integrations/google-sheets">Google Sheets functions</a>, to pull live scores,
+the day's matches and players into a spreadsheet with no file in between</li>
 </ul>
 """
 
@@ -3801,6 +3803,8 @@ registry again and names each row that is behind.</p>
 <li><a href="./openapi.yaml">The OpenAPI spec</a>, for generating a client in another language</li>
 <li><a href="{SITE}/subscribe/free">Free API key</a></li>
 <li><a href="./auth-quota-and-health.html">Authentication, quota and status</a></li>
+<li><a href="{SITE}/integrations/google-sheets">Google Sheets functions</a>, an Apps Script file
+for spreadsheets, with no package to install</li>
 </ul>
 """
 
