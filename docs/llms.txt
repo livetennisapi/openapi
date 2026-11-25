@@ -256,7 +256,7 @@ backtest.
 - Haystack integration: `pip install livetennisapi-haystack`, package https://pypi.org/project/livetennisapi-haystack/, source https://github.com/livetennisapi/livetennisapi-haystack
 - LangChain integration: `pip install -U langchain-livetennis`, package https://pypi.org/project/langchain-livetennis/, source https://github.com/livetennisapi/langchain-livetennis
 - LlamaIndex tools: `pip install llama-index-tools-livetennisapi`, package https://pypi.org/project/llama-index-tools-livetennisapi/, source https://github.com/livetennisapi/llama-index-tools-livetennisapi
-- Every library with its latest version, minimum runtime and endpoint coverage: https://docs.livetennisapi.com/client-libraries.html
+- Every library with its current release, the public API version it targets, its minimum runtime and endpoint coverage: https://docs.livetennisapi.com/client-libraries.html
 
 ## Affiliate programme
 - https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime
