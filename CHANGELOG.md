@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.92] - 2026-11-26
+
+### Clarified
+- **A push connection that goes silent.** The `GET /ws-token` description now says a connection can end with no close frame, when a network hop drops it. The server's heartbeat comes about every 25 seconds, so a client should treat 60 silent seconds as a close. It then reconnects at once with a fresh token, re-subscribes and catches up over REST. Nothing on the wire changed.
+
 ## [1.13.91] - 2026-11-21
 
 ### Clarified

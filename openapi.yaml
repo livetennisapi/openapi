@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Live Tennis API
-  version: "1.13.91"
+  version: "1.13.92"
   contact:
     name: Live Tennis API
     url: https://livetennisapi.com
@@ -6459,7 +6459,12 @@ paths:
         promptly or you will be disconnected. Messages may batch several
         newline-delimited JSON objects. Tokens are short-lived and the
         connection closes around token expiry: mint a fresh token on EVERY
-        reconnect and re-subscribe.
+        reconnect and re-subscribe. A connection can also end with no close
+        frame at all, when a network hop between your client and us drops it.
+        The server sends its heartbeat about every 25 seconds, so treat a
+        connection that has carried nothing for 60 seconds as closed: open a
+        new one with a fresh token at once, re-subscribe, and catch up over
+        REST. Each reconnect is served straight away.
 
 
         The `channels` object lists only channels that will actually deliver

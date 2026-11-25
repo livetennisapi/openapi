@@ -3,13 +3,26 @@
 <id>https://docs.livetennisapi.com/changelog.html</id>
 <title type="text">Live Tennis API changelog</title>
 <subtitle type="text">Every change to the Live Tennis API specification, dated and versioned, newest first.</subtitle>
-<updated>2026-11-21T00:00:00Z</updated>
+<updated>2026-11-26T00:00:00Z</updated>
 <link rel="self" type="application/atom+xml" href="https://docs.livetennisapi.com/changelog.atom"/>
 <link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html"/>
 <link rel="alternate" type="application/feed+json" href="https://docs.livetennisapi.com/changelog.json"/>
 <author><name>Live Tennis API</name><uri>https://livetennisapi.com</uri></author>
 <icon>https://docs.livetennisapi.com/icon-256.png</icon>
 <rights type="text">MIT licence, https://github.com/livetennisapi/openapi/blob/main/LICENSE</rights>
+<entry>
+<id>https://docs.livetennisapi.com/changelog.html#v1.13.92</id>
+<title type="text">1.13.92: A push connection that goes silent</title>
+<published>2026-11-26T00:00:00Z</published>
+<updated>2026-11-26T00:00:00Z</updated>
+<link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.92"/>
+<category term="Clarified"/>
+<summary type="text">Clarified: A push connection that goes silent.</summary>
+<content type="html">&lt;h3&gt;Clarified&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;A push connection that goes silent.&lt;/strong&gt; The &lt;code&gt;GET /ws-token&lt;/code&gt; description now says a connection can end with no close frame, when a network hop drops it. The server&amp;#x27;s heartbeat comes about every 25 seconds, so a client should treat 60 silent seconds as a close. It then reconnects at once with a fresh token, re-subscribes and catches up over REST. Nothing on the wire changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+</entry>
 <entry>
 <id>https://docs.livetennisapi.com/changelog.html#v1.13.91</id>
 <title type="text">1.13.91: What counts as a webhook delivery</title>

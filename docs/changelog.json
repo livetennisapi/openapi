@@ -15,6 +15,32 @@
  ],
  "items": [
   {
+   "id": "https://docs.livetennisapi.com/changelog.html#v1.13.92",
+   "url": "https://docs.livetennisapi.com/changelog.html#v1.13.92",
+   "title": "1.13.92: A push connection that goes silent",
+   "summary": "Clarified: A push connection that goes silent.",
+   "content_html": "<h3>Clarified</h3>\n<ul>\n<li><strong>A push connection that goes silent.</strong> The <code>GET /ws-token</code> description now says a connection can end with no close frame, when a network hop drops it. The server&#x27;s heartbeat comes about every 25 seconds, so a client should treat 60 silent seconds as a close. It then reconnects at once with a fresh token, re-subscribes and catches up over REST. Nothing on the wire changed.</li>\n</ul>",
+   "date_published": "2026-11-26T00:00:00Z",
+   "tags": [
+    "Clarified"
+   ],
+   "_livetennisapi": {
+    "about": "https://docs.livetennisapi.com/llms.txt",
+    "version": "1.13.92",
+    "date": "2026-11-26",
+    "sections": [
+     {
+      "name": "Clarified",
+      "items": [
+       "A push connection that goes silent. The GET /ws-token description now says a connection can end with no close frame, when a network hop drops it. The server's heartbeat comes about every 25 seconds, so a client should treat 60 silent seconds as a close. It then reconnects at once with a fresh token, re-subscribes and catches up over REST. Nothing on the wire changed."
+      ],
+      "notes": []
+     }
+    ],
+    "client_libraries": []
+   }
+  },
+  {
    "id": "https://docs.livetennisapi.com/changelog.html#v1.13.91",
    "url": "https://docs.livetennisapi.com/changelog.html#v1.13.91",
    "title": "1.13.91: What counts as a webhook delivery",
