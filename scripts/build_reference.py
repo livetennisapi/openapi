@@ -1392,7 +1392,7 @@ def build_llms_txt(spec: dict[str, Any]) -> str:
         "  fixtures, players, player, rankings and tournaments. Reads the key from LIVETENNISAPI_KEY.",
         *[f"- {c['name']}: `{c['install']}`, package {c['registry_url']}, source {c['repo']}"
           for c in CLIENTS if c["key"] in CLIENTS_LLMS_EXTRA],
-        f"- Every library with its latest version, minimum runtime and endpoint coverage: {DOCS_URL}/client-libraries.html",
+        f"- Every library with its current release, the public API version it targets, its minimum runtime and endpoint coverage: {DOCS_URL}/client-libraries.html",
         "",
         "## Affiliate programme",
         "- https://affiliates.livetennisapi.com/program — 51% recurring commission for the lifetime",
@@ -3420,6 +3420,32 @@ CLIENTS_LLMS_EXTRA = ("go", "php", "dotnet", "dart", "swift", "r", "laravel", "h
 # Every listed package states the MIT licence on its registry or, for Swift, in its LICENSE file.
 CLIENTS_LICENCE = "MIT"
 
+# The public API version each library targets, for the version compatibility matrix. The value is
+# the path segment after /api/public/ in the default base URL the library ships. It was read from
+# each library's own source on API_VERSION_CHECKED, one source per key:
+#   python   src/livetennisapi/_base.py            DEFAULT_BASE_URL
+#   js       src/client.ts                         DEFAULT_BASE_URL
+#   go       README.md quick start                 WithBaseURL(...)
+#   php      src/LiveTennisApi.php                  DEFAULT_BASE_URL
+#   dotnet   src/LiveTennisApi/LiveTennisApiClientOptions.cs  DefaultBaseUrl
+#   dart     lib/src/client.dart                    defaultBaseUrl
+#   swift    Sources/LiveTennisApi/LiveTennisApiClient.swift  defaultBaseURL
+#   r        R/client.R                             lta_base_url()
+#   langchain   langchain_livetennis/_client.py     the shipped base URL
+#   llamaindex  llama_index/tools/livetennisapi/base.py  the shipped base URL
+#   laravel     config/livetennis.php               the shipped base URL
+# The remaining packages call the API through a language client and so target that client's version:
+#   mcp and ai through the JavaScript client, export and haystack through the Python client.
+# A value is "not stated" when a library's source names no base URL. None do today. The build check
+# in _clients_drift compares every value here with the version the spec serves, so a row cannot
+# quietly target a version the API no longer publishes.
+API_VERSION_CHECKED = "2026-11-25"
+CLIENT_API_VERSION: dict[str, str] = {
+    "python": "v1", "js": "v1", "go": "v1", "php": "v1", "dotnet": "v1", "dart": "v1",
+    "swift": "v1", "r": "v1", "mcp": "v1", "ai": "v1", "export": "v1", "laravel": "v1",
+    "haystack": "v1", "langchain": "v1", "llamaindex": "v1",
+}
+
 # The eight language clients, in the column order of the endpoint table.
 CLIENT_LANGUAGES = ["python", "js", "go", "php", "dotnet", "dart", "swift", "r"]
 CLIENT_SHORT = {"python": "Python", "js": '<abbr title="JavaScript and TypeScript">JS</abbr>', "go": "Go", "php": "PHP", "dotnet": ".NET",
@@ -3642,6 +3668,37 @@ def _samples_match_clients_page() -> list[str]:
     return problems
 
 
+def _spec_api_version(spec: dict[str, Any]) -> str:
+    """The public API version the spec serves, read from the last path segment of its server URL.
+
+    The server is ``https://api.livetennisapi.com/api/public/v1``, so this returns ``v1``. The
+    compatibility matrix compares every library's targeted version against this, so the version is
+    never typed twice: it is read from the spec that the SDKs are generated from.
+    """
+    # Read every server the spec declares, not only the top-level list: OpenAPI lets a path item
+    # or an operation override the server, and a staged v2 override there must not hide behind the
+    # top-level v1. Collect them all and require one version, so the matrix cannot drift from any
+    # server the API actually publishes.
+    def server_urls(node: Any) -> list[str]:
+        if not isinstance(node, dict):
+            return []
+        return [s["url"] for s in (node.get("servers") or []) if isinstance(s, dict) and "url" in s]
+
+    urls = server_urls(spec)
+    for path_item in (spec.get("paths") or {}).values():
+        urls += server_urls(path_item)
+        if isinstance(path_item, dict):
+            for operation in path_item.values():
+                urls += server_urls(operation)
+    if not urls:
+        raise SystemExit("the spec declares no server, so the public API version is unknown")
+    versions = {url.rstrip("/").rsplit("/", 1)[-1] for url in urls}
+    if len(versions) != 1:
+        raise SystemExit("the spec serves more than one public API version: "
+                         + ", ".join(sorted(versions)))
+    return versions.pop()
+
+
 def _clients_drift(spec: dict[str, Any]) -> None:
     """Fail the build when the page names an operation the spec no longer has, or a row is malformed."""
     problems = []
@@ -3679,6 +3736,23 @@ def _clients_drift(spec: dict[str, Any]) -> None:
         problems.append("the Swift install line does not name the Swift row's version")
     if "get" not in spec["paths"].get("/ws-token", {}):
         problems.append("the page explains Token only with GET /ws-token, which the spec does not define")
+    # The version compatibility matrix. Its release-line cell is each row's own version, the same
+    # field the install matrix shows, so the two tables cannot name different versions for a
+    # library. For the eight language clients that version is also pinned against
+    # code-samples/sdk-methods.yaml by _samples_match_clients_page. Its API-version cell must match
+    # the version the spec serves, so the matrix cannot keep naming v1 after the API moves on.
+    spec_api_version = _spec_api_version(spec)
+    for key in keys:
+        if key not in CLIENT_API_VERSION:
+            problems.append(f"the compatibility matrix has no public API version for the row {key!r}")
+    for key in CLIENT_API_VERSION:
+        if key not in by_key:
+            problems.append(f"CLIENT_API_VERSION names {key!r}, which is not a library row")
+    for key, api_version in CLIENT_API_VERSION.items():
+        if api_version != "not stated" and api_version != spec_api_version:
+            problems.append(
+                f"the compatibility matrix says {key} targets API {api_version}, "
+                f"but the spec serves {spec_api_version}")
     if problems:
         raise SystemExit("client-libraries.html disagrees with the spec or itself:\n  " + "\n  ".join(problems))
 
@@ -3717,6 +3791,26 @@ def _clients_body(spec: dict[str, Any]) -> str:
         '<th scope="col">Language</th><th scope="col">Licence</th><th scope="col">Source</th>'
         "</tr></thead><tbody>" + rows + "</tbody></table>",
         "Client libraries",
+    )
+    # The version compatibility matrix: one row per library, its current release, the public API
+    # version it targets and its minimum runtime. The API-version cell is read from CLIENT_API_VERSION
+    # and shown as "Not stated" where a library's source names no base URL (none do today).
+    def api_version_cell(key: str) -> str:
+        value = CLIENT_API_VERSION.get(key, "not stated")
+        return "Not stated" if value == "not stated" else value
+
+    compat_rows = "".join(
+        f'<tr><th scope="row" style="{rowhead};white-space:nowrap">{E(c["name"])}</th>'
+        f'<td>{E(c["version"])}</td><td{nowrap}>{E(api_version_cell(c["key"]))}</td>'
+        f'<td{words}>{E(c["runtime"])}</td></tr>\n'
+        for c in CLIENTS
+    )
+    compat = scrollx(
+        f"<table>{vh_caption('Each official library with its current release, the public API version it targets and its minimum runtime')}"
+        '<thead><tr><th scope="col">Library</th><th scope="col">Current release</th>'
+        '<th scope="col">Public API version</th><th scope="col">Minimum runtime</th>'
+        "</tr></thead><tbody>" + compat_rows + "</tbody></table>",
+        "Version compatibility",
     )
     cover_rows = "".join(
         f'<tr><th scope="row" style="{rowhead};white-space:nowrap">{E(c["name"])}</th><td>Yes</td><td{nowrap}>{E(c["stream"])}</td>'
@@ -3757,13 +3851,25 @@ def _clients_body(spec: dict[str, Any]) -> str:
         + (f"<p>{CLIENT_QUICKSTART_AFTER[key]}</p>\n" if key in CLIENT_QUICKSTART_AFTER else "")
         for key, heading, install, snippet, note in CLIENT_QUICKSTARTS
     )
-    return f"""<h2 id="matrix">Which client library should I use?</h2>
+    body = f"""<h2 id="matrix">Which client library should I use?</h2>
 <p>Pick the row for your language. Every package calls the same REST API with the same key.
 The version is the newest release on the registry named under each install command.
 These client libraries are the official SDKs for the API.</p>
 {matrix}
 <p>Every package is MIT licensed. Plugins for apps and automation platforms are not in this table.
 They live in the <a href="{CLIENTS_ORG}">GitHub organisation</a>.</p>
+
+<h2 id="compatibility">Which API version and runtime does each library target?</h2>
+<p>This matrix pins every official library to one row. Each row names the current release, the
+public API version the library calls, and the lowest language or runtime version it supports.</p>
+{compat}
+<p>Every library here targets the same public API version, so moving between libraries needs no
+change of API version. The build check compares each stated version with the version the spec serves
+and fails if they differ.</p>
+<p>The current release and minimum runtime were read from each library's registry, or its Git tags
+where it has none, on <time datetime="{CLIENTS_CHECKED}">{CLIENTS_CHECKED}</time>. The public API
+version is the one in each library's default base URL, or in the client it wraps, read from source
+on <time datetime="{API_VERSION_CHECKED}">{API_VERSION_CHECKED}</time>.</p>
 
 <h2 id="coverage">Which libraries support REST, the live stream, file export and MCP?</h2>
 <p>Every library reads the REST API. Two open the live stream, one writes files and one is an MCP server.</p>
@@ -3807,6 +3913,21 @@ registry again and names each row that is behind.</p>
 for spreadsheets, with no package to install</li>
 </ul>
 """
+    # The contents list is generated from the section headings, so a new section appears in it
+    # without a second edit and the list can never name a section the page does not have.
+    headings = re.findall(r'<h2 id="([^"]+)">(.*?)</h2>', body)
+    # Guard: every section heading must reach the list. A heading written with another attribute
+    # before id, or wrapped across lines, would slip past the strict pattern and vanish from the
+    # nav. Count every <h2 opening (any following space, newline or bracket) and fail the build
+    # loudly when the strict pattern found fewer, so no section is ever dropped silently.
+    if len(headings) != len(re.findall(r"<h2[\s/>]", body)):
+        raise SystemExit("the client libraries contents list missed a section heading: "
+                         "every <h2> must open with its id attribute on one line")
+    items = "".join(f'<li><a href="#{sid}">{text}</a></li>\n' for sid, text in headings)
+    contents = ('<nav aria-labelledby="contents-heading">\n'
+                '<h2 id="contents-heading">Contents</h2>\n<ul class="toc">\n'
+                + items + "</ul>\n</nav>\n")
+    return contents + body
 
 
 # ----------------------------------------------------------------- SportsML mapping -------------
@@ -4290,7 +4411,10 @@ GUIDES: list[dict[str, Any]] = [
             "Coverage read from the source of each published version."
         ),
         "body": _clients_body,
-        "date": CLIENTS_CHECKED,
+        # dateModified and the sitemap lastmod track the page's newest content check. The version
+        # compatibility matrix was read on API_VERSION_CHECKED, later than CLIENTS_CHECKED, so the
+        # page changed that day. The registry read date stays CLIENTS_CHECKED in the meta and prose.
+        "date": max(CLIENTS_CHECKED, API_VERSION_CHECKED),
         "about": [
             {"@type": "SoftwareSourceCode", "name": f'Live Tennis API {c["name"]}',
              "alternateName": c["package"], "url": c["registry_url"], "version": c["version"],
