@@ -15,6 +15,32 @@
  ],
  "items": [
   {
+   "id": "https://docs.livetennisapi.com/changelog.html#v1.13.93",
+   "url": "https://docs.livetennisapi.com/changelog.html#v1.13.93",
+   "title": "1.13.93: A tennis data vocabulary page and JSON",
+   "summary": "Added: A tennis data vocabulary page and JSON.",
+   "content_html": "<h3>Added</h3>\n<ul>\n<li><strong>A tennis data vocabulary page and JSON.</strong> <code>tennis-data-vocabulary.html</code> says what each closed code the API returns means. It covers tournament tiers and categories, tours, rounds, surfaces, draws, formats, statuses, results, match events, rankings, points and charted shots. That is 26 vocabularies and 181 codes, each with its own link. <code>tennis-data-vocabulary.json</code> carries the same table for code that validates or labels values. Both are built from <code>openapi.yaml</code>. The build fails when a code in the spec has no meaning, or when a meaning names a code the spec no longer has. The docs home, the topic menu, <code>sitemap.xml</code> and <code>llms.txt</code> link the page. Nothing on the wire changed.</li>\n</ul>",
+   "date_published": "2026-11-26T00:00:00Z",
+   "tags": [
+    "Added"
+   ],
+   "_livetennisapi": {
+    "about": "https://docs.livetennisapi.com/llms.txt",
+    "version": "1.13.93",
+    "date": "2026-11-26",
+    "sections": [
+     {
+      "name": "Added",
+      "items": [
+       "A tennis data vocabulary page and JSON. tennis-data-vocabulary.html says what each closed code the API returns means. It covers tournament tiers and categories, tours, rounds, surfaces, draws, formats, statuses, results, match events, rankings, points and charted shots. That is 26 vocabularies and 181 codes, each with its own link. tennis-data-vocabulary.json carries the same table for code that validates or labels values. Both are built from openapi.yaml. The build fails when a code in the spec has no meaning, or when a meaning names a code the spec no longer has. The docs home, the topic menu, sitemap.xml and llms.txt link the page. Nothing on the wire changed."
+      ],
+      "notes": []
+     }
+    ],
+    "client_libraries": []
+   }
+  },
+  {
    "id": "https://docs.livetennisapi.com/changelog.html#v1.13.92",
    "url": "https://docs.livetennisapi.com/changelog.html#v1.13.92",
    "title": "1.13.92: A push connection that goes silent",
