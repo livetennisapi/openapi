@@ -11,6 +11,19 @@
 <icon>https://docs.livetennisapi.com/icon-256.png</icon>
 <rights type="text">MIT licence, https://github.com/livetennisapi/openapi/blob/main/LICENSE</rights>
 <entry>
+<id>https://docs.livetennisapi.com/changelog.html#v1.13.93</id>
+<title type="text">1.13.93: A tennis data vocabulary page and JSON</title>
+<published>2026-11-26T00:00:00Z</published>
+<updated>2026-11-26T00:00:00Z</updated>
+<link rel="alternate" type="text/html" href="https://docs.livetennisapi.com/changelog.html#v1.13.93"/>
+<category term="Added"/>
+<summary type="text">Added: A tennis data vocabulary page and JSON.</summary>
+<content type="html">&lt;h3&gt;Added&lt;/h3&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;A tennis data vocabulary page and JSON.&lt;/strong&gt; &lt;code&gt;tennis-data-vocabulary.html&lt;/code&gt; says what each closed code the API returns means. It covers tournament tiers and categories, tours, rounds, surfaces, draws, formats, statuses, results, match events, rankings, points and charted shots. That is 26 vocabularies and 181 codes, each with its own link. &lt;code&gt;tennis-data-vocabulary.json&lt;/code&gt; carries the same table for code that validates or labels values. Both are built from &lt;code&gt;openapi.yaml&lt;/code&gt;. The build fails when a code in the spec has no meaning, or when a meaning names a code the spec no longer has. The docs home, the topic menu, &lt;code&gt;sitemap.xml&lt;/code&gt; and &lt;code&gt;llms.txt&lt;/code&gt; link the page. Nothing on the wire changed.&lt;/li&gt;
+&lt;/ul&gt;</content>
+</entry>
+<entry>
 <id>https://docs.livetennisapi.com/changelog.html#v1.13.92</id>
 <title type="text">1.13.92: A push connection that goes silent</title>
 <published>2026-11-26T00:00:00Z</published>

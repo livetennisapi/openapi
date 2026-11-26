@@ -37,6 +37,7 @@ endpoints, generated from the same spec as the reference:
 - How do you export tennis data to CSV, JSON Lines or Parquet? https://docs.livetennisapi.com/export-formats.html
 - Which client libraries does the Live Tennis API have? https://docs.livetennisapi.com/client-libraries.html
 - How does the Live Tennis API score object map to IPTC SportsML? https://docs.livetennisapi.com/sportsml.html
+- What does each tennis data code mean? https://docs.livetennisapi.com/tennis-data-vocabulary.html
 
 ## Webhook troubleshooting
 Symptom, cause and fix for each delivery problem: https://docs.livetennisapi.com/push-feed-and-webhooks.html#troubleshooting

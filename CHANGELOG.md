@@ -5,6 +5,11 @@ All notable changes to the specification are recorded here.
 The API surface is versioned as `v1`. Changes within `v1` are **additive only**;
 removing a field or changing its type would require `v2`.
 
+## [1.13.93] - 2026-11-26
+
+### Added
+- **A tennis data vocabulary page and JSON.** `tennis-data-vocabulary.html` says what each closed code the API returns means. It covers tournament tiers and categories, tours, rounds, surfaces, draws, formats, statuses, results, match events, rankings, points and charted shots. That is 26 vocabularies and 181 codes, each with its own link. `tennis-data-vocabulary.json` carries the same table for code that validates or labels values. Both are built from `openapi.yaml`. The build fails when a code in the spec has no meaning, or when a meaning names a code the spec no longer has. The docs home, the topic menu, `sitemap.xml` and `llms.txt` link the page. Nothing on the wire changed.
+
 ## [1.13.92] - 2026-11-26
 
 ### Clarified
